@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "pnpm run build:dist",
-    "build:dist": "rm -rf dist && mkdir -p dist/myact dist/logconv dist/wspr dist/shared && cp -r apps/myact/* dist/myact/ && cp -r apps/logconv/* dist/logconv/ && cp -r apps/wspr/* dist/wspr/ && cp -r packages/shared/* dist/shared/",
+    "build:dist": "rm -rf dist && mkdir -p dist/myact dist/logconv dist/shared && cp -r apps/myact/* dist/myact/ && cp -r apps/logconv/* dist/logconv/ && cp -r packages/shared/* dist/shared/",
     "lint": "turbo lint",
     "clean": "rm -rf dist node_modules .turbo",
     "typecheck": "turbo typecheck",
