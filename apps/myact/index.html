@@ -1886,7 +1886,24 @@
 			}
 		});
 
-		clickQTHButton();
+		// 位置情報の許可状態を確認してから自動取得
+		if (navigator.permissions && navigator.permissions.query) {
+			navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
+				if (result.state === 'granted') {
+					// 既に許可されている場合のみ自動取得
+					clickQTHButton();
+				} else {
+					// 未許可の場合はデフォルト位置を表示
+					map.setView([37.514444, 137.712222], 6);
+				}
+			}).catch(function() {
+				// permissions API非対応の場合はデフォルト位置
+				map.setView([37.514444, 137.712222], 6);
+			});
+		} else {
+			// permissions API非対応の場合はデフォルト位置
+			map.setView([37.514444, 137.712222], 6);
+		}
 
 		//Latest Spot Chart
 		const plugin = {
