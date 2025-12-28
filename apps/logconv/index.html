@@ -248,7 +248,7 @@
 		</div>
 
 		<div class="tab-pane fade" id="AirHamLog" role="tabpanel" aria-labelledby="AirHamLog-tab">
-			<form method="post" enctype="multipart/form-data" action='/api/logconv/hamlog' style="padding:10px">
+			<form method="post" enctype="multipart/form-data" action='/api/v2/logconv/hamlog' style="padding:10px">
 				<div class="form-row">
 					<div class="form-group col-sm-6">
 						<h6><b>自分のQTHの指定</b></h6>
@@ -381,7 +381,7 @@
 		</div><!-- end of tab-pane -->
 
 		<div class="tab-pane fade" id="SOTAActivator" role="tabpanel" aria-labelledby="SOTAActivator-tab">
-			<form id="SOTAActivator" method="post" enctype="multipart/form-data" action='/api/logconv/hamlog'
+			<form id="SOTAActivator" method="post" enctype="multipart/form-data" action='/api/v2/logconv/hamlog'
 				onsubmit="return formCheckSOTA()" style="padding:10px">
 				<div class="form-group">
 					<label for="activation_call"><b> 運用時のコールサイン</b></label>
@@ -464,7 +464,7 @@
 		</script>
 
 		<div class="tab-pane fade" id="SOTAChaser" role="tabpanel" aria-labelledby="SOTAChaser-tab">
-			<form id="SOTAChaser" method="post" enctype="multipart/form-data" action='/api/logconv/hamlog'
+			<form id="SOTAChaser" method="post" enctype="multipart/form-data" action='/api/v2/logconv/hamlog'
 				style="padding:10px">
 				<div class="form-group">
 					<label for="chaser_call"><b>運用時のコールサイン</b></label>
@@ -510,7 +510,7 @@
 
 		<div class="tab-pane fade show active" id="POTAActivator" role="tabpanel" aria-labelledby="POTAActivator-tab">
 			<form id="POTAActivatorForm" name="POTAActivatorForm" method="post" enctype="multipart/form-data"
-				action='/api/logconv/hamlog' onsubmit="return formCheckPOTA()" style="padding:10px">
+				action='/api/v2/logconv/hamlog' onsubmit="return formCheckPOTA()" style="padding:10px">
 				<div class="container">
 					<div class="row">
 						<div class="row">
@@ -684,7 +684,7 @@
 
 		<div class="tab-pane fade" id="FLEOnline" role="tabpanel" aria-labelledby="FLEOnline-tab">
 			<div class="container">
-				<form name="FLEEdit" method="post" onsubmit="return checkLog()" action='/api/logconv/fleonline'>
+				<form name="FLEEdit" method="post" onsubmit="return checkLog()" action='/api/v2/fle/generate'>
 					<div class="form-group">
 						<ul class="nav nav-tabs nav-pills" role="tablist">
 							<li class="nav-item">
@@ -1098,7 +1098,7 @@
 		function clickUpdate() {
 			editor = document.getElementById("edittext")
 			txt = editor.value
-			$.post("/api/logconv/fleonline",
+			$.post("/api/v2/fle/compile",
 				{
 					"command": "interp",
 					"arg": txt
@@ -1239,7 +1239,7 @@
 			formdata.append("command", "ADIFCSVCheck")
 			adiflist = []
 			$.ajax({
-				url: '/api/logconv/hamlog',
+				url: '/api/v2/logconv/hamlog',
 				method: 'post',
 				dataType: 'json',
 				data: formdata,
@@ -1408,7 +1408,7 @@
 				return;
 			}
 
-			$.post("/api/logconv/wspr", { "arg": JSON.stringify(jsondata) },
+			$.post("/api/v2/wspr/svg", { "arg": JSON.stringify(jsondata) },
 				function (data, status, xhr) {
 					console.log(data);
 					if (status == "success") {
