@@ -3,6 +3,10 @@ name = "sotalive"
 compatibility_date = "2024-12-01"
 pages_build_output_dir = "./dist"
 
+# Functions設定
+[functions]
+directory = "functions"
+
 # 各サブドメインのルーティングはCloudflare側で設定
 # myact2.sotalive.net → /myact
 # logconv2.sotalive.net → /logconv

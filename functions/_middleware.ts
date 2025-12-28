@@ -7,6 +7,30 @@ interface Env {
   ASSETS: Fetcher;
 }
 
+// アセットを取得するヘルパー関数（リダイレクトを自動追跡）
+async function fetchAsset(
+  assets: Fetcher,
+  url: URL,
+  request: Request
+): Promise<Response> {
+  const response = await assets.fetch(new Request(url.toString(), request));
+
+  // 308/301/302 リダイレクトの場合、index.htmlを追加して再取得
+  if (response.status === 308 || response.status === 301 || response.status === 302) {
+    const location = response.headers.get("location");
+    if (location) {
+      const redirectUrl = new URL(location, url.origin);
+      // ディレクトリへのリダイレクトなら index.html を追加
+      if (redirectUrl.pathname.endsWith("/")) {
+        redirectUrl.pathname += "index.html";
+      }
+      return assets.fetch(new Request(redirectUrl.toString(), request));
+    }
+  }
+
+  return response;
+}
+
 export const onRequest: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const hostname = url.hostname;
@@ -34,21 +58,29 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   }
 
   // パスを書き換えてアセットを取得
-  if (appPath && url.pathname === "/") {
-    url.pathname = `${appPath}/index.html`;
-  } else if (appPath) {
-    url.pathname = `${appPath}${url.pathname}`;
-  }
-
-  // 共通アセットへのフォールバック
-  // /css/, /js/, /img/, /font/, /svg/, /favicon* は shared から取得
-  const sharedPaths = ["/css/", "/js/", "/img/", "/font/", "/svg/", "/favicon"];
-  for (const prefix of sharedPaths) {
-    if (url.pathname.includes(prefix)) {
-      url.pathname = `/shared/common${url.pathname.substring(url.pathname.indexOf(prefix))}`;
-      break;
+  if (appPath) {
+    const assetUrl = new URL(url);
+    if (url.pathname === "/" || url.pathname === "") {
+      // ルートはディレクトリパスとして指定（Pagesがindex.htmlを自動解決）
+      assetUrl.pathname = `${appPath}/`;
+    } else if (!url.pathname.startsWith(appPath)) {
+      // アプリパスを付与
+      assetUrl.pathname = `${appPath}${url.pathname}`;
     }
+
+    // 共通アセットへのフォールバック
+    const sharedPaths = ["/css/", "/js/", "/img/", "/font/", "/svg/", "/favicon"];
+    for (const prefix of sharedPaths) {
+      if (assetUrl.pathname.includes(prefix)) {
+        const idx = assetUrl.pathname.indexOf(prefix);
+        assetUrl.pathname = `/shared/common${assetUrl.pathname.substring(idx)}`;
+        break;
+      }
+    }
+
+    return fetchAsset(context.env.ASSETS, assetUrl, context.request);
   }
 
-  return context.env.ASSETS.fetch(new Request(url.toString(), context.request));
+  // サブドメインなし（sotalive.pages.dev など）はそのまま配信
+  return fetchAsset(context.env.ASSETS, url, context.request);
 };
