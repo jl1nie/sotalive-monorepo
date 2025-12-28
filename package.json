@@ -1,0 +1,21 @@
+{
+  "name": "sotalive-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.12.4",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "pnpm run build:dist",
+    "build:dist": "rm -rf dist && mkdir -p dist/myact dist/logconv dist/wspr dist/shared && cp -r apps/myact/* dist/myact/ && cp -r apps/logconv/* dist/logconv/ && cp -r apps/wspr/* dist/wspr/ && cp -r packages/shared/* dist/shared/",
+    "lint": "turbo lint",
+    "clean": "rm -rf dist node_modules .turbo",
+    "typecheck": "turbo typecheck",
+    "pages:dev": "pnpm run build && wrangler pages dev dist --port 8788",
+    "pages:deploy": "pnpm run build && wrangler pages deploy dist"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4",
+    "turbo": "^2",
+    "wrangler": "^4"
+  }
+}

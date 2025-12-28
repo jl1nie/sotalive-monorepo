@@ -1,0 +1,99 @@
+# cargo-make タスク定義
+# インストール: cargo install cargo-make
+# 使用方法: makers <task_name>
+
+[config]
+default_to_workspace = false
+
+[env]
+PNPM = "pnpm"
+
+# =============================================================================
+# 開発タスク
+# =============================================================================
+
+[tasks.install]
+description = "依存関係をインストール"
+command = "pnpm"
+args = ["install"]
+
+[tasks.dev]
+description = "開発サーバーを起動"
+dependencies = ["install"]
+command = "pnpm"
+args = ["run", "pages:dev"]
+
+[tasks.build]
+description = "本番用にビルド"
+dependencies = ["install"]
+command = "pnpm"
+args = ["run", "build"]
+
+[tasks.clean]
+description = "ビルド成果物をクリーン"
+command = "pnpm"
+args = ["run", "clean"]
+
+# =============================================================================
+# デプロイタスク
+# =============================================================================
+
+[tasks.deploy]
+description = "Cloudflare Pagesにデプロイ"
+dependencies = ["build"]
+command = "pnpm"
+args = ["run", "pages:deploy"]
+
+[tasks.deploy-preview]
+description = "プレビュー環境にデプロイ"
+dependencies = ["build"]
+script = '''
+wrangler pages deploy dist --branch preview
+'''
+
+# =============================================================================
+# 検証タスク
+# =============================================================================
+
+[tasks.lint]
+description = "リントを実行"
+command = "pnpm"
+args = ["run", "lint"]
+
+[tasks.typecheck]
+description = "型チェックを実行"
+command = "pnpm"
+args = ["run", "typecheck"]
+
+[tasks.check]
+description = "リントと型チェックを実行"
+dependencies = ["lint", "typecheck"]
+
+# =============================================================================
+# ユーティリティタスク
+# =============================================================================
+
+[tasks.tree]
+description = "プロジェクト構造を表示"
+script = '''
+tree -I 'node_modules|dist|.turbo|.wrangler|.git' -L 3
+'''
+
+[tasks.size]
+description = "各アプリのサイズを表示"
+script = '''
+echo "=== App Sizes ==="
+du -sh apps/* packages/*
+'''
+
+# =============================================================================
+# 複合タスク
+# =============================================================================
+
+[tasks.ci]
+description = "CI用タスク (check + build)"
+dependencies = ["check", "build"]
+
+[tasks.fresh]
+description = "クリーンしてから再インストール"
+dependencies = ["clean", "install"]

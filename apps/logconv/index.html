@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<!------------------------------------------------------------------>
+	<!-- Font Awesome -->
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+	<!-- Google Fonts -->
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
+	<!-- Bootstrap core CSS -->
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet">
+	<!-- Material Design Bootstrap -->
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/css/mdb.min.css" rel="stylesheet">
+	<!------------------------------------------------------------------>
+	<style>
+		.loglist-extend {
+			position: relative;
+			height: 35vh;
+			border: 1px solid #aaa;
+			min-height: 100px;
+			overflow: auto;
+			-webkit-overflow-scrolling: touch;
+			margin-bottom: -13px;
+		}
+
+		.csvlist-extend {
+			position: relative;
+			border: 2px solid #aaa;
+			overflow: auto;
+			min-width: 560px;
+			height: 60vh;
+			-webkit-overflow-scrolling: touch;
+			margin-bottom: 5px;
+		}
+
+		.table-condensed>thead>tr>th,
+		.table-condensed>tbody>tr>th,
+		.table-condensed>tfoot>tr>th,
+		.table-condensed>thead>tr>td,
+		.table-condensed>tbody>tr>td,
+		.table-condensed>tfoot>tr>td {
+			padding: 1px;
+		}
+	</style>
+
+	<title>ファイル変換ツールfor SOTA/JAFF/POTA</title>
+</head>
+
+<body>
+	<div class="header clearfix">
+		<div class="text-muted">
+			<h5>ファイル変換ツールfor SOTA/JAFF/POTA</h5>
+		</div>
+	</div>
+	<ul class="nav nav-tabs nav-pills" role="tablist">
+		<li class="nav-item">
+			<a class="nav-link active" id="POTAActivator-tab" data-toggle="tab" href="#POTAActivator" role="tab"
+				aria-controls="POTAActivator" aria-selected="false">SOTA/JAFF/POTA ADIF</a>
+		</li>
+
+		<li class="nav-item">
+			<a class="nav-link" id="SOTAActivator-tab" data-toggle="tab" href="#SOTAActivator" role="tab"
+				aria-controls="SOTAActivator" aria-selected="false">SOTA Activator</a>
+		</li>
+
+		<li class="nav-item">
+			<a class="nav-link" id="SOTAChaser-tab" data-toggle="tab" href="#SOTAChaser" role="tab"
+				aria-controls="SOTAChaser" aria-selected="false">SOTA Chaser</a>
+		</li>
+
+		<li class="nav-item">
+			<a class="nav-link" id="FLEOnline-tab" data-toggle="tab" href="#FLEOnline" role="tab"
+				aria-controls="FLEOnline" aria-selected="false">FLE Online</a>
+		</li>
+
+		<li class="nav-item">
+			<a class="nav-link" id="AirHamLog-tab" data-toggle="tab" href="#AirHamLog" role="tab"
+				aria-controls="AirHamLog" aria-selected="true">AirHamLog</a>
+		</li>
+
+		<li class="nav-item">
+			<a class="nav-link" id="WSPR-tab" data-toggle="tab" href="#WSPR" role="tab" aria-controls="WSPR"
+				aria-selected="true">WSPRnet SNR distribution</a>
+		</li>
+	</ul>
+
+	<div class="tab-content">
+		<div class="tab-pane fade" id="WSPR" role="tabpanel" aria-labelledby="WSPR-tab">
+			<div class="container">
+				<div class="align-center">
+					<div id="spotimg"></div>
+				</div>
+				<form name="WSPRAnaly" method="post" action=''>
+					<div class="form-group" style="justify-content:start;margin-bottom:2px;">
+						<label>Title:<input type="text" id="title" name="title" value="untitled"></label>
+						<a role="button" class="btn-sm btn-outline-info p-1 bg-light"
+							href="https://jl1nie.wordpress.com/2022/05/02/%e7%b0%a1%e6%98%93wspr%e8%a7%a3%e6%9e%90%e3%83%84%e3%83%bc%e3%83%ab%e3%81%ae%e8%a3%bd%e4%bd%9c/"
+							target="_blank">Help</a>
+						<p>
+						<table class="table table-condensed">
+							<thead>
+								<tr>
+									<th width="auto">Plots </th>
+									<th width="auto">Color </th>
+									<th width="auto">From</th>
+									<th width="auto"> To </th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>
+										<div>
+											<input type="checkbox" id="check1" name="check1">
+											<input type="text" id="plot1" name="plot1">
+										</div>
+									</td>
+									<td>
+										<div><select id="color1" name="color1">
+												<option value="r">Red</option>
+												<option value="b">Blue</option>
+												<option value="g">Green</option>
+												<option value="c">Cyan</option>
+											</select>
+										</div>
+									</td>
+									<td>
+										<div><select id="from1" name="from1"></select>
+										</div>
+									</td>
+									<td>
+										<div><select id="to1" name="to1"></select>
+										</div>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div>
+											<input type="checkbox" id="check2" name="check2">
+											<input type="text" id="plot2" name="plot2">
+										</div>
+									</td>
+									<td>
+										<div><select id="color2" name="color2">
+												<option value="b">Blue</option>
+												<option value="g">Green</option>
+												<option value="c">Cyan</option>
+												<option value="r">Red</option>
+											</select>
+										</div>
+									</td>
+									<td>
+										<div><select id="from2" name="from2"></select>
+										</div>
+									</td>
+									<td>
+										<div><select id="to2" name="to2"></select>
+										</div>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div>
+											<input type="checkbox" id="check3" name="check3">
+											<input type="text" id="plot3" name="plot3">
+										</div>
+									</td>
+									<td>
+										<div><select id="color3" name="color3">
+												<option value="g">Green</option>
+												<option value="c">Cyan</option>
+												<option value="r">Red</option>
+												<option value="b">Blue</option>
+											</select>
+										</div>
+									</td>
+									<td>
+										<div><select id="from3" name="from3"></select>
+										</div>
+									</td>
+									<td>
+										<div><select id="to3" name="to3"></select>
+										</div>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div>
+											<input type="checkbox" id="check4" name="check4">
+											<input type="text" id="plot4" name="plot4">
+										</div>
+									</td>
+									<td>
+										<div><select id="color4" name="color4">
+												<option value="c">Cyan</option>
+												<option value="r">Red</option>
+												<option value="b">Blue</option>
+												<option value="g">Green</option>
+											</select>
+										</div>
+									</td>
+									<td>
+										<div><select id="from4" name="from4"></select>
+										</div>
+									</td>
+									<td>
+										<div><select id="to4" name="to4"></select>
+										</div>
+									</td>
+								</tr>
+								<tr>
+									<td>Min. Distance:</td>
+									<td><input type="number" id="min" name="min" value="0">km</td>
+								</tr>
+								<tr>
+									<td>Max. Distance:</td>
+									<td><input type="number" id="max" name="max" value="20000">km</td>
+								</tr>
+								<tr>
+									<td>Annotation:</td>
+									<td><input type="checkbox" id="label" name="label" value="20000"></td>
+								</tr>
+						</table>
+					</div>
+					<div class="form-group d-flex" style="justify-content:center;margin-bottom:2px;">
+						<textarea class="form-control text-monospace" name="wspr-edittext" id="wspr-edittext"
+							style="resize:none;font-size: 9pt;line-height: 10pt;margin-top:2pt;height:60vh"></textarea>
+					</div>
+					<div class="form-group">
+						<div class="button-group d-flex" style="justify-content:space-around">
+							<input id="loadfle" type="file" style="display:none">
+							<button type="button" class="btn-sm btn-primary"
+								onClick="$('input[id=loadfle]').click()">Open</button>
+
+							<button type="button" class="btn-sm btn-primary" onClick="getTimelist()">Analyze</button>
+
+							<button type="button" id="update" class="btn-info btn-sm"
+								onClick="clearLog()">Clear</button>
+
+							<button type="button" id="update" class="btn-info btn-sm"
+								onClick="clickSubmit()">Draw</button>
+
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="tab-pane fade" id="AirHamLog" role="tabpanel" aria-labelledby="AirHamLog-tab">
+			<form method="post" enctype="multipart/form-data" action='/api/logconv/hamlog' style="padding:10px">
+				<div class="form-row">
+					<div class="form-group col-sm-6">
+						<h6><b>自分のQTHの指定</b></h6>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="QTH" id="QTHNone" value="none" checked>
+							<label class="form-check-label" for="QTHNone">
+								指定しない
+							</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="QTH" id="QTH1" value="rmks1">
+							<label class="form-check-label" for="QTH1">
+								Remarks1を自分のQTHにする
+							</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="QTH" id="QTH2" value="rmks2">
+							<label class="form-check-label" for="QTH2">
+								Remarks2を自分のQTHにする
+							</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="QTH" id="QTH3" value="user_defined">
+							<label class="form-check-label" for="QTH2">
+								運用地を自分のQTHにする
+							</label>
+						</div>
+					</div>
+					<div class="form-group col-sm-6">
+						<label for="location"><b>運用地</b></label>
+						<input type="text" id="location" name="location" class="form-control"
+							placeholder="JCC/JCG etc.">
+					</div>
+				</div>
+
+				<div class="form-group">
+					<div class="custom-file">
+						<input type="file" class="custom-file-input" id="filename" name="filename" required>
+						<label class="custom-file-label" for="filename">HamLog CSVファイルを選択</label>
+						<div class="invalid-feedback">ファイルを指定してください</div>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<button type="submit" class="btn-sm btn-primary">変換</button>
+					<button type="button" class="btm-sm btn-info" data-toggle="modal" data-target="#Help">ヘルプ</button>
+				</div>
+			</form>
+
+			<div class="modal fade" id="Help" tabindex="-1" role="dialog" aria-labelledby="HelpModal"
+				aria-hidden="true">
+				<div class="modal-dialog" role="document">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h6 class="modal-title" id="HelpModal">使い方</h6>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<small>
+								HamLogが出力したCSVファイルをAirHamLogにインポート可能なCSVファイルに変換します。AirHamLogの各項目についてHamLogから以下の通り変換します。
+								<table class="table table-condensed table-fixed" height="100px">
+									<thead>
+										<tr>
+											<th>AirHamLog項目</th>
+											<th>HamLog項目</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr>
+											<td>相手のコールサイン</td>
+											<td>Call欄のコールサイン部分</td>
+										</tr>
+										<tr>
+											<td>相手の移動エリア</td>
+											<td>Call欄のポータブル表記に該当する部分</td>
+										</tr>
+										<tr>
+											<td>交信時刻</td>
+											<td>Date欄/Time欄から求めた時刻<br>Uの場合timezone=+0<br>Jの場合timezone=+0900</td>
+										</tr>
+										<tr>
+											<td>RS(T)レポート</td>
+											<td>His欄/My欄の記載</td>
+										</tr>
+										<tr>
+											<td>自分のQTH</td>
+											<td>ツール指定<br>Remarks1,Rermarks2,運用地の記載いずれか</td>
+										</tr>
+										<tr>
+											<td>相手のQTH</td>
+											<td>QTH欄の記載</td>
+										</tr>
+										<tr>
+											<td>相手の名前</td>
+											<td>Name欄の記載</td>
+										</tr>
+										<tr>
+											<td>周波数帯</td>
+											<td>Freq欄に記載された周波数から推測した周波数帯</td>
+										</tr>
+										<tr>
+											<td>モード</td>
+											<td>Mode欄の記載<br>SSBの場合は周波数帯によってUSB/LSBを付加</td>
+										</tr>
+										<tr>
+											<td>カード交換</td>
+											<td>QSL欄の記載<br> 一桁目がJの場合はJARL (Bureau)、Nの場合はNo
+												Cardに変換されます。カードの受領確認はAirHamLogで実装後対応します。</td>
+										</tr>
+										<tr>
+											<td>コメント</td>
+											<td>自分のQTHをRemarks1にした場合はRemarks2欄<br>
+												自分のQTHをRemarks2または運用地にした場合はRemarks1欄</td>
+										</tr>
+									</tbody>
+								</table>
+							</small>
+						</div>
+						<div class="modal-footer">
+							<small>
+								<strong>ご注意:本ツールはデータの完全な移行を保証するものではありません。</strong><br>
+								ご不明の点・バグなどがありましたらtwitterのDMで@jl1nieまでご連絡ください。
+							</small>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div><!-- end of tab-pane -->
+
+		<div class="tab-pane fade" id="SOTAActivator" role="tabpanel" aria-labelledby="SOTAActivator-tab">
+			<form id="SOTAActivator" method="post" enctype="multipart/form-data" action='/api/logconv/hamlog'
+				onsubmit="return formCheckSOTA()" style="padding:10px">
+				<div class="form-group">
+					<label for="activation_call"><b> 運用時のコールサイン</b></label>
+					<input type="text" id="activation_call" name="activation_call" class="form-control"
+						placeholder="コールサイン" required>
+				</div>
+				<div class="form-group">
+					<h6><b>運用したSOTA山岳ID</b></h6>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="myQTH" id="myQTH" value="form" checked>
+						<label for="summit">山岳ID</label>
+						<input type="text" id="summit" name="summit" class="form-control" placeholder="e.g. JA/KN-006">
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="myQTH" id="myQTH1" value="rmks1">
+						<label class="form-check-label" for="myQTH1">
+							Remarks1で指定する
+						</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="myQTH" id="myQTH2" value="rmks2">
+						<label class="form-check-label" for="myQTH2">
+							Remarks2で指定する
+						</label>
+					</div>
+				</div>
+				<div class="form-group">
+					<h6><b>S2S交信局のSOTA山岳ID</b></h6>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="QTH" id="QTHNone" value="none" checked>
+						<label class="form-check-label" for="QTHNone">
+							指定しない
+						</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="QTH" id="QTH1" value="rmks1">
+						<label class="form-check-label" for="QTH1">
+							Remarks1で指定する
+						</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="QTH" id="QTH2" value="rmks2">
+						<label class="form-check-label" for="QTH2">
+							Remarks2で指定する
+						</label>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="custom-file">
+						<input type="file" class="custom-file-input" id="filename" name="filename" required>
+						<label class="custom-file-label" for="filename">HamLog CSVファイルを選択</label>
+						<div class="invalid-feedback">ファイルを指定してください</div>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary">変換</button>
+					<a href="https://www.sotadata.org.uk/" target="_blank" class="btn btn-outline-info"
+						role="button">sotadata.org.uk</a>
+				</div>
+			</form>
+		</div><!-- end of tab-pane -->
+		<script>
+			function formCheckSOTA() {
+				var form = document.forms.SOTAActivator;
+				if (form.myQTH.value == "form" && form.summit.value == "") {
+					window.alert('運用した山岳IDを入力して下さい');
+					return false;
+				}
+				if (form.myQTH.value == "rmks1" && form.QTH.value == "rmks1") {
+					window.alert('Remarks1の指定が重複しています。');
+					return false;
+				}
+				if (form.myQTH.value == "rmks2" && form.QTH.value == "rmks2") {
+					window.alert('Remarks2の指定が重複しています。');
+					return false;
+				}
+				saveCookie();
+				return true;
+			}
+		</script>
+
+		<div class="tab-pane fade" id="SOTAChaser" role="tabpanel" aria-labelledby="SOTAChaser-tab">
+			<form id="SOTAChaser" method="post" enctype="multipart/form-data" action='/api/logconv/hamlog'
+				style="padding:10px">
+				<div class="form-group">
+					<label for="chaser_call"><b>運用時のコールサイン</b></label>
+					<input type="text" id="chaser_call" name="chaser_call" class="form-control" placeholder="コールサイン"
+						required>
+				</div>
+				<div class="form-group">
+					<h6><b>相手局のSOTA山岳ID</b></h6>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="QTH" id="QTH1" value="rmks1" checked>
+						<label class="form-check-label" for="QTH1">
+							Remarks1で指定する
+						</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="QTH" id="QTH2" value="rmks2">
+						<label class="form-check-label" for="QTH2">
+							Remarks2で指定する
+						</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="QTH" id="QTH2" value="qth">
+						<label class="form-check-label" for="QTH2">
+							QTHで指定する
+						</label>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="custom-file">
+						<input type="file" class="custom-file-input" id="filename" name="filename" required>
+						<label class="custom-file-label" for="filename">HamLog CSVファイルを選択</label>
+						<div class="invalid-feedback">ファイルを指定してください</div>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary">変換</button>
+					<a href="https://www.sotadata.org.uk/" target="_blank" class="btn btn-outline-info"
+						role="button">sotadata.org.uk</a>
+				</div>
+			</form>
+		</div><!-- end of tab-pane -->
+
+		<div class="tab-pane fade show active" id="POTAActivator" role="tabpanel" aria-labelledby="POTAActivator-tab">
+			<form id="POTAActivatorForm" name="POTAActivatorForm" method="post" enctype="multipart/form-data"
+				action='/api/logconv/hamlog' onsubmit="return formCheckPOTA()" style="padding:10px">
+				<div class="container">
+					<div class="row">
+						<div class="row">
+							<div class="col-sm-4">
+								<div class="form-group">
+									<label for="pota_activation_call"><b> 運用時のコールサイン(必須)</b></label>
+									<input type="text" id="pota_activation_call" name="pota_activation_call"
+										class="form-control" placeholder="コールサイン(例:JL1NIE/1)" required>
+								</div>
+								<div class="form-group">
+									<label for="pota_operator"><b>運用時のオペレータ(任意)</b></label>
+									<input type="text" id="pota_operator" name="pota_operator" class="form-control"
+										placeholder="コールサイン(例:JL1NIE)">
+								</div>
+								<div class="form-group">
+									<h6><b>SOTA/JAFF/POTA運用先</b></h6>
+									<div class="form-check">
+										<input class="form-check-input" type="radio" name="myQTH" id="myQTH"
+											value="form" checked>
+										<label for="park">リファレンス/公園番号を入力</label>
+										<input type="text" id="park" name="park" class="form-control"
+											placeholder="例: JAFF-0005 JP-0014">
+									</div>
+									<div class="form-check">
+										<input class="form-check-input" type="radio" name="myQTH" id="myQTH1"
+											value="rmks1">
+										<label class="form-check-label" for="myQTH1">
+											Remarks1で指定する
+										</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input" type="radio" name="myQTH" id="myQTH2"
+											value="rmks2">
+										<label class="form-check-label" for="myQTH2">
+											Remarks2で指定する
+										</label>
+									</div>
+								</div>
+								<div class="form-group">
+									<h6><b>相手局のリファレンス/公園番号</b></h6>
+									<div class="form-check">
+										<input class="form-check-input" type="radio" name="QTH" id="QTHNone"
+											value="none" checked>
+										<label class="form-check-label" for="QTHNone">
+											指定しない
+										</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input" type="radio" name="QTH" id="QTH1" value="rmks1">
+										<label class="form-check-label" for="QTH1">
+											Remarks1で指定する
+										</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input" type="radio" name="QTH" id="QTH2" value="rmks2">
+										<label class="form-check-label" for="QTH2">
+											Remarks2で指定する
+										</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input" type="radio" name="QTH" id="QTH3" value="qth">
+										<label class="form-check-label" for="QTH3">
+											QTHで指定する
+										</label>
+									</div>
+									<!--
+		    <div class="form-check">
+		      <input class="form-check-input" type="checkbox" name="OmitPortable" id="OmitPortable" value="checked">
+		      <label class="form-check-label" for="OmitPortable">
+			相手局コールから'/X'を除く(POTA)
+		      </label>
+		    </div>
+		    -->
+								</div>
+							</div>
+							<div class="col-sm-8" style="padding:0;">
+								<div id="potacsvlist" class="container csvlist-extend">
+									<div class="table-responsive">
+										<table class="table table-striped table-condensed text-nowrap"
+											style="font-size:8pt;">
+											<thead id="potacsvlisthead" class="thead-light">
+												<tr>
+													<th>No.</th>
+													<th>Call</th>
+													<th>Date</th>
+													<th>Time</th>
+													<th>Band</th>
+													<th>Mode</th>
+													<th>Sent</th>
+													<th>Rcvd</th>
+													<th>SigInfo</th>
+													<th>MySigInfo</th>
+													<th>Station</th>
+													<th>Operator</th>
+												</tr>
+											</thead>
+											<tbody id="potacsvlisttable">
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-sm-12">
+							<div class="form-group">
+								<div class="custom-file">
+									<input type="file" class="custom-file-input" id="filename" name="filename" required>
+									<label class="custom-file-label" for="csvfilename">HamLog CSVファイルを選択</label>
+									<div class="invalid-feedback">ファイルを指定してください</div>
+								</div>
+							</div>
+							<div class="form-group">
+								<button type="button" class="btn-sm btn-primary" onClick="readPOTACSV()">CSV読込
+								</button>
+								<button type="submit" class="btn-sm btn-primary">ADIF生成</button>
+								<a href="https://www.sotadata.org.uk/" target="_blank" class="btn-sm btn-outline-info"
+									role="button">SOTAログアップロード</a>
+								<a href="mailto:jaff-log@nifty.com" target="_blank" class="btn-sm btn-outline-info"
+									role="button">JAFFログ送付</a>
+								<!--
+		  <a id="regional_manager" href="mailto:K[貴局コールのエリア番号]@parksontheair.com" target="_blank" class="btn-sm btn-outline-info" role="button">POTAログ送付</a>
+-->
+								<a href="https://pota.app/#/user/logs" target="_blank" class="btn-sm btn-outline-info"
+									role="button">POTAログアップロード</a>
+
+								<a href="https://bit.ly/35Wfj4J" target="_blank" class="btn-sm btn-info"
+									role="button">使い方</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div><!-- end of tab-pane -->
+		<script>
+			function clearPath(e) {
+				this.value = null;
+			}
+			function formCheckPOTA() {
+				var form = document.forms.POTAActivatorForm;
+				var errmsg = '';
+				var result = true;
+
+				if (form.myQTH.value == "form" && form.park.value == "") {
+					errmsg += '運用先を入力して下さい\n'
+					result = false;
+				}
+				if (form.myQTH.value == "rmks1" && form.QTH.value == "rmks1") {
+					errmsg += 'Remarks1の指定が重複しています\n';
+					result = false;
+				}
+				if (form.myQTH.value == "rmks2" && form.QTH.value == "rmks2") {
+					errmsg += 'Remarks2の指定が重複しています\n';
+					result = false;
+				}
+
+				if (result == false) {
+					alert(errmsg);
+					return false;
+				}
+
+				if (textinterpreted == false) {
+					if (confirm("HAMLOG CSVのチェックをせずにADIFを生成しますか？") == false)
+						return false;
+				}
+				callsign = form.pota_activation_call.value
+				areaNo = callsign.match(/.\D+(\d).+/)
+				saveCookie();
+				return true;
+			}
+		</script>
+
+		<div class="tab-pane fade" id="FLEOnline" role="tabpanel" aria-labelledby="FLEOnline-tab">
+			<div class="container">
+				<form name="FLEEdit" method="post" onsubmit="return checkLog()" action='/api/logconv/fleonline'>
+					<div class="form-group">
+						<ul class="nav nav-tabs nav-pills" role="tablist">
+							<li class="nav-item">
+								<a class="nav-link active p-1" id="SOTAJAFF-tab" data-toggle="tab" href="#SOTAJAFF"
+									role="tab" aria-controls="SOTAJAFF"
+									aria-selected="true"><small>SOTA/WWFF/POTA</small></a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link p-1" id="HAMLOG-tab" data-toggle="tab" href="#HAMLOG" role="tab"
+									aria-controls="HAMLOG" aria-selected="false"><small>HAMLOG</small></a>
+							</li>
+						</ul>
+						<div class="tab-content">
+							<div class="tab-pane show active" id="SOTAJAFF" role="tabpanel"
+								aria-labelledby="SOTAJAFF-tab">
+								<div id="loglist" class="container loglist-extend">
+									<div class="table-responsive">
+										<table class="table table-striped table-condensed text-nowrap"
+											style="font-size:8pt;">
+											<thead id="loglisthead" class="thead-light">
+												<tr>
+													<th>No.</th>
+													<th>My Call</th>
+													<th>Date</th>
+													<th>Time</th>
+													<th>Call</th>
+													<th>Band</th>
+													<th>Mode</th>
+													<th>RSTs</th>
+													<th>RSTr</th>
+													<th>My SOTA</th>
+													<th>His SOTA</th>
+													<th>My SigInfo</th>
+													<th>His SigInfo</th>
+													<th>Comment</th>
+													<th>Operator</th>
+												</tr>
+											</thead>
+											<tbody id="loglisttable">
+										</table>
+									</div>
+								</div>
+							</div>
+							<div class="tab-pane" id="HAMLOG" role="tabpanel" aria-labelledby="HAMLOG-tab">
+								<div id="hamloglist" class="container loglist-extend">
+									<div class="table-responsive">
+										<table class="table table-striped table-condensed text-nowrap"
+											style="font-size:8pt;">
+											<thead id="hamloglisthead" class="thead-light">
+												<tr>
+													<th>No.</th>
+													<th>Call</th>
+													<th>Date</th>
+													<th>Time</th>
+													<th>His</th>
+													<th>My</th>
+													<th>Freq</th>
+													<th>Mode</th>
+													<th>GL</th>
+													<th>Name</th>
+													<th>QTH</th>
+													<th>Remarks2</th>
+												</tr>
+											</thead>
+											<tbody id="hamloglisttable">
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="form-group d-flex" style="justify-content:flex-end;margin-bottom:-1px;">
+						<div class="form-check form-check-inline" style="font-size:8pt">
+							<input class="form-check-input" disabled="disabled" type="checkbox" id="checkSOTA">
+							<label class="form-check-label" for="checkSOTA"><strong>SOTA</strong></label>
+						</div>
+						<div class="form-check form-check-inline" style="font-size:8pt">
+							<input class="form-check-input" disabled="disabled" type="checkbox" id="checkWWFF">
+							<label class="form-check-label" for="checWWFF"><strong>WWFF/POTA</strong></label>
+						</div>
+						<div class="button-group">
+							<a role="button" class="btn-sm btn-outline-info p-1 bg-light"
+								href="https://jl1nie.wordpress.com/2019/08/21/2019-08-21-203013/"
+								target="_blank">Help</a>
+							<button type="button" class="btn-sm btn-info p-1 bg-light" onClick="setSample()">FLE
+								Sample</button>
+							<button type="button" class="btn-sm btn-info p-1 bg-light"
+								onClick="setSample('clear')">Clear</button>
+						</div>
+					</div>
+					<div class="form-group">
+						<textarea class="form-control text-monospace" name="edittext" id="edittext"
+							style="resize:none; font-size:9pt; line-height: 10pt; margin-top:2pt;height:40vh"></textarea>
+					</div>
+					<div class="form-group">
+						<div class="button-group d-flex" style="justify-content:space-around">
+							<input id="loadfle" type="file" style="display:none">
+							<button type="button" class="btn-sm btn-primary"
+								onClick="$('input[id=loadfle]').click()">FLEログ読込</button>
+							<input id="appendADIF" type="file" style="display:none">
+							<button type="button" class="btn-sm btn-primary"
+								onClick="$('input[id=appendADIF]').click()">ADIFログ追加</button>
+							<button type="button" id="update" class="btn-info btn-sm"
+								onClick="clickUpdate()">変換</button>
+							<button type="submit" id="generate" class="btn-primary btn-sm">CSVファイル生成</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div><!-- end of tab-pane -->
+	</div>
+
+	<!-- Optional JavaScript -->
+	<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+	<script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+	<!---------------------------------------------------------------------->
+	<!-- JQuery -->
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+	<!-- Bootstrap tooltips -->
+	<script type="text/javascript"
+		src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.4/umd/popper.min.js"></script>
+	<!-- Bootstrap core JavaScript -->
+	<script type="text/javascript"
+		src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
+	<!-- MDB core JavaScript -->
+	<script type="text/javascript"
+		src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/js/mdb.min.js"></script>
+	<!------------------------------------------------------------------------>
+	<script>
+
+		$('.custom-file-input').on('change', function () {
+			$(this).next('.custom-file-label').html($(this)[0].files[0].name);
+		});
+
+		$('.custom-file-input').on('click', function () {
+			this.value = null;
+		});
+
+		var textdirty = false;
+		var textinterpreted = false;
+
+		$('textarea[id=edittext]').keyup(function () {
+			textdirty = true;
+			textinterpreted = false;
+		})
+
+		$('input[id=loadfle]').change(function (e) {
+			if (textdirty) {
+				if (confirm("修正されたFLEログがクリアされます") == false)
+					return
+			}
+			var result = e.target.files[0];
+			var reader = new FileReader();
+			reader.readAsText(result, 'UTF-8');
+			$('input[id=loadfle]').val('');
+			reader.addEventListener('load', function () {
+				editor = document.getElementById("edittext")
+				editor.value = reader.result;
+				textdirty = false;
+			})
+		});
+
+		function adif2fle(text) {
+			var adiftext = text.toUpperCase().split('<EOR>');
+			var today = '', mode = '', band = '';
+			var result = '';
+			for (const elem of adiftext) {
+				var qso = '';
+				var call = elem.match(/<CALL:\d>([A-Z0-9\/]+)[\s<]/);
+				if (call == null)
+					continue;
+				var newmode = elem.match(/<MODE:\d>(\S+)[\s<]/);
+				var newband = elem.match(/<BAND:\d>([0-9]+[A-Z]+)/);
+				var newday = elem.match(/<QSO_DATE:\d>(\d+)[\s<]/);
+				var time = elem.match(/<TIME_ON:\d>(\d+)[\s<]/);
+				var sent = elem.match(/<RST_SENT:\d>([0-9\+\-]+)[\s<]/);
+				var recv = elem.match(/<RST_RCVD:\d>([0-9\+\-]+)[\s<]/);
+
+				if (newday[1] != today) {
+					var d = newday[1];
+					qso += 'date ' + d.substring(0, 4) + '-' + d.substring(4, 6) + '-' + d.substring(6, 8) + '\r\n';
+					today = newday[1];
+				}
+				if (newband[1] != band || newmode[1] != mode) {
+					band = newband[1];
+					mode = newmode[1];
+					qso += band.toLowerCase() + ' ' + mode + '\r\n';
+				}
+				qso += time[1].substring(0, 4) + ' ' + call[1] + ' ' + sent[1] + ' ' + recv[1] + '\r\n';
+				console.log(qso);
+
+				result += qso;
+			}
+			return (result);
+		}
+
+		$('input[id=appendADIF]').change(function (e) {
+			var result = e.target.files[0];
+			var reader = new FileReader();
+			reader.readAsText(result, 'UTF-8');
+			$('input[id=appendADIF]').val('');
+			reader.addEventListener('load', function () {
+				editor = document.getElementById("edittext")
+				editor.value += adif2fle(reader.result);
+				textdirty = false;
+			})
+		});
+
+		loadCookie();
+		$('#SOTABoth').submit(function () { saveCookie(); });
+		$('#SOTAActivator').submit(function () { saveCookie(); });
+		$('#SOTAChaser').submit(function () { saveCookie(); });
+
+		function saveCookie() {
+			var act_call_b = $('#activation_call_both').val();
+			var act_call = $('#activation_call').val();
+			var pota_act_call = $('#pota_activation_call').val();
+			var pota_operator = $('#pota_operator').val();
+			var chsr_call = $('#chaser_call').val();
+			var portable = $('#SOTABoth [name="portable"]').filter(':checked').val();
+			var myQTH_b = $('#SOTABoth [name="myQTH"]').filter(':checked').val();
+			var actQTH_b = $('#SOTABoth [name="hisQTH"]').filter(':checked').val();
+			var note_b = $('#SOTABoth [name="Note"]').filter(':checked').val();
+			var myQTH = $('#SOTAActivator [name="myQTH"]').filter(':checked').val();
+			var actQTH = $('#SOTAActivator [name="QTH"]').filter(':checked').val();
+			var hisQTH = $('#SOTAChaser [name="QTH"]').filter(':checked').val();
+			var myQTHp = $('#POTAActivator [name="myQTH"]').filter(':checked').val();
+			var actQTHp = $('#POTAActivator [name="QTH"]').filter(':checked').val();
+
+			Cookies.set('act_call_b', act_call_b, { expires: 180 });
+			Cookies.set('portable', portable, { expires: 180 });
+			Cookies.set('myQTH_b', myQTH_b, { expires: 180 });
+			Cookies.set('actQTH_b', actQTH_b, { expires: 180 });
+			Cookies.set('note_b', note_b, { expires: 180 });
+
+			Cookies.set('act_call', act_call, { expires: 180 });
+			Cookies.set('chsr_call', chsr_call, { expires: 180 });
+			Cookies.set('myQTH', myQTH, { expires: 180 });
+			Cookies.set('actQTH', actQTH, { expires: 180 });
+			Cookies.set('hisQTH', hisQTH, { expires: 180 });
+
+			Cookies.set('pota_act_call', pota_act_call, { expires: 180 });
+			Cookies.set('pota_operator', pota_operator, { expires: 180 });
+			Cookies.set('myQTHp', myQTHp, { expires: 180 });
+			Cookies.set('actQTHp', actQTHp, { expires: 180 });
+		}
+
+		function loadCookie() {
+			$('#activation_call_both').val([Cookies.get('act_call_b')]);
+			$('#activation_call').val([Cookies.get('act_call')]);
+			$('#pota_activation_call').val([Cookies.get('pota_act_call')]);
+			$('#pota_operator').val([Cookies.get('pota_operator')]);
+			$('#chaser_call').val([Cookies.get('chsr_call')]);
+
+			var myQTH = Cookies.get('myQTH');
+			var aQTH = Cookies.get('actQTH');
+			var cQTH = Cookies.get('hisQTH');
+
+			if (myQTH == undefined)
+				$('#SOTAActivator [name="myQTH"]').val(["form"]);
+			else
+				$('#SOTAActivator [name="myQTH"]').val([myQTH]);
+
+			if (aQTH == undefined)
+				$('#SOTAActivator [name="hisQTH"]').val(["none"]);
+			else
+				$('#SOTAActivator [name="hisQTH"]').val([aQTH]);
+
+			if (cQTH == undefined)
+				$('#SOTAChaser [name="QTH"]').val(["rmks1"]);
+			else
+				$('#SOTAChaser [name="QTH"]').val([cQTH]);
+
+			var myQTHp = Cookies.get('myQTHp');
+			var aQTHp = Cookies.get('actQTHp');
+
+			if (myQTHp == undefined)
+				$('#POTAActivator [name="myQTH"]').val(["form"]);
+			else
+				$('#POTAActivator [name="myQTH"]').val([myQTHp]);
+
+			if (aQTHp == undefined)
+				$('#POTAActivator [name="QTH"]').val(["none"]);
+			else
+				$('#POTAActivator [name="QTH"]').val([aQTHp]);
+
+			var myQTH_b = Cookies.get('myQTH_b');
+			var aQTH_b = Cookies.get('actQTH_b');
+			var portable = Cookies.get('portable');
+			var note_b = Cookies.get('note_b');
+
+			if (myQTH_b == undefined)
+				$('#SOTABoth [name="myQTH"]').val(["rmks1"]);
+			else
+				$('#SOTABoth [name="myQTH"]').val([myQTH_b]);
+
+			if (aQTH_b == undefined)
+				$('#SOTABoth [name="hisQTH"]').val(["rmks2"]);
+			else
+				$('#SOTABoth [name="hisQTH"]').val([aQTH_b]);
+
+			if (portable == undefined)
+				$('#SOTABoth [name="portable"]').val(["none"]);
+			else
+				$('#SOTABoth [name="portable"]').val([portable]);
+
+			if (note_b == undefined)
+				$('#SOTABoth [name="Note"]').val(["rmks2"]);
+			else
+				$('#SOTABoth [name="Note"]').val([note_b]);
+
+		}
+
+		function checkLog() {
+			if (!textinterpreted) {
+				if (confirm("変換されていません\nCSV生成しますか？") == false)
+					return false;
+			}
+			textdirty = false;
+			textinterpreted = true;
+			return true;
+		}
+
+		function setSample(arg) {
+			editor = document.getElementById("edittext")
+			if (textdirty) {
+				if (confirm("FLEログをクリアします") == false)
+					return
+			}
+
+			textdirty = false;
+			clearLogFLE();
+
+			act_call = Cookies.get('pota_act_call')
+			if (act_call == undefined) {
+				act_call = Cookies.get('act_call')
+				if (act_call == undefined)
+					act_call = 'jl1nie/0'
+			}
+			operator = act_call;
+			pos = act_call.indexOf('/')
+			if (pos != -1)
+				operator = act_call.substring(0, pos)
+
+			d = new Date()
+			dddd = d.getFullYear() + '-' + String(d.getMonth() + 1) + '-' + d.getDate();
+			if (arg == "clear") {
+				editor.value = ""
+			} else {
+				editor.value =
+					"#Header\n" +
+					"mycall " + act_call + "\n" +
+					"operator " + operator + "\n" +
+					"mywwff jaff-0218\n" +
+					"mypota jp-1151 jp-1164\n" +
+					"mysota ja/st-012\n" +
+					"qslmsg $sat丸山$mysota $mypota $rig\n" +
+					"#Log\n" +
+					"timezone +0\n" +
+					"date " + dddd + "\n" +
+					"rigset 1\n" +
+					"40m cw\n" +
+					"2302 ja1qsa \n" +
+					"4 ja4qru 6 7 <曽田さん>{島根市}\n" +
+					"4 ja8qsw 4 {札幌市}\n" +
+					"ssb\n" +
+					"14 ja4qsy\n" +
+					"40 jq1qso/1 5 3 jaff-0218 ja-1151 ja-1164\n" +
+					"70cm fm\n" +
+					"55 jg0qro/0 ja/nn-001 {松本市 AO-91/FM/144MHz}\n" +
+					"58 jk2qsu {PM85rl AO-91/FM/144MHz}\n" +
+					"day +\n" +
+					"17m cw\n" +
+					"rigset 0\n" +
+					"04 zl1qsb 41 31\n" +
+					"20m ft4\n" +
+					"45 zl1qrz -18 -19\n" +
+					"rigset 2\n" +
+					"50.550 am\n" +
+					"0130 jj1qth 3 4\n";
+			}
+		}
+
+		function clearLogFLE() {
+			sota = document.getElementById("checkSOTA");
+			sota.checked = false;
+			wwff = document.getElementById("checkWWFF");
+			wwff.checked = false;
+			textinterpreted = false;
+			$('#loglisthead').empty();
+			$('#loglisthead').append("<tr><th>No.</th><th>My Call</th>" +
+				"<th>Date</th><th>Time</th>" +
+				"<th>Call</th><th>Band</th>" +
+				"<th>Mode</th><th>RSTs</th><th>RSTr</th>" +
+				"<th>My SOTA</th><th>His SOTA</th>" +
+				"<th>My SigInfo</th><th>His SigInfo</th>" +
+				"<th>Comment</th>" +
+				"<th>Operator</th>" +
+				"</tr>");
+			$('#loglisttable').empty();
+
+			$('#hamloglisthead').empty();
+			$('#hamloglisthead').append("<tr><th>No.</th><th>Call</th><th>Date</th><th>Time</th>" +
+				"<th>His</th><th>My</th><th>Freq</th>" +
+				"<th>Mode</th><th>GL</th><th>Name</th>" +
+				"<th>QTH</th><th>Remarks2</th></tr>");
+			$('#hamloglisttable').empty();
+		}
+
+		function clickUpdate() {
+			editor = document.getElementById("edittext")
+			txt = editor.value
+			$.post("/api/logconv/fleonline",
+				{
+					"command": "interp",
+					"arg": txt
+				},
+				function (data, status, xhr) {
+					if (data.status == "OK") {
+						clearLogFLE()
+						textinterpreted = true;
+						if (data.logtype == "SOTA") {
+							sota = document.getElementById("checkSOTA");
+							sota.checked = true;
+							wwff = document.getElementById("checkWWFF");
+							wwff.checked = false;
+						} else if (data.logtype == "WWFF") {
+							wwff = document.getElementById("checkWWFF");
+							sota = document.getElementById("checkSOTA");
+							sota.checked = false;
+							wwff.checked = true;
+						} else if (data.logtype == "BOTH") {
+							sota = document.getElementById("checkSOTA");
+							sota.checked = true;
+							wwff = document.getElementById("checkWWFF");
+							wwff.checked = true;
+						} else {
+							sota = document.getElementById("checkSOTA");
+							sota.checked = false;
+							wwff = document.getElementById("checkWWFF");
+							wwff.checked = false;
+						}
+						tlist = data.logtext;
+						for (var i = 0, len = tlist.length; i < len; ++i) {
+							td = "";
+							for (var j = 0, len2 = tlist[i].length; j < len2; ++j)
+								td = td + "<td>" + tlist[i][j] + "</td>";
+							$('#loglisttable').append('<tr>' + td + '</tr>');
+						}
+						tlist = data.hamlogtext;
+						for (var i = 0, len = tlist.length; i < len; ++i) {
+							td = "";
+							for (var j = 0, len2 = tlist[i].length; j < len2; ++j)
+								td = td + "<td>" + tlist[i][j] + "</td>";
+							$('#hamloglisttable').append('<tr>' + td + '</tr>');
+						}
+					} else {
+						textinterpreted = false;
+						$('#loglisthead').empty()
+						$('#loglisthead').append("<tr><th>Line#</th><th>Text</th></tr>");
+						tlist = data.logtext;
+						$('#loglisttable').empty()
+						for (var i = 0, len = tlist.length; i < len; ++i) {
+							tr = "<tr>"
+							tr = tr + "<td>" + tlist[i][0] + "</td>"
+							tr = tr + "<td>" + tlist[i][2]
+							if (tlist[i][1] != '')
+								tr = tr + "<font color=\"#ff0000\"><b>&nbspError!&nbsp" + tlist[i][1] + "</b></font>"
+							tr = tr + "</td></tr>"
+							$('#loglisttable').append(tr);
+						}
+
+						$('#hamloglisthead').empty()
+						$('#hamloglisthead').append("<tr><th>Line#</th><th>Text</th></tr>");
+						tlist = data.logtext;
+						$('#hamloglisttable').empty()
+						for (var i = 0, len = tlist.length; i < len; ++i) {
+							tr = "<tr>"
+							tr = tr + "<td>" + tlist[i][0] + "</td>"
+							tr = tr + "<td>" + tlist[i][2]
+							if (tlist[i][1] != '')
+								tr = tr + "<font color=\"#ff0000\"><b>&nbspError!&nbsp" + tlist[i][1] + "</b></font>"
+							tr = tr + "</td></tr>"
+							$('#hamloglisttable').append(tr);
+						}
+					}
+				});
+		};
+
+		var adiflist = [];
+
+		function checkRefs(refid) {
+			refid = refid.toUpperCase()
+			refs = refid.trim().split(/,|\s/);
+
+			sotaref = new RegExp(/^\w+\/\w+-\d{3}$/);
+			parkref = new RegExp(/^\w+-\d{4}$/);
+
+			result = true;
+
+			refs.forEach((ref) => {
+				if (sotaref.test(ref) || parkref.test(ref)) {
+					result = result && true;
+				} else
+					result = false;
+			})
+
+			return result;
+		}
+
+
+		function readPOTACSV() {
+			var form = document.forms.POTAActivatorForm;
+			var errmsg = '';
+			var result = true;
+
+			if (form.pota_activation_call.value == "") {
+				errmsg += '運用時のコールサインを入力して下さい\n';
+				result = false;
+			}
+			if (form.myQTH.value == "form") {
+				if (form.park.value == "") {
+					errmsg += '運用先を入力して下さい\n';
+					result = false;
+				}
+				if (!checkRefs(form.park.value)) {
+					errmsg += '運用先リファレンスに誤りがあります\n';
+					result = false;
+				}
+			}
+			if (form.myQTH.value == "rmks1" && form.QTH.value == "rmks1") {
+				errmsg += 'Remarks1の指定が重複しています\n';
+				result = false;
+			}
+			if (form.myQTH.value == "rmks2" && form.QTH.value == "rmks2") {
+				errmsg += 'Remarks2の指定が重複しています\n';
+				result = false;
+			}
+			if (form.filename.value == "") {
+				errmsg += 'HAMLOG CSVファイルを指定してください';
+				result = false;
+			}
+
+			if (result == false) {
+				alert(errmsg);
+				return false;
+			}
+
+			var form = $('#POTAActivatorForm').get(0)
+			var formdata = new FormData(form)
+			formdata.append("command", "ADIFCSVCheck")
+			adiflist = []
+			$.ajax({
+				url: '/api/logconv/hamlog',
+				method: 'post',
+				dataType: 'json',
+				data: formdata,
+				cache: false,
+				processData: false,
+				contentType: false,
+				error: function (data) {
+					alert('エラーが発生しました。\nCSVファイル確認してください。');
+				}
+			}).done(function (data) {
+
+				$('#potacsvlisthead').empty();
+				$('#potacsvlisthead').append(
+					"<tr><th>No.</th><th>Call</th>" +
+					"<th>Date</th><th>Time</th>" +
+					"<th>Band</th><th>Mode</th>" +
+					"<th>Sent</th><th>Rcvd</th><th>SigInfo</th>" +
+					"<th>MySigInfo</th><th>Station</th><th>Operator</th>" +
+					"</tr>");
+				$('#potacsvlisttable').empty();
+
+				if (data.status == "OK")
+					textinterpreted = true;
+				else {
+					textinterpreted = false;
+					console.log(data.errorlog);
+					alert('CSVファイルにエラーがあります。\n' + data.errorlog);
+				}
+
+				tlist = data.logtext;
+				var count = 1
+				for (var i = 0, len = tlist.length; i < len; ++i, ++count) {
+					var length = tlist[i].length;
+					if (length > 11) {
+						length = 11
+						td = '<td bgcolor="red"><a href="#" title="' + tlist[i][11] + '" target="_blank">' + count + '</a></td>'
+					} else {
+						td = '<td>' + count + '</td>'
+					};
+					for (var j = 0; j < length; ++j)
+						td = td + "<td>" + tlist[i][j] + "&nbsp</td>";
+					$('#potacsvlisttable').append('<tr>' + td + '</tr>');
+				}
+				adiflist = data.filelist;
+			});
+		};
+	</script>
+	<!-- WSPR -->
+	<script>
+		$('input[id=loadfle]').change(function (e) {
+			var result = e.target.files[0];
+			var reader = new FileReader();
+			reader.readAsText(result, 'UTF-8');
+			$('input[id=loadfle]').val('');
+			reader.addEventListener('load', function () {
+				editor = document.getElementById("wspr-edittext")
+				editor.value = reader.result;
+				getTimelist();
+			})
+		});
+
+		function getTimelist(text) {
+			var editor = document.getElementById("wspr-edittext");
+			const wsprlog = editor.value.split('\n');
+
+			var tl = [];
+			var trimed = ""
+
+			for (const line of wsprlog) {
+				var cols = line.trim().split(/[\t,\s]/);
+				if (/\d\d\d\d.+/.test(cols[0])) {
+					tl.push(cols[0] + ' ' + cols[1]);
+					trimed += cols.join(' ') + '\n';
+				}
+			}
+
+			let timeset = new Set(tl);
+			let timelist = Array.from(timeset);
+
+			editor.value = trimed;
+			var l = timelist.sort();
+			for (n = 1; n <= 4; n++) {
+				for (const t of l) {
+					const sel = document.getElementById('from' + n);
+					const opt = document.createElement('option');
+					const sel2 = document.getElementById('to' + n);
+					const opt2 = document.createElement('option');
+					opt.value = t;
+					opt.textContent = t;
+					sel.appendChild(opt);
+					opt2.value = t;
+					opt2.textContent = t;
+					sel2.appendChild(opt2);
+				}
+			}
+		}
+
+		function clearLog() {
+			var editor = document.getElementById("wspr-edittext");
+			editor.value = "";
+			for (n = 1; n <= 4; n++) {
+				const sel = document.getElementById('from' + n);
+				const sel2 = document.getElementById('to' + n);
+				const chk = document.getElementById('check' + n);
+				const plt = document.getElementById('plot' + n);
+				sel.innerHTML = '';
+				sel2.innerHTML = '';
+				chk.checked = false;
+				plt.value = '';
+				plt.textContent = '';
+			}
+			const elem = document.getElementById("spotimg");
+			elem.innerHTML = '';
+			const tl = document.getElementById("title");
+			tl.value = 'untitled';
+			tl.textContent = 'untitled';
+			const dmin = document.getElementById("min");
+			dmin.value = '0';
+			dmin.textContent = '0';
+			const dmax = document.getElementById("max");
+			dmax.value = '20000';
+			dmax.textContent = '20000';
+			const lb = document.getElementById("label");
+			lb.checked = false;
+		}
+
+
+
+		function string_to_buffer(src) {
+			return (new Uint16Array([].map.call(src, function (c) {
+				return c.charCodeAt(0)
+			}))).buffer;
+		}
+
+		function clickSubmit() {
+			var editor = document.getElementById("wspr-edittext");
+			var title = document.getElementById("title");
+			var dmin = document.getElementById("min");
+			var dmax = document.getElementById("max");
+			var lb = document.getElementById("label");
+
+			var jsondata = {
+				'title': title.value,
+				'width': window.innerWidth,
+				'spots': editor.value,
+				'min': dmin.value,
+				'max': dmax.value,
+				'label': lb.checked,
+				'plots': []
+			};
+
+			for (n = 1; n <= 4; n++) {
+				var chk = document.getElementById('check' + n);
+				if (chk.checked) {
+					label = document.getElementById('plot' + n).value;
+					color = document.getElementById('color' + n).value;
+					from = document.getElementById('from' + n).value;
+					to = document.getElementById('to' + n).value;
+					jsondata['plots'].push(
+						{ 'label': label, 'color': color, 'from': from, 'to': to });
+				}
+			}
+
+			if (jsondata['plots'].length == 0) {
+				alert("No plots");
+				return;
+			}
+
+			$.post("/api/logconv/wspr", { "arg": JSON.stringify(jsondata) },
+				function (data, status, xhr) {
+					console.log(data);
+					if (status == "success") {
+						const elem = document.getElementById("spotimg");
+						elem.innerHTML = '';
+						elem.appendChild(data.documentElement);
+					}
+				});
+		}
+	</script>
+</body>
+
+</html>
