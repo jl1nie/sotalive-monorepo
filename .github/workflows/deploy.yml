@@ -3,7 +3,7 @@ name: Deploy to Cloudflare Pages
 on:
   push:
     branches:
-      - master    # Production deploy
+      - main      # Production deploy
       - develop   # Preview deploy
 
 jobs:
@@ -37,5 +37,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # masterブランチはmainとしてデプロイ（Pages production branch = main）
-          command: pages deploy dist --project-name=sotalive --branch=${{ github.ref_name == 'master' && 'main' || github.ref_name }}
+          command: pages deploy dist --project-name=sotalive --branch=${{ github.ref_name }}
