@@ -11,7 +11,8 @@
     "clean": "rm -rf dist node_modules .turbo",
     "typecheck": "turbo typecheck",
     "pages:dev": "pnpm run build && wrangler pages dev dist --port 8788",
-    "pages:deploy": "pnpm run build && wrangler pages deploy dist"
+    "pages:deploy": "pnpm run build && wrangler pages deploy dist --branch main",
+    "pages:deploy:preview": "pnpm run build && wrangler pages deploy dist --branch develop"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4",
