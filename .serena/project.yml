@@ -1,0 +1,43 @@
+# Serena project configuration for sotalive-monorepo
+
+# list of languages for which language servers are started
+# For JavaScript, use typescript
+languages:
+- typescript
+
+# the encoding used by text files in the project
+encoding: "utf-8"
+
+# whether to use the project's gitignore file to ignore files
+ignore_all_files_in_gitignore: true
+
+# list of additional paths to ignore
+ignored_paths:
+- node_modules
+- dist
+- .turbo
+
+# whether the project is in read-only mode
+read_only: false
+
+# list of tool names to exclude
+excluded_tools: []
+
+# initial prompt for the project
+initial_prompt: |
+  sotalive-monorepoは、SOTA/POTAアマチュア無線アワード支援サービスのフロントエンドモノレポです。
+  バックエンドAPI（sotaapp2）と連携して動作します。
+
+  現在の状態:
+  - Cloudflare Pagesでホスティング
+  - 全APIはsotaapp2（Fly.io）にプロキシ
+  - レガシー: jQuery + Bootstrap 4
+  - 移行先: React 18 + TypeScript（計画中）
+
+  関連メモリ:
+  - cloudflare-migration-plan: 移行計画全体
+  - react-migration-plan: React移行詳細
+  - js-refactoring-status: JS分割状況
+
+project_name: "sotalive-monorepo"
+included_optional_tools: []

@@ -51,8 +51,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   // サブドメインに基づいてアプリを選択
   // WSPRはlogconvのタブ内に含まれるため独立アプリ不要
   let appPath = "";
-  if (hostname.startsWith("myact")) {
+  if (hostname.startsWith("myact2")) {
+    appPath = "/myact2";
+  } else if (hostname.startsWith("myact")) {
     appPath = "/myact";
+  } else if (hostname.startsWith("logconv2")) {
+    appPath = "/logconv";
   } else if (hostname.startsWith("logconv")) {
     appPath = "/logconv";
   }

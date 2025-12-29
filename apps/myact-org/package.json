@@ -1,0 +1,10 @@
+{
+  "name": "@sotalive/myact-org",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve -l 3001 .",
+    "build": "echo 'Static site - no build required'",
+    "preview": "npx serve ."
+  }
+}

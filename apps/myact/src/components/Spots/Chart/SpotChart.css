@@ -1,0 +1,168 @@
+.spotchart-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.spotchart-modal {
+  background: #16213e;
+  color: #e0e0e0;
+  border-radius: 8px;
+  width: 95%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.spotchart-modal-large {
+  max-width: 95%;
+  max-height: 95vh;
+  overflow: auto;
+}
+
+.spotchart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #374151;
+}
+
+.spotchart-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #e0e0e0;
+}
+
+.spotchart-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0;
+  line-height: 1;
+}
+
+.spotchart-close:hover {
+  color: #e0e0e0;
+}
+
+.spotchart-body {
+  flex: 1;
+  padding: 20px;
+  min-height: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spotchart-loading,
+.spotchart-empty {
+  color: #9ca3af;
+  font-size: 16px;
+}
+
+.spotchart-summary {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 16px 20px;
+  background: #1f2937;
+  border-top: 1px solid #374151;
+}
+
+.spotchart-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spotchart-stat-label {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.spotchart-stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #e0e0e0;
+}
+
+.spotchart-stat-value.sota {
+  color: #f87171;
+}
+
+.spotchart-stat-value.pota {
+  color: #60a5fa;
+}
+
+.spotchart-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #374151;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.spotchart-modal .btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.spotchart-modal .btn-close {
+  background: #3b82f6;
+  color: white;
+}
+
+.spotchart-modal .btn-close:hover {
+  background: #2563eb;
+}
+
+/* Tooltip */
+.spotchart-tooltip {
+  background: rgba(19, 58, 95, 0.95);
+  padding: 10px 12px;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  max-width: 300px;
+}
+
+.spotchart-tooltip-ref {
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: #60a5fa;
+}
+
+.spotchart-tooltip-detail {
+  word-wrap: break-word;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .spotchart-modal {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  .spotchart-summary {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+}

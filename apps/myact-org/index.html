@@ -1,0 +1,455 @@
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+	<!-- Favicon -->
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-act.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32-act.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16-act.png">
+	<link rel="manifest" href="/site-act.webmanifest.json" crossorigin="use-credentials">
+	<!------------------------------------------------------------------>
+	<!-- Font Awesome -->
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+	<!-- Google Fonts -->
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
+	<!-- Bootstrap core CSS -->
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet">
+	<!-- Material Design Bootstrap -->
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/css/mdb.min.css" rel="stylesheet">
+
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/css/bootstrap-slider.min.css"
+		rel="stylesheet">
+	<!------------------------------------------------------------------>
+
+	<link href="font/css/open-iconic-bootstrap.css" rel="stylesheet">
+	<!-- MyACT Custom Styles -->
+	<link href="css/myact.css" rel="stylesheet">
+	<title>MyACT</title>
+
+	<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+	<script src="https://unpkg.com/topojson@3.0.2/dist/topojson.min.js"></script>
+	<!---------------------------------------------------------------------->
+	<!-- JQuery -->
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<!-- Bootstrap tooltips -->
+	<script type="text/javascript"
+		src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.4/umd/popper.min.js"></script>
+	<!-- Bootstrap core JavaScript -->
+	<script type="text/javascript"
+		src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
+	<!-- MDB core JavaScript -->
+	<script type="text/javascript"
+		src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/js/mdb.min.js"></script>
+	<script type="text/javascript"
+		src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/bootstrap-slider.min.js"></script>
+	<!-- Chart JS plugins -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.2.1/chart.umd.min.js"
+		integrity="sha512-GCiwmzA0bNGVsp1otzTJ4LWQT2jjGJENLGyLlerlzckNI30moi2EQT0AfRI7fLYYYDKR+7hnuh35r3y1uJzugw=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script
+		src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+	<!------------------------------------------------------------------------>
+	<!-- plugin -->
+	<link rel="stylesheet" href="css/leaflet.extra-markers.min.css" />
+	<script src="js/leaflet.extra-markers.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.3.1/dist/semantic.min.css">
+	<link rel="stylesheet" href="js/L.Control.ZoomLabel.css">
+	<script src="js/L.Control.ZoomLabel.js"></script>
+	<script src="js/regionfill.js"></script>
+	<script src="js/getDEM.js"></script>
+	<script src="js/actzone.js"></script>
+	<script src="js/search-ref.js"></script>
+	<script src="js/revgeocoder.js"></script>
+	<!-- plugin -->
+</head>
+
+<body>
+	<nav class="navbar navbar-expand-md navbar-dark bg-dark text-light">
+		<span class="navbar-brand" style="cursor: hand;cursor: pointer;" data-toggle="modal"
+			data-target="#modal-mackerel">
+			<h4>MyACT</h4>
+		</span>
+		<button type="button" class="btn btn-amber" onclick="clickQTHButton()" title="現在位置を調べる"><span
+				class="fas fa-map-marked-alt"></span></button>
+		<button type="button" class="btn btn-info" data-toggle="modal" data-target="#spots-data" title="最新スポットを表示"><span
+				class="fas fa-satellite-dish"></span></button>
+		<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-prefs"
+			onclick="clickPrefs()" title="設定"><span class="fas fa-cog"></span></button>
+
+		<div id="search_ref"></div>
+
+		<small><span id="clock_time" style="cursor: default;"></span></small>
+	</nav>
+
+	<div class="modal fade" id="spots-data">
+		<div class="modal-dialog" style="max-width: 90%;margin:1rem auto;">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div class="dropdown">
+						<button class="btn btn-default btn-sm dropdown-toggle" type="button" data-toggle="dropdown"
+							aria-expanded="false" id="program_dropdown">
+							SOTA/POTA
+						</button>
+						<div class="dropdown-menu">
+							<a class="dropdown-item" href="javascript:onProgChange(0);"><small>SOTA/POTA</small></a>
+							<a class="dropdown-item" href="javascript:onProgChange(1);"><small>SOTA</small></a>
+							<a class="dropdown-item" href="javascript:onProgChange(2);"><small>POTA</small></a>
+						</div>
+					</div>
+					<div class="dropdown">
+						<button class="btn btn-default btn-sm dropdown-toggle" type="button" data-toggle="dropdown"
+							aria-expanded="false" id="period_dropdown">
+							Last 6H
+						</button>
+						<div class="dropdown-menu">
+							<a class="dropdown-item" href="javascript:onPeriodChange(1);"><small>1</small></a>
+							<a class="dropdown-item" href="javascript:onPeriodChange(3);"><small>3</small></a>
+							<a class="dropdown-item" href="javascript:onPeriodChange(6);"><small>6</small></a>
+							<a class="dropdown-item" href="javascript:onPeriodChange(9);"><small>9</small></a>
+							<a class="dropdown-item" href="javascript:onPeriodChange(12);"><small>12</small></a>
+							<a class="dropdown-item" href="javascript:onPeriodChange(15);"><small>15</small></a>
+							<a class="dropdown-item" href="javascript:onPeriodChange(18);"><small>18</small></a>
+							<a class="dropdown-item" href="javascript:onPeriodChange(21);"><small>21</small></a>
+							<a class="dropdown-item" href="javascript:onPeriodChange(24);"><small>24</small></a>
+						</div>
+					</div>
+					<div class="custom-control custom-checkbox">
+						<input class="custom-control-input" type="checkbox" value="" id="by_call"
+							onclick="clickPrefs();refresh_spots()">
+						<label class="custom-control-label" for="by_call"><small>By Callsign</small></label>
+					</div>
+					<small><span id="clock_time2" style="cursor: default;"></span></small>
+				</div>
+				<div id="chart-container" class="modal-body">
+					<canvas id="myChart"></canvas>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal" onclick="closePrefs()">Close</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<div id="map"></div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal" id="modal-mackerel" tabindex="-1" role="dialog" aria-labelledby="staticModalLabel"
+		aria-hidden="true" data-show="true" data-keyboard="false" data-backdrop="static">
+		<div class="modal-dialog">
+			<div class="modal-content text-light bg-dark">
+				<div class="modal-header">
+					<h5>System status</h5>
+					<button type="button" class="close" data-dismiss="modal">
+						<h6><span aria-hidden="true">&#215;</span></h6>
+					</button>
+				</div><!-- /modal-header -->
+				<div class="modal-body">
+					<iframe
+						src="https://mackerel.io/embed/public/embed/j42irFtBHGgQVhFHMTnvwxfquNzy66gv9v4K80nGiN4UFll9Q3DzOiAhxr33tDOA?period=24h&amp;simplified=false&amp;stacked=false"
+						height="200" width="470" frameborder="0"></iframe>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal" id="modal-prefs" tabindex="-1" role="dialog" aria-labelledby="staticModalLabel"
+		aria-hidden="true" data-show="true" data-keyboard="false" data-backdrop="static">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title"><b>Preferences</b></h4>
+				</div><!-- /modal-header -->
+				<div class="modal-body">
+					<form>
+						<div class="form-group">
+							<label class="control-label"><u>表示対象</u></label>
+							<div class="custom-control custom-checkbox">
+								<input class="custom-control-input" type="checkbox" value="" id="sota_ref"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="sota_ref">SOTA</label>
+							</div>
+							<div class="custom-control custom-checkbox">
+								<input class="custom-control-input" type="checkbox" value="" id="pota_ref"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="pota_ref">POTA</label>
+							</div>
+							<div class="custom-control custom-checkbox">
+								<input class="custom-control-input" type="checkbox" value="" id="jaff_ref"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="jaff_ref">JAFF</label>
+							</div>
+							<div class="custom-control custom-checkbox" id="check-display_area" style="display:none">
+								<input class="custom-control-input" type="checkbox" value="" id="display_area"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="display_area">自然公園の領域を表示(平成27年以前)</label>
+							</div>
+							<div class="custom-control custom-checkbox">
+								<input class="custom-control-input" type="checkbox" value="" id="aprs_track"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="aprs_track">SOTA APRS</label>
+							</div>
+							<div class="custom-control custom-checkbox" id="check-pilgrim" style="display:none">
+								<input class="custom-control-input" type="checkbox" value="" id="pilgrim"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="pilgrim">観音霊場</label>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="control-label"><u>マーカ</u></label>
+							<p>表示する数:&nbsp&nbsp<b>多</b>&nbsp&nbsp&nbsp
+								<input id="zoom-threshold" data-slider-id='ex1Slider' type="text" data-slider-min="7"
+									data-slider-max="12" data-slider-step="1"
+									data-slider-value="12" />&nbsp&nbsp&nbsp&nbsp<b>少</b>
+							</p>
+							<div class="custom-control custom-checkbox">
+								<input class="custom-control-input" type="checkbox" value="" id="popup_permanent"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="popup_permanent"> 公園名を常に表示</label>
+							</div>
+							<div class="custom-control custom-checkbox">
+								<input class="custom-control-input" type="checkbox" value="" id="link_googlemap"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="link_googlemap"> Google Mapにリンク</label>
+							</div>
+							<div class="custom-control custom-checkbox">
+								<input class="custom-control-input" type="checkbox" value="" id="display_mapcode"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="display_mapcode">
+									MAPCODEを表示<br><small>(「マップコード」および「MAPCODE」は㈱デンソーの登録商標です)</small></label>
+							</div>
+						</div>
+						<div class="form-group" id="check-pemuact" style="display:block">
+							<label class="control-label"><u>パドルエミュレータ</u></label>
+							<div class="custom-control custom-checkbox" id="check">
+								<input class="custom-control-input" type="checkbox" value="" id="enable_emulation">
+								<label class="custom-control-label" for="enable_emulation">使用する</label>
+							</div>
+							<table>
+								<tr>
+									<td>
+										<div class="custom-control custom-checkbox">
+											<input class="form-check-input" type="radio" name="enable_wifi"
+												id="enable_wifi">
+											<label class="form-check-label" for="enable_wifi">
+												Host:
+											</label>
+										</div>
+									</td>
+									<td><input type=text id="pemu_host" size="16"></td>
+								</tr>
+								<tr>
+									<td>
+										<div class="custom-control custom-checkbox">
+											<input class="form-check-input" type="radio" name="enable_wifi"
+												id="enable_serial">
+											<label class="form-check-label" for="enable_serial">
+												シリアル
+											</label>
+										</div>
+									</td>
+								</tr>
+							</table>
+						</div>
+						<div class="form-group">
+							<label class="control-label"><u>POTAログ表示</u></label>
+							<button type="button" class="btn btn-info btn-sm" data-toggle="modal"
+								data-target="#logs-data" title="登録ログ数"><span class="fas fa-chart-bar"></span></button>
+							<div class="custom-control custom-checkbox">
+								<input type="checkbox" class="custom-control-input" value="" id="show_potalog"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="show_potalog"> POTAログを表示</label>
+							</div>
+
+							<div class="custom-file">
+								<input type="file" accept=".csv" style="width:10em" class="custom-file-input"
+									id="file_input" name="filename" required>
+								<label class="custom-file-label" id="file_input_text" for="filename">POTA
+									Logファイルを選択</label>
+								<div class="invalid-feedback">ファイルを指定してください</div>
+							</div>
+							<div class="input-group">
+								<button type="button" class="btn btn-default"
+									onclick="potaLog('upload')">Upload</button>
+								<button type="button" class="btn btn-default"
+									onclick="potaLog('import')">IMPORT</button>
+								<div class="input-group:append">
+									<input type="text" class="form-control-sm" style="width:6em" id="import_uuid">
+									<button type="button" id="export_uuid" class="btn btn-default"
+										onclick="potaLog('export')">EXPORT</button>
+									<label class="form-check-label" for="export_uuid">
+										<div id="pota_export_key">XXXXXX</div>
+									</label>
+								</div>
+							</div>
+							<div class="custom-control custom-checkbox">
+								<input class="form-check-input" type="radio" name="potalog_type" id="show_potaactlog"
+									onclick="potaLog('show-act')">
+								<label class="form-check-label" for="show_potaactlog">
+									<div id="pota_activator_uuid">-</div>
+								</label>
+								<button type="button" id="activator-log" class="btn btn-warning"
+									onclick="potaLog('del-act')">DEL </button>
+							</div>
+							<div class="custom-control custom-checkbox">
+								<input class="form-check-input" type="radio" name="potalog_type" id="show_potaactlog2"
+									onclick="potaLog('show-hunt')">
+								<label class="form-check-label" for="show_potaactlog2">
+									<div id="pota_hunter_uuid">-</div>
+								</label>
+								<button type="button" id="hunter-log" class="btn btn-warning"
+									onclick="potaLog('del-hunt')">DEL</button>
+							</div>
+						</div>
+					</form>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal"
+							onClick="closePrefs()">Close</button>
+					</div>
+				</div> <!-- /.modal-body -->
+			</div> <!-- /.modal-content -->
+		</div> <!-- /.modal-dialog -->
+	</div>
+
+	<div class="modal fade" id="logs-data">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div id="stat-container" class="modal-body">
+					<canvas id="myLogStat"></canvas>
+				</div>
+				<small><span id="perf_mon" style="cursor: default;"></span></small>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="pemuact">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title"><b>ActPaddle</b></h4>
+				</div><!-- /modal-header -->
+				<div id="keyer-container" class="modal-body">
+					<h4>
+						<bf>
+							<div id="pemu_name"></div>
+						</bf>
+					</h4>
+					<div class="table-responsive">
+						<table>
+							<tr>
+								<td> CALL:</td>
+								<td><input type=text id="pemu_call" size="10"></td>
+								<td>/</td>
+								<td><input type=text id="pemu_areacode" size="1"></td>
+								<td>
+									<div class="custom-control custom-checkbox">
+										<input class="form-check-input" type="checkbox" name="include_areacode"
+											id="include_areacode">
+									</div>
+								</td>
+								<td>JCC/JCG:</td>
+								<td><input type=text id="pemu_century" size="10"></td>
+							</tr>
+						</table>
+						<table>
+							<tr>
+								<td>SOTA:</td>
+								<td><input type=text id="pemu_sota" size="10"></td>
+								<td>POTA:</td>
+								<td><input type=text id="pemu_pota" size="8"></td>
+								<td>JAFF:</td>
+								<td><input type=text id="pemu_jaff" size="10"></td>
+							</tr>
+						</table>
+						<table>
+							<tr>
+								<td> 1. </td>
+								<td><input type=text id="pemu_mesg1" size="44"></td>
+								<td><button class="btn btn-primary" onClick="pemuPressed(1)">SEND</button></td>
+							</tr>
+							<tr>
+								<td> 2. </td>
+								<td><input type=text id="pemu_mesg2" size="44"></td>
+								<td><button class="btn btn-primary" onClick="pemuPressed(2)">SEND</button></td>
+							</tr>
+							<tr>
+								<td> 3. </td>
+								<td><input type=text id="pemu_mesg3" size="44"></td>
+								<td><button class="btn btn-primary" onClick="pemuPressed(3)">SEND</button></td>
+							</tr>
+							<tr>
+								<td> 4. </td>
+								<td><input type=text id="pemu_mesg4" size="44"></td>
+								<td><button class="btn btn-primary" onClick="pemuPressed(4)">SEND</button></td>
+							</tr>
+						</table>
+						<table>
+							<tr>
+								<td>Speed:</td>
+								<td><input type=text id="pemu_wpm" size="3"></td>
+								<td>wpm</td>
+								<td>
+									<div class="custom-control custom-checkbox">
+										<input class="form-check-input" type="radio" name="to_paddle" id="to_paddle"
+											checked>
+										<label class="form-check-label" for="to_paddle">
+											Paddle
+										</label>
+									</div>
+								</td>
+								<td>
+									<div class="custom-control custom-checkbox">
+										<input class="form-check-input" type="radio" name="to_paddle" id="to_key">
+										<label class="form-check-label" for="to_key">
+											Straight
+										</label>
+									</div>
+								</td>
+								<td>
+									<div class="custom-control custom-checkbox">
+										<input class="form-check-input" type="checkbox" name="paddle_reverse"
+											id="paddle_reverse">
+										<label class="form-check-label" for="paddle_reverse">
+											Reverse Paddle
+										</label>
+									</div>
+								</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+			</div>
+		</div>
+	</div>
+	<!-- MyACT JavaScript Modules -->
+	<script src="js/config.js"></script>
+	<script src="js/api.js"></script>
+	<script src="js/utils.js"></script>
+	<script src="js/map-init.js"></script>
+	<script src="js/pota-log.js"></script>
+	<script src="js/keyer.js"></script>
+	<script src="js/popup.js"></script>
+	<script src="js/markers.js"></script>
+	<script src="js/geolocation.js"></script>
+	<script src="js/prefs.js"></script>
+	<script src="js/spots.js"></script>
+	<script src="js/aprs.js"></script>
+	<script src="js/main.js"></script>
+</body>
+
+</html>
