@@ -4,8 +4,8 @@
 
 use chrono::DateTime;
 use fle_core::{
-    adif_to_fle, compile_fle, compile_log, complete_at, fill_with, generate_fle_output, sample_log,
-    FillScope,
+    adif_to_fle, compile_fle, compile_log, complete_at, fill_with, generate_fle_output,
+    grid_locator, sample_log, station_at, station_plan, FillScope, Station,
 };
 use wasm_bindgen::prelude::*;
 
@@ -61,6 +61,27 @@ pub fn fill(
         default_tz,
         scope,
     ))?)
+}
+
+/// `line`(0始まり)の行の直前までで有効な、自局と運用場所(`mycall` / `sota` / `pota` / `wwff` / `grid`)。
+#[wasm_bindgen(js_name = stationAt)]
+pub fn station_at_line(text: &str, line: usize) -> Result<JsValue, JsError> {
+    Ok(serde_wasm_bindgen::to_value(&station_at(text, line))?)
+}
+
+/// 自局と運用場所を、ログに書き込む修正(`edits`)と、入力の誤り(`errors`)にする。
+#[wasm_bindgen(js_name = stationPlan)]
+pub fn station_plan_for(text: &str, line: usize, want: JsValue) -> Result<JsValue, JsError> {
+    let want: Station = serde_wasm_bindgen::from_value(want)?;
+    Ok(serde_wasm_bindgen::to_value(&station_plan(
+        text, line, &want,
+    ))?)
+}
+
+/// 緯度・経度から、6文字のグリッドロケータを求める。範囲外なら `undefined`。
+#[wasm_bindgen(js_name = gridLocator)]
+pub fn grid_locator_of(lat: f64, lon: f64) -> Option<String> {
+    grid_locator(lat, lon)
 }
 
 /// FLEテキストから各種ログファイルを含むZIPを生成する。

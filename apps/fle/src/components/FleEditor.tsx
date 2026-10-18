@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { FileText, HelpCircle, Home, Trash2, Undo2, Upload } from 'lucide-react'
+import { FileText, HelpCircle, Home, MapPin, Trash2, Undo2, Upload } from 'lucide-react'
 import {
   compileLog,
   completeAt,
@@ -7,14 +7,18 @@ import {
   generateFleZip,
   adifToFle,
   sampleLog,
+  stationAt,
+  stationPlan,
+  type Station,
   type Candidate,
   type Completion,
+  type FieldError,
   type LogView,
   type QsoView,
 } from '@/lib/fle'
 import { lineOf, lineRange, replaceRange } from '@/lib/lines'
 import { applyEdits, mapCaret } from '@/lib/edits'
-import { loadLog, loadPrev, rememberPrev } from '@/lib/storage'
+import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useAutosave } from '@/hooks/useAutosave'
 import { usePwa } from '@/hooks/usePwa'
@@ -23,6 +27,7 @@ import { Header } from '@/components/Header'
 import { CandidateBar } from '@/components/CandidateBar'
 import { SuggestStrip } from '@/components/SuggestStrip'
 import { QsoSheet } from '@/components/QsoSheet'
+import { PlaceSheet } from '@/components/PlaceSheet'
 import { Sheet } from '@/components/Sheet'
 
 const HELP_URL = 'https://jl1nie.wordpress.com/2019/08/21/2019-08-21-203013/'
@@ -44,6 +49,8 @@ export function FleEditor() {
   const [previewed, setPreviewed] = useState<{ key: string; qso: QsoView } | null>(null)
   const [listOpen, setListOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値
+  const [place, setPlace] = useState<{ line: number; initial: Station; isNewLog: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
   const taRef = useRef<HTMLTextAreaElement>(null)
@@ -169,6 +176,39 @@ export function FleEditor() {
     },
     [text, caret, completion.from]
   )
+
+  // ログに自局のコールサインが現れたら、次の新しいログの初期値として覚える
+  const logCall = view?.mycall
+  useEffect(() => {
+    if (logCall) saveLastCall(logCall)
+  }, [logCall])
+
+  /** 場所のシートを開く。初期値は、カーソル位置で有効な自局と場所(自局が空なら前回のもの) */
+  const openPlace = async () => {
+    const line = caretLine
+    const current = await stationAt(text, line)
+    setPlace({
+      line,
+      initial: { ...current, mycall: current.mycall || loadLastCall() },
+      isNewLog: !view?.qsos.some((q) => q.line < line),
+    })
+  }
+
+  /** 場所をログに書き込む(指令の行の書式はコアが決める)。誤りがあれば返す */
+  const applyPlace = async (want: Station): Promise<FieldError[]> => {
+    if (!place) return []
+    const plan = await stationPlan(text, place.line, want)
+    if (plan.errors.length > 0) return plan.errors
+    if (plan.edits.length > 0) {
+      const at = mapCaret(caret, plan.edits)
+      pendingCaret.current = at
+      setText(applyEdits(text, plan.edits))
+      setCaret(at)
+    }
+    saveLastCall(want.mycall)
+    setPlace(null)
+    return []
+  }
 
   const jump = useCallback(
     (line: number) => {
@@ -336,8 +376,29 @@ export function FleEditor() {
 
       <QsoSheet open={listOpen} onClose={() => setListOpen(false)} view={view} onJump={jump} />
 
+      <PlaceSheet
+        open={place !== null}
+        onClose={() => setPlace(null)}
+        initial={place?.initial ?? { mycall: '', sota: '', pota: [], wwff: '', grid: '' }}
+        isNewLog={place?.isNewLog ?? true}
+        onApply={applyPlace}
+      />
+
       <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="ログ">
         <ul className="space-y-2">
+          <li>
+            <button
+              type="button"
+              className={MENU_ITEM}
+              onClick={() => {
+                setMenuOpen(false)
+                void openPlace()
+              }}
+            >
+              <MapPin className="w-5 h-5" />
+              新しいログ・場所を設定
+            </button>
+          </li>
           <li>
             <button
               type="button"

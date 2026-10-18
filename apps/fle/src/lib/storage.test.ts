@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { clearPrev, loadLog, loadPrev, rememberPrev, saveLog, type KV } from './storage'
+import {
+  clearPrev,
+  loadLastCall,
+  loadLog,
+  loadPrev,
+  rememberPrev,
+  saveLastCall,
+  saveLog,
+  type KV,
+} from './storage'
 
 function memoryKv(): KV & { data: Map<string, string> } {
   const data = new Map<string, string>()
@@ -85,5 +94,25 @@ describe('rememberPrev / loadPrev / clearPrev', () => {
     saveLog('log', kv)
     rememberPrev('prev', kv)
     expect(loadLog(kv)).toBe('log')
+  })
+})
+
+describe('loadLastCall / saveLastCall', () => {
+  it('前回のコールサインを覚える(/1 などの付いたものも)', () => {
+    const kv = memoryKv()
+    saveLastCall('JA1ABC/1', kv)
+    expect(loadLastCall(kv)).toBe('JA1ABC/1')
+  })
+
+  it('空のコールサインでは、覚えているものを消さない', () => {
+    const kv = memoryKv()
+    saveLastCall('JA1ABC', kv)
+    saveLastCall('  ', kv)
+    expect(loadLastCall(kv)).toBe('JA1ABC')
+  })
+
+  it('保存先が使えなくても例外にならない', () => {
+    expect(() => saveLastCall('JA1ABC', fullKv())).not.toThrow()
+    expect(loadLastCall(null)).toBe('')
   })
 })

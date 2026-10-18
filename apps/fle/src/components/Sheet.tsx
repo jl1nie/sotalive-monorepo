@@ -5,10 +5,12 @@ interface Props {
   onClose: () => void
   title: string
   children: ReactNode
+  /** 「閉じる」の上に置く操作(任意) */
+  actions?: ReactNode
 }
 
 /** 画面下から出るシート。スマホでは下から、広い画面では中央に出る。 */
-export function Sheet({ open, onClose, title, children }: Props) {
+export function Sheet({ open, onClose, title, children, actions }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
 
@@ -35,7 +37,12 @@ export function Sheet({ open, onClose, title, children }: Props) {
           {title}
         </h2>
         {children}
-        <button type="button" onClick={onClose} className="btn-primary w-full mt-4">
+        {actions && <div className="mt-4 space-y-2">{actions}</div>}
+        <button
+          type="button"
+          onClick={onClose}
+          className={`${actions ? 'btn-secondary' : 'btn-primary'} w-full mt-2`}
+        >
           閉じる
         </button>
       </div>

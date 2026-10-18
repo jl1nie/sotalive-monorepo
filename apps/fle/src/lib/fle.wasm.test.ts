@@ -2,7 +2,18 @@
 // 事前に `pnpm wasm` で src/wasm/fle を生成しておくこと。
 import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { adifToFle, initSync, compile, complete, fill, generateZip, sampleLog } from '../wasm/fle/fle'
+import {
+  adifToFle,
+  initSync,
+  compile,
+  complete,
+  fill,
+  generateZip,
+  gridLocator,
+  sampleLog,
+  stationAt,
+  stationPlan,
+} from '../wasm/fle/fle'
 
 const SAMPLE = 'mycall JA1ABC\ndate 2024-01-15\nmysota JA/TK-001\n40m cw\n0900 JA1XYZ 599 599\n'
 
@@ -85,6 +96,30 @@ describe('fle wasm', () => {
     const view = compile(sampleLog('2026-10-18'))
     expect(view.status).toBe('OK')
     expect(view.qsos[0].date).toBe('2026-10-18')
+  })
+
+  it('stationPlan: 場所を指令の行として書き込む修正を返す', () => {
+    const want = { mycall: 'ja1abc/1', sota: 'ja/tk-001', pota: ['ja-0001'], wwff: '', grid: 'pm95uq' }
+    const plan = stationPlan('', 0, want)
+    expect(plan.errors).toEqual([])
+    expect(plan.edits[0].insert).toBe('mycall JA1ABC/1\nmysota JA/TK-001\nmypota JA-0001\nmygrid PM95uq\n')
+  })
+
+  it('stationPlan: 形式の誤りは項目ごとに返し、何も書かない', () => {
+    const plan = stationPlan('', 0, { mycall: '', sota: 'xx', pota: [], wwff: '', grid: '' })
+    expect(plan.edits).toEqual([])
+    expect(plan.errors.map((e: { field: string }) => e.field)).toEqual(['sota'])
+  })
+
+  it('stationAt: カーソル位置で有効な場所を返す', () => {
+    const text = 'mycall JA1ABC\nmysota JA/TK-001\n40m cw\n0900 ja1aaa\nmysota JA/TK-002\n'
+    expect(stationAt(text, 3).sota).toBe('JA/TK-001')
+    expect(stationAt(text, 5).sota).toBe('JA/TK-002')
+  })
+
+  it('gridLocator: 緯度経度からグリッドを返す', () => {
+    expect(gridLocator(35.6586, 139.7454)).toBe('PM95up')
+    expect(gridLocator(91, 0)).toBeUndefined()
   })
 
   it('generateZip: ZIPのシグネチャで始まる', () => {

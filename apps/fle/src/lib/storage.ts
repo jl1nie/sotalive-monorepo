@@ -67,3 +67,24 @@ export function clearPrev(kv: KV | null = defaultKv()): void {
     // 何もしない
   }
 }
+
+const CALL_KEY = 'fle.mycall'
+
+/** 前回使った自局のコールサイン(新しいログの初期値にする) */
+export function loadLastCall(kv: KV | null = defaultKv()): string {
+  try {
+    return kv?.getItem(CALL_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export function saveLastCall(call: string, kv: KV | null = defaultKv()): void {
+  const value = call.trim()
+  if (!kv || !value) return
+  try {
+    kv.setItem(CALL_KEY, value)
+  } catch {
+    // 覚えられなくても、動作には影響しない
+  }
+}

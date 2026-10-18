@@ -5,6 +5,9 @@ import init, {
   complete as wasmComplete,
   sampleLog as wasmSampleLog,
   fill as wasmFill,
+  gridLocator as wasmGridLocator,
+  stationAt as wasmStationAt,
+  stationPlan as wasmStationPlan,
   generateZip as wasmGenerateZip,
 } from '../wasm/fle/fle'
 
@@ -66,6 +69,27 @@ export function timeLabel(q: Pick<QsoView, 'time' | 'tz' | 'localTime'>): string
   return `${q.localTime} (UTC${q.tz > 0 ? '+' : '-'}${Math.abs(q.tz)})`
 }
 
+/** 自局のコールサインと、いまの運用場所。すべて任意(空なら指定なし) */
+export interface Station {
+  mycall: string
+  sota: string
+  /** 同じ場所にある公園のすべて */
+  pota: string[]
+  wwff: string
+  grid: string
+}
+
+export interface FieldError {
+  field: 'mycall' | 'sota' | 'pota' | 'wwff' | 'grid'
+  message: string
+}
+
+/** ログに書き込む修正と、入力の誤り(誤りがあるときは、修正は空) */
+export interface StationPlan {
+  edits: Edit[]
+  errors: FieldError[]
+}
+
 let ready: Promise<unknown> | null = null
 let initialized = false
 
@@ -124,6 +148,24 @@ export function fillLine(
 ): Edit[] {
   if (!initialized) return []
   return wasmFill(text, line, nowMs, defaultTz, options) as Edit[]
+}
+
+/** `line` の行の直前までで有効な、自局と運用場所(カーソルの位置で、どの場所かが変わる) */
+export async function stationAt(text: string, line: number): Promise<Station> {
+  await ensureReady()
+  return wasmStationAt(text, line) as Station
+}
+
+/** 自局と運用場所を、ログに書き込む修正にする。`line` の行の前に、指令の行が入る。 */
+export async function stationPlan(text: string, line: number, want: Station): Promise<StationPlan> {
+  await ensureReady()
+  return wasmStationPlan(text, line, want) as StationPlan
+}
+
+/** 緯度・経度から、グリッドロケータ(6文字)を求める。範囲外なら undefined */
+export async function gridLocator(lat: number, lon: number): Promise<string | undefined> {
+  await ensureReady()
+  return wasmGridLocator(lat, lon)
 }
 
 export async function generateFleZip(text: string, now: Date = new Date()): Promise<Uint8Array> {
