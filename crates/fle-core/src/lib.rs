@@ -58,8 +58,10 @@ pub mod ham;
 pub mod output;
 pub mod tokenizer;
 pub mod types;
+pub mod view;
 
 pub use compiler::*;
 pub use output::*;
 pub use tokenizer::*;
 pub use types::*;
+pub use view::*;

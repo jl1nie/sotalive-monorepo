@@ -10,3 +10,6 @@ once_cell.workspace = true
 regex.workspace = true
 serde.workspace = true
 zip.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
