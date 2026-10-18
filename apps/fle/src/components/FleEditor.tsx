@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { FileText, HelpCircle, Trash2, Upload } from 'lucide-react'
+import { FileText, HelpCircle, Home, RefreshCw, Trash2, Undo2, Upload } from 'lucide-react'
 import {
   compileLog,
   completeAt,
@@ -10,7 +10,10 @@ import {
 import { adif2fle } from '@/lib/adif'
 import { generateSample } from '@/lib/sample'
 import { lineOf, lineRange, replaceToken } from '@/lib/lines'
+import { loadLog, loadPrev, rememberPrev } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
+import { useAutosave } from '@/hooks/useAutosave'
+import { usePwa } from '@/hooks/usePwa'
 import { Header } from '@/components/Header'
 import { CandidateBar } from '@/components/CandidateBar'
 import { SuggestStrip } from '@/components/SuggestStrip'
@@ -25,8 +28,10 @@ const MENU_ITEM =
 export function FleEditor() {
   useVisualViewport()
 
-  const [text, setText] = useState('')
-  const [caret, setCaret] = useState(0)
+  // 前回の入力を復元する(電池切れ・タブの終了でも失わない)
+  const [text, setText] = useState(loadLog)
+  const [caret, setCaret] = useState(text.length)
+  const [prev, setPrev] = useState(loadPrev)
   const [view, setView] = useState<LogView | null>(null)
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [listOpen, setListOpen] = useState(false)
@@ -44,6 +49,31 @@ export function FleEditor() {
     setNotice(message)
     window.clearTimeout(noticeTimer.current)
     noticeTimer.current = window.setTimeout(() => setNotice(null), 4000)
+  }, [])
+
+  useAutosave(
+    text,
+    useCallback(() => notify('自動保存できません。ブラウザの設定を確認してください'), [notify])
+  )
+  const pwa = usePwa(useCallback(() => notify('オフラインでも使えます'), [notify]))
+
+  // 内容を置き換える前に、今の内容を取っておく(メニューから戻せる)
+  const replaceText = useCallback(
+    (next: string, message?: string) => {
+      if (text.trim()) {
+        rememberPrev(text)
+        setPrev(text)
+        if (message) notify(message)
+      }
+      setText(next)
+    },
+    [text, notify]
+  )
+
+  // 復元した内容の末尾にカーソルを置く(フォーカスはしない。キーボードを出さないため)
+  useLayoutEffect(() => {
+    const ta = taRef.current
+    if (ta) ta.setSelectionRange(ta.value.length, ta.value.length)
   }, [])
 
   // 入力のたびに全体を解釈し直す(WASMなので一瞬)
@@ -141,8 +171,6 @@ export function FleEditor() {
     reader.readAsText(file, 'UTF-8')
   }
 
-  const confirmReplace = () => !text.trim() || confirm('入力中のログを置き換えます')
-
   return (
     <div className="fixed inset-x-0 top-[var(--vvt,0px)] h-[var(--vvh,100dvh)] max-w-3xl mx-auto px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2">
       <Header
@@ -188,7 +216,11 @@ export function FleEditor() {
         type="file"
         accept=".txt,.fle"
         className="hidden"
-        onChange={(e) => readFile(e, (content) => setText(content))}
+        onChange={(e) =>
+          readFile(e, (content) =>
+            replaceText(content, 'ログを読み込みました。メニューから元に戻せます')
+          )
+        }
       />
       <input
         ref={adifInputRef}
@@ -206,13 +238,25 @@ export function FleEditor() {
 
       <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="ログ">
         <ul className="space-y-2">
+          {pwa.updateReady && (
+            <li>
+              <button
+                type="button"
+                className="btn-primary w-full !justify-start !min-h-14"
+                onClick={() => pwa.applyUpdate()}
+              >
+                <RefreshCw className="w-5 h-5" />
+                新しい版に更新する
+              </button>
+            </li>
+          )}
           <li>
             <button
               type="button"
               className={MENU_ITEM}
               onClick={() => {
                 setMenuOpen(false)
-                if (confirmReplace()) fleInputRef.current?.click()
+                fleInputRef.current?.click()
               }}
             >
               <Upload className="w-5 h-5" />
@@ -238,7 +282,7 @@ export function FleEditor() {
               className={MENU_ITEM}
               onClick={() => {
                 setMenuOpen(false)
-                if (confirmReplace()) setText(generateSample())
+                replaceText(generateSample(), 'サンプルを入れました。メニューから元に戻せます')
               }}
             >
               サンプルを入れる
@@ -250,13 +294,49 @@ export function FleEditor() {
               className={MENU_ITEM}
               onClick={() => {
                 setMenuOpen(false)
-                if (!text.trim() || confirm('すべて消します')) setText('')
+                replaceText('', '消しました。メニューから元に戻せます')
               }}
             >
               <Trash2 className="w-5 h-5" />
               すべて消す
             </button>
           </li>
+          {prev && prev !== text && (
+            <li>
+              <button
+                type="button"
+                className={MENU_ITEM}
+                onClick={() => {
+                  setMenuOpen(false)
+                  replaceText(prev)
+                }}
+              >
+                <Undo2 className="w-5 h-5" />
+                直前の内容に戻す
+              </button>
+            </li>
+          )}
+          {pwa.canInstall && (
+            <li>
+              <button
+                type="button"
+                className={MENU_ITEM}
+                onClick={() => {
+                  setMenuOpen(false)
+                  pwa.install()
+                }}
+              >
+                <Home className="w-5 h-5" />
+                ホーム画面に追加
+              </button>
+            </li>
+          )}
+          {pwa.showIosHint && (
+            <li className="p-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 text-sm">
+              <Home className="inline w-4 h-4 mr-1 align-text-bottom" />
+              ホーム画面に追加するには、Safariの共有ボタンから「ホーム画面に追加」を選びます。
+            </li>
+          )}
           <li>
             <a href={HELP_URL} target="_blank" rel="noopener noreferrer" className={MENU_ITEM}>
               <HelpCircle className="w-5 h-5" />
