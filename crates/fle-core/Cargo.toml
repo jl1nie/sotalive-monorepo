@@ -11,6 +11,7 @@ regex.workspace = true
 serde.workspace = true
 zip.workspace = true
 flate2.workspace = true
+nom = "7"
 
 [dev-dependencies]
 serde_json.workspace = true

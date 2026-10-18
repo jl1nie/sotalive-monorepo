@@ -141,6 +141,11 @@ fn cases() -> Vec<(&'static str, String)> {
         ("ignored_keyword_mid_line", format!("{h}0900 ja1xyz date")),
         ("ignored_consecutive_first", format!("{h}consecutive\n0900 ja1xyz")),
         ("ignored_five_digit_time", format!("{h}09000 ja1xyz")),
+        ("invalid_hour", format!("{h}2500 ja1xyz")),
+        ("invalid_minute_4digits", format!("{h}0975 ja1xyz")),
+        ("invalid_minute_2digits", format!("{h}0900 ja1aaa\n75 ja1bbb")),
+        ("valid_last_minute", format!("{h}2359 ja1xyz")),
+        ("hour_overflow_after_rollback", format!("{h}2355 ja1aaa\n05 ja1bbb")),
         ("ignored_date_overflow", "date 99999-1-1\n40m cw\n0900 ja1xyz".into()),
         ("ignored_qslmsg_empty", format!("{h}qslmsg\n0900 ja1xyz")),
         ("dropped_no_call", format!("{h}0900 ja1aaa\n05 ja\n0910 ja1bbb")),
@@ -148,6 +153,11 @@ fn cases() -> Vec<(&'static str, String)> {
         ("minute_goes_back", format!("{h}0955 ja1aaa\n05 ja1bbb")),
         ("two_bands_one_line", format!("{h}0900 20m ja1xyz")),
         ("two_modes_one_line", format!("{h}0900 ssb am ja1xyz")),
+        ("stray_snr_in_qso_line", format!("{h}0900 ja1xyz 599 579 -10")),
+        ("stray_date_in_qso_line", format!("{h}0900 ja1xyz 2026-10-19")),
+        ("fullwidth_digits", format!("{h}０９００ ja1xyz")),
+        ("fullwidth_callsign", format!("{h}0900 ＪＡ１ＸＹＺ")),
+        ("fullwidth_mixed", format!("{h}０９００　ＪＡ１ＸＹＺ　５９９")),
         // ---- 設定行だけ ----
         ("settings_only", "40m cw\nssb\n20m\n7.025".into()),
         ("settings_mode_then_band", "cw 40m\n0900 ja1xyz".into()),
@@ -164,31 +174,51 @@ const CHANGED: &[(&str, &str)] = &[
     // 決定3: 5桁以上の時刻・桁あふれの日付を誤りにする
     ("ignored_five_digit_time", "決定3: 5桁以上の時刻は誤り"),
     ("ignored_date_overflow", "決定3: 桁あふれの日付は誤り"),
+    ("invalid_hour", "決定3: 24時以降の時刻は誤り(以前は 00:00 になっていた)"),
+    ("invalid_minute_4digits", "決定3: 60分以上は誤り(以前は黙って丸めていた)"),
+    ("invalid_minute_2digits", "決定3: 60分以上は誤り(以前は黙って丸めていた)"),
+    ("hour_overflow_after_rollback", "決定4: 分が戻ると時を進めるので、24時になる場合は誤り"),
     // 決定4: 分が戻ったら、時を進める
     ("minute_goes_back", "決定4: 分が戻ったら時を進める"),
     // 決定5: 黙って無視していたものを誤りにする
     ("ignored_extra_operand", "決定5: 余分な値は誤り"),
-    ("ignored_keyword_mid_line", "決定5: 位置違いのキーワードは誤り"),
-    ("ignored_consecutive_first", "決定5: 行頭の consecutive は誤り"),
+    (
+        "ignored_keyword_mid_line",
+        "決定5: 位置違いのキーワードは誤り",
+    ),
+    (
+        "ignored_consecutive_first",
+        "決定5: 行頭の consecutive は誤り",
+    ),
     ("ignored_qslmsg_empty", "決定5: 値のない qslmsg は誤り"),
     ("unclosed_comment", "決定5: 閉じない括弧は誤り"),
     ("unclosed_angle_then_more", "決定5: 閉じない括弧は誤り"),
-    ("two_bands_one_line", "文法の整理: 1行に、バンドは1つ"),
-    ("two_modes_one_line", "文法の整理: 1行に、モードは1つ"),
+    (
+        "stray_snr_in_qso_line",
+        "決定5: RST のあとの余分なSNRは誤り",
+    ),
+    ("stray_date_in_qso_line", "決定5: QSOの行にある日付は誤り"),
+    (
+        "fullwidth_digits",
+        "全角の数字・英字を、半角として読む(以前は桁数を誤って数え、黙って無視していた)",
+    ),
+    ("fullwidth_callsign", "全角の数字・英字を、半角として読む"),
+    ("fullwidth_mixed", "全角の数字・英字を、半角として読む"),
     // 決定6: 平文の語は、大文字小文字を保ち、全部を保持する
     ("plain_one_word", "決定6: 平文の語は大文字小文字を保つ"),
     ("plain_two_words", "決定6: 平文の語は大文字小文字を保つ"),
     ("plain_three_words", "決定6: 平文の語を全部保持する"),
     ("plain_mixed_case", "決定6: 平文の語は大文字小文字を保つ"),
     ("plain_and_curly", "決定6: 平文の語を全部保持する"),
-    ("realistic_sota", "決定6: <taro> は括弧の注釈(変わらない)だが、時刻の逆行がなく…(下記で確認)"),
     // 決定7: バンドは小文字にそろえる
     ("band_uppercase", "決定7: バンドは小文字にそろえる"),
     // 決定8: コールサインのない行は誤り
     ("dropped_no_call", "決定8: コールサインのない行は誤り"),
     ("dropped_minutes_only", "決定8: コールサインのない行は誤り"),
-    ("call_missing_letters_only", "決定8: コールサインのない行は誤り"),
-    ("sample_log", "決定6: 見本の括弧のない語を含むかを確認"),
+    (
+        "call_missing_letters_only",
+        "決定8: コールサインのない行は誤り",
+    ),
 ];
 
 fn golden_path() -> std::path::PathBuf {
@@ -210,7 +240,10 @@ fn snapshot(text: &str) -> Value {
 
 #[test]
 fn compile_matches_the_golden_record() {
-    let all: Map<String, Value> = cases().into_iter().map(|(n, t)| (n.to_string(), snapshot(&t))).collect();
+    let all: Map<String, Value> = cases()
+        .into_iter()
+        .map(|(n, t)| (n.to_string(), snapshot(&t)))
+        .collect();
 
     if std::env::var("UPDATE_GOLDEN").is_ok() {
         let json = serde_json::to_string_pretty(&Value::Object(all)).unwrap() + "\n";
@@ -219,8 +252,13 @@ fn compile_matches_the_golden_record() {
     }
 
     let golden: Map<String, Value> =
-        serde_json::from_str(&std::fs::read_to_string(golden_path()).expect("golden record")).unwrap();
-    assert_eq!(all.len(), golden.len(), "ケースの数が、記録と違う(記録を作り直す)");
+        serde_json::from_str(&std::fs::read_to_string(golden_path()).expect("golden record"))
+            .unwrap();
+    assert_eq!(
+        all.len(),
+        golden.len(),
+        "ケースの数が、記録と違う(記録を作り直す)"
+    );
 
     let changed: std::collections::HashSet<&str> = CHANGED.iter().map(|(n, _)| *n).collect();
     let mut diffs = Vec::new();
@@ -232,6 +270,9 @@ fn compile_matches_the_golden_record() {
             diffs.push(name.clone());
         }
     }
-    assert!(diffs.is_empty(), "記録と違うケース: {diffs:?}\n(意図した変更なら CHANGED に理由つきで足す)");
+    assert!(
+        diffs.is_empty(),
+        "記録と違うケース: {diffs:?}\n(意図した変更なら CHANGED に理由つきで足す)"
+    );
     let _ = json!(null);
 }

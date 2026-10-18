@@ -54,6 +54,7 @@
 //! - `qslmsg <msg>` - QSLメッセージ設定
 
 pub mod adif;
+pub mod callsign;
 pub mod compiler;
 pub mod complete;
 pub mod fill;
@@ -61,6 +62,7 @@ pub mod ham;
 pub mod output;
 pub mod sample;
 pub mod station;
+pub mod syntax;
 pub mod tokenizer;
 pub mod types;
 pub mod view;
