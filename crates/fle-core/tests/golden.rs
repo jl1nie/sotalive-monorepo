@@ -171,6 +171,11 @@ fn cases() -> Vec<(&'static str, String)> {
 
 /// 意図して変えたもの(決定の番号と、理由)。記録との一致は求めず、新しい挙動は別のテストで確かめる。
 const CHANGED: &[(&str, &str)] = &[
+    // 決定10: `rigset N` を廃止し、HAMLOG の Rig= の右辺を書く `rig` にする(`rigset` は案内つきの誤り)
+    ("rigset_ok", "決定10: rigset は rig に変わった(誤りで案内)"),
+    ("rigset_invalid", "決定10: rigset は rig に変わった(誤りで案内)"),
+    ("rigset_missing", "決定10: rigset は rig に変わった(誤りで案内)"),
+    ("sample_log", "決定10: 見本のログが、rigset の代わりに rig を使う"),
     // モードを書かないQSOは、ADIF の MODE が空になるので誤りにする
     (
         "band_missing",
@@ -243,9 +248,19 @@ fn golden_path() -> std::path::PathBuf {
 }
 
 /// 比べる形: 誤りは `(行, メッセージ)` だけ。列は、意味が一定でなかった(旧実装)ので除く。
-/// コード・引数・位置は、新実装で足したもので、`tests/syntax_errors.rs` 相当のテストで確かめる
+/// コード・引数・位置は、新実装で足したもので、`tests/syntax_errors.rs` 相当のテストで確かめる。
+/// 記録の `rig`(決定10で、`rigset` の番号から、HAMLOG の Rig= の文字列に変えた)は、旧実装の形(`rigset`)に
+/// そろえる。`rig` の挙動は、`tests/rig.rs` で確かめる
 fn snapshot(text: &str) -> Value {
     let mut v = serde_json::to_value(compile_fle(text)).unwrap();
+    if let Some(records) = v.get_mut("records").and_then(Value::as_array_mut) {
+        for r in records {
+            if let Some(o) = r.as_object_mut() {
+                o.remove("rig");
+                o.insert("rigset".to_string(), json!(0));
+            }
+        }
+    }
     if let Some(errors) = v.get_mut("errors").and_then(Value::as_array_mut) {
         for e in errors {
             if let Some(o) = e.as_object_mut() {

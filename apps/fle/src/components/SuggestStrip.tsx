@@ -7,6 +7,7 @@ const KIND_KEY = {
   band: 'suggest.band',
   mode: 'suggest.mode',
   day: 'suggest.day',
+  rig: 'suggest.rig',
 } as const
 
 interface Props {

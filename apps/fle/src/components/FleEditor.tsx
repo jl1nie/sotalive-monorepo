@@ -29,6 +29,7 @@ import { usePwa } from '@/hooks/usePwa'
 import { useSettings, type Settings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
 import { DigitRow } from '@/components/DigitRow'
+import { rigCompletion } from '@/lib/rig'
 import { CandidateBar } from '@/components/CandidateBar'
 import { SuggestStrip } from '@/components/SuggestStrip'
 import { QsoSheet } from '@/components/QsoSheet'
@@ -138,13 +139,20 @@ function Editor({
   // カーソル位置で文法上ありえるキーワードを、コアに尋ねる
   useEffect(() => {
     let current = true
-    completeAt(text.slice(0, caret))
+    const before = text.slice(0, caret)
+    // `rig ` の値は、個人の設定のリグの一覧から出す(文法でなく、画面の動作)
+    const own = rigCompletion(before, settings.rigs)
+    if (own) {
+      setCompletion(own)
+      return
+    }
+    completeAt(before)
       .then((c) => current && setCompletion(c))
       .catch(() => current && setCompletion({ from: 0, candidates: [] }))
     return () => {
       current = false
     }
-  }, [text, caret])
+  }, [text, caret, settings.rigs])
 
   useLayoutEffect(() => {
     const pos = pendingCaret.current

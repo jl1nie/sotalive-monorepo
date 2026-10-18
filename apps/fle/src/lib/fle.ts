@@ -68,7 +68,8 @@ export interface Completion {
 /** 補完候補。文法上ありえるキーワードで、並べ方もコアが決める。 */
 export interface Candidate {
   text: string
-  kind: 'command' | 'band' | 'mode' | 'day'
+  /** `rig` は、文法でなく、個人の設定の一覧から画面が出す */
+  kind: 'command' | 'band' | 'mode' | 'day' | 'rig'
 }
 
 /** ログに書かれている形の時刻。UTC以外のときは、時間帯を添える(例: 18:05 (UTC+9)) */

@@ -465,8 +465,12 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
             .trim()
             .to_string();
 
-        // QSLメッセージ
-        let qsl_msg = format!("%{}%", record.qslmsg);
+        // QSLメッセージ。`rig` があれば、`%…%` の外側に `Rig=` として付ける(HAMLOG の書式)
+        let qsl_msg = if record.rig.is_empty() {
+            format!("%{}%", record.qslmsg)
+        } else {
+            format!("%{}%Rig={}", record.qslmsg, record.rig)
+        };
 
         // CSVフィールド
         let fields: [&str; 15] = [
@@ -655,7 +659,7 @@ mod tests {
                 band: "40m".to_string(),
                 freq: "7.025".to_string(),
                 mode: "CW".to_string(),
-                rigset: 0,
+                rig: String::new(),
                 rst_sent: "599".to_string(),
                 rst_rcvd: "599".to_string(),
                 his_num: String::new(),
@@ -1002,5 +1006,46 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         assert_eq!(json[0]["code"], "missing_mycall");
         assert_eq!(json[0]["severity"], "required");
         assert_eq!(json[0]["qsos"], 1);
+    }
+
+    // ---- rig(HAMLOG の Rig=)と $rig ----
+
+    const RIG_LOG: &str = "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n\
+        qslmsg TNX QSO $rig\n0900 ja1aaa\nrig KX2/IC-705+EFHW\n0910 ja1bbb\nrig -\n0920 ja1ccc";
+
+    fn hamlog_lines(files: &std::collections::BTreeMap<String, String>) -> Vec<String> {
+        let (_, body) = files.iter().find(|(k, _)| k.starts_with("hamlog-")).unwrap();
+        body.lines().map(str::to_string).collect()
+    }
+
+    #[test]
+    fn rig_goes_after_the_qsl_message_in_the_hamlog_file() {
+        let lines = hamlog_lines(&output_of(RIG_LOG));
+        // rig の前の QSO には、Rig= も、メッセージの $rig の値もない(`$rig` は空に置き換わる)
+        assert!(lines[0].ends_with(",\"%TNX QSO%\",\"0\""), "{}", lines[0]);
+        // rig のある QSO: メッセージの $rig と、`%…%` の外側の Rig=
+        assert!(
+            lines[1].contains("\"%TNX QSO KX2/IC-705+EFHW%Rig=KX2/IC-705+EFHW\""),
+            "{}",
+            lines[1]
+        );
+        // `rig -` で解除すると、以降は、どちらもない
+        assert!(!lines[2].contains("Rig="), "{}", lines[2]);
+    }
+
+    #[test]
+    fn rig_is_only_in_the_hamlog_file_and_the_message() {
+        let files = output_of(RIG_LOG);
+        for (name, body) in &files {
+            let in_hamlog = name.starts_with("hamlog-");
+            let in_airham = name.starts_with("airham-");
+            // ADIF・SOTA の CSV には、rig は出ない(HAMLOG の Rig= と、メッセージの $rig の置き換えだけ)
+            if !in_hamlog && !in_airham {
+                assert!(!body.contains("KX2/IC-705+EFHW"), "{name}");
+            }
+        }
+        // AirHam には、メッセージ(置き換えた $rig を含む)が入る
+        let airham = files.iter().find(|(k, _)| k.starts_with("airham-")).unwrap().1;
+        assert!(airham.contains("TNX QSO KX2/IC-705+EFHW"));
     }
 }

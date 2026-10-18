@@ -75,7 +75,7 @@ pub fn compile_fle(input: &str) -> FleCompileResult {
         mywwff: env.mywwff.clone(),
         mypota: env.mypota.clone(),
         mygrid: env.mygrid.clone(),
-        qslmsg: env.qslmsg.clone(),
+        qslmsg: expand_rig(&env.qslmsg, &env.rig),
         records,
         errors: env.errors,
         has_sota,
@@ -187,10 +187,7 @@ fn apply_directive(env: &mut FleEnvironment, d: &Directive, here: Here) {
             None => here.error(env, "date_out_of_range", &[], arg, "Date out of range."),
         },
         DirValue::Timezone(tz) => env.timezone = Some(*tz),
-        DirValue::Rigset(v) => {
-            env.rigset = *v;
-            env.current.rigset = *v;
-        }
+        DirValue::Rig(rig) => env.rig = if rig == "-" { String::new() } else { rig.clone() },
         DirValue::Nickname(n) => env.nickname = n.clone(),
         DirValue::NumberConsecutive => env.contest_num = Some(1),
         DirValue::NumberLiteral(lit) => env.contest_lit = Some(lit.clone()),
@@ -200,6 +197,7 @@ fn apply_directive(env: &mut FleEnvironment, d: &Directive, here: Here) {
                 .replace("$mywwff", &env.mywwff)
                 .replace("$mysota", &env.mysota)
                 .replace("$mypota", &env.mypota.join(" "));
+            // `$rig` は、QSOごとに、そのときの `rig` で置き換える(あとで `rig` を変えても、メッセージを書き直さなくてよい)
         }
         DirValue::Qslmsg2(msg) => env.qslmsg2 = msg.clone(),
     }
@@ -497,7 +495,7 @@ fn eval_qso(
         band: env.current.band.clone(),
         freq: env.current.freq.clone(),
         mode: env.current.mode.clone(),
-        rigset: env.current.rigset,
+        rig: env.rig.clone(),
         rst_sent: env.current.rst_sent.to_string(),
         rst_rcvd: env.current.rst_rcvd.to_string(),
         his_num: env.current.his_num.clone(),
@@ -511,8 +509,16 @@ fn eval_qso(
         hispota: env.current.his_pota.clone(),
         qsomsg: env.current.qso_msg.clone(),
         qsormks: env.current.qso_rmks.clone(),
-        qslmsg: env.qslmsg.clone(),
+        qslmsg: expand_rig(&env.qslmsg, &env.rig),
     })
+}
+
+/// QSLメッセージの `$rig` を、そのQSOの `rig` で置き換える。`rig` が空のとき、末尾に空白が残らないようにする
+fn expand_rig(qslmsg: &str, rig: &str) -> String {
+    if !qslmsg.contains("$rig") {
+        return qslmsg.to_string();
+    }
+    qslmsg.replace("$rig", rig).trim_end().to_string()
 }
 
 /// ログタイプを決定
@@ -818,5 +824,36 @@ date 2024-01-15
             (r.mycall.as_str(), r.records[0].mode.as_str()),
             ("JA1ABC", "CW")
         );
+    }
+
+    // ---- rig(HAMLOG の Rig= の右辺)----
+
+    #[test]
+    fn rig_applies_from_its_line_and_can_be_cleared() {
+        let r = compile_fle(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1aaa\nrig KX2/IC-705+EFHW\n0910 ja1bbb\n0920 ja1ccc\nrig -\n0930 ja1ddd",
+        );
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        let rigs: Vec<&str> = r.records.iter().map(|q| q.rig.as_str()).collect();
+        assert_eq!(rigs, ["", "KX2/IC-705+EFHW", "KX2/IC-705+EFHW", ""]);
+    }
+
+    #[test]
+    fn dollar_rig_follows_the_rig_of_each_qso() {
+        // qslmsg を書いたあとで rig を変えても、メッセージを書き直さなくてよい
+        let r = compile_fle(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\nqslmsg TNX $rig\n0900 ja1aaa\nrig A\n0910 ja1bbb\nrig B\n0920 ja1ccc",
+        );
+        let msgs: Vec<&str> = r.records.iter().map(|q| q.qslmsg.as_str()).collect();
+        assert_eq!(msgs, ["TNX", "TNX A", "TNX B"]);
+    }
+
+    #[test]
+    fn rigset_is_an_error_that_points_to_rig() {
+        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\nrigset 1\n0900 ja1aaa");
+        assert_eq!(r.errors.len(), 1);
+        assert_eq!(r.errors[0].code, "renamed_directive");
+        assert_eq!(r.errors[0].args, ["rigset", "rig"]);
+        assert_eq!(r.records[0].rig, ""); // QSO そのものは、記録される
     }
 }
