@@ -40,18 +40,19 @@ pub fn generate_fle_output(
         return Err("No records to output".to_string());
     }
 
-    // ファイル名のプレフィックス
+    // ファイル名のプレフィックス: 最初の日付と、ログに現れた運用場所(現れた順)
     let first = &result.records[0];
-    let date_str = format!("{:04}{:02}{:02}", first.year, first.month, first.day);
-    let mut ref_parts = Vec::new();
-    if !result.mysota.is_empty() {
-        ref_parts.push(result.mysota.replace('/', "-"));
-    }
-    for p in &result.mypota {
-        ref_parts.push(p.clone());
-    }
-    if !result.mywwff.is_empty() {
-        ref_parts.push(result.mywwff.clone());
+    let date_str = date_key(first);
+    let mut ref_parts: Vec<String> = Vec::new();
+    for r in &result.records {
+        let refs = std::iter::once(r.mysota.replace('/', "-"))
+            .chain(r.mypota.iter().cloned())
+            .chain(std::iter::once(r.mywwff.clone()));
+        for part in refs.filter(|p| !p.is_empty()) {
+            if !ref_parts.contains(&part) {
+                ref_parts.push(part);
+            }
+        }
     }
     let log_name = format!("{}@{}", date_str, ref_parts.join("-"));
 
@@ -63,38 +64,48 @@ pub fn generate_fle_output(
     let airham_data = generate_airham_csv(result);
     files.insert(format!("airham-{}.csv", log_name), airham_data);
 
-    // SOTA CSV
+    // SOTA CSV: UTCの日付ごと。山のあるQSOだけ
     if result.has_sota {
-        let (sota_data, s2s_data) = generate_sota_csv(result);
-        files.insert(format!("sota{}.csv", date_str), sota_data);
-        if !s2s_data.is_empty() {
-            files.insert(format!("sota-s2s-{}.csv", date_str), s2s_data);
+        for (date, records) in group_by_date(result.records.iter().filter(|r| !r.mysota.is_empty()))
+        {
+            let (sota_data, s2s_data) = generate_sota_csv(&records);
+            files.insert(format!("sota{}.csv", date), sota_data);
+            if !s2s_data.is_empty() {
+                files.insert(format!("sota-s2s-{}.csv", date), s2s_data);
+            }
         }
     }
 
-    // WWFF ADIF
-    if result.has_wwff && !result.mywwff.is_empty() {
-        let adif_data = generate_adif(result, "WWFF", &result.mywwff);
-        let fname = format!(
-            "{}@{}-{}.adi",
-            result.mycall.replace('/', "-"),
-            result.mywwff,
-            date_str
-        );
-        files.insert(fname, adif_data);
-    }
-
-    // POTA ADIF
-    if result.has_pota {
-        for park in &result.mypota {
-            let adif_data = generate_adif(result, "POTA", park);
-            let fname = format!(
-                "{}@{}-{}.adi",
-                result.mycall.replace('/', "-"),
-                park,
-                date_str
-            );
-            files.insert(fname, adif_data);
+    // WWFF / POTA の ADIF: 運用場所(リファレンス)× UTCの日付ごとに、そのQSOだけで作る
+    // (別の山や公園、別の日のQSOが混ざらない)
+    for (sig, refs_of) in [
+        ("WWFF", wwff_refs as fn(&FleQsoRecord) -> Vec<String>),
+        ("POTA", pota_refs as fn(&FleQsoRecord) -> Vec<String>),
+    ] {
+        for (date, day) in group_by_date(result.records.iter()) {
+            let mut placed: Vec<String> = Vec::new();
+            for r in &day {
+                for place in refs_of(r) {
+                    if !placed.contains(&place) {
+                        placed.push(place);
+                    }
+                }
+            }
+            for place in placed {
+                let at_place: Vec<&FleQsoRecord> = day
+                    .iter()
+                    .copied()
+                    .filter(|r| refs_of(r).contains(&place))
+                    .collect();
+                let adif_data = generate_adif(&at_place, sig, &place);
+                let fname = format!(
+                    "{}@{}-{}.adi",
+                    at_place[0].mycall.replace('/', "-"),
+                    place,
+                    date
+                );
+                files.insert(fname, adif_data);
+            }
         }
     }
 
@@ -106,7 +117,8 @@ pub fn generate_fle_output(
 
     // SOTAもWWFFもPOTAもない場合はSOTA形式で出力
     if !result.has_sota && !result.has_wwff && !result.has_pota && !result.has_contest {
-        let (sota_data, _) = generate_sota_csv(result);
+        let all: Vec<&FleQsoRecord> = result.records.iter().collect();
+        let (sota_data, _) = generate_sota_csv(&all);
         files.insert(format!("sota{}.csv", date_str), sota_data);
     }
 
@@ -123,11 +135,11 @@ fn format_error_log(result: &FleCompileResult) -> String {
 }
 
 /// SOTA CSV形式を生成
-fn generate_sota_csv(result: &FleCompileResult) -> (Vec<u8>, Vec<u8>) {
+fn generate_sota_csv(records: &[&FleQsoRecord]) -> (Vec<u8>, Vec<u8>) {
     let mut output = Vec::new();
     let mut s2s_output = Vec::new();
 
-    for record in &result.records {
+    for record in records.iter().copied() {
         let date = format!(
             "{:02}/{:02}/{:02}",
             record.day,
@@ -171,7 +183,7 @@ fn generate_sota_csv(result: &FleCompileResult) -> (Vec<u8>, Vec<u8>) {
 }
 
 /// ADIF形式を生成 (POTA/WWFF)
-fn generate_adif(result: &FleCompileResult, sig: &str, sig_info: &str) -> Vec<u8> {
+fn generate_adif(records: &[&FleQsoRecord], sig: &str, sig_info: &str) -> Vec<u8> {
     let mut output = String::new();
 
     // ヘッダー
@@ -181,7 +193,7 @@ fn generate_adif(result: &FleCompileResult, sig: &str, sig_info: &str) -> Vec<u8
     output.push_str(&adif_field("ADIF_VER", "3.1.4"));
     output.push_str("\n<EOH>\n");
 
-    for record in &result.records {
+    for record in records.iter().copied() {
         let date = format!("{:04}{:02}{:02}", record.year, record.month, record.day);
         let time = format!("{:02}{:02}", record.hour, record.min);
         let (mode, submode) = mode_to_adif_mode(&record.mode);
@@ -232,6 +244,39 @@ fn generate_adif(result: &FleCompileResult, sig: &str, sig_info: &str) -> Vec<u8
     output.into_bytes()
 }
 
+/// UTCの日付(`YYYYMMDD`)
+fn date_key(r: &FleQsoRecord) -> String {
+    format!("{:04}{:02}{:02}", r.year, r.month, r.day)
+}
+
+/// QSOを、UTCの日付ごとに(日付の昇順で)分ける
+fn group_by_date<'a>(
+    records: impl Iterator<Item = &'a FleQsoRecord>,
+) -> Vec<(String, Vec<&'a FleQsoRecord>)> {
+    let mut groups: Vec<(String, Vec<&FleQsoRecord>)> = Vec::new();
+    for r in records {
+        let key = date_key(r);
+        match groups.iter_mut().find(|(k, _)| *k == key) {
+            Some((_, v)) => v.push(r),
+            None => groups.push((key, vec![r])),
+        }
+    }
+    groups.sort_by(|a, b| a.0.cmp(&b.0));
+    groups
+}
+
+fn wwff_refs(r: &FleQsoRecord) -> Vec<String> {
+    if r.mywwff.is_empty() {
+        Vec::new()
+    } else {
+        vec![r.mywwff.clone()]
+    }
+}
+
+fn pota_refs(r: &FleQsoRecord) -> Vec<String> {
+    r.mypota.clone()
+}
+
 /// ADIFレコード生成パラメータ
 struct AdifRecordParams<'a> {
     record: &'a FleQsoRecord,
@@ -263,6 +308,7 @@ fn generate_adif_record(params: &AdifRecordParams<'_>) -> String {
     fields.push(adif_field("RST_RCVD", &params.record.rst_rcvd));
     fields.push(adif_field("MY_SIG", params.sig));
     fields.push(adif_field("MY_SIG_INFO", params.sig_info));
+    fields.push(adif_field("MY_GRIDSQUARE", &params.record.my_grid));
 
     if let Some(his) = params.his_sig {
         fields.push(adif_field("SIG", params.sig));
@@ -504,6 +550,7 @@ mod tests {
             mysota: "JA/TK-001".to_string(),
             mywwff: String::new(),
             mypota: Vec::new(),
+            mygrid: String::new(),
             qslmsg: "TNX QSO".to_string(),
             records: vec![FleQsoRecord {
                 line: 0,
@@ -529,6 +576,7 @@ mod tests {
                 mywwff: String::new(),
                 hiswwff: String::new(),
                 mypota: Vec::new(),
+                my_grid: String::new(),
                 hispota: Vec::new(),
                 qsomsg: String::new(),
                 qsormks: String::new(),
@@ -545,7 +593,8 @@ mod tests {
     #[test]
     fn test_generate_sota_csv() {
         let result = create_test_result();
-        let (csv, s2s) = generate_sota_csv(&result);
+        let records: Vec<&FleQsoRecord> = result.records.iter().collect();
+        let (csv, s2s) = generate_sota_csv(&records);
         let csv_str = String::from_utf8(csv).unwrap();
 
         assert!(csv_str.contains("V2,JA1ABC,JA/TK-001"));
@@ -560,7 +609,8 @@ mod tests {
         result.mypota = vec!["JA-0001".to_string()];
         result.has_pota = true;
 
-        let adif = generate_adif(&result, "POTA", "JA-0001");
+        let records: Vec<&FleQsoRecord> = result.records.iter().collect();
+        let adif = generate_adif(&records, "POTA", "JA-0001");
         let adif_str = String::from_utf8(adif).unwrap();
 
         assert!(adif_str.contains("<PROGRAMID:4>FCTH"));
@@ -598,5 +648,151 @@ mod tests {
             archive.by_index(0).unwrap().name(),
             "fle-error-2026-10-18-09-30.txt"
         );
+    }
+
+    // ---- 運用場所 × UTCの日付で、出力ファイルを分ける ----
+
+    use crate::compile_fle;
+    use std::io::Read;
+
+    fn zip_files(zip: Vec<u8>) -> std::collections::BTreeMap<String, String> {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(zip)).unwrap();
+        (0..archive.len())
+            .map(|i| {
+                let mut f = archive.by_index(i).unwrap();
+                let mut body = Vec::new();
+                f.read_to_end(&mut body).unwrap();
+                (
+                    f.name().to_string(),
+                    String::from_utf8_lossy(&body).into_owned(),
+                )
+            })
+            .collect()
+    }
+
+    fn output_of(fle: &str) -> std::collections::BTreeMap<String, String> {
+        let result = compile_fle(fle);
+        assert!(result.errors.is_empty(), "{:?}", result.errors);
+        zip_files(generate_fle_output(&result, test_now()).unwrap())
+    }
+
+    fn calls_in(adif: &str) -> Vec<&str> {
+        adif.split("<CALL:")
+            .skip(1)
+            .map(|r| {
+                r.split('>')
+                    .nth(1)
+                    .unwrap()
+                    .split(' ')
+                    .next()
+                    .unwrap()
+                    .trim()
+            })
+            .collect()
+    }
+
+    const TWO_PARKS: &str = "mycall JA1ABC\ndate 2026-10-18\n40m cw\n\
+mygrid PM95uq\nmypota JA-0001\n0900 ja1aaa\n0910 ja1bbb\n\
+mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
+
+    #[test]
+    fn each_park_gets_only_its_own_qsos() {
+        let files = output_of(TWO_PARKS);
+        let a = &files["JA1ABC@JA-0001-20261018.adi"];
+        let b = &files["JA1ABC@JA-0002-20261018.adi"];
+        assert_eq!(calls_in(a), vec!["JA1AAA", "JA1BBB"]);
+        assert_eq!(calls_in(b), vec!["JA1CCC", "JA1DDD"]);
+    }
+
+    #[test]
+    fn adif_carries_the_grid_of_that_location() {
+        let files = output_of(TWO_PARKS);
+        assert!(files["JA1ABC@JA-0001-20261018.adi"].contains("<MY_GRIDSQUARE:6>PM95uq"));
+        assert!(files["JA1ABC@JA-0002-20261018.adi"].contains("<MY_GRIDSQUARE:6>PM96aa"));
+        assert!(!files["JA1ABC@JA-0001-20261018.adi"].contains("PM96aa"));
+    }
+
+    #[test]
+    fn adif_omits_the_grid_when_none_was_given() {
+        let files =
+            output_of("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JA-0001\n0900 ja1aaa");
+        assert!(!files["JA1ABC@JA-0001-20261018.adi"].contains("MY_GRIDSQUARE"));
+    }
+
+    #[test]
+    fn a_park_activated_on_two_utc_days_gets_one_file_per_day() {
+        let files = output_of("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JA-0001\n2300 ja1aaa\nday +\n0010 ja1bbb");
+        assert_eq!(
+            calls_in(&files["JA1ABC@JA-0001-20261018.adi"]),
+            vec!["JA1AAA"]
+        );
+        assert_eq!(
+            calls_in(&files["JA1ABC@JA-0001-20261019.adi"]),
+            vec!["JA1BBB"]
+        );
+    }
+
+    #[test]
+    fn qsos_after_leaving_a_park_are_not_in_its_file() {
+        let files = output_of("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JA-0001\n0900 ja1aaa\nmypota -\n1000 ja1bbb");
+        assert_eq!(
+            calls_in(&files["JA1ABC@JA-0001-20261018.adi"]),
+            vec!["JA1AAA"]
+        );
+        assert_eq!(files.keys().filter(|k| k.ends_with(".adi")).count(), 1);
+    }
+
+    #[test]
+    fn two_parks_at_the_same_place_both_get_the_qsos() {
+        let files = output_of(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JA-0001 JA-0002\n0900 ja1aaa",
+        );
+        assert_eq!(
+            calls_in(&files["JA1ABC@JA-0001-20261018.adi"]),
+            vec!["JA1AAA"]
+        );
+        assert_eq!(
+            calls_in(&files["JA1ABC@JA-0002-20261018.adi"]),
+            vec!["JA1AAA"]
+        );
+    }
+
+    #[test]
+    fn wwff_is_split_by_place_too() {
+        let files = output_of("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmywwff JAFF-0001\n0900 ja1aaa\nmywwff JAFF-0002\n1000 ja1bbb");
+        assert_eq!(
+            calls_in(&files["JA1ABC@JAFF-0001-20261018.adi"]),
+            vec!["JA1AAA"]
+        );
+        assert_eq!(
+            calls_in(&files["JA1ABC@JAFF-0002-20261018.adi"]),
+            vec!["JA1BBB"]
+        );
+    }
+
+    #[test]
+    fn sota_csv_has_only_qsos_made_on_a_summit_per_day() {
+        let files = output_of("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1aaa\nmysota -\n1000 ja1bbb\nmysota JA/TK-002\n1100 ja1ccc");
+        let csv = &files["sota20261018.csv"];
+        assert!(csv.contains("JA/TK-001") && csv.contains("JA1AAA"));
+        assert!(csv.contains("JA/TK-002") && csv.contains("JA1CCC"));
+        assert!(!csv.contains("JA1BBB"), "山にいないときのQSOは入らない");
+    }
+
+    #[test]
+    fn the_whole_log_still_goes_into_the_hamlog_and_airham_files() {
+        let files = output_of(TWO_PARKS);
+        let hamlog = files
+            .iter()
+            .find(|(k, _)| k.starts_with("hamlog-"))
+            .unwrap()
+            .1;
+        for call in ["JA1AAA", "JA1BBB", "JA1CCC", "JA1DDD"] {
+            assert!(hamlog.to_uppercase().contains(call), "{call}");
+        }
+        // ファイル名には、ログに現れた場所がすべて入る
+        assert!(files
+            .keys()
+            .any(|k| k.starts_with("hamlog-20261018@JA-0001-JA-0002")));
     }
 }

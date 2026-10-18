@@ -224,7 +224,7 @@ mod tests {
     fn candidates_are_ordered_the_same_way_every_time() {
         assert_eq!(
             texts(&complete("my")),
-            vec!["mycall", "mypota", "mysota", "mywwff"]
+            vec!["mycall", "mygrid", "mypota", "mysota", "mywwff"]
         );
     }
 

@@ -95,6 +95,7 @@ pub fn compile_fle(input: &str) -> FleCompileResult {
         mysota: env.mysota.clone(),
         mywwff: env.mywwff.clone(),
         mypota: env.mypota.clone(),
+        mygrid: env.mygrid.clone(),
         qslmsg: env.qslmsg.clone(),
         records,
         errors: env.errors,
@@ -148,7 +149,9 @@ fn process_directive(
             }
             "mysota" => {
                 if tokens.len() > 1 {
-                    if let Token::SotaRef(r) = &tokens[1].token {
+                    if is_clear(&tokens[1]) {
+                        env.mysota.clear();
+                    } else if let Token::SotaRef(r) = &tokens[1].token {
                         env.mysota = r.clone();
                     } else {
                         let raw = &tokens[1].raw;
@@ -161,7 +164,9 @@ fn process_directive(
             }
             "mywwff" => {
                 if tokens.len() > 1 {
-                    if let Token::WwffRef(r) = &tokens[1].token {
+                    if is_clear(&tokens[1]) {
+                        env.mywwff.clear();
+                    } else if let Token::WwffRef(r) = &tokens[1].token {
                         env.mywwff = r.clone();
                     } else {
                         let raw = &tokens[1].raw;
@@ -173,22 +178,49 @@ fn process_directive(
                 DirectiveResult::Handled
             }
             "mypota" => {
+                // 行に並べた公園が、そのときの運用場所のすべて(前の指定は置き換える)
                 if tokens.len() > 1 {
-                    for token_info in &tokens[1..] {
-                        if let Token::PotaRef(r) = &token_info.token {
-                            env.mypota.push(r.clone());
-                        } else {
-                            let raw = &token_info.raw;
-                            env.add_error(
-                                line_num,
-                                token_info.position,
-                                format!("{} is invalid POTA ref#.", raw),
-                            );
-                            break;
+                    if is_clear(&tokens[1]) {
+                        env.mypota.clear();
+                    } else {
+                        let mut refs = Vec::new();
+                        let mut failed = false;
+                        for token_info in &tokens[1..] {
+                            if let Token::PotaRef(r) = &token_info.token {
+                                refs.push(r.clone());
+                            } else {
+                                let raw = &token_info.raw;
+                                env.add_error(
+                                    line_num,
+                                    token_info.position,
+                                    format!("{} is invalid POTA ref#.", raw),
+                                );
+                                failed = true;
+                                break;
+                            }
+                        }
+                        // 誤りがあれば、前の指定を残す
+                        if !failed {
+                            env.mypota = refs;
                         }
                     }
                 } else {
                     env.add_error(line_num, 0, "Missing POTA ref#.");
+                }
+                DirectiveResult::Handled
+            }
+            "mygrid" => {
+                if tokens.len() > 1 {
+                    if is_clear(&tokens[1]) {
+                        env.mygrid.clear();
+                    } else if let Some(grid) = canonical_grid(&tokens[1].raw) {
+                        env.mygrid = grid;
+                    } else {
+                        let raw = &tokens[1].raw;
+                        env.add_error(line_num, 1, format!("{} is invalid grid locator.", raw));
+                    }
+                } else {
+                    env.add_error(line_num, 0, "Missing grid locator.");
                 }
                 DirectiveResult::Handled
             }
@@ -549,6 +581,7 @@ fn process_qso_line(
             mywwff: env.mywwff.clone(),
             hiswwff: env.current.his_wwff.clone(),
             mypota: env.mypota.clone(),
+            my_grid: env.mygrid.clone(),
             hispota: env.current.his_pota.clone(),
             qsomsg: env.current.qso_msg.clone(),
             qsormks: env.current.qso_rmks.clone(),
@@ -560,6 +593,43 @@ fn process_qso_line(
 }
 
 /// 時刻を処理
+/// 運用場所の指定を解除する値(`-`)か
+fn is_clear(token: &TokenInfo) -> bool {
+    token.raw == "-"
+}
+
+/// メイデンヘッドのグリッドロケータを、慣例の書き方(`PM95uq`)にそろえる。
+/// 4・6・8文字(AA00 / AA00aa / AA00aa00)だけを受け付ける。
+pub fn canonical_grid(raw: &str) -> Option<String> {
+    let chars: Vec<char> = raw.chars().collect();
+    if !matches!(chars.len(), 4 | 6 | 8) || !chars.iter().all(char::is_ascii_alphanumeric) {
+        return None;
+    }
+    let letter = |c: char, last: char| c.is_ascii_alphabetic() && c.to_ascii_uppercase() <= last;
+    let ok = letter(chars[0], 'R')
+        && letter(chars[1], 'R')
+        && chars[2].is_ascii_digit()
+        && chars[3].is_ascii_digit()
+        && (chars.len() < 6 || (letter(chars[4], 'X') && letter(chars[5], 'X')))
+        && (chars.len() < 8 || (chars[6].is_ascii_digit() && chars[7].is_ascii_digit()));
+    if !ok {
+        return None;
+    }
+    Some(
+        chars
+            .iter()
+            .enumerate()
+            .map(|(i, c)| {
+                if i < 2 {
+                    c.to_ascii_uppercase()
+                } else {
+                    c.to_ascii_lowercase()
+                }
+            })
+            .collect(),
+    )
+}
+
 fn process_time(env: &mut FleEnvironment, digits: usize, value: &str) {
     let v: u32 = value.parse().unwrap_or(0);
     match digits {
@@ -732,5 +802,105 @@ date 2024-01-15
         assert_eq!(result.records[1].min, 5);
         assert_eq!(result.records[2].hour, 9);
         assert_eq!(result.records[2].min, 10);
+    }
+
+    // ---- 運用場所(mysota / mypota / mywwff / mygrid): 現れた行以降が有効 ----
+
+    const HEAD: &str = "mycall JA1ABC\ndate 2026-10-18\n40m cw\n";
+
+    #[test]
+    fn mygrid_is_recorded_in_canonical_form() {
+        let r = compile_fle(&format!("{HEAD}mygrid pm95UQ\n0900 ja1xyz"));
+        assert_eq!(r.status, "OK", "{:?}", r.errors);
+        assert_eq!(r.records[0].my_grid, "PM95uq");
+        assert_eq!(r.mygrid, "PM95uq");
+    }
+
+    #[test]
+    fn mygrid_accepts_four_six_and_eight_characters() {
+        for (input, want) in [
+            ("pm95", "PM95"),
+            ("PM95uq", "PM95uq"),
+            ("PM95uq12", "PM95uq12"),
+        ] {
+            let r = compile_fle(&format!("{HEAD}mygrid {input}\n0900 ja1xyz"));
+            assert_eq!(r.records[0].my_grid, want, "{input}");
+        }
+    }
+
+    #[test]
+    fn an_invalid_grid_is_an_error() {
+        for bad in ["XX99", "PM9", "PM95zz", "tokyo"] {
+            let r = compile_fle(&format!("{HEAD}mygrid {bad}\n0900 ja1xyz"));
+            assert!(
+                r.errors.iter().any(|e| e.message.contains("grid")),
+                "{bad}: {:?}",
+                r.errors
+            );
+        }
+        let missing = compile_fle(&format!("{HEAD}mygrid\n0900 ja1xyz"));
+        assert!(!missing.errors.is_empty());
+    }
+
+    #[test]
+    fn a_location_applies_from_its_line_on() {
+        let r = compile_fle(&format!(
+            "{HEAD}0900 ja1aaa\nmygrid PM95uq\nmysota JA/TK-001\n0910 ja1bbb"
+        ));
+        assert_eq!(
+            (r.records[0].my_grid.as_str(), r.records[0].mysota.as_str()),
+            ("", "")
+        );
+        assert_eq!(
+            (r.records[1].my_grid.as_str(), r.records[1].mysota.as_str()),
+            ("PM95uq", "JA/TK-001")
+        );
+    }
+
+    #[test]
+    fn a_location_directive_replaces_the_previous_one() {
+        // 2か所目の公園で、1か所目の公園が残らない(同じ場所の公園は、同じ行に並べる)
+        let r = compile_fle(&format!(
+            "{HEAD}mypota JA-0001 JA-0002\n0900 ja1aaa\nmypota JA-0003\n0910 ja1bbb"
+        ));
+        assert_eq!(r.records[0].mypota, vec!["JA-0001", "JA-0002"]);
+        assert_eq!(r.records[1].mypota, vec!["JA-0003"]);
+        assert_eq!(r.mypota, vec!["JA-0003"]);
+    }
+
+    #[test]
+    fn a_hyphen_clears_a_location_item() {
+        let r = compile_fle(&format!(
+            "{HEAD}mysota JA/TK-001\nmypota JA-0001\nmywwff JAFF-0001\nmygrid PM95uq\n0900 ja1aaa\nmysota -\nmypota -\nmywwff -\nmygrid -\n0910 ja1bbb"
+        ));
+        assert_eq!(r.status, "OK", "{:?}", r.errors);
+        let (a, b) = (&r.records[0], &r.records[1]);
+        assert_eq!(
+            (a.mysota.as_str(), a.mywwff.as_str(), a.my_grid.as_str()),
+            ("JA/TK-001", "JAFF-0001", "PM95uq")
+        );
+        assert_eq!(a.mypota, vec!["JA-0001"]);
+        assert_eq!(
+            (b.mysota.as_str(), b.mywwff.as_str(), b.my_grid.as_str()),
+            ("", "", "")
+        );
+        assert!(b.mypota.is_empty());
+    }
+
+    #[test]
+    fn locations_are_optional() {
+        let r = compile_fle(&format!("{HEAD}0900 ja1xyz"));
+        assert_eq!(r.status, "OK");
+        assert_eq!(r.records[0].my_grid, "");
+        assert!(r.records[0].mysota.is_empty() && r.records[0].mypota.is_empty());
+    }
+
+    #[test]
+    fn an_invalid_pota_line_leaves_the_previous_value() {
+        let r = compile_fle(&format!(
+            "{HEAD}mypota JA-0001\nmypota nonsense\n0900 ja1xyz"
+        ));
+        assert!(!r.errors.is_empty());
+        assert_eq!(r.records[0].mypota, vec!["JA-0001"]);
     }
 }

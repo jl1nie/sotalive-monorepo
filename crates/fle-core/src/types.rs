@@ -42,6 +42,7 @@ pub static KEYWORD_TABLE: Lazy<HashMap<&'static str, i8>> = Lazy::new(|| {
     m.insert("qslmsg2", -1);
     m.insert("mywwff", 1);
     m.insert("mysota", 1);
+    m.insert("mygrid", 1);
     m.insert("mypota", 1); // 複数引数可能
     m.insert("nickname", 1);
     m.insert("date", 1);
@@ -75,6 +76,8 @@ pub struct FleEnvironment {
     pub mywwff: String,
     pub mysota: String,
     pub mypota: Vec<String>,
+    /// 自局のグリッドロケータ(例: PM95uq)。指定がなければ空
+    pub mygrid: String,
     pub nickname: String,
     pub rigset: u8,
     pub timezone: Option<i32>,
@@ -219,6 +222,7 @@ impl Default for FleEnvironment {
             mywwff: String::new(),
             mysota: String::new(),
             mypota: Vec::new(),
+            mygrid: String::new(),
             nickname: String::new(),
             rigset: 0,
             timezone: None,
@@ -304,6 +308,8 @@ pub struct FleQsoRecord {
     pub mywwff: String,
     pub hiswwff: String,
     pub mypota: Vec<String>,
+    /// 自局のグリッドロケータ(そのQSOの時点のもの)
+    pub my_grid: String,
     pub hispota: Vec<String>,
     pub qsomsg: String,
     pub qsormks: String,
@@ -320,6 +326,7 @@ pub struct FleCompileResult {
     pub mysota: String,
     pub mywwff: String,
     pub mypota: Vec<String>,
+    pub mygrid: String,
     pub qslmsg: String,
     pub records: Vec<FleQsoRecord>,
     pub errors: Vec<FleError>,
@@ -339,6 +346,7 @@ impl Default for FleCompileResult {
             mysota: String::new(),
             mywwff: String::new(),
             mypota: Vec::new(),
+            mygrid: String::new(),
             qslmsg: String::new(),
             records: Vec::new(),
             errors: Vec::new(),
