@@ -15,7 +15,7 @@ type FLECompileResponse = FleCompileView
 
 type PreviewMode = 'sota' | 'hamlog'
 
-export function FLEOnlineTab() {
+export function FleEditor() {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [compileResult, setCompileResult] = useState<FLECompileResponse | null>(null)
@@ -483,7 +483,7 @@ rigset 2
       )}
 
       {/* 操作バー: 画面下に固定(スマホは下部ナビの上) */}
-      <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:bottom-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-white dark:bg-gray-950 border-t-2 border-gray-300 dark:border-gray-700">
+      <div className="sticky bottom-0 z-20 -mx-4 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-white dark:bg-gray-950 border-t-2 border-gray-300 dark:border-gray-700">
         <div className="max-w-3xl md:max-w-6xl mx-auto grid grid-cols-2 gap-3">
           <button
             type="button"

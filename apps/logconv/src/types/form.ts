@@ -3,7 +3,6 @@ export type TabId =
   | 'pota-activator'
   | 'sota-activator'
   | 'sota-chaser'
-  | 'fle-online'
   | 'airhamlog'
   | 'wspr'
 

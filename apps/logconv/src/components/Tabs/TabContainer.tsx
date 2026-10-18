@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { TabId } from '@/types/form'
-import { FileText, Mountain, Radio, Edit3, Smartphone, Activity } from 'lucide-react'
+import { FileText, Mountain, Radio, Smartphone, Activity } from 'lucide-react'
 
 interface Tab {
   id: TabId
@@ -9,9 +9,7 @@ interface Tab {
   icon: React.ReactNode
 }
 
-// 山頂での入力が主用途なので FLE を先頭(初期表示)にする
 const tabs: Tab[] = [
-  { id: 'fle-online', label: 'FLE Online', shortLabel: 'FLE', icon: <Edit3 className="w-6 h-6" /> },
   {
     id: 'pota-activator',
     label: 'SOTA/JAFF/POTA ADIF',
@@ -44,7 +42,7 @@ interface TabContainerProps {
 }
 
 export function TabContainer({ children }: TabContainerProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('fle-online')
+  const [activeTab, setActiveTab] = useState<TabId>('pota-activator')
 
   return (
     <div className="w-full">
@@ -81,7 +79,7 @@ export function TabContainer({ children }: TabContainerProps) {
         className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white dark:bg-gray-950 border-t-2 border-gray-300 dark:border-gray-700 pb-[env(safe-area-inset-bottom)]"
         aria-label="機能"
       >
-        <ul className="grid grid-cols-6">
+        <ul className="grid grid-cols-5">
           {tabs.map((tab) => {
             const active = activeTab === tab.id
             return (

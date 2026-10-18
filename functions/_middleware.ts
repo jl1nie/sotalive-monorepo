@@ -55,6 +55,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     appPath = "/myact2";
   } else if (hostname.startsWith("myact")) {
     appPath = "/myact";
+  } else if (hostname.startsWith("fle")) {
+    appPath = "/fle";
   } else if (hostname.startsWith("logconv2")) {
     appPath = "/logconv";
   } else if (hostname.startsWith("logconv")) {

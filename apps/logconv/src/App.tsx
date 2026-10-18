@@ -4,7 +4,6 @@ import {
   POTAActivatorTab,
   SOTAActivatorTab,
   SOTAChaserTab,
-  FLEOnlineTab,
   AirHamLogTab,
   WSPRTab,
 } from '@/components/Tabs'
@@ -19,14 +18,12 @@ function App() {
         return <SOTAActivatorTab />
       case 'sota-chaser':
         return <SOTAChaserTab />
-      case 'fle-online':
-        return <FLEOnlineTab />
       case 'airhamlog':
         return <AirHamLogTab />
       case 'wspr':
         return <WSPRTab />
       default:
-        return <FLEOnlineTab />
+        return <POTAActivatorTab />
     }
   }
 
