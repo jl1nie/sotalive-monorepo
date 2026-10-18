@@ -143,13 +143,13 @@ export function POTAActivatorTab() {
       const data: LogConvCheckResponse = await response.json()
 
       if (data.status === 'NG') {
-        setError(`CSVファイルにエラーがあります: ${data.errorlog || '不明なエラー'}`)
+        setError(`CSVファイルにエラーがあります: ${data.error_log?.join(' / ') || data.error || '不明なエラー'}`)
         setCsvChecked(false)
       } else {
         setCsvChecked(true)
       }
 
-      setCsvData(data.logtext || [])
+      setCsvData(data.log_text ?? [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'エラーが発生しました')
       setCsvChecked(false)

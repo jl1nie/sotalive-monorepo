@@ -18,11 +18,13 @@ export interface FLEGenerateResponse {
 }
 
 // HAMLOG CSV Check Response
+// サーバー(sotaapp2)の応答は snake_case。空の項目は省かれる
 export interface LogConvCheckResponse {
   status: 'OK' | 'NG'
-  errorlog?: string
-  logtext: string[][]
-  filelist: string[]
+  error?: string
+  error_log?: string[]
+  log_text?: string[][]
+  file_list?: string[]
 }
 
 // HAMLOG Convert Response (binary ZIP download)
