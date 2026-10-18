@@ -122,6 +122,8 @@ const ja = {
   'check.anyway': 'このまま生成',
   'check.required': '必須',
   'check.recommended': '推奨',
+  'check.missing_date':
+    '日付(date)がありません。QSOの日付が 2000-01-01 になります({qsos}件のQSO)。「ログに書き込んで生成」で、今日の日付を入れられます。',
   'check.missing_mycall':
     '自局のコールサインがありません。ADIF と SOTA の CSV で、自局が空になります({qsos}件のQSO)。',
   'check.missing_place': '運用場所(SOTA・POTA・WWFF)がありません。POTA・WWFF の ADIF は作られません。',
@@ -241,10 +243,12 @@ const en: Record<MessageKey, string> = {
   'check.anyway': 'Export anyway',
   'check.required': 'Required',
   'check.recommended': 'Recommended',
+  'check.missing_date':
+    'No date. QSOs will be dated 2000-01-01 (QSOs: {qsos}). "Write to log and export" adds today\'s date.',
   'check.missing_mycall':
-    'No callsign for your station. The station fields in the ADIF and SOTA CSV will be empty ({qsos} QSOs).',
+    'No callsign for your station. The station fields in the ADIF and SOTA CSV will be empty (QSOs: {qsos}).',
   'check.missing_place': 'No operating location (SOTA / POTA / WWFF). POTA and WWFF ADIF files will not be made.',
-  'check.missing_grid': 'No grid locator. MY_GRIDSQUARE will be missing from the ADIF ({qsos} QSOs).',
+  'check.missing_grid': 'No grid locator. MY_GRIDSQUARE will be missing from the ADIF (QSOs: {qsos}).',
   'check.setPlace': 'Set the location',
   'check.note': 'Items you enter are written at the top of the log.',
 

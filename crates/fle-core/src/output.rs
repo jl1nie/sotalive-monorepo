@@ -268,6 +268,7 @@ pub enum Severity {
 
 /// ログを出力する前に、足りない情報を調べる。
 ///
+/// - 日付(`date`): ないと、QSOの日付が 2000-01-01 になる(必須)。
 /// - 自局のコールサイン(`mycall`): ないと、ADIF の `STATION_CALLSIGN` や SOTA CSV の自局が空になる(必須)。
 /// - 運用場所(`mysota` / `mypota` / `mywwff`): 1つもないと、ADIF(POTA / WWFF)は作られない(推奨)。
 /// - グリッド(`mygrid`): ADIF に入るQSOに、ないと `MY_GRIDSQUARE` が出ない(推奨)。
@@ -280,6 +281,16 @@ pub fn check_output(result: &FleCompileResult) -> Vec<OutputWarning> {
     let count =
         |pred: &dyn Fn(&FleQsoRecord) -> bool| result.records.iter().filter(|r| pred(r)).count();
     let mut warnings = Vec::new();
+
+    let no_date = count(&|r| r.date_unset);
+    if no_date > 0 {
+        warnings.push(OutputWarning {
+            code: "missing_date",
+            field: "date",
+            severity: Severity::Required,
+            qsos: no_date,
+        });
+    }
 
     let no_mycall = count(&|r| r.mycall.is_empty());
     if no_mycall > 0 {
@@ -634,6 +645,7 @@ mod tests {
                 tz: 0,
                 mycall: "JA1ABC".to_string(),
                 operator: "JA1ABC".to_string(),
+                date_unset: false,
                 year: 2024,
                 month: 1,
                 day: 15,
@@ -903,6 +915,15 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
     #[test]
     fn a_complete_log_has_no_warnings() {
         assert!(check_log(FULL).is_empty());
+    }
+
+    #[test]
+    fn a_log_without_a_date_warns_first() {
+        assert_eq!(
+            codes("mycall JA1ABC\n40m cw\nmysota JA/TK-001\n0900 ja1aaa\n0910 ja1bbb"),
+            vec![("missing_date", 2)]
+        );
+        assert!(codes("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1aaa").is_empty());
     }
 
     #[test]

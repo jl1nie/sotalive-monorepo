@@ -131,6 +131,7 @@ fn set_date(env: &mut FleEnvironment, year: u16, month: u8, day: u8) {
     env.year = year;
     env.month = month;
     env.day = day;
+    env.date_set = true;
     env.current.year = year;
     env.current.month = month;
     env.current.day = day;
@@ -465,6 +466,7 @@ fn eval_qso(
         tz: env.timezone.unwrap_or(0),
         mycall: env.mycall.clone(),
         operator: env.operator.clone(),
+        date_unset: !env.date_set,
         year: utc.date().year() as u16,
         month: utc.date().month() as u8,
         day: utc.date().day() as u8,

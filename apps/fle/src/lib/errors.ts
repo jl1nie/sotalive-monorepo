@@ -40,11 +40,15 @@ const JA: Record<string, (args: Args) => string> = {
   extra_operand: (x) => `${a(x, 0)} に余分な値があります: ${a(x, 1)}`,
 }
 
-/** 英語は、コアの文面(`message`)をそのまま使う */
+/** 英語は、コアの文面(`message`)を使う。文面の誤りを直せないもの(旧実装との照合で固定)だけ、ここで上書きする */
+const EN: Record<string, (args: Args) => string> = {
+  duplicate_callsign: (x) => `Each line must contain only one callsign: ${a(x, 0)}`,
+}
+
 export function errorText(e: ErrorView, lang: Lang): string {
   if (lang === 'ja') {
     const make = JA[e.code]
     if (make) return make(e.args)
   }
-  return e.message
+  return EN[e.code]?.(e.args) ?? e.message
 }

@@ -65,6 +65,8 @@ pub struct FleEnvironment {
     pub year: u16,
     pub month: u8,
     pub day: u8,
+    /// `date` が指定されたか(されていなければ、上の基準日付は仮の値)
+    pub date_set: bool,
 
     // 現在のQSO状態
     pub current: CurrentQsoState,
@@ -225,6 +227,7 @@ impl Default for FleEnvironment {
             year: 2000,
             month: 1,
             day: 1,
+            date_set: false,
             current: CurrentQsoState::default(),
             errors: Vec::new(),
             contest_num: None,
@@ -285,6 +288,9 @@ pub struct FleQsoRecord {
     pub tz: i32,
     pub mycall: String,
     pub operator: String,
+    /// `date` が指定されないまま作られたQSO(日付は仮の値)。出力には載せない。
+    #[serde(skip)]
+    pub date_unset: bool,
     pub year: u16,
     pub month: u8,
     pub day: u8,

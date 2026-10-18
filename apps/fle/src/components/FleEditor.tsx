@@ -351,10 +351,22 @@ function Editor({
     })
     if (plan.errors.length > 0) return plan.errors
     let next = text
+    let nextCaret = caret
     if (plan.edits.length > 0) {
       next = applyEdits(text, plan.edits)
+      nextCaret = mapCaret(caret, plan.edits)
+    }
+    // 日付がないログは、今日の日付(端末の日付)を先頭に書く。書式はコアの文法どおり(date YYYY-MM-DD)
+    if (check?.some((w) => w.field === 'date')) {
+      const d = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const line = `date ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}\n`
+      next = line + next
+      nextCaret += line.length
+    }
+    if (next !== text) {
       setText(next)
-      setCaret(mapCaret(caret, plan.edits))
+      setCaret(nextCaret)
     }
     saveLastCall(values.mycall)
     setCheck(null)

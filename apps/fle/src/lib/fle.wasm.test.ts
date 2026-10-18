@@ -125,6 +125,11 @@ describe('fle wasm', () => {
     expect(gridLocator(91, 0)).toBeUndefined()
   })
 
+  it('checkOutput: 日付のないログは、必須の警告を返す', () => {
+    const w = checkOutput('mycall JA1ABC\n40m cw\nmysota JA/TK-001\n0900 ja1aaa') as { code: string; severity: string }[]
+    expect(w.map((x) => [x.code, x.severity])).toEqual([['missing_date', 'required']])
+  })
+
   it('checkOutput: 出力前に、足りない情報を返す', () => {
     const w = checkOutput('date 2026-10-18\n40m cw\nmypota JP-0117\n0900 ja1aaa') as { code: string; severity: string; qsos: number }[]
     expect(w.map((x) => [x.code, x.severity, x.qsos])).toEqual([

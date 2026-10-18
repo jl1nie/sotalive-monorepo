@@ -100,9 +100,9 @@ export interface StationPlan {
 
 /** 出力する前に知らせる、ログの不足。文面は画面が作る(コードで区別する) */
 export interface OutputWarning {
-  code: 'missing_mycall' | 'missing_place' | 'missing_grid'
+  code: 'missing_date' | 'missing_mycall' | 'missing_place' | 'missing_grid'
   /** 入力する項目 */
-  field: 'mycall' | 'place' | 'grid'
+  field: 'date' | 'mycall' | 'place' | 'grid'
   /** required: ないと出力が不完全。recommended: あったほうがよい */
   severity: 'required' | 'recommended'
   /** 影響を受けるQSOの数 */
