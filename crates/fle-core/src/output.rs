@@ -795,4 +795,23 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             .keys()
             .any(|k| k.starts_with("hamlog-20261018@JA-0001-JA-0002")));
     }
+
+    #[test]
+    fn digit_first_callsigns_come_out_in_every_file() {
+        // 自局も相手も、数字で始まる局(7K1・8J1)
+        let files = output_of(
+            "mycall 7K1ABC/1\ndate 2026-10-18\n40m cw\nmypota JA-0001\n0900 8j1rl\n0910 7n4xyz",
+        );
+        let adif = &files["7K1ABC-1@JA-0001-20261018.adi"];
+        assert!(adif.contains("<STATION_CALLSIGN:8>7K1ABC/1"), "{adif}");
+        assert_eq!(calls_in(adif), vec!["8J1RL", "7N4XYZ"]);
+        for (name, body) in &files {
+            if name.starts_with("hamlog-") || name.starts_with("airham-") {
+                assert!(
+                    body.to_uppercase().contains("8J1RL") && body.to_uppercase().contains("7N4XYZ"),
+                    "{name}"
+                );
+            }
+        }
+    }
 }

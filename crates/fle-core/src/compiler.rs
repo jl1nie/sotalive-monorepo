@@ -903,4 +903,57 @@ date 2024-01-15
         assert!(!r.errors.is_empty());
         assert_eq!(r.records[0].mypota, vec!["JA-0001"]);
     }
+
+    // ---- 数字で始まるコールサイン・タブ区切り(以前は黙って捨てられていた) ----
+
+    #[test]
+    fn qsos_with_digit_first_callsigns_are_recorded() {
+        for call in ["7K1ABC", "8J1RL", "3B8CW", "9A1A", "7N4ABC/1"] {
+            let r = compile_fle(&format!("{HEAD}0900 {}", call.to_lowercase()));
+            assert_eq!(r.status, "OK", "{call}: {:?}", r.errors);
+            assert_eq!(r.records.len(), 1, "{call}");
+            assert_eq!(r.records[0].callsign, call);
+        }
+    }
+
+    #[test]
+    fn mycall_may_start_with_a_digit() {
+        let r = compile_fle("mycall 7K1ABC/1\n40m cw\n0900 ja1xyz");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        assert_eq!(
+            (r.mycall.as_str(), r.operator.as_str()),
+            ("7K1ABC/1", "7K1ABC")
+        );
+    }
+
+    #[test]
+    fn tab_separated_lines_are_read_like_space_separated_ones() {
+        let spaced = compile_fle(&format!("{HEAD}0900 ja1xyz 599 579"));
+        let tabbed = compile_fle(&format!("{HEAD}0900\tja1xyz\t599\t579"));
+        assert_eq!(tabbed.status, "OK", "{:?}", tabbed.errors);
+        assert_eq!(tabbed.records.len(), 1);
+        assert_eq!(
+            (
+                &tabbed.records[0].callsign,
+                &tabbed.records[0].rst_sent,
+                &tabbed.records[0].rst_rcvd
+            ),
+            (
+                &spaced.records[0].callsign,
+                &spaced.records[0].rst_sent,
+                &spaced.records[0].rst_rcvd
+            )
+        );
+    }
+
+    #[test]
+    fn directives_and_settings_may_be_tab_separated_too() {
+        let r = compile_fle("mycall\tJA1ABC\ndate\t2026-10-18\n40m\tcw\n0900\tja1xyz");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        assert_eq!(r.records.len(), 1);
+        assert_eq!(
+            (r.mycall.as_str(), r.records[0].mode.as_str()),
+            ("JA1ABC", "CW")
+        );
+    }
 }

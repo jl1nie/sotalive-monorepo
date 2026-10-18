@@ -839,4 +839,14 @@ mod tests {
         let text = "40m cw\n40m ja1xyz";
         assert_eq!(fill(text, 1, NOW, 0), vec![edit(7, "0905 ")]);
     }
+
+    #[test]
+    fn a_digit_first_callsign_gets_the_time_and_the_rest_like_any_other() {
+        let text = "40m cw\n7k1abc";
+        assert_eq!(apply(text, &fill(text, 1, NOW, 0)), "40m cw\n0905 7k1abc");
+        assert_eq!(
+            apply(text, &full(text, 1, 0)),
+            "40m cw\n0905 40m CW 7k1abc 599 599"
+        );
+    }
 }

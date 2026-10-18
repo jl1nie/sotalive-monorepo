@@ -77,8 +77,10 @@ static RE_POTA: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\w+-\d+$").unwrap());
 static RE_DECIMAL: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\d+$").unwrap());
 static RE_CONTEST_SENT: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\.\w+").unwrap());
 static RE_CONTEST_RCVD: Lazy<Regex> = Lazy::new(|| Regex::new(r"^,\w+").unwrap());
+/// コールサイン(ITU形式)。接頭辞は、英字1〜3文字(JA、W、VK など)か、数字 + 英字1〜2文字
+/// (7K、8J、3B、9A、4X、3DA など)。そのあとに数字、英数字、最後は英字。
 static RE_CALLSIGN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^[A-Z]{1,3}[0-9][A-Z0-9]*[A-Z]$").unwrap());
+    Lazy::new(|| Regex::new(r"^(?:[A-Z]{1,3}|[0-9][A-Z]{1,2})[0-9][A-Z0-9]*[A-Z]$").unwrap());
 static RE_CALLSIGN_PORTABLE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^[A-Z0-9]+/[A-Z0-9]+(/[A-Z0-9]+)?$").unwrap());
 static RE_UNKNOWN_REF: Lazy<Regex> = Lazy::new(|| Regex::new(r".*[/\-]+.*").unwrap());
@@ -91,8 +93,8 @@ pub fn tokenize(line: &str) -> Vec<TokenInfo> {
     let _line_upper = line.to_uppercase();
 
     while pos < chars.len() {
-        // 空白をスキップ
-        if chars[pos] == ' ' || chars[pos] == '\u{3000}' {
+        // 空白をスキップ(タブ・全角空白・改行など、あらゆる空白)
+        if chars[pos].is_whitespace() {
             pos += 1;
             continue;
         }
@@ -141,8 +143,7 @@ pub fn tokenize(line: &str) -> Vec<TokenInfo> {
         let start = pos;
         let mut word = String::new();
         while pos < chars.len()
-            && chars[pos] != ' '
-            && chars[pos] != '\u{3000}'
+            && !chars[pos].is_whitespace()
             && !matches!(chars[pos], '#' | '<' | '[' | '{')
         {
             word.push(chars[pos]);
@@ -504,5 +505,93 @@ mod tests {
             matches!(&tokens[5].token, Token::Comment { kind: CommentKind::Curly, content } if content == "島根市")
         );
         assert_eq!(tokens[5].raw, "{島根市}");
+    }
+
+    // ---- コールサインの文法(ITU形式: 数字で始まる接頭辞を含む) ----
+
+    fn is_call(word: &str) -> bool {
+        matches!(
+            tokenize(word).first().map(|t| &t.token),
+            Some(Token::Call(_))
+        )
+    }
+
+    #[test]
+    fn callsigns_with_a_digit_first_prefix_are_calls() {
+        // 日本の 7K1〜7N4・8J1〜8N、海外の 3B8・9A・4X など
+        for call in [
+            "7K1ABC", "7L1ABC", "7M3ABC", "7N4ABC", "8J1RL", "8N1ABC", "3B8CW", "9A1A", "4X4XX",
+            "3DA0XX", "9M2ABC",
+        ] {
+            assert!(is_call(call), "{call}");
+            assert!(is_call(&call.to_lowercase()), "{call} (小文字)");
+        }
+    }
+
+    #[test]
+    fn ordinary_callsigns_are_still_calls() {
+        for call in [
+            "JA1ABC",
+            "JL1NIE",
+            "W1AW",
+            "N1MM",
+            "VK2ABC",
+            "E51ABC",
+            "A71AB",
+            "S51ABC",
+            "JA1ABC/P",
+            "JA1ABC/1",
+            "7K1ABC/1",
+            "7K1ABC/P",
+            "JA/JL1NIE",
+            "JL1NIE/QRP",
+        ] {
+            assert!(is_call(call), "{call}");
+        }
+    }
+
+    #[test]
+    fn plain_words_and_other_tokens_are_not_calls() {
+        for word in [
+            "hello", "tnx", "qsl", "100w", "73", "5nn", "0900", "ft8", "cw", "jt65", "js8",
+            "psk31", "40m", "2m", "7.025", "ja", "3d2",
+        ] {
+            assert!(!is_call(word), "{word}");
+        }
+    }
+
+    #[test]
+    fn a_digit_first_callsign_is_parsed_into_its_parts() {
+        assert_eq!(
+            parse_callsign("7K1ABC/1"),
+            Some((
+                "7K1ABC/1".into(),
+                "7K1ABC".into(),
+                "1".into(),
+                String::new()
+            ))
+        );
+        assert_eq!(
+            parse_callsign("9A1A").map(|p| p.1),
+            Some("9A1A".to_string())
+        );
+    }
+
+    // ---- 空白: タブを含む、あらゆる空白で語を区切る ----
+
+    #[test]
+    fn any_whitespace_separates_words() {
+        for sep in ["\t", " ", "\u{3000}", "\u{00a0}", " \t ", "\u{2003}"] {
+            let tokens = tokenize(&format!("0900{sep}ja1xyz{sep}599"));
+            let kinds: Vec<_> = tokens.iter().map(|t| t.raw.as_str()).collect();
+            assert_eq!(kinds, vec!["0900", "ja1xyz", "599"], "sep={sep:?}");
+        }
+    }
+
+    #[test]
+    fn token_positions_count_characters_across_mixed_whitespace() {
+        let tokens = tokenize("0900\tja1xyz\u{3000}599");
+        let positions: Vec<usize> = tokens.iter().map(|t| t.position).collect();
+        assert_eq!(positions, vec![0, 5, 12]);
     }
 }
