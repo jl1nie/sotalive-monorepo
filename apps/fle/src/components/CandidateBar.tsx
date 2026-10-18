@@ -11,6 +11,8 @@ interface Props {
   preview: QsoView | null
   /** カーソルのある行(0始まり) */
   caretLine: number
+  /** カーソルのある行の文字 */
+  lineText: string
   onOpenList: () => void
   /** この行を確定して、次の行へ進む */
   onConfirm: () => void
@@ -20,6 +22,8 @@ const TONE = {
   ok: 'border-emerald-700 bg-emerald-50 text-emerald-950 dark:border-emerald-400 dark:bg-emerald-950 dark:text-emerald-100',
   error:
     'border-red-700 bg-red-50 text-red-950 dark:border-red-400 dark:bg-red-950 dark:text-red-100',
+  draft:
+    'border-amber-700 bg-amber-50 text-amber-950 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-100',
   plain: 'border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-gray-900',
 } as const
 
@@ -32,7 +36,7 @@ const BAR = 'flex-1 min-w-0 rounded-xl border-2 overflow-hidden'
  * カーソルのある行を、補完した結果で見せる(IMEの候補のような表示)。
  * 解釈できた行(緑)は、そのまま押して確定できる。
  */
-export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }: Props) {
+export function CandidateBar({ view, preview, caretLine, lineText, onOpenList, onConfirm }: Props) {
   const { t, lang } = useI18n()
   const qso = preview ?? view?.qsos.find((q) => q.line === caretLine) ?? null
   const error = view?.errors.find((e) => e.line === caretLine)
@@ -53,6 +57,11 @@ export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }
         .filter(Boolean)
         .join('  ')
     : ''
+
+  // 入力の途中(まだ確定できない行)は、打った文字を、橙で見せる。確定できれば緑になる
+  const typed = lineText.trim()
+  const draft = !qso && typed !== '' && omissions.length === 0
+  const prevSetting = [lastQso?.band, lastQso?.mode].filter(Boolean).join(' ')
 
   return (
     <div className="flex-none flex gap-2 h-[72px]">
@@ -106,10 +115,18 @@ export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }
         <div
           aria-live="polite"
           className={`${BAR} px-3 py-2 flex flex-col justify-center gap-0.5 ${
-            omissions.length > 0 ? TONE.error : TONE.plain
+            omissions.length > 0 ? TONE.error : draft ? TONE.draft : TONE.plain
           }`}
         >
-          {omissions.length > 0 ? (
+          {draft ? (
+            <>
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="font-mono text-xl font-bold break-all leading-tight line-clamp-1">{typed}</span>
+                {prevSetting && <span className="font-bold whitespace-nowrap">{prevSetting}</span>}
+              </span>
+              <span className="text-sm font-semibold">{t('bar.typing')}</span>
+            </>
+          ) : omissions.length > 0 ? (
             <p className="font-bold text-red-700 dark:text-red-300 line-clamp-2">
               ⚠ {omissions.map((e) => errorText(e, lang)).join(' / ')}
             </p>
@@ -117,7 +134,7 @@ export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }
             <p className="font-semibold line-clamp-2">{context || t('bar.empty')}</p>
           )}
           {/* 入力中の誤りは、色も記号も付けず、小さく添えるだけ */}
-          {error && settled && omissions.length === 0 && (
+          {error && settled && omissions.length === 0 && !draft && (
             <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{errorText(error, lang)}</p>
           )}
         </div>

@@ -451,15 +451,17 @@ function Editor({
         <SuggestStrip candidates={completion.candidates} onPick={pick} />
       </div>
 
-      {settings.digitRow && <DigitRow onKey={typeKey} />}
-
       <CandidateBar
         view={view}
         preview={preview}
         caretLine={caretLine}
+        lineText={text.slice(...lineRange(text, caretLine))}
         onOpenList={() => setListOpen(true)}
         onConfirm={confirmLine}
       />
+
+      {/* 数字の行は一番下。ソフトキーボードのすぐ上で、指が近い */}
+      {settings.digitRow && <DigitRow onKey={typeKey} />}
 
       {notice && (
         <div
