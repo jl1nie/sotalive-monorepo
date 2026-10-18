@@ -1,11 +1,12 @@
 import type { Candidate } from '@/lib/fle'
+import { useT } from '@/lib/i18n'
 
-const KIND_LABEL: Record<Candidate['kind'], string> = {
-  command: 'コマンド',
-  band: 'バンド',
-  mode: 'モード',
-  day: '日付',
-}
+const KIND_KEY = {
+  command: 'suggest.command',
+  band: 'suggest.band',
+  mode: 'suggest.mode',
+  day: 'suggest.day',
+} as const
 
 interface Props {
   candidates: Candidate[]
@@ -14,10 +15,11 @@ interface Props {
 
 /** 入力欄の下端に重ねる補完候補。出入りしても入力欄の高さは変わらない。 */
 export function SuggestStrip({ candidates, onPick }: Props) {
+  const t = useT()
   if (candidates.length === 0) return null
   return (
     <ul
-      aria-label="補完候補"
+      aria-label={t('suggest.label')}
       // タップしても入力欄からフォーカスを奪わない(キーボードを閉じない)
       onPointerDown={(e) => e.preventDefault()}
       className="absolute inset-x-2 bottom-2 flex gap-2 overflow-x-auto p-1.5 rounded-xl border-2 border-gray-500 bg-white dark:bg-gray-950"
@@ -31,7 +33,7 @@ export function SuggestStrip({ candidates, onPick }: Props) {
           >
             <b className="font-mono text-base">{c.text}</b>
             <small className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
-              {KIND_LABEL[c.kind]}
+              {t(KIND_KEY[c.kind])}
             </small>
           </button>
         </li>

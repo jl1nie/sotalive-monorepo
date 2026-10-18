@@ -165,35 +165,35 @@ fn validate(s: &Station) -> Vec<FieldError> {
         check(
             "mycall",
             is(&s.mycall, |t| matches!(t, Class::Call(_))),
-            "コールサインの形式が正しくありません",
+            "Invalid callsign",
         );
     }
     if !s.sota.is_empty() {
         check(
             "sota",
             is(&s.sota, |t| matches!(t, Class::Sota(_))),
-            "SOTAのリファレンスの形式が正しくありません(例: JA/TK-001)",
+            "Invalid SOTA reference (e.g. JA/TK-001)",
         );
     }
     for p in &s.pota {
         check(
             "pota",
             is(p, |t| matches!(t, Class::Pota(_))),
-            "POTAのリファレンスの形式が正しくありません(例: JA-0001)",
+            "Invalid POTA reference (e.g. JA-0001)",
         );
     }
     if !s.wwff.is_empty() {
         check(
             "wwff",
             is(&s.wwff, |t| matches!(t, Class::Wwff(_))),
-            "WWFFのリファレンスの形式が正しくありません(例: JAFF-0001)",
+            "Invalid WWFF reference (e.g. JAFF-0001)",
         );
     }
     if !s.grid.is_empty() {
         check(
             "grid",
             canonical_grid(&s.grid).is_some(),
-            "グリッドロケータの形式が正しくありません(例: PM95uq)",
+            "Invalid grid locator (e.g. PM95uq)",
         );
     }
     errors

@@ -3,7 +3,8 @@
 import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { compile, initSync } from '../wasm/fle/fle'
-import { errorText, resolveLang } from './errors'
+import { errorText } from './errors'
+import { resolveLang } from './i18n'
 
 beforeAll(() => {
   initSync({ module: readFileSync(new URL('../wasm/fle/fle_bg.wasm', import.meta.url)) })

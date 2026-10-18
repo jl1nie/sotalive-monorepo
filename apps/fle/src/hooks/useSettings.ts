@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { LangPref, Translate } from '@/lib/i18n'
 
 export type Theme = 'light' | 'dark' | 'system'
-export type { LangPref } from '@/lib/errors'
-import type { LangPref } from '@/lib/errors'
 
 export interface Settings {
   theme: Theme
@@ -74,8 +73,8 @@ export function useSettings() {
 }
 
 /** 設定画面の表示用。0 は「UTC」、9 は日本標準時を添える。 */
-export function timezoneLabel(tz: number): string {
-  if (tz === 0) return 'UTC(世界標準時)'
+export function timezoneLabel(tz: number, t: Translate): string {
+  if (tz === 0) return t('tz.utc')
   const base = `UTC${tz > 0 ? '+' : '-'}${Math.abs(tz)}`
-  return tz === 9 ? `${base}(日本標準時)` : base
+  return tz === 9 ? `${base}${t('tz.jst')}` : base
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Cog, Download, Ellipsis } from 'lucide-react'
 import type { Settings } from '@/hooks/useSettings'
 import { SettingsDialog } from '@/components/SettingsDialog'
+import { useT } from '@/lib/i18n'
 
 interface Props {
   onGenerate: () => void
@@ -13,6 +14,7 @@ interface Props {
 
 export function Header({ onGenerate, canGenerate, onMenu, settings, onSettingsChange }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const t = useT()
 
   return (
     <header className="flex-none flex items-center justify-between h-12 pt-[env(safe-area-inset-top)] box-content">
@@ -22,16 +24,16 @@ export function Header({ onGenerate, canGenerate, onMenu, settings, onSettingsCh
           type="button"
           onClick={onGenerate}
           disabled={!canGenerate}
-          aria-label="ファイル生成"
+          aria-label={t('header.generateLabel')}
           className="btn-success !min-h-11 !px-3.5"
         >
           <Download className="w-5 h-5" />
-          生成
+          {t('header.generate')}
         </button>
         <button
           type="button"
           onClick={onMenu}
-          aria-label="メニュー"
+          aria-label={t('header.menu')}
           className="btn-secondary !min-h-11 !min-w-11 !px-0"
         >
           <Ellipsis className="w-6 h-6" />
@@ -39,7 +41,7 @@ export function Header({ onGenerate, canGenerate, onMenu, settings, onSettingsCh
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
-          aria-label="設定"
+          aria-label={t('header.settings')}
           className="btn-secondary !min-h-11 !min-w-11 !px-0"
         >
           <Cog className="w-6 h-6" />

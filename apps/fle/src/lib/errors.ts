@@ -1,13 +1,8 @@
 import type { ErrorView } from '@/lib/fle'
 
-/** 誤りの文面の言語。コアは、誤りの種類(`code`)と値(`args`)を返し、文面は画面が作る */
-export type Lang = 'ja' | 'en'
-export type LangPref = 'auto' | Lang
+import type { Lang } from '@/lib/i18n'
 
-export function resolveLang(pref: LangPref, navigatorLang: string = navigator.language): Lang {
-  if (pref !== 'auto') return pref
-  return navigatorLang.toLowerCase().startsWith('ja') ? 'ja' : 'en'
-}
+// コアは、誤りの種類(`code`)と値(`args`)を返し、文面は画面が言語設定で作る
 
 /** 指令の値の名前(`mysota` なら「SOTAの参照番号」) */
 const OPERAND_JA: Record<string, string> = {

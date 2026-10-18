@@ -330,13 +330,7 @@ fn eval_qso(
                     } else {
                         "invalid_time"
                     };
-                    here.error(
-                        env,
-                        code,
-                        &[value],
-                        it.span,
-                        format!("{message}: {value}"),
-                    );
+                    here.error(env, code, &[value], it.span, format!("{message}: {value}"));
                 }
             }
             QsoItem::Call {

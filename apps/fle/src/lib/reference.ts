@@ -12,9 +12,14 @@ export interface RefCandidate {
   /** SOTA: JA/TK-001、POTA: JP-0117 */
   code: string
   /** 表示名。日本語があれば日本語、なければ英語 */
+  /** 日本語の名前(なければ英語) */
   name: string
-  /** 補足(SOTA: 標高とポイント、POTA: 対応する WWFF) */
+  /** 英語の名前(あれば) */
+  nameEn?: string
+  /** 補足(SOTA: 標高、POTA: 対応する WWFF) */
   detail: string
+  /** SOTA のポイント */
+  points?: number
   /** POTA の公園に対応する WWFF のコード */
   wwff?: string
   /** グリッドロケータ(6文字、あれば) */
@@ -55,9 +60,9 @@ export function parseSota(raw: unknown): RefCandidate[] {
         kind: 'sota' as const,
         code,
         name: str(r.summitNameJ) || str(r.summitName),
-        detail: [Number.isNaN(alt) ? '' : `${alt}m`, Number.isNaN(pts) ? '' : `${pts}点`]
-          .filter(Boolean)
-          .join(' '),
+        nameEn: str(r.summitName) || undefined,
+        detail: Number.isNaN(alt) ? '' : `${alt}m`,
+        points: Number.isNaN(pts) ? undefined : pts,
         grid: grid6(r.maidenhead),
         lat: num(r.latitude),
         lon: num(r.longitude),
@@ -78,6 +83,7 @@ export function parsePota(raw: unknown): RefCandidate[] {
         kind: 'pota' as const,
         code,
         name: str(r.parkNameJ) || str(r.parkName),
+        nameEn: str(r.parkName) || undefined,
         detail: wwff,
         wwff: wwff || undefined,
         grid: grid6(r.maidenhead),

@@ -7,6 +7,7 @@ import { useOnline } from '@/hooks/useOnline'
 import { useRefSearch } from '@/hooks/useRefSearch'
 import { RefList } from '@/components/RefList'
 import { Sheet } from '@/components/Sheet'
+import { useT, type MessageKey } from '@/lib/i18n'
 
 interface Props {
   open: boolean
@@ -19,13 +20,13 @@ interface Props {
   onApply: (want: Station) => Promise<FieldError[]>
 }
 
-const FIELDS = [
-  { key: 'mycall', label: '自局のコールサイン', hint: '例: JA1ABC/1', mode: 'text' },
-  { key: 'sota', label: 'SOTA', hint: '例: JA/TK-001', mode: 'text' },
-  { key: 'pota', label: 'POTA(同じ場所の公園は空白で区切る)', hint: '例: JA-0001 JA-0002', mode: 'text' },
-  { key: 'wwff', label: 'WWFF', hint: '例: JAFF-0001', mode: 'text' },
-  { key: 'grid', label: 'グリッドロケータ', hint: '例: PM95uq', mode: 'text' },
-] as const
+const FIELDS: { key: FieldError['field']; label: MessageKey | null; name?: string; example: string }[] = [
+  { key: 'mycall', label: 'place.mycall', example: 'JA1ABC/1' },
+  { key: 'sota', label: null, name: 'SOTA', example: 'JA/TK-001' },
+  { key: 'pota', label: 'place.pota', example: 'JA-0001 JA-0002' },
+  { key: 'wwff', label: null, name: 'WWFF', example: 'JAFF-0001' },
+  { key: 'grid', label: 'place.grid', example: 'PM95uq' },
+]
 
 type Key = (typeof FIELDS)[number]['key']
 type Values = Record<Key, string>
@@ -48,6 +49,7 @@ export function PlaceSheet(props: Props) {
 }
 
 function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
+  const t = useT()
   const [values, setValues] = useState<Values>(() => toValues(initial))
   const [errors, setErrors] = useState<FieldError[]>([])
   // いま入力している欄(候補を出す欄)と、現在地の近くの一覧
@@ -93,21 +95,21 @@ function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
     <Sheet
       open
       onClose={onClose}
-      title={isNewLog ? '新しいログ' : '場所の変更'}
+      title={isNewLog ? t('place.newLog') : t('place.change')}
       actions={
         <button type="button" onClick={apply} className="btn-success w-full">
-          ログに書き込む
+          {t('place.write')}
         </button>
       }
     >
       <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
         {isNewLog
-          ? 'ログの先頭に書き込みます。すべて任意です。'
-          : 'カーソルの行から先のQSOに有効です。空にした項目は解除します。'}
+          ? t('place.hintNew')
+          : t('place.hintChange')}
       </p>
       {!online && (
         <p role="status" className="text-sm font-semibold mb-3">
-          オフラインです。リファレンスは手入力してください(候補は出ません)。
+          {t('place.offline')}
         </p>
       )}
       <div className="space-y-3">
@@ -116,7 +118,7 @@ function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
           return (
             <div key={f.key}>
               <label htmlFor={`place-${f.key}`} className="label">
-                {f.label}
+                {f.label ? t(f.label) : f.name}
               </label>
               <div className="flex gap-2">
                 <input
@@ -125,7 +127,7 @@ function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
                   onChange={(e) => set(f.key, e.target.value)}
                   onFocus={() => setFocused(f.key)}
                   onBlur={() => setFocused((k) => (k === f.key ? null : k))}
-                  placeholder={f.hint}
+                  placeholder={t('place.example', { value: f.example })}
                   autoCapitalize="characters"
                   autoCorrect="off"
                   autoComplete="off"
@@ -139,17 +141,17 @@ function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
                     type="button"
                     onClick={locate}
                     disabled={locating}
-                    aria-label="現在地からグリッドを入れる"
+                    aria-label={t('place.locateLabel')}
                     className="btn-secondary !px-3 shrink-0"
                   >
                     <Crosshair className="w-5 h-5" />
-                    現在地
+                    {t('place.locate')}
                   </button>
                 )}
               </div>
               {error && (
                 <p id={`place-${f.key}-error`} role="alert" className="mt-1 text-sm font-semibold text-red-700 dark:text-red-300">
-                  {error.message}
+                  {t(`field.${error.field}`)}
                 </p>
               )}
               {(f.key === 'sota' || f.key === 'pota') && (
@@ -166,16 +168,16 @@ function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
       </div>
 
       {nearby && (
-        <section className="mt-4" aria-label="近くの山・公園">
-          <h3 className="label">近くの山・公園</h3>
+        <section className="mt-4" aria-label={t('place.nearby')}>
+          <h3 className="label">{t('place.nearby')}</h3>
           {nearby === 'loading' ? (
-            <p className="text-sm text-gray-700 dark:text-gray-300">検索中…</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{t('place.searching')}</p>
           ) : nearby.status === 'offline' ? (
-            <p className="text-sm text-gray-700 dark:text-gray-300">オフラインのため、近くの山・公園は出せません。</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{t('place.nearbyOffline')}</p>
           ) : nearby.status === 'error' ? (
-            <p className="text-sm text-gray-700 dark:text-gray-300">近くの山・公園を取得できませんでした。</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{t('place.nearbyError')}</p>
           ) : nearby.items.length === 0 ? (
-            <p className="text-sm text-gray-700 dark:text-gray-300">近くに山・公園が見つかりませんでした。</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{t('place.nearbyNone')}</p>
           ) : (
             <RefList items={nearby.items} onPick={pick} showKind />
           )}
@@ -193,15 +195,16 @@ function Suggestions({
   search: ReturnType<typeof useRefSearch>
   onPick: (c: RefCandidate) => void
 }) {
+  const t = useT()
   if (!search.active) return null
   const note = (text: string) => (
     <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{text}</p>
   )
-  if (search.loading) return note('検索中…')
+  if (search.loading) return note(t('place.searching'))
   const r = search.result
   if (!r) return null
-  if (r.status === 'offline') return note('オフラインのため、候補は出ません(手入力できます)。')
-  if (r.status === 'error') return note('候補を取得できませんでした(手入力できます)。')
-  if (r.items.length === 0) return note('該当する山・公園がありません。')
+  if (r.status === 'offline') return note(t('place.candOffline'))
+  if (r.status === 'error') return note(t('place.candError'))
+  if (r.items.length === 0) return note(t('place.candNone'))
   return <RefList items={r.items} onPick={onPick} />
 }

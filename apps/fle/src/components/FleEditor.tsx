@@ -18,14 +18,15 @@ import {
   type OutputWarning,
   type QsoView,
 } from '@/lib/fle'
-import { resolveLang } from '@/lib/errors'
+import { LangProvider } from '@/components/LangProvider'
+import { resolveLang, useI18n } from '@/lib/i18n'
 import { lineOf, lineRange, replaceRange } from '@/lib/lines'
 import { applyEdits, mapCaret } from '@/lib/edits'
 import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useAutosave } from '@/hooks/useAutosave'
 import { usePwa } from '@/hooks/usePwa'
-import { useSettings } from '@/hooks/useSettings'
+import { useSettings, type Settings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
 import { CandidateBar } from '@/components/CandidateBar'
 import { SuggestStrip } from '@/components/SuggestStrip'
@@ -39,10 +40,29 @@ const HELP_URL = 'https://jl1nie.wordpress.com/2019/08/21/2019-08-21-203013/'
 const MENU_ITEM =
   'btn-secondary w-full !justify-start !min-h-14 text-left'
 
+/** 設定(言語を含む)を持ち、画面全体に表示言語を渡す */
 export function FleEditor() {
-  useVisualViewport()
-  const { settings, update: updateSettings } = useSettings()
+  const { settings, update } = useSettings()
   const lang = resolveLang(settings.language)
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
+  return (
+    <LangProvider lang={lang}>
+      <Editor settings={settings} updateSettings={update} />
+    </LangProvider>
+  )
+}
+
+function Editor({
+  settings,
+  updateSettings,
+}: {
+  settings: Settings
+  updateSettings: (patch: Partial<Settings>) => void
+}) {
+  useVisualViewport()
+  const { t } = useI18n()
 
   // 前回の入力を復元する(電池切れ・タブの終了でも失わない)
   const [text, setText] = useState(loadLog)
@@ -77,9 +97,9 @@ export function FleEditor() {
 
   useAutosave(
     text,
-    useCallback(() => notify('自動保存できません。ブラウザの設定を確認してください'), [notify])
+    useCallback(() => notify(t('notice.autosaveFailed')), [notify, t])
   )
-  const pwa = usePwa(useCallback(() => notify('オフラインでも使えます'), [notify]))
+  const pwa = usePwa(useCallback(() => notify(t('notice.offlineReady')), [notify, t]))
 
   // 内容を置き換える前に、今の内容を取っておく(メニューから戻せる)
   const replaceText = useCallback(
@@ -105,11 +125,11 @@ export function FleEditor() {
     let current = true
     compileLog(text)
       .then((v) => current && setView(v))
-      .catch((e) => current && notify(e instanceof Error ? e.message : '解釈に失敗しました'))
+      .catch((e) => current && notify(e instanceof Error ? e.message : t('notice.compileFailed')))
     return () => {
       current = false
     }
-  }, [text, notify])
+  }, [text, notify, t])
 
   // カーソル位置で文法上ありえるキーワードを、コアに尋ねる
   useEffect(() => {
@@ -297,13 +317,13 @@ export function FleEditor() {
         a.remove()
         URL.revokeObjectURL(url)
         if (view?.status === 'ERR') {
-          notify('エラーのある行があります。エラー内容を書いたファイルを生成しました')
+          notify(t('notice.errorsFile'))
         }
       } catch (err) {
-        notify(err instanceof Error ? err.message : 'ファイルを生成できませんでした')
+        notify(err instanceof Error ? err.message : t('notice.generateFailed'))
       }
     },
-    [view, notify]
+    [view, notify, t]
   )
 
   /** 生成: 先に、足りない情報(自局のコールサイン・運用場所・グリッド)を調べ、あれば知らせる */
@@ -368,7 +388,7 @@ export function FleEditor() {
           onChange={(e) => handleChange(e.target.value, e.target.selectionStart, e.nativeEvent)}
           onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
           placeholder="0900 JA1XYZ 599 599"
-          aria-label="FLEログ"
+          aria-label={t('editor.label')}
           spellCheck={false}
           autoCapitalize="none"
           autoCorrect="off"
@@ -381,7 +401,6 @@ export function FleEditor() {
 
       <CandidateBar
         view={view}
-        lang={lang}
         preview={preview}
         caretLine={caretLine}
         onOpenList={() => setListOpen(true)}
@@ -404,7 +423,7 @@ export function FleEditor() {
         className="hidden"
         onChange={(e) =>
           readFile(e, (content) =>
-            replaceText(content, 'ログを読み込みました。メニューから元に戻せます')
+            replaceText(content, t('notice.loaded'))
           )
         }
       />
@@ -426,7 +445,6 @@ export function FleEditor() {
         open={listOpen}
         onClose={() => setListOpen(false)}
         view={view}
-        lang={lang}
         text={text}
         onJump={jump}
       />
@@ -455,7 +473,7 @@ export function FleEditor() {
         onApply={applyPlace}
       />
 
-      <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="ログ">
+      <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title={t('menu.title')}>
         <ul className="space-y-2">
           <li>
             <button
@@ -467,7 +485,7 @@ export function FleEditor() {
               }}
             >
               <MapPin className="w-5 h-5" />
-              新しいログ・場所を設定
+              {t('menu.place')}
             </button>
           </li>
           <li>
@@ -480,7 +498,7 @@ export function FleEditor() {
               }}
             >
               <Upload className="w-5 h-5" />
-              FLEログを読み込む
+              {t('menu.openFle')}
             </button>
           </li>
           <li>
@@ -493,7 +511,7 @@ export function FleEditor() {
               }}
             >
               <FileText className="w-5 h-5" />
-              ADIFを追加
+              {t('menu.addAdif')}
             </button>
           </li>
           <li>
@@ -504,11 +522,11 @@ export function FleEditor() {
                 setMenuOpen(false)
                 // 見本のログはコアが持つ。日付(いま)だけ、画面が渡す
                 sampleLog(new Date().toISOString().slice(0, 10)).then((sample) =>
-                  replaceText(sample, 'サンプルを入れました。メニューから元に戻せます')
+                  replaceText(sample, t('notice.sampleInserted'))
                 )
               }}
             >
-              サンプルを入れる
+              {t('menu.sample')}
             </button>
           </li>
           <li>
@@ -517,11 +535,11 @@ export function FleEditor() {
               className={MENU_ITEM}
               onClick={() => {
                 setMenuOpen(false)
-                replaceText('', '消しました。メニューから元に戻せます')
+                replaceText('', t('notice.cleared'))
               }}
             >
               <Trash2 className="w-5 h-5" />
-              すべて消す
+              {t('menu.clear')}
             </button>
           </li>
           {prev && prev !== text && (
@@ -535,7 +553,7 @@ export function FleEditor() {
                 }}
               >
                 <Undo2 className="w-5 h-5" />
-                直前の内容に戻す
+                {t('menu.undo')}
               </button>
             </li>
           )}
@@ -550,25 +568,25 @@ export function FleEditor() {
                 }}
               >
                 <Home className="w-5 h-5" />
-                ホーム画面に追加
+                {t('menu.install')}
               </button>
             </li>
           )}
           {pwa.showIosHint && (
             <li className="p-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 text-sm">
               <Home className="inline w-4 h-4 mr-1 align-text-bottom" />
-              ホーム画面に追加するには、Safariの共有ボタンから「ホーム画面に追加」を選びます。
+              {t('menu.installIos')}
             </li>
           )}
           <li>
             <a href={HELP_URL} target="_blank" rel="noopener noreferrer" className={MENU_ITEM}>
               <HelpCircle className="w-5 h-5" />
-              FLEの書き方
+              {t('menu.help')}
             </a>
           </li>
         </ul>
         <p className="mt-3 text-center text-xs text-gray-700 dark:text-gray-300">
-          FLEonline 版 {__APP_VERSION__}
+          {t('menu.version', { version: __APP_VERSION__ })}
         </p>
       </Sheet>
     </div>

@@ -1,10 +1,10 @@
 import { Check } from 'lucide-react'
 import { timeLabel, type LogView, type QsoView } from '@/lib/fle'
-import { errorText, type Lang } from '@/lib/errors'
+import { errorText } from '@/lib/errors'
+import { useI18n } from '@/lib/i18n'
 
 interface Props {
   view: LogView | null
-  lang: Lang
   /** 確定したあとの、この行の姿(時刻・バンド・モード・RSTが入ったもの)。なければ現在の解釈を使う */
   preview: QsoView | null
   /** カーソルのある行(0始まり) */
@@ -25,7 +25,8 @@ const BAR = 'flex-1 min-w-0 rounded-xl border-2 overflow-hidden'
  * カーソルのある行を、補完した結果で見せる(IMEの候補のような表示)。
  * 解釈できた行(緑)は、そのまま押して確定できる。
  */
-export function CandidateBar({ view, lang, preview, caretLine, onOpenList, onConfirm }: Props) {
+export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }: Props) {
+  const { t, lang } = useI18n()
   const qso = preview ?? view?.qsos.find((q) => q.line === caretLine) ?? null
   const error = view?.errors.find((e) => e.line === caretLine)
   // 入力中の行の誤りは、まだ途中なので数えない(カーソルを離れた行の誤りだけ、赤で知らせる)
@@ -43,7 +44,7 @@ export function CandidateBar({ view, lang, preview, caretLine, onOpenList, onCon
       <button
         type="button"
         onClick={onOpenList}
-        aria-label="QSO一覧を開く"
+        aria-label={t('bar.openList')}
         className={`flex-none min-w-16 px-2 rounded-xl border-2 bg-white dark:bg-gray-950 flex flex-col items-center justify-center leading-tight tabular-nums ${
           errorCount > 0
             ? 'border-red-700 text-red-700 dark:border-red-400 dark:text-red-300'
@@ -60,7 +61,7 @@ export function CandidateBar({ view, lang, preview, caretLine, onOpenList, onCon
           onClick={onConfirm}
           // 押してもテキスト入力からフォーカスを奪わない(キーボードを閉じない)
           onPointerDown={(e) => e.preventDefault()}
-          aria-label="この行を確定して次の行へ"
+          aria-label={t('bar.confirmLabel')}
           className={`${BAR} ${TONE.ok} flex items-stretch text-left`}
         >
           <span className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-0.5">
@@ -83,7 +84,7 @@ export function CandidateBar({ view, lang, preview, caretLine, onOpenList, onCon
           </span>
           <span className="flex-none w-16 flex flex-col items-center justify-center gap-0.5 border-l-2 border-emerald-700/40 dark:border-emerald-400/40 font-bold text-sm">
             <Check className="w-6 h-6" aria-hidden="true" />
-            確定
+            {t('bar.confirm')}
           </span>
         </button>
       ) : (
@@ -91,7 +92,7 @@ export function CandidateBar({ view, lang, preview, caretLine, onOpenList, onCon
           aria-live="polite"
           className={`${BAR} px-3 py-2 flex flex-col justify-center gap-0.5 ${TONE.plain}`}
         >
-          <p className="font-semibold line-clamp-2">{context || 'ログを入力してください'}</p>
+          <p className="font-semibold line-clamp-2">{context || t('bar.empty')}</p>
           {/* 入力中の誤りは、色も記号も付けず、小さく添えるだけ */}
           {error && (
             <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{errorText(error, lang)}</p>

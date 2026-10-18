@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useT } from '@/lib/i18n'
 
 interface Props {
   open: boolean
@@ -13,6 +14,7 @@ interface Props {
 export function Sheet({ open, onClose, title, children, actions }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
+  const t = useT()
 
   useEffect(() => {
     const dialog = ref.current
@@ -43,7 +45,7 @@ export function Sheet({ open, onClose, title, children, actions }: Props) {
           onClick={onClose}
           className={`${actions ? 'btn-secondary' : 'btn-primary'} w-full mt-2`}
         >
-          閉じる
+          {t('sheet.close')}
         </button>
       </div>
     </dialog>

@@ -1,27 +1,30 @@
 import { timeLabel, type LogView } from '@/lib/fle'
 import { Sheet } from '@/components/Sheet'
-import { errorText, type Lang } from '@/lib/errors'
+import { errorText } from '@/lib/errors'
+import { useI18n } from '@/lib/i18n'
 
 interface Props {
   open: boolean
   onClose: () => void
   view: LogView | null
-  lang: Lang
   /** 本文(誤りの語を見せるため) */
   text: string
   /** 行番号(0始まり)の位置へカーソルを移す。範囲があれば、その範囲を選ぶ */
   onJump: (line: number, range?: [number, number]) => void
 }
 
-export function QsoSheet({ open, onClose, view, lang, text, onJump }: Props) {
+export function QsoSheet({ open, onClose, view, text, onJump }: Props) {
+  const { t, lang } = useI18n()
   const qsos = view?.qsos ?? []
   const errors = view?.errors ?? []
-  const title = `${qsos.length} QSO${errors.length ? ` / エラー ${errors.length}` : ''}`
+  const title = errors.length
+    ? t('list.errorsTitle', { qsos: qsos.length, errors: errors.length })
+    : t('list.title', { qsos: qsos.length })
 
   return (
     <Sheet open={open} onClose={onClose} title={title}>
       {qsos.length === 0 && errors.length === 0 ? (
-        <p className="text-gray-700 dark:text-gray-300">まだQSOがありません</p>
+        <p className="text-gray-700 dark:text-gray-300">{t('list.empty')}</p>
       ) : (
         <ul className="space-y-2">
           {errors.map((e, i) => (
@@ -37,7 +40,7 @@ export function QsoSheet({ open, onClose, view, lang, text, onJump }: Props) {
                   {e.to > e.from && (
                     <code className="block font-mono text-sm break-all">{text.slice(e.from, e.to)}</code>
                   )}
-                  <span className="block text-sm">タップでその行へ</span>
+                  <span className="block text-sm">{t('list.tapToJump')}</span>
                 </span>
               </button>
             </li>

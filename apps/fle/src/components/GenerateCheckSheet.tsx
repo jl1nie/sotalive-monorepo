@@ -3,6 +3,7 @@ import { Crosshair } from 'lucide-react'
 import type { FieldError, OutputWarning } from '@/lib/fle'
 import { useGridLocate } from '@/hooks/useGridLocate'
 import { Sheet } from '@/components/Sheet'
+import { useT } from '@/lib/i18n'
 
 interface Props {
   open: boolean
@@ -17,31 +18,21 @@ interface Props {
   onOpenPlace: () => void
 }
 
-/** 警告の文面(コードごと)。多言語にするときは、ここを言語設定で切り替える */
-function warningText(w: OutputWarning): string {
-  switch (w.code) {
-    case 'missing_mycall':
-      return `自局のコールサインがありません。ADIF と SOTA の CSV で、自局が空になります(${w.qsos}件のQSO)。`
-    case 'missing_place':
-      return '運用場所(SOTA・POTA・WWFF)がありません。POTA・WWFF の ADIF は作られません。'
-    case 'missing_grid':
-      return `グリッドロケータがありません。ADIF の MY_GRIDSQUARE が出ません(${w.qsos}件のQSO)。`
-  }
-}
-
 /** ファイルを生成する前に、ログに足りない情報を知らせて、入力を促す。そのまま生成もできる。 */
 export function GenerateCheckSheet(props: Props) {
   return props.open ? <CheckForm {...props} /> : null
 }
 
 function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGenerateAnyway, onOpenPlace }: Props) {
+  const t = useT()
   const [mycall, setMycall] = useState(initialCall)
   const [grid, setGrid] = useState('')
   const [errors, setErrors] = useState<FieldError[]>([])
   const { locate, locating, message } = useGridLocate((g) => setGrid(g))
 
   const needs = (field: OutputWarning['field']) => warnings.some((w) => w.field === field)
-  const error = (field: string) => errors.find((e) => e.field === field)?.message
+  const error = (field: FieldError['field']) =>
+    errors.some((e) => e.field === field) ? t(`field.${field}`) : undefined
 
   const writeAndGenerate = async () => {
     setErrors(await onWriteAndGenerate({ mycall: needs('mycall') ? mycall : '', grid: needs('grid') ? grid : '' }))
@@ -51,14 +42,14 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
     <Sheet
       open
       onClose={onClose}
-      title="ログに足りない情報"
+      title={t('check.title')}
       actions={
         <>
           <button type="button" onClick={writeAndGenerate} className="btn-success w-full">
-            ログに書き込んで生成
+            {t('check.write')}
           </button>
           <button type="button" onClick={onGenerateAnyway} className="btn-secondary w-full">
-            このまま生成
+            {t('check.anyway')}
           </button>
         </>
       }
@@ -70,9 +61,9 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
             className="p-3 rounded-xl border-2 border-amber-700 bg-amber-50 text-amber-950 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-100 flex gap-3 items-start"
           >
             <span className="flex-none text-xs font-bold mt-1">
-              {w.severity === 'required' ? '必須' : '推奨'}
+              {w.severity === 'required' ? t('check.required') : t('check.recommended')}
             </span>
-            <span>{warningText(w)}</span>
+            <span>{t(`check.${w.code}`, { qsos: w.qsos })}</span>
           </li>
         ))}
       </ul>
@@ -81,13 +72,13 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
         {needs('mycall') && (
           <div>
             <label htmlFor="check-mycall" className="label">
-              自局のコールサイン
+              {t('place.mycall')}
             </label>
             <input
               id="check-mycall"
               value={mycall}
               onChange={(e) => setMycall(e.target.value)}
-              placeholder="例: JA1ABC/1"
+              placeholder={t('place.example', { value: 'JA1ABC/1' })}
               autoCapitalize="characters"
               autoCorrect="off"
               autoComplete="off"
@@ -106,14 +97,14 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
         {needs('grid') && (
           <div>
             <label htmlFor="check-grid" className="label">
-              グリッドロケータ
+              {t('place.grid')}
             </label>
             <div className="flex gap-2">
               <input
                 id="check-grid"
                 value={grid}
                 onChange={(e) => setGrid(e.target.value)}
-                placeholder="例: PM95uq"
+                placeholder={t('place.example', { value: 'PM95uq' })}
                 autoCapitalize="characters"
                 autoCorrect="off"
                 autoComplete="off"
@@ -125,11 +116,11 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
                 type="button"
                 onClick={locate}
                 disabled={locating}
-                aria-label="現在地からグリッドを入れる"
+                aria-label={t('place.locateLabel')}
                 className="btn-secondary !px-3 shrink-0"
               >
                 <Crosshair className="w-5 h-5" />
-                現在地
+                {t('place.locate')}
               </button>
             </div>
             {error('grid') && (
@@ -143,12 +134,12 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
 
         {needs('place') && (
           <button type="button" onClick={onOpenPlace} className="btn-secondary w-full">
-            運用場所を設定する
+            {t('check.setPlace')}
           </button>
         )}
       </div>
       <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">
-        書き込む項目は、ログの先頭に入ります。
+        {t('check.note')}
       </p>
     </Sheet>
   )
