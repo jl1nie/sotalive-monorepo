@@ -194,12 +194,25 @@ impl RstValue {
     }
 }
 
-/// FLEエラー
+/// FLEエラー。メッセージ(英語)に加えて、コード・引数・位置を持つ(文面は、画面が言語設定で作る)。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FleError {
+    /// 行番号(0始まり)
     pub line: usize,
+    /// 行内の位置(UTF-16の文字位置)
     pub column: usize,
     pub message: String,
+    /// 誤りの種類(`missing_operand` `invalid_operand` `missing_callsign` など)
+    #[serde(default)]
+    pub code: String,
+    /// 文面に入れる値(指令の名前、語など)
+    #[serde(default)]
+    pub args: Vec<String>,
+    /// 誤りの範囲(テキスト全体での、UTF-16の文字位置)
+    #[serde(default)]
+    pub from: usize,
+    #[serde(default)]
+    pub to: usize,
 }
 
 impl FleError {
@@ -208,6 +221,10 @@ impl FleError {
             line,
             column,
             message: message.into(),
+            code: String::new(),
+            args: Vec::new(),
+            from: 0,
+            to: 0,
         }
     }
 }

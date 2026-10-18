@@ -174,10 +174,22 @@ const CHANGED: &[(&str, &str)] = &[
     // 決定3: 5桁以上の時刻・桁あふれの日付を誤りにする
     ("ignored_five_digit_time", "決定3: 5桁以上の時刻は誤り"),
     ("ignored_date_overflow", "決定3: 桁あふれの日付は誤り"),
-    ("invalid_hour", "決定3: 24時以降の時刻は誤り(以前は 00:00 になっていた)"),
-    ("invalid_minute_4digits", "決定3: 60分以上は誤り(以前は黙って丸めていた)"),
-    ("invalid_minute_2digits", "決定3: 60分以上は誤り(以前は黙って丸めていた)"),
-    ("hour_overflow_after_rollback", "決定4: 分が戻ると時を進めるので、24時になる場合は誤り"),
+    (
+        "invalid_hour",
+        "決定3: 24時以降の時刻は誤り(以前は 00:00 になっていた)",
+    ),
+    (
+        "invalid_minute_4digits",
+        "決定3: 60分以上は誤り(以前は黙って丸めていた)",
+    ),
+    (
+        "invalid_minute_2digits",
+        "決定3: 60分以上は誤り(以前は黙って丸めていた)",
+    ),
+    (
+        "hour_overflow_after_rollback",
+        "決定4: 分が戻ると時を進めるので、24時になる場合は誤り",
+    ),
     // 決定4: 分が戻ったら、時を進める
     ("minute_goes_back", "決定4: 分が戻ったら時を進める"),
     // 決定5: 黙って無視していたものを誤りにする
@@ -225,13 +237,16 @@ fn golden_path() -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden/compile.json")
 }
 
-/// 比べる形: 誤りの位置(列)は、意味が一定でないので除く
+/// 比べる形: 誤りは `(行, メッセージ)` だけ。列は、意味が一定でなかった(旧実装)ので除く。
+/// コード・引数・位置は、新実装で足したもので、`tests/syntax_errors.rs` 相当のテストで確かめる
 fn snapshot(text: &str) -> Value {
     let mut v = serde_json::to_value(compile_fle(text)).unwrap();
     if let Some(errors) = v.get_mut("errors").and_then(Value::as_array_mut) {
         for e in errors {
             if let Some(o) = e.as_object_mut() {
-                o.remove("column");
+                for key in ["column", "code", "args", "from", "to"] {
+                    o.remove(key);
+                }
             }
         }
     }
@@ -246,8 +261,17 @@ fn compile_matches_the_golden_record() {
         .collect();
 
     if std::env::var("UPDATE_GOLDEN").is_ok() {
-        let json = serde_json::to_string_pretty(&Value::Object(all)).unwrap() + "\n";
+        let json = serde_json::to_string_pretty(&Value::Object(all.clone())).unwrap() + "\n";
         std::fs::write(golden_path(), json).unwrap();
+        let changed: Map<String, Value> = CHANGED
+            .iter()
+            .map(|(n, _)| (n.to_string(), all[*n].clone()))
+            .collect();
+        std::fs::write(
+            changed_path(),
+            serde_json::to_string_pretty(&Value::Object(changed)).unwrap() + "\n",
+        )
+        .unwrap();
         return;
     }
 
@@ -261,6 +285,57 @@ fn compile_matches_the_golden_record() {
     );
 
     let changed: std::collections::HashSet<&str> = CHANGED.iter().map(|(n, _)| *n).collect();
+
+    // CHANGED に挙げたものは、実際に変わっているはず(変わっていなければ、例外が古い)
+    let stale: Vec<&str> = CHANGED
+        .iter()
+        .map(|(n, _)| *n)
+        .filter(|n| golden.get(*n) == all.get(*n))
+        .collect();
+    assert!(
+        stale.is_empty(),
+        "CHANGED にあるが、記録と同じケース(例外を外す): {stale:?}"
+    );
+
+    if std::env::var("SHOW_CHANGED").is_ok() {
+        for (name, reason) in CHANGED {
+            let (g, n) = (&golden[*name], &all[*name]);
+            eprintln!("=== {name}  [{reason}]");
+            for key in [
+                "status", "mycall", "operator", "mysota", "mywwff", "mypota", "mygrid", "qslmsg",
+                "log_type",
+            ] {
+                if g[key] != n[key] {
+                    eprintln!("  {key}: {} -> {}", g[key], n[key]);
+                }
+            }
+            let msgs = |v: &Value| {
+                v["errors"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|e| format!("L{}:{}", e["line"], e["message"].as_str().unwrap()))
+                    .collect::<Vec<_>>()
+            };
+            if msgs(g) != msgs(n) {
+                eprintln!("  errors: {:?} -> {:?}", msgs(g), msgs(n));
+            }
+            let (gr, nr) = (
+                g["records"].as_array().unwrap(),
+                n["records"].as_array().unwrap(),
+            );
+            if gr.len() != nr.len() {
+                eprintln!("  records: {} -> {}", gr.len(), nr.len());
+            }
+            for (i, (a, b)) in gr.iter().zip(nr).enumerate() {
+                for (k, v) in a.as_object().unwrap() {
+                    if b[k] != *v {
+                        eprintln!("  record[{i}].{k}: {v} -> {}", b[k]);
+                    }
+                }
+            }
+        }
+    }
     let mut diffs = Vec::new();
     for (name, now) in &all {
         if changed.contains(name.as_str()) {
@@ -275,4 +350,29 @@ fn compile_matches_the_golden_record() {
         "記録と違うケース: {diffs:?}\n(意図した変更なら CHANGED に理由つきで足す)"
     );
     let _ = json!(null);
+
+    // CHANGED は、新しい値を別の記録(changed.json)に固定する
+    let now_changed: Map<String, Value> = CHANGED
+        .iter()
+        .map(|(n, _)| (n.to_string(), all[*n].clone()))
+        .collect();
+    let path = changed_path();
+    if std::env::var("UPDATE_GOLDEN").is_ok() {
+        std::fs::write(
+            &path,
+            serde_json::to_string_pretty(&Value::Object(now_changed)).unwrap() + "\n",
+        )
+        .unwrap();
+        return;
+    }
+    let recorded: Map<String, Value> =
+        serde_json::from_str(&std::fs::read_to_string(&path).expect("changed record")).unwrap();
+    assert_eq!(
+        recorded, now_changed,
+        "意図した変更の記録(changed.json)と違う"
+    );
+}
+
+fn changed_path() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden/changed.json")
 }
