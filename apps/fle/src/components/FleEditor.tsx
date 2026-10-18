@@ -329,7 +329,7 @@ function Editor({
   const generateNow = useCallback(
     async (source: string) => {
       try {
-        const zip = await generateFleZip(source)
+        const zip = await generateFleZip(source, new Date(), { hamlogJst: settings.hamlogJst })
         const url = URL.createObjectURL(new Blob([zip as BlobPart], { type: 'application/zip' }))
         const a = document.createElement('a')
         a.href = url
@@ -345,7 +345,7 @@ function Editor({
         notify(err instanceof Error ? err.message : t('notice.generateFailed'))
       }
     },
-    [view, notify, t]
+    [view, notify, t, settings.hamlogJst]
   )
 
   /** 生成: 先に、足りない情報(自局のコールサイン・運用場所・グリッド)を調べ、あれば知らせる */

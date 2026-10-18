@@ -173,9 +173,18 @@ fn cases() -> Vec<(&'static str, String)> {
 const CHANGED: &[(&str, &str)] = &[
     // 決定10: `rigset N` を廃止し、HAMLOG の Rig= の右辺を書く `rig` にする(`rigset` は案内つきの誤り)
     ("rigset_ok", "決定10: rigset は rig に変わった(誤りで案内)"),
-    ("rigset_invalid", "決定10: rigset は rig に変わった(誤りで案内)"),
-    ("rigset_missing", "決定10: rigset は rig に変わった(誤りで案内)"),
-    ("sample_log", "決定10: 見本のログが、rigset の代わりに rig を使う"),
+    (
+        "rigset_invalid",
+        "決定10: rigset は rig に変わった(誤りで案内)",
+    ),
+    (
+        "rigset_missing",
+        "決定10: rigset は rig に変わった(誤りで案内)",
+    ),
+    (
+        "sample_log",
+        "決定10: 見本のログが、rigset の代わりに rig を使う",
+    ),
     // モードを書かないQSOは、ADIF の MODE が空になるので誤りにする
     (
         "band_missing",

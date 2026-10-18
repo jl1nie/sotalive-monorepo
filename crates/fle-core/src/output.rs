@@ -4,10 +4,10 @@
 
 use std::collections::HashMap;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
-use chrono::{FixedOffset, NaiveDate, TimeZone};
+use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Timelike};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
@@ -20,10 +20,20 @@ use crate::ham::{
 /// 出力ファイルマップ
 pub type OutputFiles = HashMap<String, Vec<u8>>;
 
+/// 出力のオプション。画面の設定から渡す(コアは、設定も時計も持たない)
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct OutputOptions {
+    /// HAMLOG の CSV の日付・時刻を、UTC でなく JST(日本標準時)で出す(時刻に `J` を付ける)。
+    /// SOTA の CSV・POTA/WWFF の ADIF・AirHam の CSV は、常に UTC
+    pub hamlog_jst: bool,
+}
+
 /// FLE結果を各種形式に変換してZIPを生成
 pub fn generate_fle_output(
     result: &FleCompileResult,
     now: chrono::NaiveDateTime,
+    options: OutputOptions,
 ) -> Result<Vec<u8>, String> {
     let mut files: OutputFiles = HashMap::new();
 
@@ -59,7 +69,7 @@ pub fn generate_fle_output(
     let log_name = format!("{}@{}", date_str, ref_parts.join("-"));
 
     // HAMLOG CSV
-    let hamlog_data = generate_hamlog_csv(result);
+    let hamlog_data = generate_hamlog_csv(result, options);
     files.insert(format!("hamlog-{}.csv", log_name), hamlog_data);
 
     // AirHam CSV
@@ -428,18 +438,38 @@ fn adif_band(band: &str) -> String {
     format!("<BAND:{}>{}", band_upper.len(), band_upper)
 }
 
+/// HAMLOG の日付(`YY/MM/DD`)と時刻(`HH:MMU` か `HH:MMJ`)。JST にすると、日付が変わることがある
+fn hamlog_date_time(record: &FleQsoRecord, jst: bool) -> (String, String) {
+    let utc = NaiveDate::from_ymd_opt(record.year as i32, record.month as u32, record.day as u32)
+        .and_then(|d| d.and_hms_opt(record.hour as u32, record.min as u32, 0));
+    let (at, flag) = match (jst, utc) {
+        (true, Some(t)) => (t + chrono::Duration::hours(9), 'J'),
+        (_, Some(t)) => (t, 'U'),
+        // 日時として読めないときは、記録の値のまま(UTC)
+        (_, None) => {
+            return (
+                format!(
+                    "{:02}/{:02}/{:02}",
+                    record.year % 100,
+                    record.month,
+                    record.day
+                ),
+                format!("{:02}:{:02}U", record.hour, record.min),
+            )
+        }
+    };
+    (
+        format!("{:02}/{:02}/{:02}", at.year() % 100, at.month(), at.day()),
+        format!("{:02}:{:02}{}", at.hour(), at.minute(), flag),
+    )
+}
+
 /// HAMLOG CSV形式を生成
-fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
+fn generate_hamlog_csv(result: &FleCompileResult, options: OutputOptions) -> Vec<u8> {
     let mut output = Vec::new();
 
     for record in &result.records {
-        let date = format!(
-            "{:02}/{:02}/{:02}",
-            record.year % 100,
-            record.month,
-            record.day
-        );
-        let time = format!("{:02}:{:02}U", record.hour, record.min);
+        let (date, time) = hamlog_date_time(record, options.hamlog_jst);
         let freq = if record.freq.is_empty() {
             band_to_freq(&record.band, false)
                 .unwrap_or_default()
@@ -716,7 +746,7 @@ mod tests {
     #[test]
     fn test_generate_fle_output() {
         let result = create_test_result();
-        let zip = generate_fle_output(&result, test_now());
+        let zip = generate_fle_output(&result, test_now(), OutputOptions::default());
         assert!(zip.is_ok());
     }
 
@@ -733,7 +763,7 @@ mod tests {
         result
             .errors
             .push(crate::types::FleError::new(0, 0, "bad input"));
-        let zip = generate_fle_output(&result, test_now()).unwrap();
+        let zip = generate_fle_output(&result, test_now(), OutputOptions::default()).unwrap();
 
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(zip)).unwrap();
         assert_eq!(archive.len(), 1);
@@ -766,7 +796,7 @@ mod tests {
     fn output_of(fle: &str) -> std::collections::BTreeMap<String, String> {
         let result = compile_fle(fle);
         assert!(result.errors.is_empty(), "{:?}", result.errors);
-        zip_files(generate_fle_output(&result, test_now()).unwrap())
+        zip_files(generate_fle_output(&result, test_now(), OutputOptions::default()).unwrap())
     }
 
     fn calls_in(adif: &str) -> Vec<&str> {
@@ -927,7 +957,10 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             codes("mycall JA1ABC\n40m cw\nmysota JA/TK-001\n0900 ja1aaa\n0910 ja1bbb"),
             vec![("missing_date", 2)]
         );
-        assert!(codes("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1aaa").is_empty());
+        assert!(
+            codes("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1aaa")
+                .is_empty()
+        );
     }
 
     #[test]
@@ -1014,7 +1047,10 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         qslmsg TNX QSO $rig\n0900 ja1aaa\nrig KX2/IC-705+EFHW\n0910 ja1bbb\nrig -\n0920 ja1ccc";
 
     fn hamlog_lines(files: &std::collections::BTreeMap<String, String>) -> Vec<String> {
-        let (_, body) = files.iter().find(|(k, _)| k.starts_with("hamlog-")).unwrap();
+        let (_, body) = files
+            .iter()
+            .find(|(k, _)| k.starts_with("hamlog-"))
+            .unwrap();
         body.lines().map(str::to_string).collect()
     }
 
@@ -1045,7 +1081,81 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             }
         }
         // AirHam には、メッセージ(置き換えた $rig を含む)が入る
-        let airham = files.iter().find(|(k, _)| k.starts_with("airham-")).unwrap().1;
+        let airham = files
+            .iter()
+            .find(|(k, _)| k.starts_with("airham-"))
+            .unwrap()
+            .1;
         assert!(airham.contains("TNX QSO KX2/IC-705+EFHW"));
+    }
+
+    // ---- HAMLOG の日時(UTC / JST)----
+
+    fn output_with(
+        fle: &str,
+        options: OutputOptions,
+    ) -> std::collections::BTreeMap<String, String> {
+        let result = compile_fle(fle);
+        assert!(result.errors.is_empty(), "{:?}", result.errors);
+        zip_files(generate_fle_output(&result, test_now(), options).unwrap())
+    }
+
+    /// UTC の 2026-10-18 15:30 と 08:00(JST では、翌日 00:30 と、同じ日の 17:00)
+    const TWO_TIMES: &str =
+        "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n1530 ja1aaa\n0800 ja1bbb";
+
+    fn hamlog_times(files: &std::collections::BTreeMap<String, String>) -> Vec<(String, String)> {
+        hamlog_lines(files)
+            .iter()
+            .map(|l| {
+                let cols: Vec<&str> = l.split("\",\"").collect();
+                (cols[1].to_string(), cols[2].to_string())
+            })
+            .collect()
+    }
+
+    #[test]
+    fn hamlog_times_are_utc_by_default() {
+        let t = hamlog_times(&output_with(TWO_TIMES, OutputOptions::default()));
+        assert_eq!(
+            t,
+            [
+                ("26/10/18".into(), "15:30U".into()),
+                ("26/10/18".into(), "08:00U".into())
+            ]
+        );
+    }
+
+    #[test]
+    fn hamlog_times_can_be_jst_and_the_date_follows() {
+        let t = hamlog_times(&output_with(TWO_TIMES, OutputOptions { hamlog_jst: true }));
+        // UTC 15:30 は、JST では翌日 00:30。日付も JST にそろう
+        assert_eq!(
+            t,
+            [
+                ("26/10/19".into(), "00:30J".into()),
+                ("26/10/18".into(), "17:00J".into())
+            ]
+        );
+    }
+
+    #[test]
+    fn the_other_outputs_stay_utc_whatever_the_hamlog_option() {
+        let utc = output_with(TWO_TIMES, OutputOptions::default());
+        let jst = output_with(TWO_TIMES, OutputOptions { hamlog_jst: true });
+        for (name, body) in &utc {
+            if !name.starts_with("hamlog-") {
+                assert_eq!(&jst[name], body, "{name}");
+            }
+        }
+    }
+
+    #[test]
+    fn jst_rolls_the_month_and_the_year() {
+        let t = hamlog_times(&output_with(
+            "mycall JA1ABC\ndate 2026-12-31\n40m cw\nmysota JA/TK-001\n1600 ja1aaa",
+            OutputOptions { hamlog_jst: true },
+        ));
+        assert_eq!(t, [("27/01/01".into(), "01:00J".into())]);
     }
 }

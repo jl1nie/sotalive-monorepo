@@ -1021,9 +1021,9 @@ fn commands() -> impl Iterator<Item = Term> {
         // 廃止した指令は、候補に出さない
         .filter(|d| d.operand != Operand::RenamedToRig)
         .map(|d| Term {
-        text: d.key,
-        kind: TermKind::Command,
-    })
+            text: d.key,
+            kind: TermKind::Command,
+        })
 }
 
 fn bands() -> impl Iterator<Item = Term> {
@@ -1070,7 +1070,9 @@ pub fn expected_next(head: &str) -> Vec<Term> {
             // バンド(周波数)とモードは、時刻のあとに順不同で置ける。コールサインのあとに書いても、
             // その行に効く。コールサインのあとは、RST・参照・メッセージの語と区別できないので、
             // 打ち始めてから出す(`min_prefix_len`)。
-            let has_call = items.iter().any(|it| matches!(it.node, QsoItem::Call { .. }));
+            let has_call = items
+                .iter()
+                .any(|it| matches!(it.node, QsoItem::Call { .. }));
             if !has_call && !before_call(&items) {
                 return Vec::new();
             }
@@ -1794,7 +1796,9 @@ mod tests {
             .map(|x| x.text)
             .collect();
         // 廃止した指令(rigset)は、候補に出さない
-        let live = DIRECTIVES.iter().filter(|d| d.operand != Operand::RenamedToRig);
+        let live = DIRECTIVES
+            .iter()
+            .filter(|d| d.operand != Operand::RenamedToRig);
         assert_eq!(t.len(), live.count());
         assert!(!t.contains(&"rigset") && t.contains(&"rig"));
         assert!(!t.contains(&"consecutive"), "consecutive は `number` の値");

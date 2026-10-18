@@ -194,7 +194,17 @@ export async function checkOutput(text: string): Promise<OutputWarning[]> {
   return wasmCheckOutput(text) as OutputWarning[]
 }
 
-export async function generateFleZip(text: string, now: Date = new Date()): Promise<Uint8Array> {
+/** 出力のオプション(設定から渡す) */
+export interface OutputOptions {
+  /** HAMLOG の CSV の日付・時刻を JST で出す(ほかの出力は、常に UTC) */
+  hamlogJst?: boolean
+}
+
+export async function generateFleZip(
+  text: string,
+  now: Date = new Date(),
+  options: OutputOptions = {}
+): Promise<Uint8Array> {
   await ensureReady()
-  return wasmGenerateZip(text, now.getTime())
+  return wasmGenerateZip(text, now.getTime(), options)
 }

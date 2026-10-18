@@ -187,7 +187,13 @@ fn apply_directive(env: &mut FleEnvironment, d: &Directive, here: Here) {
             None => here.error(env, "date_out_of_range", &[], arg, "Date out of range."),
         },
         DirValue::Timezone(tz) => env.timezone = Some(*tz),
-        DirValue::Rig(rig) => env.rig = if rig == "-" { String::new() } else { rig.clone() },
+        DirValue::Rig(rig) => {
+            env.rig = if rig == "-" {
+                String::new()
+            } else {
+                rig.clone()
+            }
+        }
         DirValue::Nickname(n) => env.nickname = n.clone(),
         DirValue::NumberConsecutive => env.contest_num = Some(1),
         DirValue::NumberLiteral(lit) => env.contest_lit = Some(lit.clone()),
@@ -293,7 +299,7 @@ fn eval_qso(
     let mut angle: Option<String> = None; // <…>: QSOメッセージ
     let mut curly: Option<String> = None; // {…}: 備考
     let mut plain: Vec<String> = Vec::new(); // 平文の語(並べた順)
-    // 書かれたRST。モードがコールサインのあとに来ても既定値が合うよう、行の最後に重ねる
+                                             // 書かれたRST。モードがコールサインのあとに来ても既定値が合うよう、行の最後に重ねる
     let mut written_rst: (Option<RstValue>, Option<RstValue>) = (None, None);
 
     for it in items {
@@ -540,9 +546,17 @@ mod tests {
 
     #[test]
     fn the_default_rst_follows_a_mode_written_after_the_callsign() {
-        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz ssb\n0910 ja1abc 57 ssb");
+        let r = compile_fle(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz ssb\n0910 ja1abc 57 ssb",
+        );
         assert!(r.errors.is_empty());
-        assert_eq!((r.records[0].rst_sent.as_str(), r.records[0].rst_rcvd.as_str()), ("59", "59"));
+        assert_eq!(
+            (
+                r.records[0].rst_sent.as_str(),
+                r.records[0].rst_rcvd.as_str()
+            ),
+            ("59", "59")
+        );
         assert_eq!(r.records[1].rst_sent, "57");
     }
 
@@ -556,15 +570,21 @@ mod tests {
         let codes: Vec<&str> = r.errors.iter().map(|e| e.code.as_str()).collect();
         assert_eq!(codes, vec!["missing_band", "missing_mode"]);
         // 同じ行で、コールサインのあとに書いたバンドとモードは有効
-        assert!(compile_fle("mycall JA1ABC\ndate 2026-10-18\n0900 ja1xyz 40m cw")
-            .errors
-            .is_empty());
-        assert!(compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m\n0900 ja1xyz cw")
-            .errors
-            .is_empty());
-        assert!(compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz")
-            .errors
-            .is_empty());
+        assert!(
+            compile_fle("mycall JA1ABC\ndate 2026-10-18\n0900 ja1xyz 40m cw")
+                .errors
+                .is_empty()
+        );
+        assert!(
+            compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m\n0900 ja1xyz cw")
+                .errors
+                .is_empty()
+        );
+        assert!(
+            compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz")
+                .errors
+                .is_empty()
+        );
     }
 
     #[test]

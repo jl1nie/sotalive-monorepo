@@ -11,3 +11,7 @@ directory = "functions"
 # myact2.sotalive.net → /myact
 # logconv2.sotalive.net → /logconv
 # wspr2.sotalive.net → /wspr
+
+# FLEonline の設定の同期(functions/api/fle/prefs)。KV の名前空間を作り、Pages の設定
+# (Workers & Pages → sotalive → Settings → Bindings → KV namespace)で、変数名 FLE_PREFS に束縛する。
+# 束縛がなければ、同期は無効(503)になり、アプリは今までどおり端末の設定だけで動く。

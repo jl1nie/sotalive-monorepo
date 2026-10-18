@@ -145,7 +145,15 @@ describe('fle wasm', () => {
     expect(Array.from(zip.slice(0, 2))).toEqual([0x50, 0x4b]) // "PK"
   })
 
+  it('generateZip: 出力のオプション(HAMLOG を JST で)を渡せる。省略もできる', () => {
+    // 中身(日時)は、コアのテストと、画面の通しで確かめる。ここは、受け渡しだけ
+    for (const options of [undefined, {}, { hamlogJst: true }]) {
+      const zip = generateZip(SAMPLE, 0, options)
+      expect([zip[0], zip[1]]).toEqual([0x50, 0x4b]) // PK
+    }
+  })
+
   it('generateZip: 空入力は例外', () => {
-    expect(() => generateZip('', 0)).toThrow()
+    expect(() => generateZip('', 0, undefined)).toThrow()
   })
 })
