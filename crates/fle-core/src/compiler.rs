@@ -295,6 +295,8 @@ fn eval_qso(
     let mut angle: Option<String> = None; // <…>: QSOメッセージ
     let mut curly: Option<String> = None; // {…}: 備考
     let mut plain: Vec<String> = Vec::new(); // 平文の語(並べた順)
+    // 書かれたRST。モードがコールサインのあとに来ても既定値が合うよう、行の最後に重ねる
+    let mut written_rst: (Option<RstValue>, Option<RstValue>) = (None, None);
 
     for it in items {
         if let QsoItem::Comment { kind, content, .. } = &it.node {
@@ -360,12 +362,10 @@ fn eval_qso(
                 env.current.call = call.clone();
                 // RST は、省略したら、モード別の既定値
                 set_default_rst(env);
-                if let Some(r) = rst_sent {
-                    env.current.rst_sent = rst_value(&r.node);
-                }
-                if let Some(r) = rst_rcvd {
-                    env.current.rst_rcvd = rst_value(&r.node);
-                }
+                written_rst = (
+                    rst_sent.as_ref().map(|r| rst_value(&r.node)),
+                    rst_rcvd.as_ref().map(|r| rst_value(&r.node)),
+                );
             }
             QsoItem::Ref { kind, code } => match kind {
                 RefKind::Sota => env.current.his_sota = code.clone(),
@@ -420,6 +420,17 @@ fn eval_qso(
                     ),
                 }
             }
+        }
+    }
+
+    // RST: 省略した側は、行のモード(コールサインのあとに書いても)の既定値
+    if !env.current.call.is_empty() {
+        set_default_rst(env);
+        if let Some(v) = written_rst.0 {
+            env.current.rst_sent = v;
+        }
+        if let Some(v) = written_rst.1 {
+            env.current.rst_rcvd = v;
         }
     }
 
@@ -518,6 +529,14 @@ fn determine_log_type(has_sota: bool, has_wwff: bool, has_pota: bool) -> String 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_default_rst_follows_a_mode_written_after_the_callsign() {
+        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz ssb\n0910 ja1abc 57 ssb");
+        assert!(r.errors.is_empty());
+        assert_eq!((r.records[0].rst_sent.as_str(), r.records[0].rst_rcvd.as_str()), ("59", "59"));
+        assert_eq!(r.records[1].rst_sent, "57");
+    }
 
     #[test]
     fn a_qso_without_a_mode_is_an_error() {
