@@ -87,5 +87,9 @@ export default defineConfig({
   },
   server: {
     port: 3003,
+    // 本番は Cloudflare Pages の中継(functions/_middleware.ts)が同じ役目をする
+    proxy: {
+      '/api': { target: 'https://sotaapp2.fly.dev', changeOrigin: true },
+    },
   },
 })
