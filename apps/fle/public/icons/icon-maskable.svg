@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#1d4ed8"/>
+  <text x="256" y="292" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-weight="700" font-size="150" text-anchor="middle" fill="#ffffff" letter-spacing="-4">FLE</text>
+  <rect x="146" y="326" width="220" height="13" rx="6.5" fill="#ffffff"/>
+</svg>

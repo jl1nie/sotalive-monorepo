@@ -1,0 +1,17 @@
+[package]
+name = "fle-core"
+version = "0.1.0"
+edition = "2021"
+description = "FLE (Fast Log Entry) parser and log converter. Pure, I/O-free."
+
+[dependencies]
+chrono.workspace = true
+once_cell.workspace = true
+regex.workspace = true
+serde.workspace = true
+zip.workspace = true
+flate2.workspace = true
+nom = "7"
+
+[dev-dependencies]
+serde_json.workspace = true

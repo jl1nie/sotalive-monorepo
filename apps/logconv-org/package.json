@@ -1,0 +1,10 @@
+{
+  "name": "@sotalive/logconv-org",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve -l 3002 .",
+    "build": "echo 'Static site - no build required'",
+    "preview": "npx serve ."
+  }
+}

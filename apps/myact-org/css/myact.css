@@ -1,0 +1,113 @@
+/* MyACT Custom Styles */
+
+.progress {
+	height: 2px;
+}
+
+/* Mobile styles */
+@media screen and (max-width: 767px) {
+	#map {
+		width: auto;
+		height: calc(var(--vh, 1vh)*100 - 30px);
+		border: 1px solid #aaa;
+	}
+
+	#qrvinfo {
+		width: auto;
+		height: calc(var(--vh, 1vh)*100 - 30px);
+		overflow: auto;
+		border: 1px solid #aaa;
+		-webkit-overflow-scrolling: touch;
+	}
+}
+
+/* Desktop styles */
+@media screen and (min-width: 768px) {
+	#map {
+		width: auto;
+		height: calc(var(--vh, 1vh)*100 - 56px);
+		border: 1px solid #aaa;
+	}
+
+	#qrvinfo {
+		width: auto;
+		height: calc(var(--vh, 1vh)*100 - 56px);
+		overflow: auto;
+		border: 1px solid #aaa;
+		-webkit-overflow-scrolling: touch;
+	}
+}
+
+/* Modal styles */
+.modal-header {
+	padding-top: 2px;
+	height: 34px;
+	padding-bottom: 2px;
+}
+
+.modal-footer {
+	padding-top: 2px;
+	height: 24px;
+	padding-bottom: 2px;
+}
+
+.modal-body>.img-responsive {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+/* Slider */
+.slider.slider-horizontal {
+	width: 100px !important;
+}
+
+/* Navbar */
+.navbar-dark .navbar-toggler {
+	border-color: rgba(0, 0, 0, 0);
+}
+
+.navbar-toggler-icon {
+	font-size: 0.8em;
+}
+
+.collapse.in {
+	height: auto;
+}
+
+/* Semantic UI custom */
+i.semantic-ui-custom {
+	margin-top: 9px;
+}
+
+/* Blink animation */
+@keyframes blink {
+	50% {
+		opacity: 0.3;
+	}
+}
+
+@-webkit-keyframes blink {
+	50% {
+		opacity: 0.3;
+	}
+}
+
+.blink-me {
+	animation: blink 1s linear infinite;
+	-webkit-animation: blink 1s linear infinite;
+}
+
+/* Button overrides */
+.btn {
+	margin: 0.1rem !important;
+	padding: 0.4rem 0.5rem !important;
+}
+
+/* Map tooltip */
+.my-tooltip-label {
+	color: white;
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	font-size: 8px;
+}

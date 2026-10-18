@@ -31,9 +31,52 @@ async function fetchAsset(
   return response;
 }
 
+// 準備中のページ（myact2 は、公開の準備ができるまでこれを返す）
+const UNDER_CONSTRUCTION = `<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Under Construction</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; min-height: 100dvh; display: grid; place-items: center; text-align: center;
+         font: 16px/1.6 system-ui, sans-serif; padding: 1rem; }
+  h1 { font-size: 1.75rem; margin: 0 0 .5rem; }
+  p { margin: 0; opacity: .8; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Under Construction</h1>
+  <p>現在、準備中です。</p>
+  <p>This site is under construction.</p>
+</main>
+</body>
+</html>`;
+
 export const onRequest: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const hostname = url.hostname;
+
+  // myact2 は準備中
+  if (hostname.startsWith("myact2")) {
+    return new Response(UNDER_CONSTRUCTION, {
+      status: 503,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "retry-after": "86400",
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex",
+      },
+    });
+  }
+
+  // FLEonline は /fle/ で動く（PWA の範囲が /fle/ のため、ルートは転送する）
+  if (hostname.startsWith("fle") && (url.pathname === "/" || url.pathname === "")) {
+    return Response.redirect(new URL("/fle/" + url.search, url).toString(), 302);
+  }
 
   // APIリクエストはバックエンドにプロキシ
   if (url.pathname.startsWith("/api/")) {
@@ -51,8 +94,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   // サブドメインに基づいてアプリを選択
   // WSPRはlogconvのタブ内に含まれるため独立アプリ不要
   let appPath = "";
-  if (hostname.startsWith("myact")) {
+  if (hostname.startsWith("myact2")) {
+    appPath = "/myact2";
+  } else if (hostname.startsWith("myact")) {
     appPath = "/myact";
+  } else if (hostname.startsWith("fle")) {
+    appPath = "/fle";
+  } else if (hostname.startsWith("logconv2")) {
+    appPath = "/logconv";
   } else if (hostname.startsWith("logconv")) {
     appPath = "/logconv";
   }

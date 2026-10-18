@@ -1,0 +1,283 @@
+.potalog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.potalog-modal {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.potalog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.potalog-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.potalog-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  line-height: 1;
+}
+
+.potalog-close:hover {
+  color: #333;
+}
+
+.potalog-tabs {
+  display: flex;
+  border-bottom: 1px solid #eee;
+}
+
+.potalog-tab {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.potalog-tab:first-child {
+  border-radius: 0;
+}
+
+.potalog-tab:last-child {
+  border-radius: 0;
+}
+
+.potalog-tab.active {
+  background: white;
+  color: #1976d2;
+  border-bottom: 2px solid #1976d2;
+}
+
+.potalog-tab:not(.active):hover {
+  background: #e8e8e8;
+}
+
+.potalog-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.potalog-error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.potalog-section {
+  margin-bottom: 24px;
+}
+
+.potalog-section:last-child {
+  margin-bottom: 0;
+}
+
+.potalog-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #1976d2;
+  font-weight: 600;
+}
+
+.potalog-hint {
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 8px 0;
+}
+
+.potalog-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.potalog-uuid {
+  font-family: monospace;
+  font-size: 13px;
+  color: #333;
+  flex: 1;
+}
+
+.potalog-empty {
+  color: #999;
+  font-size: 14px;
+}
+
+.potalog-upload input[type="file"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.potalog-disabled {
+  padding: 16px;
+  background: #fff3e0;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.potalog-disabled p {
+  margin: 0 0 8px 0;
+  color: #e65100;
+  font-size: 14px;
+}
+
+.potalog-disabled p:last-child {
+  margin-bottom: 0;
+}
+
+.potalog-share-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #e8f5e9;
+  border-radius: 4px;
+}
+
+.potalog-share-result span {
+  font-size: 14px;
+  color: #333;
+}
+
+.potalog-share-result code {
+  flex: 1;
+  font-family: monospace;
+  font-size: 14px;
+  color: #2e7d32;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.potalog-import {
+  display: flex;
+  gap: 8px;
+}
+
+.potalog-import input[type="text"] {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.potalog-import input[type="text"]:focus {
+  border-color: #1976d2;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.potalog-import-result {
+  margin-top: 12px;
+  padding: 12px;
+  background: #e8f5e9;
+  border-radius: 4px;
+  color: #2e7d32;
+  font-size: 14px;
+}
+
+.potalog-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Buttons */
+.potalog-modal .btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.potalog-modal .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.potalog-modal .btn-primary {
+  background: #1976d2;
+  color: white;
+}
+
+.potalog-modal .btn-primary:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.potalog-modal .btn-danger {
+  background: #d32f2f;
+  color: white;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.potalog-modal .btn-danger:hover:not(:disabled) {
+  background: #c62828;
+}
+
+.potalog-modal .btn-small {
+  background: #f5f5f5;
+  color: #333;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.potalog-modal .btn-small:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.potalog-modal .btn-close {
+  background: #1976d2;
+  color: white;
+}
+
+.potalog-modal .btn-close:hover {
+  background: #1565c0;
+}
