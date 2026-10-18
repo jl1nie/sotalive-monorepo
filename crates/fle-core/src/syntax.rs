@@ -170,7 +170,8 @@ pub enum DirValue {
     /// 進める日数(`+` = 1、`++` = 2)
     Day(i64),
     Timezone(i32),
-    Rigset(u8),
+    /// HAMLOG の `Rig=` の右辺(`-` は解除)
+    Rig(String),
     Nickname(String),
     NumberConsecutive,
     NumberLiteral(String),
@@ -194,7 +195,8 @@ pub enum Operand {
     /// `+` か `++`
     DayStep,
     Timezone,
-    Rigset,
+    /// 廃止した `rigset`(`rig` に変わった。誤りとして、案内を出す)
+    RenamedToRig,
     /// 任意の1語
     Word,
     /// `consecutive`、または任意の1語
@@ -210,7 +212,7 @@ pub struct DirSpec {
     pub operand: Operand,
 }
 
-pub const DIRECTIVES: [DirSpec; 14] = [
+pub const DIRECTIVES: [DirSpec; 15] = [
     DirSpec {
         key: "mycall",
         operand: Operand::Call,
@@ -248,8 +250,12 @@ pub const DIRECTIVES: [DirSpec; 14] = [
         operand: Operand::Timezone,
     },
     DirSpec {
+        key: "rig",
+        operand: Operand::Rest,
+    },
+    DirSpec {
         key: "rigset",
-        operand: Operand::Rigset,
+        operand: Operand::RenamedToRig,
     },
     DirSpec {
         key: "nickname",
@@ -649,7 +655,18 @@ fn directive_value(
     let words: Vec<&Arg> = args.iter().filter(|a| a.class.is_some()).collect();
     let first = words.first().copied();
 
-    // 行の残り(qslmsg)は、注釈も含めて、1語ずつ空白でつなぐ
+    // 廃止した指令(`rigset`)。値があってもなくても、案内を出す
+    if spec.operand == Operand::RenamedToRig {
+        errors.push(SyntaxError::new(
+            "renamed_directive",
+            &[key, "rig"],
+            key_span,
+            "rigset was replaced by rig. Write the HAMLOG Rig= value, e.g. rig 40mST1.",
+        ));
+        return None;
+    }
+
+    // 行の残り(qslmsg・rig)は、注釈も含めて、1語ずつ空白でつなぐ
     if spec.operand == Operand::Rest {
         if args.is_empty() {
             errors.push(operand_error(
@@ -666,10 +683,10 @@ fn directive_value(
             .map(|a| a.raw.as_str())
             .collect::<Vec<_>>()
             .join(" ");
-        return Some(if key == "qslmsg" {
-            DirValue::Qslmsg(msg)
-        } else {
-            DirValue::Qslmsg2(msg)
+        return Some(match key {
+            "qslmsg" => DirValue::Qslmsg(msg),
+            "rig" => DirValue::Rig(msg),
+            _ => DirValue::Qslmsg2(msg),
         });
     }
 
@@ -690,7 +707,7 @@ fn directive_value(
             Operand::PotaList => missing(errors, "Missing POTA ref#."),
             Operand::Grid => missing(errors, "Missing grid locator."),
             Operand::DayStep => missing(errors, "Missing operand +/++."),
-            Operand::Timezone => missing(errors, "Missing timezone. (eg. +9)"),
+            Operand::Timezone => missing(errors, "Missing timezone. (eg. +9 or jst)"),
             _ => missing(errors, "Missing operand."),
         };
     };
@@ -804,6 +821,9 @@ fn directive_value(
                 None
             }
         },
+        // `jst` は +9、`utc` は 0(大文字小文字は問わない)。ほかの名前は、略称が国で違うので作らない
+        Operand::Timezone if first.raw.eq_ignore_ascii_case("jst") => Some(DirValue::Timezone(9)),
+        Operand::Timezone if first.raw.eq_ignore_ascii_case("utc") => Some(DirValue::Timezone(0)),
         Operand::Timezone => match class {
             Class::Snr(tz) => match tz.parse::<i32>() {
                 Ok(v) => Some(DirValue::Timezone(v)),
@@ -811,13 +831,7 @@ fn directive_value(
             },
             _ => invalid(errors, format!("{} is invalid timezone.", first.raw)),
         },
-        Operand::Rigset => match class {
-            Class::Decimal { value, .. } => match value.parse::<u8>() {
-                Ok(v) => Some(DirValue::Rigset(v)),
-                Err(_) => invalid(errors, "Invalid Rig set#.".into()),
-            },
-            _ => invalid(errors, "Invalid Rig set#.".into()),
-        },
+        Operand::RenamedToRig => unreachable!("handled above"),
         Operand::Word => Some(DirValue::Nickname(first.raw.clone())),
         Operand::NumberKind => {
             if first.raw.eq_ignore_ascii_case("consecutive") {
@@ -995,6 +1009,8 @@ pub enum TermKind {
     Band,
     Mode,
     Day,
+    /// `timezone` の後ろの `jst` / `utc`
+    Timezone,
 }
 
 /// 次に来られるキーワード
@@ -1005,10 +1021,14 @@ pub struct Term {
 }
 
 fn commands() -> impl Iterator<Item = Term> {
-    DIRECTIVES.iter().map(|d| Term {
-        text: d.key,
-        kind: TermKind::Command,
-    })
+    DIRECTIVES
+        .iter()
+        // 廃止した指令は、候補に出さない
+        .filter(|d| d.operand != Operand::RenamedToRig)
+        .map(|d| Term {
+            text: d.key,
+            kind: TermKind::Command,
+        })
 }
 
 fn bands() -> impl Iterator<Item = Term> {
@@ -1049,13 +1069,22 @@ pub fn expected_next(head: &str) -> Vec<Term> {
                 text: "consecutive",
                 kind: TermKind::Command,
             }],
+            (Operand::Timezone, 0) => ["jst", "utc"]
+                .into_iter()
+                .map(|text| Term {
+                    text,
+                    kind: TermKind::Timezone,
+                })
+                .collect(),
             _ => Vec::new(),
         },
         LineKind::Qso(items) => {
             // バンド(周波数)とモードは、時刻のあとに順不同で置ける。コールサインのあとに書いても、
             // その行に効く。コールサインのあとは、RST・参照・メッセージの語と区別できないので、
             // 打ち始めてから出す(`min_prefix_len`)。
-            let has_call = items.iter().any(|it| matches!(it.node, QsoItem::Call { .. }));
+            let has_call = items
+                .iter()
+                .any(|it| matches!(it.node, QsoItem::Call { .. }));
             if !has_call && !before_call(&items) {
                 return Vec::new();
             }
@@ -1348,7 +1377,17 @@ mod tests {
         assert_eq!(dir("day ++").0, Some(DirValue::Day(2)));
         assert_eq!(dir("timezone +9").0, Some(DirValue::Timezone(9)));
         assert_eq!(dir("timezone -5").0, Some(DirValue::Timezone(-5)));
-        assert_eq!(dir("rigset 2").0, Some(DirValue::Rigset(2)));
+        // jst・utc(大文字小文字は問わない)
+        assert_eq!(dir("timezone jst").0, Some(DirValue::Timezone(9)));
+        assert_eq!(dir("timezone JST").0, Some(DirValue::Timezone(9)));
+        assert_eq!(dir("timezone utc").0, Some(DirValue::Timezone(0)));
+        assert_eq!(dir("timezone Utc").0, Some(DirValue::Timezone(0)));
+        // rig は行の残り(HAMLOG の Rig= の右辺)。`/` や `+` を含んでよい
+        assert_eq!(
+            dir("rig KX2/IC-705+EFHW").0,
+            Some(DirValue::Rig("KX2/IC-705+EFHW".into()))
+        );
+        assert_eq!(dir("rig -").0, Some(DirValue::Rig("-".into())));
         assert_eq!(
             dir("nickname Taro").0,
             Some(DirValue::Nickname("Taro".into()))
@@ -1416,7 +1455,10 @@ mod tests {
         );
         assert_eq!(
             msg("timezone"),
-            Some(("missing_operand", "Missing timezone. (eg. +9)".into()))
+            Some((
+                "missing_operand",
+                "Missing timezone. (eg. +9 or jst)".into()
+            ))
         );
         assert_eq!(
             msg("qslmsg"),
@@ -1443,8 +1485,16 @@ mod tests {
         assert_eq!(dir("operator ???").1[0].message, "Invalid operator.");
         assert_eq!(dir("date hello").1[0].message, "Wrong date format.");
         assert_eq!(dir("timezone 9").1[0].message, "9 is invalid timezone.");
-        assert_eq!(dir("rigset x").1[0].message, "Invalid Rig set#.");
-        assert_eq!(dir("rigset 999").1[0].message, "Invalid Rig set#.");
+        // 名前は jst と utc だけ(略称は、国で意味が違う)
+        assert_eq!(dir("timezone pst").1[0].code, "invalid_operand");
+        // rigset は rig に変わった。値があってもなくても、案内を出す
+        for line in ["rigset 2", "rigset x", "rigset"] {
+            let (value, errors) = dir(line);
+            assert_eq!(value, None, "{line}");
+            assert_eq!(errors[0].code, "renamed_directive", "{line}");
+            assert_eq!(errors[0].args, vec!["rigset", "rig"], "{line}");
+        }
+        assert_eq!(dir("rig").1[0].code, "missing_operand");
         assert_eq!(dir("day x").1[0].code, "unknown_operand");
         assert_eq!(
             dir("mygrid XX99").1[0].message,
@@ -1767,7 +1817,12 @@ mod tests {
             .filter(|x| x.kind == TermKind::Command)
             .map(|x| x.text)
             .collect();
-        assert_eq!(t.len(), DIRECTIVES.len());
+        // 廃止した指令(rigset)は、候補に出さない
+        let live = DIRECTIVES
+            .iter()
+            .filter(|d| d.operand != Operand::RenamedToRig);
+        assert_eq!(t.len(), live.count());
+        assert!(!t.contains(&"rigset") && t.contains(&"rig"));
         assert!(!t.contains(&"consecutive"), "consecutive は `number` の値");
     }
 

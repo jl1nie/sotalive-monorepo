@@ -13,7 +13,7 @@ interface Props {
 export function RefList({ items, onPick, showKind }: Props) {
   const { t, lang } = useI18n()
   return (
-    <ul {...keepFocus} className="mt-1 space-y-1">
+    <ul {...keepFocus} className="mt-1 space-y-1 max-h-[40dvh] overflow-y-auto overscroll-contain touch-pan-y">
       {items.map((c) => (
         <li key={`${c.kind}:${c.code}`}>
           <button

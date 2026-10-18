@@ -75,7 +75,7 @@ pub fn compile_fle(input: &str) -> FleCompileResult {
         mywwff: env.mywwff.clone(),
         mypota: env.mypota.clone(),
         mygrid: env.mygrid.clone(),
-        qslmsg: env.qslmsg.clone(),
+        qslmsg: expand_rig(&env.qslmsg, &env.rig),
         records,
         errors: env.errors,
         has_sota,
@@ -187,9 +187,12 @@ fn apply_directive(env: &mut FleEnvironment, d: &Directive, here: Here) {
             None => here.error(env, "date_out_of_range", &[], arg, "Date out of range."),
         },
         DirValue::Timezone(tz) => env.timezone = Some(*tz),
-        DirValue::Rigset(v) => {
-            env.rigset = *v;
-            env.current.rigset = *v;
+        DirValue::Rig(rig) => {
+            env.rig = if rig == "-" {
+                String::new()
+            } else {
+                rig.clone()
+            }
         }
         DirValue::Nickname(n) => env.nickname = n.clone(),
         DirValue::NumberConsecutive => env.contest_num = Some(1),
@@ -200,6 +203,7 @@ fn apply_directive(env: &mut FleEnvironment, d: &Directive, here: Here) {
                 .replace("$mywwff", &env.mywwff)
                 .replace("$mysota", &env.mysota)
                 .replace("$mypota", &env.mypota.join(" "));
+            // `$rig` は、QSOごとに、そのときの `rig` で置き換える(あとで `rig` を変えても、メッセージを書き直さなくてよい)
         }
         DirValue::Qslmsg2(msg) => env.qslmsg2 = msg.clone(),
     }
@@ -295,7 +299,7 @@ fn eval_qso(
     let mut angle: Option<String> = None; // <…>: QSOメッセージ
     let mut curly: Option<String> = None; // {…}: 備考
     let mut plain: Vec<String> = Vec::new(); // 平文の語(並べた順)
-    // 書かれたRST。モードがコールサインのあとに来ても既定値が合うよう、行の最後に重ねる
+                                             // 書かれたRST。モードがコールサインのあとに来ても既定値が合うよう、行の最後に重ねる
     let mut written_rst: (Option<RstValue>, Option<RstValue>) = (None, None);
 
     for it in items {
@@ -497,7 +501,7 @@ fn eval_qso(
         band: env.current.band.clone(),
         freq: env.current.freq.clone(),
         mode: env.current.mode.clone(),
-        rigset: env.current.rigset,
+        rig: env.rig.clone(),
         rst_sent: env.current.rst_sent.to_string(),
         rst_rcvd: env.current.rst_rcvd.to_string(),
         his_num: env.current.his_num.clone(),
@@ -511,8 +515,16 @@ fn eval_qso(
         hispota: env.current.his_pota.clone(),
         qsomsg: env.current.qso_msg.clone(),
         qsormks: env.current.qso_rmks.clone(),
-        qslmsg: env.qslmsg.clone(),
+        qslmsg: expand_rig(&env.qslmsg, &env.rig),
     })
+}
+
+/// QSLメッセージの `$rig` を、そのQSOの `rig` で置き換える。`rig` が空のとき、末尾に空白が残らないようにする
+fn expand_rig(qslmsg: &str, rig: &str) -> String {
+    if !qslmsg.contains("$rig") {
+        return qslmsg.to_string();
+    }
+    qslmsg.replace("$rig", rig).trim_end().to_string()
 }
 
 /// ログタイプを決定
@@ -534,9 +546,17 @@ mod tests {
 
     #[test]
     fn the_default_rst_follows_a_mode_written_after_the_callsign() {
-        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz ssb\n0910 ja1abc 57 ssb");
+        let r = compile_fle(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz ssb\n0910 ja1abc 57 ssb",
+        );
         assert!(r.errors.is_empty());
-        assert_eq!((r.records[0].rst_sent.as_str(), r.records[0].rst_rcvd.as_str()), ("59", "59"));
+        assert_eq!(
+            (
+                r.records[0].rst_sent.as_str(),
+                r.records[0].rst_rcvd.as_str()
+            ),
+            ("59", "59")
+        );
         assert_eq!(r.records[1].rst_sent, "57");
     }
 
@@ -550,15 +570,21 @@ mod tests {
         let codes: Vec<&str> = r.errors.iter().map(|e| e.code.as_str()).collect();
         assert_eq!(codes, vec!["missing_band", "missing_mode"]);
         // 同じ行で、コールサインのあとに書いたバンドとモードは有効
-        assert!(compile_fle("mycall JA1ABC\ndate 2026-10-18\n0900 ja1xyz 40m cw")
-            .errors
-            .is_empty());
-        assert!(compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m\n0900 ja1xyz cw")
-            .errors
-            .is_empty());
-        assert!(compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz")
-            .errors
-            .is_empty());
+        assert!(
+            compile_fle("mycall JA1ABC\ndate 2026-10-18\n0900 ja1xyz 40m cw")
+                .errors
+                .is_empty()
+        );
+        assert!(
+            compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m\n0900 ja1xyz cw")
+                .errors
+                .is_empty()
+        );
+        assert!(
+            compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz")
+                .errors
+                .is_empty()
+        );
     }
 
     #[test]
@@ -817,6 +843,52 @@ date 2024-01-15
         assert_eq!(
             (r.mycall.as_str(), r.records[0].mode.as_str()),
             ("JA1ABC", "CW")
+        );
+    }
+
+    // ---- rig(HAMLOG の Rig= の右辺)----
+
+    #[test]
+    fn rig_applies_from_its_line_and_can_be_cleared() {
+        let r = compile_fle(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1aaa\nrig KX2/IC-705+EFHW\n0910 ja1bbb\n0920 ja1ccc\nrig -\n0930 ja1ddd",
+        );
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        let rigs: Vec<&str> = r.records.iter().map(|q| q.rig.as_str()).collect();
+        assert_eq!(rigs, ["", "KX2/IC-705+EFHW", "KX2/IC-705+EFHW", ""]);
+    }
+
+    #[test]
+    fn dollar_rig_follows_the_rig_of_each_qso() {
+        // qslmsg を書いたあとで rig を変えても、メッセージを書き直さなくてよい
+        let r = compile_fle(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\nqslmsg TNX $rig\n0900 ja1aaa\nrig A\n0910 ja1bbb\nrig B\n0920 ja1ccc",
+        );
+        let msgs: Vec<&str> = r.records.iter().map(|q| q.qslmsg.as_str()).collect();
+        assert_eq!(msgs, ["TNX", "TNX A", "TNX B"]);
+    }
+
+    #[test]
+    fn rigset_is_an_error_that_points_to_rig() {
+        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\nrigset 1\n0900 ja1aaa");
+        assert_eq!(r.errors.len(), 1);
+        assert_eq!(r.errors[0].code, "renamed_directive");
+        assert_eq!(r.errors[0].args, ["rigset", "rig"]);
+        assert_eq!(r.records[0].rig, ""); // QSO そのものは、記録される
+    }
+
+    #[test]
+    fn timezone_jst_is_nine_hours_ahead_and_utc_is_zero() {
+        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\ntimezone jst\n40m cw\n1805 ja1aaa\ntimezone utc\n1000 ja1bbb");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        // JST 18:05 は UTC 09:05。UTC の 10:00 は、そのまま
+        assert_eq!(
+            (r.records[0].hour, r.records[0].min, r.records[0].tz),
+            (9, 5, 9)
+        );
+        assert_eq!(
+            (r.records[1].hour, r.records[1].min, r.records[1].tz),
+            (10, 0, 0)
         );
     }
 }

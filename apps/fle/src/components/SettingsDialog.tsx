@@ -6,6 +6,9 @@ import {
   type Theme,
 } from '@/hooks/useSettings'
 import { Sheet } from '@/components/Sheet'
+import { parseRigs } from '@/lib/rig'
+import { SyncSection } from '@/components/SyncSection'
+import type { useSync } from '@/hooks/useSync'
 import { useT, type MessageKey } from '@/lib/i18n'
 
 const THEME_OPTIONS: { value: Theme; label: MessageKey; hint: MessageKey }[] = [
@@ -26,9 +29,11 @@ interface Props {
   onClose: () => void
   settings: Settings
   onChange: (patch: Partial<Settings>) => void
+  /** 設定・予定の同期 */
+  sync: ReturnType<typeof useSync>
 }
 
-export function SettingsDialog({ open, onClose, settings, onChange }: Props) {
+export function SettingsDialog({ open, onClose, settings, onChange, sync }: Props) {
   const t = useT()
   return (
     <Sheet open={open} onClose={onClose} title={t('settings.title')}>
@@ -98,6 +103,25 @@ export function SettingsDialog({ open, onClose, settings, onChange }: Props) {
         </label>
 
         <div>
+          <label htmlFor="rigs" className="label">
+            {t('settings.rigs')}
+          </label>
+          <textarea
+            id="rigs"
+            // 打っている途中の改行や空白を消さないよう、画面が持つ文字列を、そのまま見せる
+            defaultValue={settings.rigs.join('\n')}
+            onChange={(e) => onChange({ rigs: parseRigs(e.target.value) })}
+            placeholder={t('settings.rigs.placeholder')}
+            rows={3}
+            spellCheck={false}
+            autoCapitalize="none"
+            autoCorrect="off"
+            className="input font-mono"
+          />
+          <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{t('settings.rigs.hint')}</p>
+        </div>
+
+        <div>
           <label htmlFor="language" className="label">
             {t('settings.language')}
           </label>
@@ -133,6 +157,8 @@ export function SettingsDialog({ open, onClose, settings, onChange }: Props) {
             {t('settings.timezone.hint')}
           </p>
         </div>
+
+        <SyncSection sync={sync} />
       </div>
     </Sheet>
   )

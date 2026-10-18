@@ -7,6 +7,8 @@ const KIND_KEY = {
   band: 'suggest.band',
   mode: 'suggest.mode',
   day: 'suggest.day',
+  timezone: 'suggest.timezone',
+  rig: 'suggest.rig',
 } as const
 
 interface Props {

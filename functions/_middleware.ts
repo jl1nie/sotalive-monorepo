@@ -78,6 +78,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     return Response.redirect(new URL("/fle/" + url.search, url).toString(), 302);
   }
 
+  // FLEonline の設定の同期は、この Functions で処理する(バックエンドには送らない)
+  if (url.pathname.startsWith("/api/fle/prefs/")) {
+    return context.next();
+  }
+
   // APIリクエストはバックエンドにプロキシ
   if (url.pathname.startsWith("/api/")) {
     const backendUrl = new URL(url.pathname + url.search, BACKEND_URL);

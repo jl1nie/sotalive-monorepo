@@ -68,13 +68,21 @@ export interface Completion {
 /** 補完候補。文法上ありえるキーワードで、並べ方もコアが決める。 */
 export interface Candidate {
   text: string
-  kind: 'command' | 'band' | 'mode' | 'day'
+  /** `rig` は、文法でなく、個人の設定の一覧から画面が出す */
+  kind: 'command' | 'band' | 'mode' | 'day' | 'timezone' | 'rig'
 }
 
-/** ログに書かれている形の時刻。UTC以外のときは、時間帯を添える(例: 18:05 (UTC+9)) */
+/** 時間帯の短い表記(+9 は JST、それ以外は UTC+N / UTC-N。UTC は空) */
+export function zoneLabel(tz: number): string {
+  if (tz === 0) return ''
+  if (tz === 9) return 'JST'
+  return `UTC${tz > 0 ? '+' : '-'}${Math.abs(tz)}`
+}
+
+/** ログに書かれている形の時刻。UTC以外のときは、時間帯を添える(例: 18:05 (JST)、20:05 (UTC+8)) */
 export function timeLabel(q: Pick<QsoView, 'time' | 'tz' | 'localTime'>): string {
   if (q.tz === 0) return q.time
-  return `${q.localTime} (UTC${q.tz > 0 ? '+' : '-'}${Math.abs(q.tz)})`
+  return `${q.localTime} (${zoneLabel(q.tz)})`
 }
 
 /** 自局のコールサインと、いまの運用場所。すべて任意(空なら指定なし) */

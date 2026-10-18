@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LangPref, Translate } from '@/lib/i18n'
+import { parseRigs } from '@/lib/rig'
 
 export type Theme = 'light' | 'dark' | 'system'
 
@@ -15,6 +16,8 @@ export interface Settings {
   language: LangPref
   /** キーボードの上に、数字の行(0〜9 と /)を出す(ソフトキーボードで、文字と数字の切り替えを減らす) */
   digitRow: boolean
+  /** よく使うリグ。`rig` の値(HAMLOG の `Rig=` の右辺)の候補になる */
+  rigs: string[]
 }
 
 export const TIMEZONE_MIN = -12
@@ -36,6 +39,7 @@ const DEFAULTS: Settings = {
   writeRst: true,
   language: 'auto',
   digitRow: false,
+  rigs: [],
 }
 
 function load(): Settings {
@@ -53,6 +57,7 @@ function load(): Settings {
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
       language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
+      rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
   } catch {
     return DEFAULTS

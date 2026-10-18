@@ -58,7 +58,8 @@ pub struct FleEnvironment {
     /// 自局のグリッドロケータ(例: PM95uq)。指定がなければ空
     pub mygrid: String,
     pub nickname: String,
-    pub rigset: u8,
+    /// HAMLOG の `Rig=` の右辺(`rig` 指令)。指定がなければ空
+    pub rig: String,
     pub timezone: Option<i32>,
 
     // 基準日付
@@ -93,7 +94,6 @@ pub struct CurrentQsoState {
     pub band: String,
     pub freq: String,
     pub mode: String,
-    pub rigset: u8,
 
     // 相手局情報
     pub call: String,
@@ -222,7 +222,7 @@ impl Default for FleEnvironment {
             mypota: Vec::new(),
             mygrid: String::new(),
             nickname: String::new(),
-            rigset: 0,
+            rig: String::new(),
             timezone: None,
             year: 2000,
             month: 1,
@@ -300,7 +300,8 @@ pub struct FleQsoRecord {
     pub band: String,
     pub freq: String,
     pub mode: String,
-    pub rigset: u8,
+    /// このQSOのときの `rig`(HAMLOG の `Rig=` の右辺)。指定がなければ空
+    pub rig: String,
     pub rst_sent: String,
     pub rst_rcvd: String,
     pub his_num: String,

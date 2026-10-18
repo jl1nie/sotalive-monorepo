@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { FileText, HelpCircle, Home, MapPin, Trash2, Undo2, Upload } from 'lucide-react'
+import { ClipboardList, FileText, HelpCircle, Home, MapPin, Trash2, Undo2, Upload } from 'lucide-react'
 import {
   compileLog,
   completeAt,
@@ -29,10 +29,17 @@ import { usePwa } from '@/hooks/usePwa'
 import { useSettings, type Settings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
 import { DigitRow } from '@/components/DigitRow'
+import { rigCompletion } from '@/lib/rig'
 import { CandidateBar } from '@/components/CandidateBar'
 import { SuggestStrip } from '@/components/SuggestStrip'
 import { QsoSheet } from '@/components/QsoSheet'
 import { PlaceSheet } from '@/components/PlaceSheet'
+import { PlanSheet } from '@/components/PlanSheet'
+import { JoinSheet } from '@/components/JoinSheet'
+import { usePlans } from '@/hooks/usePlans'
+import { useSync } from '@/hooks/useSync'
+import { extraLines, withExtras, type PlanExtras } from '@/lib/planApply'
+import { codeFromText } from '@/lib/sync'
 import { GenerateCheckSheet } from '@/components/GenerateCheckSheet'
 import { Sheet } from '@/components/Sheet'
 
@@ -64,6 +71,16 @@ function Editor({
 }) {
   useVisualViewport()
   const { t } = useI18n()
+  const plansStore = usePlans()
+  const sync = useSync({
+    settings,
+    update: updateSettings,
+    records: plansStore.records,
+    replacePlans: plansStore.replaceAll,
+  })
+  const [plansOpen, setPlansOpen] = useState(false)
+  // QR(URL)で開いたときの同期コード。確かめてから参加する
+  const [joinCode, setJoinCode] = useState<string | null>(() => codeFromText(window.location.hash))
 
   // 前回の入力を復元する(電池切れ・タブの終了でも失わない)
   const [text, setText] = useState(loadLog)
@@ -138,13 +155,20 @@ function Editor({
   // カーソル位置で文法上ありえるキーワードを、コアに尋ねる
   useEffect(() => {
     let current = true
-    completeAt(text.slice(0, caret))
+    const before = text.slice(0, caret)
+    // `rig ` の値は、個人の設定のリグの一覧から出す(文法でなく、画面の動作)
+    const own = rigCompletion(before, settings.rigs)
+    if (own) {
+      setCompletion(own)
+      return
+    }
+    completeAt(before)
       .then((c) => current && setCompletion(c))
       .catch(() => current && setCompletion({ from: 0, candidates: [] }))
     return () => {
       current = false
     }
-  }, [text, caret])
+  }, [text, caret, settings.rigs])
 
   useLayoutEffect(() => {
     const pos = pendingCaret.current
@@ -226,14 +250,15 @@ function Editor({
   }
 
   /** 場所をログに書き込む(指令の行の書式はコアが決める)。誤りがあれば返す */
-  const applyPlace = async (want: Station): Promise<FieldError[]> => {
+  const applyPlace = async (want: Station, extras?: PlanExtras): Promise<FieldError[]> => {
     if (!place) return []
     const plan = await stationPlan(text, place.line, want)
     if (plan.errors.length > 0) return plan.errors
-    if (plan.edits.length > 0) {
-      const at = mapCaret(caret, plan.edits)
+    const edits = extras ? withExtras(text, place.line, plan.edits, extraLines(extras, text)) : plan.edits
+    if (edits.length > 0) {
+      const at = mapCaret(caret, edits)
       pendingCaret.current = at
-      setText(applyEdits(text, plan.edits))
+      setText(applyEdits(text, edits))
       setCaret(at)
     }
     saveLastCall(want.mycall)
@@ -405,6 +430,7 @@ function Editor({
         onMenu={() => setMenuOpen(true)}
         settings={settings}
         onSettingsChange={updateSettings}
+        sync={sync}
       />
 
       <div className="relative flex-1 min-h-0 flex">
@@ -511,6 +537,24 @@ function Editor({
         initial={place?.initial ?? { mycall: '', sota: '', pota: [], wwff: '', grid: '' }}
         isNewLog={place?.isNewLog ?? true}
         onApply={applyPlace}
+        plans={plansStore.plans}
+      />
+
+      <PlanSheet
+        open={plansOpen}
+        onClose={() => setPlansOpen(false)}
+        plans={plansStore.plans}
+        onSave={plansStore.save}
+        onRemove={plansStore.remove}
+      />
+
+      <JoinSheet
+        code={joinCode}
+        onJoin={sync.joinWith}
+        onClose={() => {
+          setJoinCode(null)
+          history.replaceState(null, '', window.location.pathname + window.location.search)
+        }}
       />
 
       <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title={t('menu.title')}>
@@ -526,6 +570,19 @@ function Editor({
             >
               <MapPin className="w-5 h-5" />
               {t('menu.place')}
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              className={MENU_ITEM}
+              onClick={() => {
+                setMenuOpen(false)
+                setPlansOpen(true)
+              }}
+            >
+              <ClipboardList className="w-5 h-5" />
+              {t('menu.plans')}
             </button>
           </li>
           <li>

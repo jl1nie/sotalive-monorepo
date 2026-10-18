@@ -28,7 +28,7 @@ describe('errors', () => {
 
   it('コアが返す誤りのコードは、すべて日本語の文面を持つ', () => {
     const logs = [
-      'date 2026-13-45', 'mycall JA1ABC\n40m cw\n2500 ja1xyz', 'mycall JA1ABC\n40m cw\n0900 ja1aaa ja1bbb',
+      'date 2026-13-45', 'mycall JA1ABC\nrigset 1', 'mycall JA1ABC\n40m cw\n2500 ja1xyz', 'mycall JA1ABC\n40m cw\n0900 ja1aaa ja1bbb',
       'mycall JA1ABC\nja1xyz', 'mycall JA1ABC\n40m\n0900 ja1xyz', 'mycall JA1ABC\n40m cw\n0900 ja1xyz <abc', 'mycall JA1ABC\n40m cw\n05 ja',
       'mycall JA1ABC\n40m cw\n0900 ja1xyz mysota', 'mycall JA1ABC\n40m cw\n0900 ja1xyz 2026-10-19',
       'mycall xx', 'mycall JA1ABC extra', 'mysota ABC', 'timezone x', 'rigset x', 'mygrid zz', 'day x',

@@ -4,10 +4,10 @@
 
 use std::collections::HashMap;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
-use chrono::{FixedOffset, NaiveDate, TimeZone};
+use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Timelike};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
@@ -428,18 +428,42 @@ fn adif_band(band: &str) -> String {
     format!("<BAND:{}>{}", band_upper.len(), band_upper)
 }
 
+/// HAMLOG の日付(`YY/MM/DD`)と時刻(`HH:MMU` か `HH:MMJ`)
+///
+/// 入力のときの時間帯(`timezone`)に従う。+9(`jst`)は JST で `J`(日付も JST に直す)。
+/// HAMLOG の記号は `J` と `U` だけなので、それ以外(0 を含む)は UTC で `U`。
+fn hamlog_date_time(record: &FleQsoRecord) -> (String, String) {
+    let jst = record.tz == 9;
+    let utc = NaiveDate::from_ymd_opt(record.year as i32, record.month as u32, record.day as u32)
+        .and_then(|d| d.and_hms_opt(record.hour as u32, record.min as u32, 0));
+    let (at, flag) = match (jst, utc) {
+        (true, Some(t)) => (t + chrono::Duration::hours(9), 'J'),
+        (_, Some(t)) => (t, 'U'),
+        // 日時として読めないときは、記録の値のまま(UTC)
+        (_, None) => {
+            return (
+                format!(
+                    "{:02}/{:02}/{:02}",
+                    record.year % 100,
+                    record.month,
+                    record.day
+                ),
+                format!("{:02}:{:02}U", record.hour, record.min),
+            )
+        }
+    };
+    (
+        format!("{:02}/{:02}/{:02}", at.year() % 100, at.month(), at.day()),
+        format!("{:02}:{:02}{}", at.hour(), at.minute(), flag),
+    )
+}
+
 /// HAMLOG CSV形式を生成
 fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
     let mut output = Vec::new();
 
     for record in &result.records {
-        let date = format!(
-            "{:02}/{:02}/{:02}",
-            record.year % 100,
-            record.month,
-            record.day
-        );
-        let time = format!("{:02}:{:02}U", record.hour, record.min);
+        let (date, time) = hamlog_date_time(record);
         let freq = if record.freq.is_empty() {
             band_to_freq(&record.band, false)
                 .unwrap_or_default()
@@ -465,8 +489,12 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
             .trim()
             .to_string();
 
-        // QSLメッセージ
-        let qsl_msg = format!("%{}%", record.qslmsg);
+        // QSLメッセージ。`rig` があれば、`%…%` の外側に `Rig=` として付ける(HAMLOG の書式)
+        let qsl_msg = if record.rig.is_empty() {
+            format!("%{}%", record.qslmsg)
+        } else {
+            format!("%{}%Rig={}", record.qslmsg, record.rig)
+        };
 
         // CSVフィールド
         let fields: [&str; 15] = [
@@ -655,7 +683,7 @@ mod tests {
                 band: "40m".to_string(),
                 freq: "7.025".to_string(),
                 mode: "CW".to_string(),
-                rigset: 0,
+                rig: String::new(),
                 rst_sent: "599".to_string(),
                 rst_rcvd: "599".to_string(),
                 his_num: String::new(),
@@ -923,7 +951,10 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             codes("mycall JA1ABC\n40m cw\nmysota JA/TK-001\n0900 ja1aaa\n0910 ja1bbb"),
             vec![("missing_date", 2)]
         );
-        assert!(codes("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1aaa").is_empty());
+        assert!(
+            codes("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1aaa")
+                .is_empty()
+        );
     }
 
     #[test]
@@ -1002,5 +1033,135 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         assert_eq!(json[0]["code"], "missing_mycall");
         assert_eq!(json[0]["severity"], "required");
         assert_eq!(json[0]["qsos"], 1);
+    }
+
+    // ---- rig(HAMLOG の Rig=)と $rig ----
+
+    const RIG_LOG: &str = "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n\
+        qslmsg TNX QSO $rig\n0900 ja1aaa\nrig KX2/IC-705+EFHW\n0910 ja1bbb\nrig -\n0920 ja1ccc";
+
+    fn hamlog_lines(files: &std::collections::BTreeMap<String, String>) -> Vec<String> {
+        let (_, body) = files
+            .iter()
+            .find(|(k, _)| k.starts_with("hamlog-"))
+            .unwrap();
+        body.lines().map(str::to_string).collect()
+    }
+
+    #[test]
+    fn rig_goes_after_the_qsl_message_in_the_hamlog_file() {
+        let lines = hamlog_lines(&output_of(RIG_LOG));
+        // rig の前の QSO には、Rig= も、メッセージの $rig の値もない(`$rig` は空に置き換わる)
+        assert!(lines[0].ends_with(",\"%TNX QSO%\",\"0\""), "{}", lines[0]);
+        // rig のある QSO: メッセージの $rig と、`%…%` の外側の Rig=
+        assert!(
+            lines[1].contains("\"%TNX QSO KX2/IC-705+EFHW%Rig=KX2/IC-705+EFHW\""),
+            "{}",
+            lines[1]
+        );
+        // `rig -` で解除すると、以降は、どちらもない
+        assert!(!lines[2].contains("Rig="), "{}", lines[2]);
+    }
+
+    #[test]
+    fn rig_is_only_in_the_hamlog_file_and_the_message() {
+        let files = output_of(RIG_LOG);
+        for (name, body) in &files {
+            let in_hamlog = name.starts_with("hamlog-");
+            let in_airham = name.starts_with("airham-");
+            // ADIF・SOTA の CSV には、rig は出ない(HAMLOG の Rig= と、メッセージの $rig の置き換えだけ)
+            if !in_hamlog && !in_airham {
+                assert!(!body.contains("KX2/IC-705+EFHW"), "{name}");
+            }
+        }
+        // AirHam には、メッセージ(置き換えた $rig を含む)が入る
+        let airham = files
+            .iter()
+            .find(|(k, _)| k.starts_with("airham-"))
+            .unwrap()
+            .1;
+        assert!(airham.contains("TNX QSO KX2/IC-705+EFHW"));
+    }
+
+    // ---- HAMLOG の日時(入力の時間帯 timezone に従う)----
+
+    /// 同じ2つの交信(UTC の 2026-10-18 15:30 と 08:00)を、時間帯ごとに、その時間帯の時刻で書いたログ
+    fn log_in(zone: &str) -> &'static str {
+        match zone {
+            // 時間帯なし(UTC)
+            "utc" => "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n1530 ja1aaa\n0800 ja1bbb",
+            // JST で書く。15:30 UTC は、JST では翌日 00:30。08:00 UTC は、同じ日の 17:00
+            "jst" => "mycall JA1ABC\ndate 2026-10-19\ntimezone jst\n40m cw\nmysota JA/TK-001\n0030 ja1aaa\ndate 2026-10-18\n1700 ja1bbb",
+            // +8 で書く: 23:30 と 16:00
+            _ => "mycall JA1ABC\ndate 2026-10-18\ntimezone +8\n40m cw\nmysota JA/TK-001\n2330 ja1aaa\n1600 ja1bbb",
+        }
+    }
+
+    fn hamlog_times(files: &std::collections::BTreeMap<String, String>) -> Vec<(String, String)> {
+        hamlog_lines(files)
+            .iter()
+            .map(|l| {
+                let cols: Vec<&str> = l.split("\",\"").collect();
+                (cols[1].to_string(), cols[2].to_string())
+            })
+            .collect()
+    }
+
+    #[test]
+    fn hamlog_times_are_utc_when_the_log_has_no_timezone() {
+        let t = hamlog_times(&output_of(log_in("utc")));
+        assert_eq!(
+            t,
+            [
+                ("26/10/18".into(), "15:30U".into()),
+                ("26/10/18".into(), "08:00U".into())
+            ]
+        );
+    }
+
+    #[test]
+    fn hamlog_times_are_jst_when_the_log_is_written_in_jst() {
+        // JST で書いた 10/19 00:30 は、UTC では 10/18 15:30。HAMLOG には、書いたとおりの JST で出る
+        let t = hamlog_times(&output_of(log_in("jst")));
+        assert_eq!(
+            t,
+            [
+                ("26/10/19".into(), "00:30J".into()),
+                ("26/10/18".into(), "17:00J".into())
+            ]
+        );
+    }
+
+    #[test]
+    fn other_time_zones_go_to_hamlog_in_utc() {
+        // +8 の 23:30 は UTC の 15:30(HAMLOG に +8 の記号はない)
+        let t = hamlog_times(&output_of(log_in("+8")));
+        assert_eq!(
+            t,
+            [
+                ("26/10/18".into(), "15:30U".into()),
+                ("26/10/18".into(), "08:00U".into())
+            ]
+        );
+    }
+
+    #[test]
+    fn the_other_outputs_stay_utc_whatever_the_log_zone() {
+        // JST で書いても、POTA の ADIF は UTC
+        let files = output_of(&log_in("jst").replace("mysota JA/TK-001", "mypota JP-0117"));
+        let adif = files.iter().find(|(k, _)| k.ends_with(".adi")).unwrap().1;
+        assert!(
+            adif.contains("<QSO_DATE:8>20261018 <TIME_ON:4>1530"),
+            "{adif}"
+        );
+    }
+
+    #[test]
+    fn jst_rolls_the_month_and_the_year_back_into_the_utc_values() {
+        // JST 2027-01-01 01:00 = UTC 2026-12-31 16:00
+        let t = hamlog_times(&output_of(
+            "mycall JA1ABC\ndate 2027-01-01\ntimezone jst\n40m cw\nmysota JA/TK-001\n0100 ja1aaa",
+        ));
+        assert_eq!(t, [("27/01/01".into(), "01:00J".into())]);
     }
 }

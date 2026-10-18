@@ -15,7 +15,7 @@ qslmsg $sat丸山$mysota $mypota $rig
 #Log
 timezone +0
 date {date}
-rigset 1
+rig KX2+EFHW
 40m cw
 2302 ja1qsa
 4 ja4qru 6 7 <曽田さん>{{島根市}}
@@ -28,11 +28,11 @@ ssb
 58 jk2qsu {{PM85rl AO-91/FM/144MHz}}
 day +
 17m cw
-rigset 0
+rig -
 04 zl1qsb 41 31
 20m ft4
 45 zl1qrz -18 -19
-rigset 2
+rig IC-705+Vertical
 50.550 am
 0130 jj1qth 3 4"
     )

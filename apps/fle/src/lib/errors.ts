@@ -14,8 +14,8 @@ const OPERAND_JA: Record<string, string> = {
   mygrid: 'グリッドロケータ',
   date: '日付',
   day: '+ か ++',
-  timezone: 'タイムゾーン(例 +9)',
-  rigset: 'リグの番号',
+  timezone: 'タイムゾーン(例 +9 か jst)',
+  rig: 'HAMLOG の Rig= の右辺(例 KX2/IC-705+EFHW)',
 }
 
 type Args = string[]
@@ -30,6 +30,7 @@ const JA: Record<string, (args: Args) => string> = {
   duplicate_callsign: (x) => `1行に書けるコールサインは1つです: ${a(x, 0)}`,
   missing_band: () => 'バンドか周波数を書いてください',
   missing_mode: () => 'モード(cw・ssb など)を書いてください',
+  renamed_directive: (x) => `${a(x, 0)} は ${a(x, 1)} に変わりました。HAMLOG の Rig= の右辺を書きます(例: rig KX2/IC-705+EFHW)`,
   unknown_word: (x) => `意味の分からない語です: ${a(x, 0)}`,
   unexpected_keyword: (x) => `この位置に置けないキーワードです: ${a(x, 0)}`,
   unexpected_word: (x) => `この位置に置けない語です: ${a(x, 0)}`,
