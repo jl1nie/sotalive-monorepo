@@ -1,21 +1,45 @@
 import { useState } from 'react'
-import { Cog } from 'lucide-react'
+import { Cog, Download, Ellipsis } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { SettingsDialog } from '@/components/SettingsDialog'
 
-export function Header() {
+interface Props {
+  onGenerate: () => void
+  canGenerate: boolean
+  onMenu: () => void
+}
+
+export function Header({ onGenerate, canGenerate, onMenu }: Props) {
   const { theme, setTheme } = useTheme()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-30 bg-white dark:bg-gray-950 border-b-2 border-gray-300 dark:border-gray-700 pt-[env(safe-area-inset-top)]">
-      <div className="max-w-3xl md:max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
-        <h1 className="text-lg font-bold">FLE Online</h1>
+    <header className="flex-none flex items-center justify-between h-12 pt-[env(safe-area-inset-top)] box-content">
+      <h1 className="text-lg font-bold">FLEonline</h1>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onGenerate}
+          disabled={!canGenerate}
+          aria-label="ファイル生成"
+          className="btn-success !min-h-11 !px-3.5"
+        >
+          <Download className="w-5 h-5" />
+          生成
+        </button>
+        <button
+          type="button"
+          onClick={onMenu}
+          aria-label="メニュー"
+          className="btn-secondary !min-h-11 !min-w-11 !px-0"
+        >
+          <Ellipsis className="w-6 h-6" />
+        </button>
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
-          className="btn-secondary !min-h-11 !min-w-11 !px-0"
           aria-label="設定"
+          className="btn-secondary !min-h-11 !min-w-11 !px-0"
         >
           <Cog className="w-6 h-6" />
         </button>

@@ -1,32 +1,66 @@
-import init, { compile as wasmCompile, generateZip as wasmGenerateZip } from '../wasm/fle/fle'
+import init, {
+  compile as wasmCompile,
+  complete as wasmComplete,
+  generateZip as wasmGenerateZip,
+} from '../wasm/fle/fle'
 
-/** fle-core の `compile_view` が返す、変換結果の表示用データ */
-export interface FleCompileView {
+/** 1QSO分。省略された時刻・バンド・モード・RSTは前の行から補完済み。 */
+export interface QsoView {
+  /** 元のテキストでの行番号(0始まり) */
+  line: number
+  date: string
+  time: string
+  call: string
+  band: string
+  mode: string
+  freq: string
+  rstSent: string
+  rstRcvd: string
+  refs: string[]
+  comment: string
+}
+
+export interface ErrorView {
+  /** 元のテキストでの行番号(0始まり) */
+  line: number
+  message: string
+}
+
+/** fle-core の `compile_log` が返す、行番号つきの表示用データ */
+export interface LogView {
   status: 'OK' | 'ERR'
-  logtype: string
   mycall: string
   operator: string
   mysota: string
   mywwff: string
   mypota: string[]
-  qslmsg: string
-  logtext: string[][]
-  hamlogtext: string[][]
+  qsos: QsoView[]
+  errors: ErrorView[]
+}
+
+/** 補完候補。文法上ありえるキーワードで、並べ方もコアが決める。 */
+export interface Candidate {
+  text: string
+  kind: 'command' | 'band' | 'mode' | 'day'
 }
 
 let ready: Promise<unknown> | null = null
 
 /** WASMの初期化は最初の呼び出し時に一度だけ行う */
-function ensureReady() {
+export function ensureReady() {
   ready ??= init()
   return ready
 }
 
-export async function compileFle(text: string): Promise<FleCompileView> {
+export async function compileLog(text: string): Promise<LogView> {
   await ensureReady()
-  // 空配列は省略されて届くので、画面側で扱いやすいよう補う
-  const view = wasmCompile(text) as Partial<FleCompileView> & FleCompileView
-  return { ...view, logtext: view.logtext ?? [], hamlogtext: view.hamlogtext ?? [] }
+  return wasmCompile(text) as LogView
+}
+
+/** カーソルより前のテキストから、次に入力できるキーワードを返す。 */
+export async function completeAt(textBeforeCaret: string): Promise<Candidate[]> {
+  await ensureReady()
+  return wasmComplete(textBeforeCaret) as Candidate[]
 }
 
 export async function generateFleZip(text: string, now: Date = new Date()): Promise<Uint8Array> {

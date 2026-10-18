@@ -2,7 +2,7 @@
 // 事前に `pnpm wasm` で src/wasm/fle を生成しておくこと。
 import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { initSync, compile, generateZip } from '../wasm/fle/fle'
+import { initSync, compile, complete, generateZip } from '../wasm/fle/fle'
 
 const SAMPLE = 'mycall JA1ABC\ndate 2024-01-15\nmysota JA/TK-001\n40m cw\n0900 JA1XYZ 599 599\n'
 
@@ -11,17 +11,35 @@ beforeAll(() => {
 })
 
 describe('fle wasm', () => {
-  it('compile: 正常なログを表示用データにする', () => {
+  it('compile: 正常なログを行番号つきで返す', () => {
     const view = compile(SAMPLE)
     expect(view.status).toBe('OK')
     expect(view.mycall).toBe('JA1ABC')
-    expect(view.logtext[0][4]).toBe('JA1XYZ')
+    expect(view.qsos[0]).toMatchObject({ line: 4, call: 'JA1XYZ', time: '09:00', band: '40m', mode: 'CW' })
   })
 
-  it('compile: 誤りがあるとERRと行情報を返す', () => {
+  it('compile: 省略された項目は前の行から補完される', () => {
+    const view = compile(SAMPLE + '05 JA1QSO\n')
+    const last = view.qsos[view.qsos.length - 1]
+    expect(last).toMatchObject({ call: 'JA1QSO', time: '09:05', band: '40m', mode: 'CW' })
+  })
+
+  it('compile: 誤りがあるとERRと行番号を返す', () => {
     const view = compile('mycall\n')
     expect(view.status).toBe('ERR')
-    expect(view.logtext[0]).toEqual(['0', 'Missing operand.', ''])
+    expect(view.errors).toEqual([{ line: 0, message: 'Missing operand.' }])
+  })
+
+  it('complete: 行頭の語からキーワードを返す', () => {
+    expect(complete('mys')).toEqual([{ text: 'mysota', kind: 'command' }])
+    expect(complete('day ')).toEqual([
+      { text: '+', kind: 'day' },
+      { text: '++', kind: 'day' },
+    ])
+  })
+
+  it('complete: 自由入力の位置では何も返さない', () => {
+    expect(complete('0905 ja')).toEqual([])
   })
 
   it('generateZip: ZIPのシグネチャで始まる', () => {
