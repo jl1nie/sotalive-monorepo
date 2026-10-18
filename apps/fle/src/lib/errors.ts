@@ -28,7 +28,7 @@ const JA: Record<string, (args: Args) => string> = {
   invalid_time: (x) => `時刻が正しくありません: ${a(x, 0)}`,
   time_overflow: (x) => `時刻が24時を超えます(${a(x, 0)})。日をまたぐときは day + を書きます`,
   duplicate_callsign: (x) => `1行に書けるコールサインは1つです: ${a(x, 0)}`,
-  missing_band: () => 'QSOより前に、バンドか周波数を書いてください',
+  missing_band: () => 'バンドか周波数を書いてください',
   missing_mode: () => 'モード(cw・ssb など)を書いてください',
   unknown_word: (x) => `意味の分からない語です: ${a(x, 0)}`,
   unexpected_keyword: (x) => `この位置に置けないキーワードです: ${a(x, 0)}`,

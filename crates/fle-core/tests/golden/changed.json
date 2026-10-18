@@ -3,7 +3,7 @@
     "errors": [
       {
         "line": 2,
-        "message": "Band or frequency must be specified before QSO."
+        "message": "Band or frequency must be specified."
       },
       {
         "line": 2,

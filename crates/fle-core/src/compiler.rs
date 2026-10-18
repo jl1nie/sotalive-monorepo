@@ -350,15 +350,6 @@ fn eval_qso(
                         format!("Each line must contains only one callsign: {call}"),
                     );
                 }
-                if env.current.band.is_empty() && env.current.freq.is_empty() {
-                    here.error(
-                        env,
-                        "missing_band",
-                        &[],
-                        it.span,
-                        "Band or frequency must be specified before QSO.",
-                    );
-                }
                 env.current.call = call.clone();
                 // RST は、省略したら、モード別の既定値
                 set_default_rst(env);
@@ -469,12 +460,23 @@ fn eval_qso(
     if env.current.call.is_empty() {
         return None;
     }
-    // モードは、行のどこに書いても、その行のQSOに効く。QSOの行で、まだ空なら誤り
+    // バンド・周波数とモードは、行のどこに書いても(コールサインのあとでも)、その行のQSOに効く。
+    // QSOの行で、まだ空なら誤り
+    let call_span = items
+        .iter()
+        .find(|it| matches!(it.node, QsoItem::Call { .. }))
+        .map_or((0, 0), |it| it.span);
+    if env.current.band.is_empty() && env.current.freq.is_empty() {
+        here.error(
+            env,
+            "missing_band",
+            &[],
+            call_span,
+            "Band or frequency must be specified.",
+        );
+    }
     if env.current.mode.is_empty() {
-        let span = items
-            .iter()
-            .find(|it| matches!(it.node, QsoItem::Call { .. }))
-            .map_or((0, 0), |it| it.span);
+        let span = call_span;
         here.error(env, "missing_mode", &[], span, "Mode must be specified.");
     }
     // UTC変換
@@ -547,7 +549,10 @@ mod tests {
         let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\n0900 ja1xyz");
         let codes: Vec<&str> = r.errors.iter().map(|e| e.code.as_str()).collect();
         assert_eq!(codes, vec!["missing_band", "missing_mode"]);
-        // 同じ行で、コールサインのあとに書いたモードは有効
+        // 同じ行で、コールサインのあとに書いたバンドとモードは有効
+        assert!(compile_fle("mycall JA1ABC\ndate 2026-10-18\n0900 ja1xyz 40m cw")
+            .errors
+            .is_empty());
         assert!(compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m\n0900 ja1xyz cw")
             .errors
             .is_empty());
