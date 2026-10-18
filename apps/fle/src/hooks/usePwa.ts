@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { registerSW } from 'virtual:pwa-register'
 
 /** Chrome系が出すインストール案内のイベント(標準の型定義がない) */
@@ -7,6 +7,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 /** iPhone/iPad は案内のイベントが無く、共有メニューから追加する */
+const OFFLINE_NOTICE_KEY = 'fle.offlineNoticeShown'
+
 function isIos() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent)
 }
@@ -26,11 +28,28 @@ function isStandalone() {
 export function usePwa(onOfflineReady: () => void) {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null)
 
+  // 登録は1回だけ。通知は、そのときの言語で出す(最新の関数を参照する)
+  const latest = useRef(onOfflineReady)
+  useEffect(() => {
+    latest.current = onOfflineReady
+  })
   useEffect(() => {
     // 開発サーバーでは Service Worker を使わない
     if (!import.meta.env.PROD) return
-    registerSW({ onOfflineReady })
-  }, [onOfflineReady])
+    registerSW({
+      onOfflineReady() {
+        // 「使えます」は、この端末で最初の1回だけ知らせる(毎回出ると、画面の下の候補を隠す)
+        try {
+          if (localStorage.getItem(OFFLINE_NOTICE_KEY)) return
+          localStorage.setItem(OFFLINE_NOTICE_KEY, '1')
+        } catch {
+          // 保存できなければ、出さない(繰り返し出るよりよい)
+          return
+        }
+        latest.current()
+      },
+    })
+  }, [])
 
   useEffect(() => {
     const onPrompt = (e: Event) => {

@@ -97,7 +97,13 @@ function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
       onClose={onClose}
       title={isNewLog ? t('place.newLog') : t('place.change')}
       actions={
-        <button type="button" onClick={apply} className="btn-success w-full">
+        <button
+          type="button"
+          onClick={apply}
+          // 入力欄のフォーカスを外さない(外れると候補の一覧が閉じてボタンが動き、最初のタップが外れる)
+          onPointerDown={(e) => e.preventDefault()}
+          className="btn-success w-full"
+        >
           {t('place.write')}
         </button>
       }

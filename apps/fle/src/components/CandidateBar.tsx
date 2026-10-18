@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
 import { timeLabel, type LogView, type QsoView } from '@/lib/fle'
 import { errorText } from '@/lib/errors'
@@ -29,6 +30,13 @@ export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }
   const { t, lang } = useI18n()
   const qso = preview ?? view?.qsos.find((q) => q.line === caretLine) ?? null
   const error = view?.errors.find((e) => e.line === caretLine)
+  // 入力中の行の誤りの文面は、手が止まって少し経ってから添える(打つたびに変わる文面は、うるさい)
+  const [settledFor, setSettledFor] = useState<unknown>(null)
+  useEffect(() => {
+    const id = window.setTimeout(() => setSettledFor([view, caretLine]), 1500)
+    return () => window.clearTimeout(id)
+  }, [view, caretLine])
+  const settled = Array.isArray(settledFor) && settledFor[0] === view && settledFor[1] === caretLine
   // 入力中の行の誤りは、まだ途中なので数えない(カーソルを離れた行の誤りだけ、赤で知らせる)
   const errorCount = view?.errors.filter((e) => e.line !== caretLine).length ?? 0
 
@@ -94,7 +102,7 @@ export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }
         >
           <p className="font-semibold line-clamp-2">{context || t('bar.empty')}</p>
           {/* 入力中の誤りは、色も記号も付けず、小さく添えるだけ */}
-          {error && (
+          {error && settled && (
             <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{errorText(error, lang)}</p>
           )}
         </div>

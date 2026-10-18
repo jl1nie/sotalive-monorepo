@@ -36,7 +36,8 @@ const ja = {
   'list.errorsTitle': '{qsos} QSO / エラー {errors}',
   'list.title': '{qsos} QSO',
   'list.empty': 'まだQSOがありません',
-  'list.tapToJump': 'タップでその行へ',
+  'list.tapToJump': '誤りをタップすると、その行へ移ります。',
+  'list.sameError': '同じ誤りがほかに{n}行: {lines}',
 
   // メニュー
   'menu.title': 'ログ',
@@ -163,7 +164,8 @@ const en: Record<MessageKey, string> = {
   'list.errorsTitle': '{qsos} QSO / {errors} errors',
   'list.title': '{qsos} QSO',
   'list.empty': 'No QSOs yet',
-  'list.tapToJump': 'Tap to go to the line',
+  'list.tapToJump': 'Tap an error to go to its line.',
+  'list.sameError': '{n} more with the same error: {lines}',
 
   'menu.title': 'Log',
   'menu.place': 'New log / set location',
