@@ -1052,8 +1052,11 @@ pub fn expected_next(head: &str) -> Vec<Term> {
             _ => Vec::new(),
         },
         LineKind::Qso(items) => {
-            // コールサインの前は、時刻のあとに、バンド(周波数)とモードを順不同で置ける
-            if !before_call(&items) {
+            // バンド(周波数)とモードは、時刻のあとに順不同で置ける。コールサインのあとに書いても、
+            // その行に効く。コールサインのあとは、RST・参照・メッセージの語と区別できないので、
+            // 打ち始めてから出す(`min_prefix_len`)。
+            let has_call = items.iter().any(|it| matches!(it.node, QsoItem::Call { .. }));
+            if !has_call && !before_call(&items) {
                 return Vec::new();
             }
             let has_band = items
@@ -1791,8 +1794,12 @@ mod tests {
     }
 
     #[test]
-    fn a_qso_line_expects_no_keywords() {
-        assert!(expected_next("0900 ja1xyz").is_empty());
+    fn a_qso_line_expects_band_and_mode_only() {
+        // コールサインのあとも、その行にないバンド・モードだけ(指令のキーワードは出ない)
+        assert!(expected_next("0900 ja1xyz")
+            .iter()
+            .all(|t| matches!(t.kind, TermKind::Band | TermKind::Mode)));
+        assert!(expected_next("0900 ja1xyz 40m cw").is_empty());
         assert!(
             !expected_next("0900").is_empty(),
             "時刻のあとは、バンドとモード"

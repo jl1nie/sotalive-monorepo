@@ -170,9 +170,17 @@ mod tests {
     }
 
     #[test]
-    fn a_word_after_the_callsign_gets_no_candidates() {
-        assert!(complete("0900 ja1xyz ss").is_empty());
+    fn band_and_mode_are_offered_after_the_callsign_once_typing_starts() {
+        let c = complete("0900 ja1xyz ss");
+        assert_eq!(texts(&c), vec!["ssb"]);
+        assert_eq!(c[0].kind, CandidateKind::Mode);
+        assert!(texts(&complete("0900 ja1xyz 40")).contains(&"40m"));
+        // 打ち始める前や、RSTの数字では出さない
+        assert!(complete("0900 ja1xyz ").is_empty());
         assert!(complete("0900 ja1xyz 5").is_empty());
+        assert!(complete("0900 ja1xyz 59").is_empty());
+        // その行にあるものは、もう出さない
+        assert!(complete("0900 ja1xyz cw ss").is_empty());
     }
 
     #[test]
