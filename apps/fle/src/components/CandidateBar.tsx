@@ -14,8 +14,6 @@ interface Props {
 
 const TONE = {
   ok: 'border-emerald-700 bg-emerald-50 text-emerald-950 dark:border-emerald-400 dark:bg-emerald-950 dark:text-emerald-100',
-  typing:
-    'border-amber-700 bg-amber-50 text-amber-950 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-100',
   plain: 'border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-gray-900',
 } as const
 
@@ -28,7 +26,8 @@ const BAR = 'flex-1 min-w-0 rounded-xl border-2 overflow-hidden'
 export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }: Props) {
   const qso = preview ?? view?.qsos.find((q) => q.line === caretLine) ?? null
   const error = view?.errors.find((e) => e.line === caretLine)
-  const errorCount = view?.errors.length ?? 0
+  // 入力中の行の誤りは、まだ途中なので数えない(カーソルを離れた行の誤りだけ、赤で知らせる)
+  const errorCount = view?.errors.filter((e) => e.line !== caretLine).length ?? 0
 
   const lastQso = view?.qsos.filter((q) => q.line < caretLine).at(-1)
   const context = view
@@ -88,12 +87,12 @@ export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }
       ) : (
         <div
           aria-live="polite"
-          className={`${BAR} px-3 py-2 flex flex-col justify-center gap-0.5 ${error ? TONE.typing : TONE.plain}`}
+          className={`${BAR} px-3 py-2 flex flex-col justify-center gap-0.5 ${TONE.plain}`}
         >
-          {error ? (
-            <p className="font-semibold line-clamp-2">入力中… {error.message}</p>
-          ) : (
-            <p className="font-semibold line-clamp-2">{context || 'ログを入力してください'}</p>
+          <p className="font-semibold line-clamp-2">{context || 'ログを入力してください'}</p>
+          {/* 入力中の誤りは、色も記号も付けず、小さく添えるだけ */}
+          {error && (
+            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{error.message}</p>
           )}
         </div>
       )}
