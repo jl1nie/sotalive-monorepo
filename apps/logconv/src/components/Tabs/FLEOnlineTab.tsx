@@ -9,20 +9,9 @@ import {
   FileText,
   HelpCircle,
 } from 'lucide-react'
+import { compileFle, generateFleZip, type FleCompileView } from '@/lib/fle'
 
-// FLE Compile Response from API
-interface FLECompileResponse {
-  status: 'OK' | 'NG'
-  logtype: string
-  mycall: string
-  operator: string
-  mysota: string
-  mywwff: string
-  mypota: string[]
-  qslmsg: string
-  logtext: string[][]
-  hamlogtext: string[][]
-}
+type FLECompileResponse = FleCompileView
 
 type PreviewMode = 'sota' | 'hamlog'
 
@@ -178,24 +167,11 @@ rigset 2
     setError(null)
 
     try {
-      const response = await fetch('/api/v2/fle/compile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          command: 'interp',
-          arg: text,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('変換に失敗しました')
-      }
-
-      const data: FLECompileResponse = await response.json()
+      const data = await compileFle(text)
       setCompileResult(data)
       setTextInterpreted(data.status === 'OK')
 
-      if (data.status === 'NG') {
+      if (data.status === 'ERR') {
         setError('FLEログにエラーがあります')
       }
     } catch (err) {
@@ -214,19 +190,8 @@ rigset 2
     }
 
     try {
-      const formData = new FormData()
-      formData.append('edittext', text)
-
-      const response = await fetch('/api/v2/fle/generate', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error('生成に失敗しました')
-      }
-
-      const blob = await response.blob()
+      const zip = await generateFleZip(text)
+      const blob = new Blob([zip as BlobPart], { type: 'application/zip' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -400,7 +365,7 @@ rigset 2
                       </tr>
                     )
                   )
-                ) : compileResult && compileResult.status === 'NG' ? (
+                ) : compileResult && compileResult.status === 'ERR' ? (
                   compileResult.logtext.map((row, i) => (
                     <tr key={i} className="bg-red-50 dark:bg-red-900/20">
                       <td className="px-2 py-1 text-red-600 dark:text-red-400">Line {row[0]}</td>

@@ -26,6 +26,22 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+
+      - name: Test Rust crates
+        run: cargo test --workspace
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

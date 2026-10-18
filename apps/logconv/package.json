@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "wasm": "cd ../../crates/fle-wasm && wasm-pack build --target web --release --out-dir ../../apps/logconv/src/wasm/fle --out-name fle",
+    "dev": "pnpm wasm && vite",
+    "build": "pnpm wasm && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",

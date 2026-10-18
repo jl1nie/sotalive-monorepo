@@ -1,0 +1,60 @@
+//! fle-core のブラウザ向けバインディング。
+//!
+//! ロジックは `fle-core` にあり、ここは JS との値の受け渡しだけを担う。
+
+use chrono::DateTime;
+use fle_core::{compile_fle, compile_view, generate_fle_output};
+use wasm_bindgen::prelude::*;
+
+/// FLEテキストを変換し、画面表示用の結果(`logtype` / `logtext` / `hamlogtext` など)を返す。
+#[wasm_bindgen]
+pub fn compile(text: &str) -> Result<JsValue, JsError> {
+    Ok(serde_wasm_bindgen::to_value(&compile_view(text))?)
+}
+
+/// FLEテキストから各種ログファイルを含むZIPを生成する。
+///
+/// `now_ms` は `Date.now()` の値。エラーログのファイル名に使う。
+#[wasm_bindgen(js_name = generateZip)]
+pub fn generate_zip(text: &str, now_ms: f64) -> Result<Vec<u8>, JsError> {
+    generate_zip_bytes(text, now_ms).map_err(|e| JsError::new(&e))
+}
+
+fn generate_zip_bytes(text: &str, now_ms: f64) -> Result<Vec<u8>, String> {
+    let now = DateTime::from_timestamp_millis(now_ms as i64)
+        .ok_or_else(|| "invalid timestamp".to_string())?
+        .naive_utc();
+    generate_fle_output(&compile_fle(text), now)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    const SAMPLE: &str =
+        "mycall JA1ABC\ndate 2024-01-15\nmysota JA/TK-001\n40m cw\n0900 JA1XYZ 599 599\n";
+
+    #[test]
+    fn zip_contains_log_files() {
+        let zip = generate_zip_bytes(SAMPLE, 0.0).unwrap();
+        let archive = zip::ZipArchive::new(Cursor::new(zip)).unwrap();
+        assert!(archive.len() >= 2);
+    }
+
+    #[test]
+    fn error_zip_is_named_from_given_time() {
+        // 2026-10-18T09:30:45Z
+        let zip = generate_zip_bytes("mycall\n", 1_792_315_845_000.0).unwrap();
+        let mut archive = zip::ZipArchive::new(Cursor::new(zip)).unwrap();
+        assert_eq!(
+            archive.by_index(0).unwrap().name(),
+            "fle-error-2026-10-18-09-30.txt"
+        );
+    }
+
+    #[test]
+    fn empty_input_is_an_error() {
+        assert!(generate_zip_bytes("", 0.0).is_err());
+    }
+}
