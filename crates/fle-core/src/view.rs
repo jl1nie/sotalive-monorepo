@@ -1,154 +1,166 @@
-//! 画面表示用のコンパイル結果 (FLE Online の「変換」結果テーブル)
+//! 画面表示用のコンパイル結果。
 //!
-//! sotaapp2 の `/api/v2/fle/compile` が返していた JSON と同じ形。
+//! 入力中に毎回呼ばれる前提で、QSOとエラーを「元の行番号つき」で返す。
+//! 画面は行番号をたよりに、カーソルのある行の解釈(補完結果)を表示する。
 
 use serde::Serialize;
 
 use crate::compiler::compile_fle;
-use crate::types::FleCompileResult;
+use crate::types::{FleCompileResult, FleQsoRecord};
 
-/// FLEテキストをコンパイルして表示用の形にする
-pub fn compile_view(input: &str) -> FleCompileResponse {
+/// FLEテキストをコンパイルして、表示用の形にする
+pub fn compile_log(input: &str) -> LogView {
     compile_fle(input).into()
 }
 
-#[derive(Debug, Serialize)]
-pub struct FleCompileResponse {
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct LogView {
+    /// "OK" または "ERR"
     pub status: String,
-    #[serde(rename = "logtype")]
-    pub log_type: String,
     pub mycall: String,
     pub operator: String,
     pub mysota: String,
     pub mywwff: String,
     pub mypota: Vec<String>,
-    pub qslmsg: String,
-    #[serde(rename = "logtext", skip_serializing_if = "Vec::is_empty")]
-    pub log_text: Vec<Vec<String>>,
-    #[serde(rename = "hamlogtext", skip_serializing_if = "Vec::is_empty")]
-    pub hamlog_text: Vec<Vec<String>>,
+    pub qsos: Vec<QsoView>,
+    pub errors: Vec<ErrorView>,
 }
 
-impl From<FleCompileResult> for FleCompileResponse {
-    fn from(result: FleCompileResult) -> Self {
-        // QSOレコードを表形式に変換
-        let log_text: Vec<Vec<String>> = if result.errors.is_empty() {
-            result
-                .records
-                .iter()
-                .enumerate()
-                .map(|(i, qso)| {
-                    vec![
-                        (i + 1).to_string(),
-                        qso.mycall.clone(),
-                        format!("{:04}-{:02}-{:02}", qso.year, qso.month, qso.day),
-                        format!("{:02}:{:02}", qso.hour, qso.min),
-                        qso.callsign.clone(),
-                        qso.band.clone(),
-                        qso.mode.clone(),
-                        qso.rst_sent.clone(),
-                        qso.rst_rcvd.clone(),
-                        qso.mysota.clone(),
-                        qso.hissota.clone(),
-                        qso.mypota.join("/"),
-                        qso.hispota.join("/"),
-                        format!("{}{}", qso.qsomsg, qso.qsormks),
-                        qso.operator.clone(),
-                    ]
-                })
-                .collect()
-        } else {
-            // エラー時はエラーログを返す
-            result
-                .errors
-                .iter()
-                .map(|e| vec![e.line.to_string(), e.message.clone(), String::new()])
-                .collect()
-        };
+/// 1QSO分。省略された時刻・バンド・モード・RSTは、前の行から補完済み。
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QsoView {
+    /// 元のテキストでの行番号(0始まり)
+    pub line: usize,
+    pub date: String,
+    pub time: String,
+    pub call: String,
+    pub band: String,
+    pub mode: String,
+    pub freq: String,
+    pub rst_sent: String,
+    pub rst_rcvd: String,
+    /// 相手局のリファレンス(SOTA / WWFF / POTA)
+    pub refs: Vec<String>,
+    pub comment: String,
+}
 
-        // HAMLOG形式のログテキスト
-        let hamlog_text: Vec<Vec<String>> = if result.errors.is_empty() {
-            result
-                .records
-                .iter()
-                .enumerate()
-                .map(|(i, qso)| {
-                    let rmks = crate::ham::get_ref(&qso.qsormks);
-                    vec![
-                        (i + 1).to_string(),
-                        qso.callsign.clone(),
-                        format!("{:04}-{:02}-{:02}", qso.year, qso.month, qso.day),
-                        format!("{:02}:{:02}U", qso.hour, qso.min),
-                        qso.rst_sent.clone(),
-                        qso.rst_rcvd.clone(),
-                        qso.freq.clone(),
-                        qso.mode.clone(),
-                        rmks.loc_org.to_string(),
-                        qso.qsomsg.clone(),
-                        String::new(),
-                        String::new(),
-                    ]
-                })
-                .collect()
-        } else {
-            result
-                .errors
-                .iter()
-                .map(|e| vec![e.line.to_string(), e.message.clone(), String::new()])
-                .collect()
-        };
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ErrorView {
+    /// 元のテキストでの行番号(0始まり)
+    pub line: usize,
+    pub message: String,
+}
 
-        FleCompileResponse {
-            status: result.status,
-            log_type: result.log_type,
-            mycall: result.mycall,
-            operator: result.operator,
-            mysota: result.mysota,
-            mywwff: result.mywwff,
-            mypota: result.mypota,
-            qslmsg: result.qslmsg,
-            log_text,
-            hamlog_text,
+impl From<&FleQsoRecord> for QsoView {
+    fn from(q: &FleQsoRecord) -> Self {
+        let refs = [&q.hissota, &q.hiswwff]
+            .into_iter()
+            .chain(q.hispota.iter())
+            .filter(|r| !r.is_empty())
+            .cloned()
+            .collect();
+        let comment = [q.qsomsg.as_str(), q.qsormks.as_str()]
+            .into_iter()
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        Self {
+            line: q.line,
+            date: format!("{:04}-{:02}-{:02}", q.year, q.month, q.day),
+            time: format!("{:02}:{:02}", q.hour, q.min),
+            call: q.callsign.clone(),
+            band: q.band.clone(),
+            mode: q.mode.clone(),
+            freq: q.freq.clone(),
+            rst_sent: q.rst_sent.clone(),
+            rst_rcvd: q.rst_rcvd.clone(),
+            refs,
+            comment,
         }
     }
 }
 
-/// FLEコンパイルハンドラー (JSON応答)
-///
+impl From<FleCompileResult> for LogView {
+    fn from(r: FleCompileResult) -> Self {
+        Self {
+            status: r.status,
+            mycall: r.mycall,
+            operator: r.operator,
+            mysota: r.mysota,
+            mywwff: r.mywwff,
+            mypota: r.mypota,
+            qsos: r.records.iter().map(QsoView::from).collect(),
+            errors: r
+                .errors
+                .into_iter()
+                .map(|e| ErrorView {
+                    line: e.line,
+                    message: e.message,
+                })
+                .collect(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const SAMPLE: &str =
-        "mycall JA1ABC\ndate 2024-01-15\nmysota JA/TK-001\n40m cw\n0900 JA1XYZ 599 599\n";
+    const SAMPLE: &str = "mycall JA1ABC\ndate 2024-01-15\nmysota JA/TK-001\n40m cw\n0900 JA1XYZ 599 599\n05 JA1QSO 59 59 jaff-0218\n";
 
     #[test]
-    fn test_compile_view_ok() {
-        let view = compile_view(SAMPLE);
+    fn qsos_know_their_source_line() {
+        let view = compile_log(SAMPLE);
         assert_eq!(view.status, "OK");
-        assert_eq!(view.mycall, "JA1ABC");
-        assert_eq!(view.log_text.len(), 1);
-        let row = &view.log_text[0];
-        assert_eq!(row[0], "1");
-        assert_eq!(row[2], "2024-01-15");
-        assert_eq!(row[3], "09:00");
-        assert_eq!(row[4], "JA1XYZ");
-        assert_eq!(view.hamlog_text[0][3], "09:00U");
+        let lines: Vec<usize> = view.qsos.iter().map(|q| q.line).collect();
+        assert_eq!(lines, vec![4, 5]);
     }
 
     #[test]
-    fn test_compile_view_serializes_legacy_field_names() {
-        let json = serde_json::to_value(compile_view(SAMPLE)).unwrap();
-        assert!(json.get("logtype").is_some());
-        assert!(json.get("logtext").is_some());
-        assert!(json.get("hamlogtext").is_some());
+    fn qso_fields_are_formatted_for_display() {
+        let q = &compile_log(SAMPLE).qsos[0];
+        assert_eq!(q.date, "2024-01-15");
+        assert_eq!(q.time, "09:00");
+        assert_eq!(q.call, "JA1XYZ");
+        assert_eq!(q.band, "40m");
+        assert_eq!(q.mode, "CW");
+        assert_eq!((q.rst_sent.as_str(), q.rst_rcvd.as_str()), ("599", "599"));
     }
 
     #[test]
-    fn test_compile_view_error_rows_have_line_and_message() {
-        let view = compile_view("mycall\n");
+    fn omitted_fields_are_completed_from_previous_lines() {
+        // 2行目は「05」だけ。時(09)・バンド・モードは前の行から補完される
+        let q = &compile_log(SAMPLE).qsos[1];
+        assert_eq!(q.time, "09:05");
+        assert_eq!(q.band, "40m");
+        assert_eq!(q.mode, "CW");
+    }
+
+    #[test]
+    fn partner_references_are_listed() {
+        let q = &compile_log(SAMPLE).qsos[1];
+        assert!(q.refs.iter().any(|r| r.eq_ignore_ascii_case("jaff-0218")));
+    }
+
+    #[test]
+    fn errors_carry_their_line() {
+        let view = compile_log("mycall JA1ABC\nmysota\n");
         assert_eq!(view.status, "ERR");
-        assert_eq!(view.log_text, vec![vec!["0", "Missing operand.", ""]]);
-        assert_eq!(view.hamlog_text, view.log_text);
+        assert!(view.qsos.is_empty());
+        assert_eq!(view.errors.len(), 1);
+        assert_eq!(view.errors[0].line, 1);
+        assert_eq!(view.errors[0].message, "Missing SOTA ref#.");
+    }
+
+    #[test]
+    fn serializes_with_camel_case_names() {
+        let json = serde_json::to_value(compile_log(SAMPLE)).unwrap();
+        assert!(json["qsos"][0].get("rstSent").is_some());
+        assert!(json["qsos"][0].get("rstRcvd").is_some());
+        assert!(json.get("errors").is_some());
     }
 }

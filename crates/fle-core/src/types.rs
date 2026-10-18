@@ -279,6 +279,8 @@ impl FleEnvironment {
 /// コンパイル済みQSOレコード
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FleQsoRecord {
+    /// 元のFLEテキストでの行番号(0始まり)
+    pub line: usize,
     pub mycall: String,
     pub operator: String,
     pub year: u16,

@@ -54,6 +54,7 @@
 //! - `qslmsg <msg>` - QSLメッセージ設定
 
 pub mod compiler;
+pub mod complete;
 pub mod ham;
 pub mod output;
 pub mod tokenizer;
@@ -61,6 +62,7 @@ pub mod types;
 pub mod view;
 
 pub use compiler::*;
+pub use complete::*;
 pub use output::*;
 pub use tokenizer::*;
 pub use types::*;

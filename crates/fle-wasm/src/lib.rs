@@ -3,13 +3,21 @@
 //! ロジックは `fle-core` にあり、ここは JS との値の受け渡しだけを担う。
 
 use chrono::DateTime;
-use fle_core::{compile_fle, compile_view, generate_fle_output};
+use fle_core::{compile_fle, compile_log, complete as complete_keywords, generate_fle_output};
 use wasm_bindgen::prelude::*;
 
-/// FLEテキストを変換し、画面表示用の結果(`logtype` / `logtext` / `hamlogtext` など)を返す。
+/// FLEテキストを変換し、行番号つきの表示用の結果(`qsos` / `errors` など)を返す。
 #[wasm_bindgen]
 pub fn compile(text: &str) -> Result<JsValue, JsError> {
-    Ok(serde_wasm_bindgen::to_value(&compile_view(text))?)
+    Ok(serde_wasm_bindgen::to_value(&compile_log(text))?)
+}
+
+/// カーソルより前のテキストから、次に入力できるキーワードの候補(`text` / `kind`)を返す。
+#[wasm_bindgen]
+pub fn complete(text_before_caret: &str) -> Result<JsValue, JsError> {
+    Ok(serde_wasm_bindgen::to_value(&complete_keywords(
+        text_before_caret,
+    ))?)
 }
 
 /// FLEテキストから各種ログファイルを含むZIPを生成する。
