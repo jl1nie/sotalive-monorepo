@@ -220,6 +220,9 @@ export function POTAActivatorTab() {
     }
   }, [file, potaActivationCall, potaOperator, potaPark, myQTHPota, actQTHPota, csvChecked, validateForm])
 
+  // コールサインのエリア番号(最初の数字)。JA1ZZZ/1 なら 1
+  const potaMailArea = potaActivationCall.match(/\d/)?.[0] ?? null
+
   return (
     <div className="space-y-4">
       {/* Main container with two columns on larger screens */}
@@ -443,6 +446,26 @@ export function POTAActivatorTab() {
             <ExternalLink className="w-4 h-4" />
             JAFFログ送付
           </a>
+
+          {/* POTA へのメール送付: 宛先は、運用時のコールサインのエリア番号で決まる(K1@... など) */}
+          {potaMailArea ? (
+            <a
+              href={`mailto:K${potaMailArea}@parksontheair.com`}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              POTAログ送付
+            </a>
+          ) : (
+            <span
+              aria-disabled="true"
+              title="運用時のコールサインを入れると、宛先(K＋エリア番号@parksontheair.com)が決まります"
+              className="btn-secondary flex items-center gap-2 opacity-50 cursor-not-allowed"
+            >
+              <ExternalLink className="w-4 h-4" />
+              POTAログ送付
+            </span>
+          )}
 
           <a
             href="https://pota.app/#/user/logs"
