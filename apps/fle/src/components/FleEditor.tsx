@@ -45,6 +45,7 @@ import { Sheet } from '@/components/Sheet'
 
 /** 使い方(アプリと同じ場所に置く静的なページ。`public/manual/`) */
 const MANUAL_URL = `${import.meta.env.BASE_URL}manual/`
+const MANUAL_URL_EN = `${MANUAL_URL}en/`
 
 const MENU_ITEM =
   'btn-secondary w-full !justify-start !min-h-14 text-left'
@@ -71,7 +72,7 @@ function Editor({
   updateSettings: (patch: Partial<Settings>) => void
 }) {
   useVisualViewport()
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const plansStore = usePlans()
   const sync = useSync({
     settings,
@@ -680,7 +681,7 @@ function Editor({
             </li>
           )}
           <li>
-            <a href={MANUAL_URL} target="_blank" rel="noopener noreferrer" className={MENU_ITEM}>
+            <a href={lang === 'en' ? MANUAL_URL_EN : MANUAL_URL} target="_blank" rel="noopener noreferrer" className={MENU_ITEM}>
               <HelpCircle className="w-5 h-5" />
               {t('menu.help')}
             </a>
