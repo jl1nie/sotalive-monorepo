@@ -455,6 +455,7 @@ function Editor({
         view={view}
         preview={preview}
         caretLine={caretLine}
+        timezone={settings.timezone}
         lineText={text.slice(...lineRange(text, caretLine))}
         onOpenList={() => setListOpen(true)}
         onConfirm={confirmLine}
