@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { Cog, Download, Ellipsis } from 'lucide-react'
-import { useTheme } from '@/hooks/useTheme'
+import type { Settings } from '@/hooks/useSettings'
 import { SettingsDialog } from '@/components/SettingsDialog'
 
 interface Props {
   onGenerate: () => void
   canGenerate: boolean
   onMenu: () => void
+  settings: Settings
+  onSettingsChange: (patch: Partial<Settings>) => void
 }
 
-export function Header({ onGenerate, canGenerate, onMenu }: Props) {
-  const { theme, setTheme } = useTheme()
+export function Header({ onGenerate, canGenerate, onMenu, settings, onSettingsChange }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
@@ -47,8 +48,8 @@ export function Header({ onGenerate, canGenerate, onMenu }: Props) {
       <SettingsDialog
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        theme={theme}
-        onThemeChange={setTheme}
+        settings={settings}
+        onChange={onSettingsChange}
       />
     </header>
   )

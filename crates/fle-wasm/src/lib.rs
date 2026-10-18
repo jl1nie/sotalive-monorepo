@@ -3,7 +3,9 @@
 //! ロジックは `fle-core` にあり、ここは JS との値の受け渡しだけを担う。
 
 use chrono::DateTime;
-use fle_core::{compile_fle, compile_log, complete as complete_keywords, generate_fle_output};
+use fle_core::{
+    compile_fle, compile_log, complete as complete_keywords, fill as fill_line, generate_fle_output,
+};
 use wasm_bindgen::prelude::*;
 
 /// FLEテキストを変換し、行番号つきの表示用の結果(`qsos` / `errors` など)を返す。
@@ -17,6 +19,20 @@ pub fn compile(text: &str) -> Result<JsValue, JsError> {
 pub fn complete(text_before_caret: &str) -> Result<JsValue, JsError> {
     Ok(serde_wasm_bindgen::to_value(&complete_keywords(
         text_before_caret,
+    ))?)
+}
+
+/// `line`(0始まり)の行を確定するための修正(`from` / `to` / `insert`)を返す。
+///
+/// 位置はUTF-16の文字位置。`now_ms` は `Date.now()` の値、`default_tz` は設定の既定の
+/// タイムゾーン(UTCからの時間差)。
+#[wasm_bindgen]
+pub fn fill(text: &str, line: usize, now_ms: f64, default_tz: i32) -> Result<JsValue, JsError> {
+    Ok(serde_wasm_bindgen::to_value(&fill_line(
+        text,
+        line,
+        now_ms as i64,
+        default_tz,
     ))?)
 }
 

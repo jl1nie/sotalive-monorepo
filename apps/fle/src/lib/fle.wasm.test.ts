@@ -2,7 +2,7 @@
 // 事前に `pnpm wasm` で src/wasm/fle を生成しておくこと。
 import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { initSync, compile, complete, generateZip } from '../wasm/fle/fle'
+import { initSync, compile, complete, fill, generateZip } from '../wasm/fle/fle'
 
 const SAMPLE = 'mycall JA1ABC\ndate 2024-01-15\nmysota JA/TK-001\n40m cw\n0900 JA1XYZ 599 599\n'
 
@@ -40,6 +40,16 @@ describe('fle wasm', () => {
 
   it('complete: 自由入力の位置では何も返さない', () => {
     expect(complete('0905 ja')).toEqual([])
+  })
+
+  it('fill: 時刻のない行の行頭に、いまの時刻(UTC)を入れる修正を返す', () => {
+    const now = Date.UTC(2026, 9, 18, 9, 5, 30)
+    expect(fill('mycall JA1ABC\nja1xyz', 1, now, 0)).toEqual([{ from: 14, to: 14, insert: '0905 ' }])
+  })
+
+  it('fill: 既定のタイムゾーンがUTC以外なら、timezone の行も入れる', () => {
+    const now = Date.UTC(2026, 9, 18, 9, 5, 30)
+    expect(fill('ja1xyz', 0, now, 9)).toEqual([{ from: 0, to: 0, insert: 'timezone +9\n1805 ' }])
   })
 
   it('generateZip: ZIPのシグネチャで始まる', () => {

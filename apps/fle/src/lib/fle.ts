@@ -1,6 +1,8 @@
+import type { Edit } from './edits'
 import init, {
   compile as wasmCompile,
   complete as wasmComplete,
+  fill as wasmFill,
   generateZip as wasmGenerateZip,
 } from '../wasm/fle/fle'
 
@@ -45,10 +47,13 @@ export interface Candidate {
 }
 
 let ready: Promise<unknown> | null = null
+let initialized = false
 
 /** WASMの初期化は最初の呼び出し時に一度だけ行う */
 export function ensureReady() {
-  ready ??= init()
+  ready ??= init().then(() => {
+    initialized = true
+  })
   return ready
 }
 
@@ -61,6 +66,15 @@ export async function compileLog(text: string): Promise<LogView> {
 export async function completeAt(textBeforeCaret: string): Promise<Candidate[]> {
   await ensureReady()
   return wasmComplete(textBeforeCaret) as Candidate[]
+}
+
+/**
+ * その行の補完を確定する修正を返す(時刻のない QSO 行の行頭に、いまの時刻を入れる)。
+ * キー入力の中で同期的に使うため、WASMの準備ができていなければ空を返す。
+ */
+export function fillLine(text: string, line: number, nowMs: number, defaultTz: number): Edit[] {
+  if (!initialized) return []
+  return wasmFill(text, line, nowMs, defaultTz) as Edit[]
 }
 
 export async function generateFleZip(text: string, now: Date = new Date()): Promise<Uint8Array> {

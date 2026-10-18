@@ -55,6 +55,7 @@
 
 pub mod compiler;
 pub mod complete;
+pub mod fill;
 pub mod ham;
 pub mod output;
 pub mod tokenizer;
@@ -63,6 +64,7 @@ pub mod view;
 
 pub use compiler::*;
 pub use complete::*;
+pub use fill::*;
 pub use output::*;
 pub use tokenizer::*;
 pub use types::*;

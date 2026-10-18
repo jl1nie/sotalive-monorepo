@@ -3,6 +3,7 @@ import { FileText, HelpCircle, Home, RefreshCw, Trash2, Undo2, Upload } from 'lu
 import {
   compileLog,
   completeAt,
+  fillLine,
   generateFleZip,
   type Candidate,
   type LogView,
@@ -10,10 +11,12 @@ import {
 import { adif2fle } from '@/lib/adif'
 import { generateSample } from '@/lib/sample'
 import { lineOf, lineRange, replaceToken } from '@/lib/lines'
+import { applyEdits, mapCaret } from '@/lib/edits'
 import { loadLog, loadPrev, rememberPrev } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useAutosave } from '@/hooks/useAutosave'
 import { usePwa } from '@/hooks/usePwa'
+import { useSettings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
 import { CandidateBar } from '@/components/CandidateBar'
 import { SuggestStrip } from '@/components/SuggestStrip'
@@ -27,6 +30,7 @@ const MENU_ITEM =
 
 export function FleEditor() {
   useVisualViewport()
+  const { settings, update: updateSettings } = useSettings()
 
   // 前回の入力を復元する(電池切れ・タブの終了でも失わない)
   const [text, setText] = useState(loadLog)
@@ -42,6 +46,8 @@ export function FleEditor() {
   const fleInputRef = useRef<HTMLInputElement>(null)
   const adifInputRef = useRef<HTMLInputElement>(null)
   const noticeTimer = useRef<number>(0)
+  // いま打っている行を、最初の1文字を打った時刻とともに覚える(その行の時刻にする)
+  const lineStartedAt = useRef<{ line: number; ms: number } | null>(null)
   // 候補の確定後に置くカーソル位置。描画(コミット)の直後、次の入力より先に反映する
   const pendingCaret = useRef<number | null>(null)
 
@@ -143,6 +149,29 @@ export function FleEditor() {
     [text, focusAt]
   )
 
+  // Enterで、その行の補完(時刻)をテキストに確定してから改行する
+  const handleEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+    const ta = e.currentTarget
+    if (ta.selectionStart !== ta.selectionEnd) return
+    const pos = ta.selectionStart
+    const line = lineOf(text, pos)
+    // 行の途中での改行は、行を分けるだけ
+    if (pos !== lineRange(text, line)[1]) return
+
+    const startedAt = lineStartedAt.current?.line === line ? lineStartedAt.current.ms : Date.now()
+    const edits = fillLine(text, line, startedAt, settings.timezone)
+    if (edits.length === 0) return // 通常の改行
+
+    e.preventDefault()
+    const filled = applyEdits(text, edits)
+    const at = mapCaret(pos, edits)
+    lineStartedAt.current = null
+    pendingCaret.current = at + 1
+    setText(filled.slice(0, at) + '\n' + filled.slice(at))
+    setCaret(at + 1)
+  }
+
   const handleGenerate = useCallback(async () => {
     try {
       const zip = await generateFleZip(text)
@@ -177,6 +206,8 @@ export function FleEditor() {
         onGenerate={handleGenerate}
         canGenerate={text.trim().length > 0}
         onMenu={() => setMenuOpen(true)}
+        settings={settings}
+        onSettingsChange={updateSettings}
       />
 
       <div className="relative flex-1 min-h-0 flex">
@@ -184,9 +215,18 @@ export function FleEditor() {
           ref={taRef}
           value={text}
           onChange={(e) => {
-            setText(e.target.value)
-            setCaret(e.target.selectionStart)
+            const value = e.target.value
+            const pos = e.target.selectionStart
+            const line = lineOf(value, pos)
+            const [start, end] = lineRange(value, line)
+            if (value.slice(start, end).trim() === '') lineStartedAt.current = null
+            else if (lineStartedAt.current?.line !== line) {
+              lineStartedAt.current = { line, ms: Date.now() }
+            }
+            setText(value)
+            setCaret(pos)
           }}
+          onKeyDown={handleEnter}
           onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
           placeholder="0900 JA1XYZ 599 599"
           aria-label="FLEログ"
