@@ -1,7 +1,7 @@
 //! 入力補完: カーソル位置で文法上ありえるキーワードを返す。
 //!
-//! 候補の元データは、パーサが使う表(`KEYWORD_TABLE` / `MODE_TABLE` / `FREQ_TABLE`)
-//! そのもの。キーワードを足せば補完にも現れる。
+//! 文法上来られるキーワードは、構文(`syntax::expected_next`)が返す。ここでは、入力中の語で
+//! 絞って並べる。キーワードを足せば補完にも現れる。
 //! 画面は、返ってきた候補をそのまま並べるだけで、文法を知らない。
 //!
 //! 設定行(`40m cw`)は、バンド(周波数)とモードが順不同で続けられるので、片方を書いたら
@@ -9,12 +9,7 @@
 
 use serde::Serialize;
 
-use crate::ham::FREQ_TABLE;
-use crate::tokenizer::{tokenize, Token};
-use crate::types::{KEYWORD_TABLE, MODE_TABLE};
-
-/// `day` の後ろに置ける値(`compiler.rs` の `day` の処理に対応)
-const DAY_OPERANDS: [&str; 2] = ["+", "++"];
+use crate::syntax::{expected_next, TermKind};
 
 /// よく使うモード・バンド。候補では、これらを先に並べる(残りは短い順・辞書順)
 const COMMON_MODES: [&str; 8] = ["cw", "ssb", "fm", "am", "ft8", "ft4", "rtty", "psk31"];
@@ -69,7 +64,8 @@ pub fn complete_at(text_before_caret: &str) -> Completion {
 
 /// カーソルより前のテキストから、次に入力できるキーワードの候補を返す。
 ///
-/// 行頭は語が多いので、1文字以上打ってから候補を出す。
+/// 文法上来られるキーワードは、`syntax::expected_next` が返す。ここでは、入力中の語で絞り、
+/// 並べるだけ。行頭は語が多いので、1文字以上打ってから候補を出す。
 /// 2語目以降は文法が絞っているので、何も打っていなくても出す。
 pub fn complete(text_before_caret: &str) -> Vec<Candidate> {
     let line = text_before_caret
@@ -82,95 +78,44 @@ pub fn complete(text_before_caret: &str) -> Vec<Candidate> {
         .unwrap_or(0);
     let (head, token) = line.split_at(token_start);
     let prefix = token.to_lowercase();
-    let head_words: Vec<&str> = head.split_whitespace().collect();
 
-    let mut candidates = match head_words.as_slice() {
-        [] if prefix.is_empty() => Vec::new(),
-        [] => line_start_keywords(&prefix),
-        _ if is_setting_line(&head_words) => setting_line_next(head, &prefix),
-        [first] if first.eq_ignore_ascii_case("day") => DAY_OPERANDS
-            .iter()
-            .filter(|op| matches_prefix(op, &prefix))
-            .map(|op| Candidate {
-                text: (*op).to_string(),
-                kind: CandidateKind::Day,
+    if head.trim().is_empty() && prefix.is_empty() {
+        return Vec::new();
+    }
+
+    let terms = expected_next(head);
+    let mut kinds: Vec<TermKind> = Vec::new();
+    for t in &terms {
+        if !kinds.contains(&t.kind) {
+            kinds.push(t.kind);
+        }
+    }
+
+    let mut candidates: Vec<Candidate> = kinds
+        .into_iter()
+        .flat_map(|kind| {
+            let words = terms.iter().filter(|t| t.kind == kind).map(|t| t.text);
+            let (texts, out_kind) = match kind {
+                TermKind::Command => (sorted_matches(words, &prefix), CandidateKind::Command),
+                TermKind::Band => (
+                    ranked_matches(words, &prefix, &COMMON_BANDS),
+                    CandidateKind::Band,
+                ),
+                TermKind::Mode => (
+                    ranked_matches(words, &prefix, &COMMON_MODES),
+                    CandidateKind::Mode,
+                ),
+                // `+` と `++` は、この順(短い順)
+                TermKind::Day => (sorted_matches(words, &prefix), CandidateKind::Day),
+            };
+            texts.into_iter().map(move |text| Candidate {
+                text: text.to_string(),
+                kind: out_kind,
             })
-            .collect(),
-        _ => Vec::new(),
-    };
+        })
+        .collect();
     candidates.truncate(MAX_CANDIDATES);
     candidates
-}
-
-fn line_start_keywords(prefix: &str) -> Vec<Candidate> {
-    let commands = KEYWORD_TABLE.keys().copied();
-    let bands = FREQ_TABLE.iter().map(|b| b.wavelength);
-    let modes = MODE_TABLE.keys().copied();
-
-    [
-        (CandidateKind::Command, sorted_matches(commands, prefix)),
-        (
-            CandidateKind::Band,
-            ranked_matches(bands, prefix, &COMMON_BANDS),
-        ),
-        (
-            CandidateKind::Mode,
-            ranked_matches(modes, prefix, &COMMON_MODES),
-        ),
-    ]
-    .into_iter()
-    .flat_map(|(kind, texts)| {
-        texts.into_iter().map(move |text| Candidate {
-            text: text.to_string(),
-            kind,
-        })
-    })
-    .collect()
-}
-
-/// 設定行の途中(バンド/周波数/モードだけが並んでいる)か
-fn is_setting_line(head_words: &[&str]) -> bool {
-    !head_words.is_empty()
-        && tokenize(&head_words.join(" ")).iter().all(|t| {
-            matches!(
-                t.token,
-                Token::Band { .. } | Token::Freq(_) | Token::Mode(_)
-            )
-        })
-}
-
-/// 設定行の次に来られるもの: モードがまだなら、モード。バンド(周波数)がまだなら、バンド。
-/// 両方そろっていれば、何も出さない。
-fn setting_line_next(head: &str, prefix: &str) -> Vec<Candidate> {
-    let tokens = tokenize(head.trim());
-    let has_band = tokens
-        .iter()
-        .any(|t| matches!(t.token, Token::Band { .. } | Token::Freq(_)));
-    let has_mode = tokens.iter().any(|t| matches!(t.token, Token::Mode(_)));
-
-    let mut out = Vec::new();
-    if !has_mode {
-        let modes = MODE_TABLE.keys().copied();
-        out.extend(candidates(
-            ranked_matches(modes, prefix, &COMMON_MODES),
-            CandidateKind::Mode,
-        ));
-    }
-    if !has_band {
-        let bands = FREQ_TABLE.iter().map(|b| b.wavelength);
-        out.extend(candidates(
-            ranked_matches(bands, prefix, &COMMON_BANDS),
-            CandidateKind::Band,
-        ));
-    }
-    out
-}
-
-fn candidates(texts: Vec<&str>, kind: CandidateKind) -> impl Iterator<Item = Candidate> + '_ {
-    texts.into_iter().map(move |text| Candidate {
-        text: text.to_string(),
-        kind,
-    })
 }
 
 /// 前方一致するものを、よく使うもの → 短い順・辞書順に並べる(表の並びに依存しない)

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::compiler::{canonical_grid, compile_fle};
 use crate::fill::Edit;
-use crate::tokenizer::{tokenize, Token};
+use crate::syntax::{classify, Class};
 
 /// 自局のコールサインと、いまの運用場所。すべて任意(空なら指定なし)。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -146,8 +146,11 @@ fn normalize(s: &Station) -> Station {
 }
 
 fn validate(s: &Station) -> Vec<FieldError> {
-    let is = |value: &str, pred: fn(&Token) -> bool| {
-        tokenize(value).first().is_some_and(|t| pred(&t.token))
+    let is = |value: &str, pred: fn(&Class) -> bool| {
+        value
+            .split_whitespace()
+            .next()
+            .is_some_and(|w| pred(&classify(w)))
     };
     let mut errors = Vec::new();
     let mut check = |field: &str, ok: bool, message: &str| {
@@ -161,28 +164,28 @@ fn validate(s: &Station) -> Vec<FieldError> {
     if !s.mycall.is_empty() {
         check(
             "mycall",
-            is(&s.mycall, |t| matches!(t, Token::Call(_))),
+            is(&s.mycall, |t| matches!(t, Class::Call(_))),
             "コールサインの形式が正しくありません",
         );
     }
     if !s.sota.is_empty() {
         check(
             "sota",
-            is(&s.sota, |t| matches!(t, Token::SotaRef(_))),
+            is(&s.sota, |t| matches!(t, Class::Sota(_))),
             "SOTAのリファレンスの形式が正しくありません(例: JA/TK-001)",
         );
     }
     for p in &s.pota {
         check(
             "pota",
-            is(p, |t| matches!(t, Token::PotaRef(_))),
+            is(p, |t| matches!(t, Class::Pota(_))),
             "POTAのリファレンスの形式が正しくありません(例: JA-0001)",
         );
     }
     if !s.wwff.is_empty() {
         check(
             "wwff",
-            is(&s.wwff, |t| matches!(t, Token::WwffRef(_))),
+            is(&s.wwff, |t| matches!(t, Class::Wwff(_))),
             "WWFFのリファレンスの形式が正しくありません(例: JAFF-0001)",
         );
     }

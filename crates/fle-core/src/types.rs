@@ -33,27 +33,6 @@ pub static MODE_TABLE: Lazy<HashMap<&'static str, RstType>> = Lazy::new(|| {
     m
 });
 
-/// キーワードテーブル: キーワード -> 引数の数 (-1 = 行末まで)
-pub static KEYWORD_TABLE: Lazy<HashMap<&'static str, i8>> = Lazy::new(|| {
-    let mut m = HashMap::new();
-    m.insert("mycall", 1);
-    m.insert("operator", 1);
-    m.insert("qslmsg", -1);
-    m.insert("qslmsg2", -1);
-    m.insert("mywwff", 1);
-    m.insert("mysota", 1);
-    m.insert("mygrid", 1);
-    m.insert("mypota", 1); // 複数引数可能
-    m.insert("nickname", 1);
-    m.insert("date", 1);
-    m.insert("day", 1);
-    m.insert("rigset", 1);
-    m.insert("timezone", 1);
-    m.insert("number", 1);
-    m.insert("consecutive", 0);
-    m
-});
-
 /// RST種別
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RstType {

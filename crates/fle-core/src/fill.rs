@@ -17,7 +17,7 @@ use chrono::{DateTime, Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 use crate::compiler::compile_fle;
-use crate::tokenizer::{tokenize, Token, TokenInfo};
+use crate::syntax::{parse_line, DirValue, LineKind, QsoItem, Rst, Span, Spanned};
 use crate::types::FleQsoRecord;
 
 /// テキストの一部を置き換える修正。位置は **UTF-16 の文字位置**(JS の文字列の添字)。
@@ -84,17 +84,17 @@ pub fn fill_with(
     let Some(target) = lines.get(line) else {
         return Vec::new();
     };
-    let trimmed = target.trim();
-    let tokens = tokenize(trimmed);
-    let Some(shape) = QsoShape::of(&tokens) else {
+    let LineKind::Qso(items) = parse_line(target).kind else {
+        return Vec::new();
+    };
+    let Some(shape) = QsoShape::of(&items) else {
         return Vec::new();
     };
 
-    // 位置の換算: トークンの位置(行内の文字数)→ テキスト全体のUTF-16の位置
-    let base = line_start_utf16(&lines, line) + leading_spaces_utf16(target);
-    let Some(spans) = Spans::new(trimmed, &tokens, base) else {
-        return Vec::new();
-    };
+    // 位置の換算: 行内の位置(UTF-16)→ テキスト全体の位置
+    let line_start = line_start_utf16(&lines, line);
+    let base = line_start + leading_spaces_utf16(target);
+    let abs = |(from, to): Span| (line_start + from, line_start + to);
 
     // 時刻の意味(タイムゾーン)は、ログで最初に決まったものに従う
     let before_tz = timezone_before(&lines[..line]);
@@ -137,13 +137,13 @@ pub fn fill_with(
         }
         Some(i) => {
             // 省略形(分だけ・H:MM)は、指定があるときだけ HHMM に展開する
-            if let (true, Some(rec), Token::Decimal { digits, .. }) =
-                (scope.expand_time, record.as_ref(), &tokens[i].token)
+            if let (true, Some(rec), QsoItem::Time { digits, .. }) =
+                (scope.expand_time, record.as_ref(), &items[i].node)
             {
                 if *digits < 4 {
                     let hhmm = local_hhmm(rec, before_tz.unwrap_or(0));
                     if let Some(hhmm) = hhmm {
-                        let (from, to) = spans.range(i);
+                        let (from, to) = abs(items[i].span);
                         parts.push((
                             from,
                             1,
@@ -175,19 +175,19 @@ pub fn fill_with(
             front.push_str(&format!("{} ", rec.mode));
         }
         if !front.is_empty() {
-            let at = spans.range(shape.call).0;
+            let at = abs(items[shape.call].span).0;
             parts.push((at, 2, insert_at(at, front)));
         }
 
         // --- RST(コールサインの直後の2つ) ---
         let (sent, rcvd) = (&rec.rst_sent, &rec.rst_rcvd);
-        let mut last_end = spans.range(shape.call).1;
+        let mut last_end = abs(items[shape.call].span).1;
         let rst_slots = if scope.rst { shape.rst.as_slice() } else { &[] };
         for (slot, value) in rst_slots.iter().zip([sent, rcvd]) {
             match slot {
-                Some(i) => {
-                    let (from, to) = spans.range(*i);
-                    if tokens[*i].raw != *value {
+                Some(rst) => {
+                    let (from, to) = abs(rst.span);
+                    if rst_text(&rst.node) != value {
                         parts.push((
                             from,
                             3,
@@ -233,90 +233,58 @@ fn merge(mut parts: Vec<(usize, u8, Edit)>) -> Vec<Edit> {
     out
 }
 
-/// QSO行の構造: どのトークンがコールサイン・時刻・RSTか
+fn rst_text(rst: &Rst) -> &str {
+    match rst {
+        Rst::Digits { value, .. } | Rst::Snr(value) => value,
+    }
+}
+
+/// QSO行の構造: どの要素がコールサイン・時刻・RSTか
 struct QsoShape {
+    /// コールサインの要素の番号
     call: usize,
-    /// 時刻(数値)のトークン。なければ時刻を省いた行
+    /// 時刻(数値)の要素の番号。なければ時刻を省いた行
     time: Option<usize>,
     has_band: bool,
     has_mode: bool,
     /// コールサイン直後の、送信・受信のRST(あれば)
-    rst: [Option<usize>; 2],
+    rst: [Option<Spanned<Rst>>; 2],
 }
 
 impl QsoShape {
     /// コールサインを含み、その前が 時刻/バンド/周波数/モード/コメント だけの行
-    fn of(tokens: &[TokenInfo]) -> Option<Self> {
-        let call = tokens
+    fn of(items: &[Spanned<QsoItem>]) -> Option<Self> {
+        let call = items
             .iter()
-            .position(|t| matches!(t.token, Token::Call(_)))?;
+            .position(|it| matches!(it.node, QsoItem::Call { .. }))?;
         let mut time = None;
-        for (i, t) in tokens[..call].iter().enumerate() {
-            match t.token {
-                Token::Decimal { .. } if time.is_none() => time = Some(i),
-                Token::Band { .. } | Token::Freq(_) | Token::Mode(_) | Token::Comment { .. } => {}
+        for (i, it) in items[..call].iter().enumerate() {
+            match it.node {
+                QsoItem::Time { .. } if time.is_none() => time = Some(i),
+                QsoItem::Band { .. }
+                | QsoItem::Freq(_)
+                | QsoItem::Mode(_)
+                | QsoItem::Comment { .. } => {}
                 _ => return None,
             }
         }
-        let has_band = tokens
+        let has_band = items
             .iter()
-            .any(|t| matches!(t.token, Token::Band { .. } | Token::Freq(_)));
-        let has_mode = tokens.iter().any(|t| matches!(t.token, Token::Mode(_)));
-
-        // コンパイラと同じく、コメントは読み飛ばし、数値/SNRが続く間だけRSTとして読む
-        let mut rst = [None, None];
-        let mut rest = tokens
-            .iter()
-            .enumerate()
-            .skip(call + 1)
-            .filter(|(_, t)| !matches!(t.token, Token::Comment { .. }));
-        for slot in &mut rst {
-            match rest.next() {
-                Some((i, t)) if matches!(t.token, Token::Decimal { .. } | Token::Snr(_)) => {
-                    *slot = Some(i);
-                }
-                _ => break,
-            }
-        }
+            .any(|it| matches!(it.node, QsoItem::Band { .. } | QsoItem::Freq(_)));
+        let has_mode = items.iter().any(|it| matches!(it.node, QsoItem::Mode(_)));
+        let QsoItem::Call {
+            rst_sent, rst_rcvd, ..
+        } = &items[call].node
+        else {
+            return None;
+        };
         Some(Self {
             call,
             time,
             has_band,
             has_mode,
-            rst,
+            rst: [rst_sent.clone(), rst_rcvd.clone()],
         })
-    }
-}
-
-/// トークンの位置(行内の文字数)を、テキスト全体でのUTF-16の位置に換算する
-struct Spans {
-    /// トークンごとの (開始, 終了)
-    ranges: Vec<(usize, usize)>,
-}
-
-impl Spans {
-    /// 換算できない(トークンの位置と文字列が合わない)ときは None
-    fn new(line: &str, tokens: &[TokenInfo], base: usize) -> Option<Self> {
-        let chars: Vec<char> = line.chars().collect();
-        let mut ranges = Vec::with_capacity(tokens.len());
-        for t in tokens {
-            let n = t.raw.chars().count();
-            let slice: String = chars.get(t.position..t.position + n)?.iter().collect();
-            if slice != t.raw {
-                return None;
-            }
-            let from = base
-                + chars[..t.position]
-                    .iter()
-                    .map(|c| c.len_utf16())
-                    .sum::<usize>();
-            ranges.push((from, from + t.raw.encode_utf16().count()));
-        }
-        Some(Self { ranges })
-    }
-
-    fn range(&self, token: usize) -> (usize, usize) {
-        self.ranges[token]
     }
 }
 
@@ -345,17 +313,12 @@ fn local_hhmm(rec: &FleQsoRecord, tz: i32) -> Option<String> {
 
 /// この行より前で、最後に有効になっている `timezone` 指定
 fn timezone_before(lines: &[&str]) -> Option<i32> {
-    lines.iter().rev().find_map(|l| {
-        let tokens = tokenize(l.trim());
-        match (
-            tokens.first().map(|t| &t.token),
-            tokens.get(1).map(|t| &t.token),
-        ) {
-            (Some(Token::Keyword { key, .. }), Some(Token::Snr(tz))) if key == "timezone" => {
-                tz.parse().ok()
-            }
+    lines.iter().rev().find_map(|l| match parse_line(l).kind {
+        LineKind::Directive(d) => match d.value {
+            Some(DirValue::Timezone(tz)) => Some(tz),
             _ => None,
-        }
+        },
+        _ => None,
     })
 }
 
