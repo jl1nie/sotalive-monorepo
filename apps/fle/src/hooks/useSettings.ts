@@ -13,13 +13,30 @@ export interface Settings {
   writeRst: boolean
   /** 誤りの文面の言語(auto は端末の言語) */
   language: LangPref
+  /** キーボードの上に、数字の行(0〜9 と /)を出す(ソフトキーボードで、文字と数字の切り替えを減らす) */
+  digitRow: boolean
 }
 
 export const TIMEZONE_MIN = -12
 export const TIMEZONE_MAX = 14
 
 const KEY = 'fle.settings'
-const DEFAULTS: Settings = { theme: 'system', timezone: 0, writeBandMode: false, writeRst: true, language: 'auto' }
+/** タッチ端末(ソフトキーボード)なら、数字の行は初期でオン */
+const touchDevice = () => {
+  try {
+    return window.matchMedia('(pointer: coarse)').matches
+  } catch {
+    return false
+  }
+}
+const DEFAULTS: Settings = {
+  theme: 'system',
+  timezone: 0,
+  writeBandMode: false,
+  writeRst: true,
+  language: 'auto',
+  digitRow: false,
+}
 
 function load(): Settings {
   try {
@@ -35,6 +52,7 @@ function load(): Settings {
       writeBandMode: typeof v.writeBandMode === 'boolean' ? v.writeBandMode : DEFAULTS.writeBandMode,
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
       language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',
+      digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
     }
   } catch {
     return DEFAULTS

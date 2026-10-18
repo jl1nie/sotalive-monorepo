@@ -78,6 +78,9 @@ const ja = {
     '緑の候補バーで確定するとき、時刻は必ず書きます。ほかに書くものを選べます。省略したままでも、意味は同じです(バーには、いつも完全な解釈が出ます)。',
   'settings.confirm.rst': 'RST',
   'settings.confirm.rst.hint': '省略したときの 599 / 59 も書きます。4 のような省略形は 549 のように直します',
+  'digits.label': '数字キー',
+  'settings.digitRow': '数字キーの行',
+  'settings.digitRow.hint': 'キーボードの上に 0〜9 と / を出します。7L1WRK のような、数字と文字が混ざる入力で、キーボードを切り替えずに済みます。',
   'settings.confirm.bandMode': 'バンド・モード',
   'settings.confirm.bandMode.hint':
     '各行に 40m CW のように書きます。設定行で決めていれば、書かなくても同じ意味です',
@@ -205,6 +208,9 @@ const en: Record<MessageKey, string> = {
     'When you confirm with the green bar, the time is always written. Choose what else to write. The meaning is the same if you leave them out (the bar always shows the full interpretation).',
   'settings.confirm.rst': 'RST',
   'settings.confirm.rst.hint': 'Also writes the default 599 / 59. A short form such as 4 is rewritten like 549',
+  'digits.label': 'Digit keys',
+  'settings.digitRow': 'Digit key row',
+  'settings.digitRow.hint': 'Shows 0-9 and / above the keyboard, so you can type callsigns like 7L1WRK without switching keyboards.',
   'settings.confirm.bandMode': 'Band and mode',
   'settings.confirm.bandMode.hint':
     'Writes e.g. 40m CW on each line. The meaning is the same if a settings line already sets them',

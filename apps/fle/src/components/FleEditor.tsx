@@ -28,6 +28,7 @@ import { useAutosave } from '@/hooks/useAutosave'
 import { usePwa } from '@/hooks/usePwa'
 import { useSettings, type Settings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
+import { DigitRow } from '@/components/DigitRow'
 import { CandidateBar } from '@/components/CandidateBar'
 import { SuggestStrip } from '@/components/SuggestStrip'
 import { QsoSheet } from '@/components/QsoSheet'
@@ -306,6 +307,16 @@ function Editor({
     setCaret(pos)
   }
 
+  /** 数字の行のキー。カーソル位置(選択があれば、その範囲)に1文字入れる。打ったときと同じ経路を通す */
+  const typeKey = (key: string) => {
+    const ta = taRef.current
+    const from = ta?.selectionStart ?? caret
+    const to = ta?.selectionEnd ?? caret
+    const value = text.slice(0, from) + key + text.slice(to)
+    pendingCaret.current = from + key.length
+    handleChange(value, from + key.length, new Event('input'))
+  }
+
   /** `source` のログから、ファイルを生成してダウンロードする */
   const generateNow = useCallback(
     async (source: string) => {
@@ -413,6 +424,8 @@ function Editor({
         />
         <SuggestStrip candidates={completion.candidates} onPick={pick} />
       </div>
+
+      {settings.digitRow && <DigitRow onKey={typeKey} />}
 
       <CandidateBar
         view={view}
