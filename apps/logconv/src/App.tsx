@@ -26,12 +26,12 @@ function App() {
       case 'wspr':
         return <WSPRTab />
       default:
-        return <POTAActivatorTab />
+        return <FLEOnlineTab />
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-dvh bg-white dark:bg-gray-950">
       <Header />
       <main className="max-w-7xl mx-auto">
         <TabContainer>
@@ -39,12 +39,12 @@ function App() {
         </TabContainer>
       </main>
       
-      <footer className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+      <footer className="py-6 pb-28 md:pb-6 text-center text-sm text-gray-700 dark:text-gray-300">
         <p>Log Converter for SOTA / JAFF / POTA</p>
         <p className="mt-1">
           <a 
             href="https://sotalive.net" 
-            className="text-primary-600 hover:text-primary-700 dark:text-primary-400"
+            className="inline-flex items-center min-h-11 px-3 underline text-primary-800 dark:text-primary-300"
           >
             sotalive.net
           </a>

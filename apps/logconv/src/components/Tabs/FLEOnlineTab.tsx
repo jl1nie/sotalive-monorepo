@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import {
   Play,
   Download,
@@ -21,11 +21,21 @@ export function FLEOnlineTab() {
   const [compileResult, setCompileResult] = useState<FLECompileResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [textDirty, setTextDirty] = useState(false)
-  const [textInterpreted, setTextInterpreted] = useState(false)
   const [previewMode, setPreviewMode] = useState<PreviewMode>('sota')
 
   const fleFileInputRef = useRef<HTMLInputElement>(null)
   const adifFileInputRef = useRef<HTMLInputElement>(null)
+  const statusRef = useRef<HTMLDivElement>(null)
+
+  // 変換後は結果(成功・エラー)が見える位置まで移動する。スマホでは入力欄の下にあるため。
+  // 結果の描画が済んでからでないと、ページが短くてスクロール先が打ち切られる。
+  const [resultTick, setResultTick] = useState(0)
+  const showResult = useCallback(() => setResultTick((t) => t + 1), [])
+  useEffect(() => {
+    if (resultTick > 0) {
+      statusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [resultTick])
 
   // ADIF to FLE converter
   const adif2fle = useCallback((adifText: string): string => {
@@ -122,7 +132,6 @@ rigset 2
       reader.onload = () => {
         setText(reader.result as string)
         setTextDirty(false)
-        setTextInterpreted(false)
         setCompileResult(null)
         setError(null)
       }
@@ -143,7 +152,6 @@ rigset 2
       const fleContent = adif2fle(adifContent)
       setText((prev) => prev + fleContent)
       setTextDirty(true)
-      setTextInterpreted(false)
     }
     reader.readAsText(file, 'UTF-8')
     e.target.value = ''
@@ -153,7 +161,6 @@ rigset 2
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value)
     setTextDirty(true)
-    setTextInterpreted(false)
   }, [])
 
   // Handle compile (変換)
@@ -169,7 +176,6 @@ rigset 2
     try {
       const data = await compileFle(text)
       setCompileResult(data)
-      setTextInterpreted(data.status === 'OK')
 
       if (data.status === 'ERR') {
         setError('FLEログにエラーがあります')
@@ -178,18 +184,21 @@ rigset 2
       setError(err instanceof Error ? err.message : 'エラーが発生しました')
     } finally {
       setLoading(false)
+      showResult()
     }
-  }, [text])
+  }, [text, showResult])
 
   // Handle generate (CSVファイル生成)
   const handleGenerate = useCallback(async () => {
-    if (!textInterpreted) {
-      if (!confirm('変換されていません\nCSV生成しますか？')) {
-        return
-      }
-    }
-
+    setError(null)
     try {
+      // 変換は端末内で一瞬なので、生成の前に毎回変換して画面の結果も最新にする
+      const view = await compileFle(text)
+      setCompileResult(view)
+      if (view.status === 'ERR') {
+        setError('FLEログにエラーがあります(エラー内容を書いたファイルを生成します)')
+      }
+
       const zip = await generateFleZip(text)
       const blob = new Blob([zip as BlobPart], { type: 'application/zip' })
       const url = URL.createObjectURL(blob)
@@ -202,8 +211,10 @@ rigset 2
       URL.revokeObjectURL(url)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ダウンロードに失敗しました')
+    } finally {
+      showResult()
     }
-  }, [text, textInterpreted])
+  }, [text, showResult])
 
   // Handle load sample
   const handleLoadSample = useCallback(() => {
@@ -214,7 +225,6 @@ rigset 2
     }
     setText(generateSample())
     setTextDirty(false)
-    setTextInterpreted(false)
     setCompileResult(null)
     setError(null)
   }, [textDirty, generateSample])
@@ -228,7 +238,6 @@ rigset 2
     }
     setText('')
     setTextDirty(false)
-    setTextInterpreted(false)
     setCompileResult(null)
     setError(null)
   }, [textDirty])
@@ -268,235 +277,226 @@ rigset 2
     'Remarks2',
   ]
 
-  const hasSOTA = compileResult?.mysota && compileResult.mysota !== ''
-  const hasWWFF =
-    (compileResult?.mywwff && compileResult.mywwff !== '') ||
-    (compileResult?.mypota && compileResult.mypota.length > 0)
+  const isOk = compileResult?.status === 'OK'
+  const isErr = compileResult?.status === 'ERR'
+  const qsoRows = compileResult?.logtext ?? []
+  const tableRows = previewMode === 'sota' ? qsoRows : (compileResult?.hamlogtext ?? [])
+  const headers = previewMode === 'sota' ? sotaHeaders : hamlogHeaders
+
+  const refChips = compileResult
+    ? [
+        compileResult.mycall && `mycall ${compileResult.mycall}`,
+        compileResult.mysota && `SOTA ${compileResult.mysota}`,
+        compileResult.mywwff && `WWFF ${compileResult.mywwff}`,
+        compileResult.mypota.length > 0 && `POTA ${compileResult.mypota.join(' ')}`,
+      ].filter(Boolean)
+    : []
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">FLE Online Editor</h2>
+    <div className="max-w-3xl md:max-w-6xl mx-auto space-y-4">
+      {/* 入力 */}
+      <section className="card p-4" aria-labelledby="fle-input-title">
+        <div className="flex items-center justify-between mb-3">
+          <h2 id="fle-input-title" className="text-xl font-bold">
+            FLE ログ入力
+          </h2>
           <a
             href="https://jl1nie.wordpress.com/2019/08/21/2019-08-21-203013/"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-secondary flex items-center gap-1 text-sm py-1 px-2"
+            className="btn-secondary !min-h-11 !px-3"
+            aria-label="FLEの書き方(ヘルプ)"
           >
-            <HelpCircle className="w-4 h-4" />
-            Help
+            <HelpCircle className="w-5 h-5" />
+            ヘルプ
           </a>
         </div>
 
-        {/* Preview Table Section */}
-        <div className="mb-4">
-          {/* Tab switcher */}
-          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 mb-2">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setPreviewMode('sota')}
-                className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  previewMode === 'sota'
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                }`}
-              >
-                SOTA/WWFF/POTA
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewMode('hamlog')}
-                className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  previewMode === 'hamlog'
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                }`}
-              >
-                HAMLOG
-              </button>
-            </div>
+        <textarea
+          value={text}
+          onChange={handleTextChange}
+          placeholder={'mycall JA1ABC/1\nmysota JA/TK-001\n40m cw\n0900 JA1XYZ 599 599'}
+          aria-label="FLE形式のログ"
+          spellCheck={false}
+          autoCapitalize="none"
+          autoCorrect="off"
+          autoComplete="off"
+          className="input font-mono leading-relaxed min-h-[42dvh] md:min-h-[40vh] resize-y"
+        />
 
-            {/* Status indicators */}
-            <div className="flex items-center gap-4 text-xs">
-              <label className="flex items-center gap-1">
-                <input type="checkbox" checked={hasSOTA || false} disabled className="w-3 h-3" />
-                <span className="font-medium">SOTA</span>
-              </label>
-              <label className="flex items-center gap-1">
-                <input type="checkbox" checked={hasWWFF || false} disabled className="w-3 h-3" />
-                <span className="font-medium">WWFF/POTA</span>
-              </label>
+        <input
+          ref={fleFileInputRef}
+          type="file"
+          accept=".txt,.fle"
+          onChange={handleFleFileLoad}
+          className="hidden"
+        />
+        <input
+          ref={adifFileInputRef}
+          type="file"
+          accept=".adi,.adif"
+          onChange={handleAdifFileLoad}
+          className="hidden"
+        />
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+          <button type="button" onClick={() => fleFileInputRef.current?.click()} className="btn-secondary">
+            <Upload className="w-5 h-5" />
+            FLE読込
+          </button>
+          <button type="button" onClick={() => adifFileInputRef.current?.click()} className="btn-secondary">
+            <FileText className="w-5 h-5" />
+            ADIF追加
+          </button>
+          <button type="button" onClick={handleLoadSample} className="btn-secondary">
+            サンプル
+          </button>
+          <button type="button" onClick={handleClear} className="btn-secondary">
+            <Trash2 className="w-5 h-5" />
+            クリア
+          </button>
+        </div>
+      </section>
+
+      {/* 状態表示 */}
+      <div ref={statusRef} aria-live="polite" className="space-y-2 scroll-mt-20">
+        {error && (
+          <div
+            role="alert"
+            className="flex items-start gap-3 p-4 rounded-xl border-2 border-red-700 bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100 dark:border-red-400"
+          >
+            <AlertCircle className="w-6 h-6 shrink-0" />
+            <p className="font-semibold">{error}</p>
+          </div>
+        )}
+        {isOk && (
+          <div className="flex items-start gap-3 p-4 rounded-xl border-2 border-emerald-700 bg-emerald-50 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-100 dark:border-emerald-400">
+            <CheckCircle className="w-6 h-6 shrink-0" />
+            <div>
+              <p className="font-bold">変換できました: {qsoRows.length} QSO</p>
+              {refChips.length > 0 && (
+                <p className="text-sm font-medium break-words">{refChips.join(' / ')}</p>
+              )}
             </div>
           </div>
+        )}
+      </div>
 
-          {/* Preview Table */}
-          <div className="overflow-auto border border-gray-200 dark:border-gray-700 rounded-lg h-[35vh] min-h-[100px]">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-100 dark:bg-gray-800 sticky top-0">
-                <tr>
-                  {(previewMode === 'sota' ? sotaHeaders : hamlogHeaders).map((header, i) => (
-                    <th
-                      key={i}
-                      className="px-2 py-1 text-left font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {compileResult && compileResult.status === 'OK' ? (
-                  (previewMode === 'sota' ? compileResult.logtext : compileResult.hamlogtext).map(
-                    (row, i) => (
-                      <tr
-                        key={i}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                      >
+      {/* 結果 */}
+      {compileResult && (
+        <section className="card p-4" aria-labelledby="fle-result-title">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 id="fle-result-title" className="text-xl font-bold">
+              {isErr ? `エラー ${qsoRows.length}件` : '変換結果'}
+            </h2>
+            {isOk && (
+              <div className="hidden md:flex rounded-xl border-2 border-gray-400 overflow-hidden" role="group" aria-label="表示形式">
+                {(['sota', 'hamlog'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setPreviewMode(mode)}
+                    aria-pressed={previewMode === mode}
+                    className={`px-4 min-h-11 font-semibold ${
+                      previewMode === mode
+                        ? 'bg-primary-700 text-white'
+                        : 'bg-white text-gray-950 dark:bg-gray-900 dark:text-gray-50'
+                    }`}
+                  >
+                    {mode === 'sota' ? 'SOTA/WWFF/POTA' : 'HAMLOG'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {isErr ? (
+            <ul className="space-y-2">
+              {qsoRows.map((row, i) => (
+                <li
+                  key={i}
+                  className="p-3 rounded-xl border-2 border-red-700 bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100 dark:border-red-400"
+                >
+                  <span className="font-bold">{Number(row[0]) + 1}行目</span>
+                  <span className="ml-2">{row[1]}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <>
+              {/* スマホ: QSOごとのカード */}
+              <ol className="md:hidden space-y-2">
+                {qsoRows.map((row, i) => (
+                  <li key={i} className="p-3 rounded-xl border-2 border-gray-300 dark:border-gray-700">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="font-mono text-xl font-bold">{row[4]}</span>
+                      <span className="font-semibold">
+                        {row[5]} {row[6]}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-baseline gap-x-3 text-sm font-medium text-gray-800 dark:text-gray-200">
+                      <span className="font-mono">
+                        {row[2]} {row[3]}
+                      </span>
+                      <span className="font-mono">
+                        {row[7]}/{row[8]}
+                      </span>
+                      {[row[10], row[12]].filter(Boolean).map((r) => (
+                        <span key={r} className="font-mono font-bold text-primary-800 dark:text-primary-300">
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                    {row[13] && <p className="text-sm mt-1 break-words">{row[13]}</p>}
+                  </li>
+                ))}
+              </ol>
+
+              {/* PC: 表 */}
+              <div className="hidden md:block overflow-auto border-2 border-gray-300 dark:border-gray-700 rounded-xl max-h-[45vh]">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100 dark:bg-gray-800 sticky top-0">
+                    <tr>
+                      {headers.map((header) => (
+                        <th key={header} className="px-3 py-2 text-left font-bold whitespace-nowrap">
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                    {tableRows.map((row, i) => (
+                      <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                         {row.map((cell, j) => (
-                          <td
-                            key={j}
-                            className="px-2 py-1 text-gray-900 dark:text-gray-100 whitespace-nowrap"
-                          >
+                          <td key={j} className="px-3 py-2 whitespace-nowrap">
                             {cell}
                           </td>
                         ))}
                       </tr>
-                    )
-                  )
-                ) : compileResult && compileResult.status === 'ERR' ? (
-                  compileResult.logtext.map((row, i) => (
-                    <tr key={i} className="bg-red-50 dark:bg-red-900/20">
-                      <td className="px-2 py-1 text-red-600 dark:text-red-400">Line {row[0]}</td>
-                      <td
-                        colSpan={previewMode === 'sota' ? 14 : 11}
-                        className="px-2 py-1 text-red-600 dark:text-red-400"
-                      >
-                        {row[1]}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={previewMode === 'sota' ? 15 : 12}
-                      className="px-4 py-8 text-center text-gray-400 dark:text-gray-500"
-                    >
-                      FLEログを入力して「変換」をクリックしてください
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
-        {/* FLE Text Editor */}
-        <div className="mb-4">
-          <textarea
-            value={text}
-            onChange={handleTextChange}
-            placeholder="FLE形式のログを入力..."
-            className="input font-mono text-sm min-h-[40vh] resize-none"
-          />
-        </div>
-
-        {/* Error message */}
-        {error && (
-          <div className="flex items-start gap-2 p-3 mb-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
-
-        {/* Success message */}
-        {compileResult && compileResult.status === 'OK' && (
-          <div className="flex items-center gap-2 p-3 mb-4 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg">
-            <CheckCircle className="w-5 h-5" />
-            <div className="text-sm">
-              <span className="font-medium">変換成功!</span>
-              <span className="ml-2">
-                {compileResult.logtext.length} QSO | mycall: {compileResult.mycall}
-                {compileResult.mysota && ` | SOTA: ${compileResult.mysota}`}
-                {compileResult.mywwff && ` | WWFF: ${compileResult.mywwff}`}
-                {compileResult.mypota.length > 0 && ` | POTA: ${compileResult.mypota.join(', ')}`}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {/* File inputs (hidden) */}
-          <input
-            ref={fleFileInputRef}
-            type="file"
-            accept=".txt,.fle"
-            onChange={handleFleFileLoad}
-            className="hidden"
-          />
-          <input
-            ref={adifFileInputRef}
-            type="file"
-            accept=".adi,.adif"
-            onChange={handleAdifFileLoad}
-            className="hidden"
-          />
-
-          <button
-            type="button"
-            onClick={() => fleFileInputRef.current?.click()}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <Upload className="w-4 h-4" />
-            FLEログ読込
-          </button>
-
-          <button
-            type="button"
-            onClick={() => adifFileInputRef.current?.click()}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <FileText className="w-4 h-4" />
-            ADIFログ追加
-          </button>
-
+      {/* 操作バー: 画面下に固定(スマホは下部ナビの上) */}
+      <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:bottom-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-white dark:bg-gray-950 border-t-2 border-gray-300 dark:border-gray-700">
+        <div className="max-w-3xl md:max-w-6xl mx-auto grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={handleCompile}
             disabled={!text.trim() || loading}
-            className="btn-info flex items-center gap-2"
+            className="btn-primary"
           >
-            <Play className="w-4 h-4" />
+            <Play className="w-5 h-5" />
             変換
           </button>
-
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!text.trim()}
-            className="btn-primary flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            CSVファイル生成
-          </button>
-
-          <button
-            type="button"
-            onClick={handleLoadSample}
-            className="btn-secondary flex items-center gap-2"
-          >
-            FLE Sample
-          </button>
-
-          <button
-            type="button"
-            onClick={handleClear}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            Clear
+          <button type="button" onClick={handleGenerate} disabled={!text.trim()} className="btn-success">
+            <Download className="w-5 h-5" />
+            ファイル生成
           </button>
         </div>
       </div>
