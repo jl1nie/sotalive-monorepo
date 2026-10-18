@@ -876,4 +876,19 @@ date 2024-01-15
         assert_eq!(r.errors[0].args, ["rigset", "rig"]);
         assert_eq!(r.records[0].rig, ""); // QSO そのものは、記録される
     }
+
+    #[test]
+    fn timezone_jst_is_nine_hours_ahead_and_utc_is_zero() {
+        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\ntimezone jst\n40m cw\n1805 ja1aaa\ntimezone utc\n1000 ja1bbb");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        // JST 18:05 は UTC 09:05。UTC の 10:00 は、そのまま
+        assert_eq!(
+            (r.records[0].hour, r.records[0].min, r.records[0].tz),
+            (9, 5, 9)
+        );
+        assert_eq!(
+            (r.records[1].hour, r.records[1].min, r.records[1].tz),
+            (10, 0, 0)
+        );
+    }
 }

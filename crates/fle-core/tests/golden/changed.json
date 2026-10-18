@@ -1963,6 +1963,59 @@
     ],
     "status": "ERR"
   },
+  "timezone_missing": {
+    "errors": [
+      {
+        "line": 3,
+        "message": "Missing timezone. (eg. +9 or jst)"
+      }
+    ],
+    "has_contest": false,
+    "has_pota": false,
+    "has_sota": false,
+    "has_wwff": false,
+    "log_type": "NONE",
+    "mycall": "JA1ABC",
+    "mygrid": "",
+    "mypota": [],
+    "mysota": "",
+    "mywwff": "",
+    "operator": "JA1ABC",
+    "qslmsg": "",
+    "records": [
+      {
+        "band": "40m",
+        "callsign": "JA1XYZ",
+        "day": 18,
+        "freq": "7MHz",
+        "his_num": "",
+        "hispota": [],
+        "hissota": "",
+        "hiswwff": "",
+        "hour": 9,
+        "line": 4,
+        "min": 0,
+        "mode": "CW",
+        "month": 10,
+        "my_grid": "",
+        "my_num": "",
+        "mycall": "JA1ABC",
+        "mypota": [],
+        "mysota": "",
+        "mywwff": "",
+        "operator": "JA1ABC",
+        "qslmsg": "",
+        "qsomsg": "",
+        "qsormks": "",
+        "rigset": 0,
+        "rst_rcvd": "599",
+        "rst_sent": "599",
+        "tz": 0,
+        "year": 2026
+      }
+    ],
+    "status": "ERR"
+  },
   "unclosed_angle_then_more": {
     "errors": [
       {

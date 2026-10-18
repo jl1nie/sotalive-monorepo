@@ -31,6 +31,8 @@ pub enum CandidateKind {
     Mode,
     /// `day` の後ろの `+` / `++`
     Day,
+    /// `timezone` の後ろの `jst` / `utc`
+    Timezone,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -107,6 +109,8 @@ pub fn complete(text_before_caret: &str) -> Vec<Candidate> {
                 ),
                 // `+` と `++` は、この順(短い順)
                 TermKind::Day => (sorted_matches(words, &prefix), CandidateKind::Day),
+                // 並べ方は、日本の利用が主なので、jst が先
+                TermKind::Timezone => (sorted_matches(words, &prefix), CandidateKind::Timezone),
             };
             texts.into_iter().map(move |text| Candidate {
                 text: text.to_string(),
@@ -347,5 +351,15 @@ mod tests {
         let json = serde_json::to_value(complete("mys")).unwrap();
         assert_eq!(json[0]["text"], "mysota");
         assert_eq!(json[0]["kind"], "command");
+    }
+
+    #[test]
+    fn timezone_offers_jst_and_utc() {
+        let c = complete("timezone ");
+        assert_eq!(texts(&c), vec!["jst", "utc"]);
+        assert!(c.iter().all(|c| c.kind == CandidateKind::Timezone));
+        assert_eq!(texts(&complete("timezone j")), vec!["jst"]);
+        // 値を打ち終わったあとは、出さない
+        assert!(complete("timezone jst ").is_empty());
     }
 }

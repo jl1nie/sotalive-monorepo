@@ -10,8 +10,6 @@ export interface Settings {
   timezone: number
   /** 確定ボタンで、バンド・モードも書く(時刻は常に書く) */
   writeBandMode: boolean
-  /** HAMLOG の CSV の日付・時刻を、UTC でなく JST で出す(SOTA・POTA の出力は、常に UTC) */
-  hamlogJst: boolean
   /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も) */
   writeRst: boolean
   /** 誤りの文面の言語(auto は端末の言語) */
@@ -39,7 +37,6 @@ const DEFAULTS: Settings = {
   timezone: 0,
   writeBandMode: false,
   writeRst: true,
-  hamlogJst: false,
   language: 'auto',
   digitRow: false,
   rigs: [],
@@ -58,7 +55,6 @@ function load(): Settings {
       timezone,
       writeBandMode: typeof v.writeBandMode === 'boolean' ? v.writeBandMode : DEFAULTS.writeBandMode,
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
-      hamlogJst: typeof v.hamlogJst === 'boolean' ? v.hamlogJst : DEFAULTS.hamlogJst,
       language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],

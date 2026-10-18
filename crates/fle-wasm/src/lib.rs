@@ -5,7 +5,7 @@
 use chrono::DateTime;
 use fle_core::{
     adif_to_fle, check_log, compile_fle, compile_log, complete_at, fill_with, generate_fle_output,
-    grid_locator, sample_log, station_at, station_plan, FillScope, OutputOptions, Station,
+    grid_locator, sample_log, station_at, station_plan, FillScope, Station,
 };
 use wasm_bindgen::prelude::*;
 
@@ -94,21 +94,16 @@ pub fn check_output_of(text: &str) -> Result<JsValue, JsError> {
 /// FLEテキストから各種ログファイルを含むZIPを生成する。
 ///
 /// `now_ms` は `Date.now()` の値。エラーログのファイル名に使う。
-/// `options` は `{ hamlogJst?: boolean }`(省略できる)。HAMLOG の CSV の日時を JST で出すかどうか。
 #[wasm_bindgen(js_name = generateZip)]
-pub fn generate_zip(text: &str, now_ms: f64, options: Option<JsValue>) -> Result<Vec<u8>, JsError> {
-    // 渡されなかった(undefined)・読めないときは、既定の設定
-    let options: OutputOptions = options
-        .and_then(|o| serde_wasm_bindgen::from_value(o).ok())
-        .unwrap_or_default();
-    generate_zip_bytes(text, now_ms, options).map_err(|e| JsError::new(&e))
+pub fn generate_zip(text: &str, now_ms: f64) -> Result<Vec<u8>, JsError> {
+    generate_zip_bytes(text, now_ms).map_err(|e| JsError::new(&e))
 }
 
-fn generate_zip_bytes(text: &str, now_ms: f64, options: OutputOptions) -> Result<Vec<u8>, String> {
+fn generate_zip_bytes(text: &str, now_ms: f64) -> Result<Vec<u8>, String> {
     let now = DateTime::from_timestamp_millis(now_ms as i64)
         .ok_or_else(|| "invalid timestamp".to_string())?
         .naive_utc();
-    generate_fle_output(&compile_fle(text), now, options)
+    generate_fle_output(&compile_fle(text), now)
 }
 
 #[cfg(test)]
@@ -121,7 +116,7 @@ mod tests {
 
     #[test]
     fn zip_contains_log_files() {
-        let zip = generate_zip_bytes(SAMPLE, 0.0, OutputOptions::default()).unwrap();
+        let zip = generate_zip_bytes(SAMPLE, 0.0).unwrap();
         let archive = zip::ZipArchive::new(Cursor::new(zip)).unwrap();
         assert!(archive.len() >= 2);
     }
@@ -129,8 +124,7 @@ mod tests {
     #[test]
     fn error_zip_is_named_from_given_time() {
         // 2026-10-18T09:30:45Z
-        let zip =
-            generate_zip_bytes("mycall\n", 1_792_315_845_000.0, OutputOptions::default()).unwrap();
+        let zip = generate_zip_bytes("mycall\n", 1_792_315_845_000.0).unwrap();
         let mut archive = zip::ZipArchive::new(Cursor::new(zip)).unwrap();
         assert_eq!(
             archive.by_index(0).unwrap().name(),
@@ -140,6 +134,6 @@ mod tests {
 
     #[test]
     fn empty_input_is_an_error() {
-        assert!(generate_zip_bytes("", 0.0, OutputOptions::default()).is_err());
+        assert!(generate_zip_bytes("", 0.0).is_err());
     }
 }

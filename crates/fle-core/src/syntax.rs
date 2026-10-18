@@ -707,7 +707,7 @@ fn directive_value(
             Operand::PotaList => missing(errors, "Missing POTA ref#."),
             Operand::Grid => missing(errors, "Missing grid locator."),
             Operand::DayStep => missing(errors, "Missing operand +/++."),
-            Operand::Timezone => missing(errors, "Missing timezone. (eg. +9)"),
+            Operand::Timezone => missing(errors, "Missing timezone. (eg. +9 or jst)"),
             _ => missing(errors, "Missing operand."),
         };
     };
@@ -821,6 +821,9 @@ fn directive_value(
                 None
             }
         },
+        // `jst` は +9、`utc` は 0(大文字小文字は問わない)。ほかの名前は、略称が国で違うので作らない
+        Operand::Timezone if first.raw.eq_ignore_ascii_case("jst") => Some(DirValue::Timezone(9)),
+        Operand::Timezone if first.raw.eq_ignore_ascii_case("utc") => Some(DirValue::Timezone(0)),
         Operand::Timezone => match class {
             Class::Snr(tz) => match tz.parse::<i32>() {
                 Ok(v) => Some(DirValue::Timezone(v)),
@@ -1006,6 +1009,8 @@ pub enum TermKind {
     Band,
     Mode,
     Day,
+    /// `timezone` の後ろの `jst` / `utc`
+    Timezone,
 }
 
 /// 次に来られるキーワード
@@ -1064,6 +1069,13 @@ pub fn expected_next(head: &str) -> Vec<Term> {
                 text: "consecutive",
                 kind: TermKind::Command,
             }],
+            (Operand::Timezone, 0) => ["jst", "utc"]
+                .into_iter()
+                .map(|text| Term {
+                    text,
+                    kind: TermKind::Timezone,
+                })
+                .collect(),
             _ => Vec::new(),
         },
         LineKind::Qso(items) => {
@@ -1365,6 +1377,11 @@ mod tests {
         assert_eq!(dir("day ++").0, Some(DirValue::Day(2)));
         assert_eq!(dir("timezone +9").0, Some(DirValue::Timezone(9)));
         assert_eq!(dir("timezone -5").0, Some(DirValue::Timezone(-5)));
+        // jst・utc(大文字小文字は問わない)
+        assert_eq!(dir("timezone jst").0, Some(DirValue::Timezone(9)));
+        assert_eq!(dir("timezone JST").0, Some(DirValue::Timezone(9)));
+        assert_eq!(dir("timezone utc").0, Some(DirValue::Timezone(0)));
+        assert_eq!(dir("timezone Utc").0, Some(DirValue::Timezone(0)));
         // rig は行の残り(HAMLOG の Rig= の右辺)。`/` や `+` を含んでよい
         assert_eq!(
             dir("rig KX2/IC-705+EFHW").0,
@@ -1438,7 +1455,10 @@ mod tests {
         );
         assert_eq!(
             msg("timezone"),
-            Some(("missing_operand", "Missing timezone. (eg. +9)".into()))
+            Some((
+                "missing_operand",
+                "Missing timezone. (eg. +9 or jst)".into()
+            ))
         );
         assert_eq!(
             msg("qslmsg"),
@@ -1465,6 +1485,8 @@ mod tests {
         assert_eq!(dir("operator ???").1[0].message, "Invalid operator.");
         assert_eq!(dir("date hello").1[0].message, "Wrong date format.");
         assert_eq!(dir("timezone 9").1[0].message, "9 is invalid timezone.");
+        // 名前は jst と utc だけ(略称は、国で意味が違う)
+        assert_eq!(dir("timezone pst").1[0].code, "invalid_operand");
         // rigset は rig に変わった。値があってもなくても、案内を出す
         for line in ["rigset 2", "rigset x", "rigset"] {
             let (value, errors) = dir(line);

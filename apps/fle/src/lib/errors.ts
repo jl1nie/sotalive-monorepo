@@ -14,7 +14,7 @@ const OPERAND_JA: Record<string, string> = {
   mygrid: 'グリッドロケータ',
   date: '日付',
   day: '+ か ++',
-  timezone: 'タイムゾーン(例 +9)',
+  timezone: 'タイムゾーン(例 +9 か jst)',
   rig: 'HAMLOG の Rig= の右辺(例 KX2/IC-705+EFHW)',
 }
 

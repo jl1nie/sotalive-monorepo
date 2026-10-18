@@ -99,22 +99,6 @@ export function SettingsDialog({ open, onClose, settings, onChange }: Props) {
         </label>
 
         <div>
-          <label htmlFor="hamlog-time" className="label">
-            {t('settings.hamlogTime')}
-          </label>
-          <select
-            id="hamlog-time"
-            value={settings.hamlogJst ? 'jst' : 'utc'}
-            onChange={(e) => onChange({ hamlogJst: e.target.value === 'jst' })}
-            className="input"
-          >
-            <option value="utc">UTC</option>
-            <option value="jst">{t('settings.hamlogTime.jst')}</option>
-          </select>
-          <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{t('settings.hamlogTime.hint')}</p>
-        </div>
-
-        <div>
           <label htmlFor="rigs" className="label">
             {t('settings.rigs')}
           </label>

@@ -58,7 +58,7 @@ export function sanitizeSettings(data: unknown): Record<string, unknown> | null 
     if (!Number.isInteger(tz) || (tz as number) < -12 || (tz as number) > 14) return null;
     out.timezone = tz;
   }
-  for (const key of ["writeBandMode", "writeRst", "hamlogJst"]) {
+  for (const key of ["writeBandMode", "writeRst"]) {
     if (key in data) {
       if (typeof data[key] !== "boolean") return null;
       out[key] = data[key];

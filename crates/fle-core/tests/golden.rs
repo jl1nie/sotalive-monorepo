@@ -171,6 +171,8 @@ fn cases() -> Vec<(&'static str, String)> {
 
 /// 意図して変えたもの(決定の番号と、理由)。記録との一致は求めず、新しい挙動は別のテストで確かめる。
 const CHANGED: &[(&str, &str)] = &[
+    // 決定11: `timezone` に jst・utc の名前を使えるようにした(値のない誤りの案内に、jst を足した)
+    ("timezone_missing", "決定11: 案内の文面に jst を足した"),
     // 決定10: `rigset N` を廃止し、HAMLOG の Rig= の右辺を書く `rig` にする(`rigset` は案内つきの誤り)
     ("rigset_ok", "決定10: rigset は rig に変わった(誤りで案内)"),
     (
