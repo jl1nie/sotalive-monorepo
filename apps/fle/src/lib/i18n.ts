@@ -31,6 +31,8 @@ const ja = {
   'bar.confirmLabel': 'この行を確定して次の行へ',
   'bar.confirm': '確定',
   'bar.empty': 'ログを入力してください',
+  'notice.undo': '元に戻す',
+  'editor.placeholder': 'mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 JA1XYZ',
 
   // QSO一覧
   'list.errorsTitle': '{qsos} QSO / エラー {errors}',
@@ -58,9 +60,9 @@ const ja = {
   'notice.compileFailed': '解釈に失敗しました',
   'notice.errorsFile': 'エラーのある行があります。エラー内容を書いたファイルを生成しました',
   'notice.generateFailed': 'ファイルを生成できませんでした',
-  'notice.loaded': 'ログを読み込みました。メニューから元に戻せます',
-  'notice.sampleInserted': 'サンプルを入れました。メニューから元に戻せます',
-  'notice.cleared': '消しました。メニューから元に戻せます',
+  'notice.loaded': 'ログを読み込みました',
+  'notice.sampleInserted': 'サンプルを入れました',
+  'notice.cleared': '消しました',
 
   // 設定
   'settings.title': '設定',
@@ -159,7 +161,9 @@ const en: Record<MessageKey, string> = {
   'bar.openList': 'Open QSO list',
   'bar.confirmLabel': 'Confirm this line and go to the next',
   'bar.confirm': 'Confirm',
-  'bar.empty': 'Type your log',
+  'bar.empty': 'Write your log',
+  'notice.undo': 'Undo',
+  'editor.placeholder': 'mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 JA1XYZ',
 
   'list.errorsTitle': '{qsos} QSO / {errors} errors',
   'list.title': '{qsos} QSO',
@@ -184,9 +188,9 @@ const en: Record<MessageKey, string> = {
   'notice.compileFailed': 'Failed to parse the log',
   'notice.errorsFile': 'Some lines have errors. A file describing the errors was generated',
   'notice.generateFailed': 'Could not generate the files',
-  'notice.loaded': 'Log loaded. You can undo it from the menu',
-  'notice.sampleInserted': 'Sample inserted. You can undo it from the menu',
-  'notice.cleared': 'Cleared. You can undo it from the menu',
+  'notice.loaded': 'Log loaded',
+  'notice.sampleInserted': 'Sample inserted',
+  'notice.cleared': 'Cleared',
 
   'settings.title': 'Settings',
   'settings.theme': 'Theme',

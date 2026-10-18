@@ -89,10 +89,13 @@ function Editor({
   // 候補の確定後に置くカーソル位置。描画(コミット)の直後、次の入力より先に反映する
   const pendingCaret = useRef<number | null>(null)
 
-  const notify = useCallback((message: string) => {
+  /** 取り消せる操作のあとは、通知に「元に戻す」を添える(戻す先の内容を持つ) */
+  const [undoTo, setUndoTo] = useState<string | null>(null)
+  const notify = useCallback((message: string, undo?: string) => {
     setNotice(message)
+    setUndoTo(undo ?? null)
     window.clearTimeout(noticeTimer.current)
-    noticeTimer.current = window.setTimeout(() => setNotice(null), 4000)
+    noticeTimer.current = window.setTimeout(() => setNotice(null), undo === undefined ? 4000 : 8000)
   }, [])
 
   useAutosave(
@@ -107,7 +110,7 @@ function Editor({
       if (text.trim()) {
         rememberPrev(text)
         setPrev(text)
-        if (message) notify(message)
+        if (message) notify(message, text)
       }
       setText(next)
     },
@@ -399,7 +402,7 @@ function Editor({
           value={text}
           onChange={(e) => handleChange(e.target.value, e.target.selectionStart, e.nativeEvent)}
           onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
-          placeholder="0900 JA1XYZ 599 599"
+          placeholder={t('editor.placeholder')}
           aria-label={t('editor.label')}
           spellCheck={false}
           autoCapitalize="none"
@@ -425,6 +428,18 @@ function Editor({
           className="absolute left-1/2 -translate-x-1/2 bottom-28 w-max max-w-[calc(100%-1.5rem)] px-4 py-2.5 rounded-xl font-semibold text-center bg-gray-950 text-white dark:bg-white dark:text-gray-950"
         >
           {notice}
+          {undoTo !== null && (
+            <button
+              type="button"
+              className="ml-3 underline font-bold"
+              onClick={() => {
+                setText(undoTo)
+                setNotice(null)
+              }}
+            >
+              {t('notice.undo')}
+            </button>
+          )}
         </div>
       )}
 
