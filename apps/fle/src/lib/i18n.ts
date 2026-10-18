@@ -51,7 +51,7 @@ const ja = {
   'menu.undo': '直前の内容に戻す',
   'menu.install': 'ホーム画面に追加',
   'menu.installIos': 'ホーム画面に追加するには、Safariの共有ボタンから「ホーム画面に追加」を選びます。',
-  'menu.help': 'FLEの書き方',
+  'menu.help': '使い方',
   'menu.version': 'FLEonline 版 {version}',
 
   // 通知
@@ -241,7 +241,7 @@ const en: Record<MessageKey, string> = {
   'menu.undo': 'Restore previous content',
   'menu.install': 'Add to home screen',
   'menu.installIos': 'To add to the home screen, choose "Add to Home Screen" from Safari\'s share button.',
-  'menu.help': 'How to write FLE',
+  'menu.help': 'Manual (Japanese)',
   'menu.version': 'FLEonline version {version}',
 
   'notice.autosaveFailed': 'Cannot autosave. Check your browser settings',

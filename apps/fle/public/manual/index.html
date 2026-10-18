@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FLEonline 使い方</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff; --fg: #111827; --muted: #4b5563; --line: #d1d5db; --card: #f3f4f6;
+    --accent: #1d4ed8; --ok: #047857; --draft: #b45309; --err: #b91c1c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0b0f14; --fg: #f3f4f6; --muted: #cbd5e1; --line: #374151; --card: #161c24;
+            --accent: #93c5fd; --ok: #6ee7b7; --draft: #fbbf24; --err: #fca5a5; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.75 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  main { max-width: 44rem; margin: 0 auto; padding: 1rem max(1rem, env(safe-area-inset-right)) 4rem max(1rem, env(safe-area-inset-left)); }
+  h1 { font-size: 1.5rem; margin: .5rem 0; }
+  h2 { font-size: 1.25rem; margin: 2.5rem 0 .5rem; padding-top: .75rem; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.05rem; margin: 1.5rem 0 .25rem; }
+  a { color: var(--accent); }
+  nav ol { padding-left: 1.25rem; }
+  pre { background: var(--card); border: 1px solid var(--line); border-radius: .5rem; padding: .75rem; overflow-x: auto; line-height: 1.6; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .95em; }
+  :not(pre) > code { background: var(--card); padding: .1em .35em; border-radius: .25rem; }
+  table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
+  th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; vertical-align: top; }
+  th { background: var(--card); white-space: nowrap; }
+  .note { border-left: 4px solid var(--accent); background: var(--card); padding: .5rem .75rem; border-radius: 0 .5rem .5rem 0; }
+  .ok { color: var(--ok); font-weight: 700; } .draft { color: var(--draft); font-weight: 700; } .err { color: var(--err); font-weight: 700; }
+  .top { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<main>
+<div class="top"><h1>FLEonline 使い方</h1><span><a href="en/">English</a> · <a href="/fle/">← アプリに戻る</a></span></div>
+<p>山や公園で、スマホから運用ログを書き、SOTA / POTA / HAMLOG 用のファイルにするアプリです。ここでは、ふつうの SOTA アクティベーションを例に、準備から ADIF などの生成までを順に説明します。最後に、ログの書き方(FLE)の一覧があります。</p>
+<nav aria-label="目次"><ol>
+  <li><a href="#start">最初に: ホーム画面に追加</a></li>
+  <li><a href="#prep">出発前(PC): 設定と予定を登録する</a></li>
+  <li><a href="#sync">PC とスマホを同期する</a></li>
+  <li><a href="#field">山頂で: ログを書く</a></li>
+  <li><a href="#out">運用後: ファイルを作る</a></li>
+  <li><a href="#ref">FLE の書き方(リファレンス)</a></li>
+</ol></nav>
+
+<h2 id="start">1. 最初に: ホーム画面に追加</h2>
+<p>電波のない山頂でも使えるよう、<b>事前に一度、電波のあるところで開いて</b>、ホーム画面に追加してください。</p>
+<ul>
+  <li><b>iPhone</b>: Safari で開き、共有ボタン →「ホーム画面に追加」。</li>
+  <li><b>Android</b>: Chrome のメニュー →「ホーム画面に追加」(またはアプリのメニューの「ホーム画面に追加」)。</li>
+</ul>
+<p>一度開いたあとは、オフラインでも書けます。書いたログは、端末に自動で保存されます。山・公園の候補検索と、同期だけは、電波が要ります。</p>
+
+<h2 id="prep">2. 出発前(PC): 設定と予定を登録する</h2>
+<p>PC のブラウザで <code>https://fleonline.sotalive.net/</code> を開きます。</p>
+
+<h3>設定</h3>
+<p>画面右上の歯車が設定です。</p>
+<ul>
+  <li><b>リグの一覧</b>: 使うリグ・アンテナを 1 行に 1 つ書いておくと、ログで <code>rig </code> と打ったときに候補に出ます(例: <code>KX2+EFHW</code>)。HAMLOG を使う人は、HAMLOG に登録している名前を書きます。</li>
+  <li><b>時間帯</b>: 時刻をどの時間帯で書くか(UTC / JST など)。SOTA・POTA の ADIF は、いつも UTC で出ます。HAMLOG のファイルだけは、ここで選んだ時間帯で出ます。</li>
+  <li><b>確定の書き方</b>: 緑のバーで確定するとき、バンド・モードや RST も書くかどうか。</li>
+</ul>
+
+<h3>予定(行き先)</h3>
+<p>メニュー(「…」)→「予定(行き先)」→「予定を追加」で、行く山をあらかじめ登録します。</p>
+<table>
+<tr><th>名前</th><td>例: 高尾山 10/25(自分用の名前)</td></tr>
+<tr><th>日付</th><td>任意。運用の日</td></tr>
+<tr><th>自局</th><td>コールサイン(例: <code>JL1NIE/1</code>)</td></tr>
+<tr><th>SOTA / POTA / WWFF</th><td>名前や番号を打つと候補が出ます(<code>高尾</code>、<code>TK-0</code> など)。山・公園を選ぶだけです</td></tr>
+<tr><th>グリッド</th><td>任意。「現在地」ボタンでも入ります</td></tr>
+<tr><th>リグ・QSLメッセージ</th><td>任意。リグは HAMLOG の <code>Rig=</code> に入ります。QSLメッセージには <code>$mysota</code> や <code>$rig</code> が使えます</td></tr>
+</table>
+<p>予定は何件でも(50 件まで)登録できます。当日はここから選ぶだけです。</p>
+
+<h2 id="sync">3. PC とスマホを同期する</h2>
+<p>設定と予定は、PC で入れたものを、スマホでも使えるよう同期できます。<b>ログの本文は同期しません</b>(スマホで書いたログは、スマホの中だけにあります)。</p>
+
+<h3>PC 側</h3>
+<ol>
+  <li>歯車 →「設定・予定の同期」→「同期を始める(コードを作る)」。</li>
+  <li>QR コードと、26 文字の同期コードが出ます。</li>
+</ol>
+
+<h3>スマホ側</h3>
+<ul>
+  <li><b>Android</b>: カメラ(Google レンズなど)で QR を読む → 開いた画面で「参加する」。</li>
+  <li><b>iPhone</b>: Safari と、ホーム画面に追加したアプリは、保存領域が別です。<b>ホーム画面のアプリを開き</b>、歯車 →「QRを読む」で PC の QR を読むか、同期コードを入力して「参加」。</li>
+</ul>
+<p>一度参加すれば、あとは自動で同期します。PC で予定を足すと、スマホを開いたとき(電波のあるところ)に入ります。山頂では電波がなくても、同期済みの予定がそのまま使えます。</p>
+<p class="note">同期コードを知っている人は、設定と予定を読み書きできます。QR やコードは、人に見せないでください。やめたいときは、設定の「同期をやめる」(サーバーの内容も消せます)。</p>
+
+<h2 id="field">4. 山頂で: ログを書く</h2>
+
+<h3>はじめに: 予定を選ぶ</h3>
+<ol>
+  <li>メニュー →「新しいログ・場所を設定」。</li>
+  <li>「予定から選ぶ」で今日の予定を押すと、自局・山・グリッドなどが入ります。</li>
+  <li>「ログに書き込む」を押すと、ログの先頭に次のような行が入ります。</li>
+</ol>
+<pre><code>mycall JL1NIE/1
+mysota JA/TK-001
+date 2026-10-25
+rig KX2+EFHW
+qslmsg $mysota $rig</code></pre>
+<p>予定を使わずに、その場で自局や山を入れてもかまいません(山の名前から候補が出ます)。</p>
+
+<h3>QSO を書く</h3>
+<p>入力欄に、1 行に 1 QSO ずつ書きます。最初に、バンドとモードを 1 行で書きます。</p>
+<pre><code>40m cw
+0230 ja1abc
+35 ja2xyz 579
+41 jr1qrp/1 ja/st-012
+ssb
+52 ja3pqr
+20m ssb
+58 ja8abc</code></pre>
+<ul>
+  <li><code>0230 ja1abc</code>: 02:30 に JA1ABC。<b>時刻は、前の行から引き継ぐ</b>ので、次からは分だけ(<code>35</code> → 02:35)で書けます。</li>
+  <li>バンド・モードは、書き換えるまで続きます。モードだけ変えるなら <code>ssb</code>、バンドも変えるなら <code>20m ssb</code> を 1 行書きます。</li>
+  <li><code>579</code>: 送ったレポート。省略すると、モードの標準(CW 599 / SSB 59)になります。<code>5 7</code> のように、受け取ったレポートも書けます。</li>
+  <li><code>ja/st-012</code>: 相手が山にいる(S2S)。相手の公園(<code>jp-1234</code>)も、同じように書きます。</li>
+  <li><code>&lt;山田さん&gt;</code> や <code>{QRP}</code> で、メッセージ・備考を添えられます。</li>
+</ul>
+
+<h3>画面の見かた</h3>
+<p>入力欄の下の「候補バー」が、いま書いている行の解釈を見せます。</p>
+<table>
+<tr><th class="draft">橙</th><td>入力の途中です。コールサインなどが、まだ確定できる形ではありません。</td></tr>
+<tr><th class="ok">緑</th><td>解釈できました。バンド・モード・時刻・レポートが補われた姿が出ます。<b>バーを押すと確定して、次の行へ</b>進みます。</td></tr>
+<tr><th class="err">赤</th><td>バンドやモードの書き忘れなど、直す必要があります。</td></tr>
+<tr><th>(空の行)</th><td>いまの時刻と、直前のバンド・モードが出ます。</td></tr>
+</table>
+<p>左の「N QSO」を押すと、QSO の一覧と誤りが見られます。誤りをタップすると、その行へ移ります。</p>
+<ul>
+  <li>入力欄の上に出る<b>補完候補</b>を押すと、キーワード・バンド・モードが入ります。</li>
+  <li>設定で「数字キー」をオンにすると、キーボードの上に数字の行が出ます(コールサインの数字が打ちやすくなります)。</li>
+  <li>場所を移動したときは、メニュー →「新しいログ・場所を設定」で、そこから先のQSOの場所を切り替えられます。</li>
+</ul>
+
+<h2 id="out">5. 運用後: ファイルを作る</h2>
+<ol>
+  <li>右上の「生成」を押します。</li>
+  <li>足りない情報(自局・日付・運用場所・グリッドなど)があると、確認の画面が出ます。「ログに書き込んで生成」か「このまま生成」を選びます。</li>
+  <li>zip ファイルがダウンロードされます。</li>
+</ol>
+<table>
+<tr><th>sotaYYYYMMDD.csv</th><td>SOTA のログ(山のQSO。日付ごと)。S2S があれば <code>sota-s2s-…csv</code> も</td></tr>
+<tr><th>コールサイン@公園-日付.adi</th><td>POTA の ADIF(公園・日付ごと)。WWFF も同様</td></tr>
+<tr><th>hamlog-….csv</th><td>HAMLOG の取り込み用 CSV(QSLメッセージ・リグ入り)</td></tr>
+</table>
+<p>SOTA のデータベースには sota…csv を、POTA のサイトには .adi を、HAMLOG には hamlog…csv を取り込みます。エラーのある行があるときは、ファイルは作られず、エラー内容を書いたテキストだけが出ます(直してから、もう一度生成します)。</p>
+<p>ほかのログソフトのファイルを変換したいときは、<a href="https://logconv2.sotalive.net/">logconv2</a> を使ってください。</p>
+
+<h2 id="ref">6. FLE の書き方(リファレンス)</h2>
+<p>ログは行単位です。空行は無視され、<code>#</code> から行末までは注釈です。</p>
+
+<h3>指令の行(現れた行から先が有効)</h3>
+<table>
+<tr><th><code>mycall JL1NIE/1</code></th><td>自局のコールサイン</td></tr>
+<tr><th><code>operator JL1NIE</code></th><td>運用者(省略すると自局から)</td></tr>
+<tr><th><code>mysota JA/TK-001</code></th><td>自局の山。<code>-</code> で解除</td></tr>
+<tr><th><code>mypota JP-0001 JP-0002</code></th><td>自局の公園(重なる公園は並べる)。<code>-</code> で解除</td></tr>
+<tr><th><code>mywwff JAFF-0001</code></th><td>自局の WWFF</td></tr>
+<tr><th><code>mygrid PM95uq</code></th><td>自局のグリッド(4・6・8 文字)</td></tr>
+<tr><th><code>date 2026-10-25</code></th><td>日付(<code>10/25</code> も可)。時刻は 00:00 に戻る</td></tr>
+<tr><th><code>day +</code> / <code>day ++</code></th><td>日付を 1 / 2 日進める(UTC の日付をまたぐとき)</td></tr>
+<tr><th><code>timezone jst</code></th><td>以降の時刻の時間帯。<code>jst</code>、<code>utc</code>、<code>+9</code> のような数字。省略は UTC</td></tr>
+<tr><th><code>rig KX2+EFHW</code></th><td>リグ(HAMLOG の <code>Rig=</code>)。<code>-</code> で解除</td></tr>
+<tr><th><code>qslmsg …</code></th><td>QSLメッセージ。<code>$mysota</code> <code>$mypota</code> <code>$mywwff</code> <code>$rig</code> が使える</td></tr>
+</table>
+
+<h3>QSO の行</h3>
+<p>次の語を、順番を気にせず並べます。</p>
+<table>
+<tr><th>時刻</th><td>1〜4 桁の数字。1 桁=分の 1 の位、2 桁=分、3 桁=H:MM、4 桁=HH:MM。前の行から引き継ぐ</td></tr>
+<tr><th>バンド</th><td><code>40m</code> <code>2m</code> <code>70cm</code> など。次のバンドまで続く</td></tr>
+<tr><th>周波数</th><td><code>7.030</code>(MHz)。バンドも決まる</td></tr>
+<tr><th>モード</th><td><code>cw</code> <code>ssb</code> <code>fm</code> <code>am</code> <code>ft8</code> など。次のモードまで続く</td></tr>
+<tr><th>コールサイン</th><td>1 行に 1 つ。ここで QSO が 1 件できる</td></tr>
+<tr><th>レポート</th><td>コールサインのあとの数字。1 つ=送信、2 つ=送信と受信。1 桁=5□9、2 桁=RS、3 桁=RST。FT8 などは <code>-18</code> のような SNR</td></tr>
+<tr><th>相手の山・公園</th><td><code>ja/st-012</code>(SOTA)、<code>jp-1234</code>(POTA)、<code>jaff-0001</code>(WWFF)</td></tr>
+<tr><th>メッセージ</th><td><code>&lt;…&gt;</code> QSOメッセージ、<code>[…]</code> QSLメッセージ、<code>{…}</code> 備考</td></tr>
+</table>
+
+<h3>よくある誤り</h3>
+<ul>
+  <li>「バンドがない / モードがない」: コールサインの前に <code>40m cw</code> の行を書いてください。</li>
+  <li>「rigset は rig になりました」: 古い <code>rigset</code> の行を、<code>rig KX2+EFHW</code> のように書き直してください。</li>
+  <li>コールサインの形が違う: 数字で始まるもの(<code>7K1ABC</code> など)を含め、国際形式で書いてください。</li>
+</ul>
+<p>文法の詳しい仕様は、<a href="https://github.com/jl1nie/sotalive-monorepo/blob/main/docs/fle-grammar.md">docs/fle-grammar.md</a> にあります。元になった FLE(Fast Log Entry)の考え方は、<a href="https://jl1nie.wordpress.com/2019/08/21/2019-08-21-203013/">こちらの記事</a>にあります。</p>
+</main>
+</body>
+</html>
