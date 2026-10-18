@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   adifToFle,
+  checkOutput,
   initSync,
   compile,
   complete,
@@ -120,6 +121,15 @@ describe('fle wasm', () => {
   it('gridLocator: 緯度経度からグリッドを返す', () => {
     expect(gridLocator(35.6586, 139.7454)).toBe('PM95up')
     expect(gridLocator(91, 0)).toBeUndefined()
+  })
+
+  it('checkOutput: 出力前に、足りない情報を返す', () => {
+    const w = checkOutput('date 2026-10-18\n40m cw\nmypota JP-0117\n0900 ja1aaa') as { code: string; severity: string; qsos: number }[]
+    expect(w.map((x) => [x.code, x.severity, x.qsos])).toEqual([
+      ['missing_mycall', 'required', 1],
+      ['missing_grid', 'recommended', 1],
+    ])
+    expect(checkOutput('mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JP-0117\nmygrid PM95pp\n0900 ja1aaa')).toEqual([])
   })
 
   it('generateZip: ZIPのシグネチャで始まる', () => {

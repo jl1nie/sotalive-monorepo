@@ -3,6 +3,8 @@
 //! SOTA CSV, POTA ADIF, HAMLOG CSV, AirHam CSV, ZLOG形式への変換
 
 use std::collections::HashMap;
+
+use serde::Serialize;
 use std::io::Write;
 
 use chrono::{FixedOffset, NaiveDate, TimeZone};
@@ -242,6 +244,81 @@ fn generate_adif(records: &[&FleQsoRecord], sig: &str, sig_info: &str) -> Vec<u8
     }
 
     output.into_bytes()
+}
+
+/// 出力の前に知らせる、ログの不足(警告)。足りなくても生成はできる。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct OutputWarning {
+    /// `missing_mycall` / `missing_place` / `missing_grid`。文面は、画面が言語設定で作る
+    pub code: &'static str,
+    /// 入力する項目(`mycall` / `place` / `grid`)
+    pub field: &'static str,
+    /// 必須(これがないと、出力が不完全)か、あったほうがよい(推奨)か
+    pub severity: Severity,
+    /// 影響を受けるQSOの数
+    pub qsos: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Severity {
+    Required,
+    Recommended,
+}
+
+/// ログを出力する前に、足りない情報を調べる。
+///
+/// - 自局のコールサイン(`mycall`): ないと、ADIF の `STATION_CALLSIGN` や SOTA CSV の自局が空になる(必須)。
+/// - 運用場所(`mysota` / `mypota` / `mywwff`): 1つもないと、ADIF(POTA / WWFF)は作られない(推奨)。
+/// - グリッド(`mygrid`): ADIF に入るQSOに、ないと `MY_GRIDSQUARE` が出ない(推奨)。
+///
+/// 誤りがあるログ(誤りの記録だけを出す)や、QSOがないログは、何も返さない。
+pub fn check_output(result: &FleCompileResult) -> Vec<OutputWarning> {
+    if !result.errors.is_empty() || result.records.is_empty() {
+        return Vec::new();
+    }
+    let count =
+        |pred: &dyn Fn(&FleQsoRecord) -> bool| result.records.iter().filter(|r| pred(r)).count();
+    let mut warnings = Vec::new();
+
+    let no_mycall = count(&|r| r.mycall.is_empty());
+    if no_mycall > 0 {
+        warnings.push(OutputWarning {
+            code: "missing_mycall",
+            field: "mycall",
+            severity: Severity::Required,
+            qsos: no_mycall,
+        });
+    }
+
+    let has_place =
+        |r: &FleQsoRecord| !r.mysota.is_empty() || !r.mypota.is_empty() || !r.mywwff.is_empty();
+    if !result.records.iter().any(has_place) {
+        warnings.push(OutputWarning {
+            code: "missing_place",
+            field: "place",
+            severity: Severity::Recommended,
+            qsos: result.records.len(),
+        });
+    }
+
+    // グリッドは、ADIF(POTA / WWFF)に入るQSOだけが対象(SOTAのCSVには、グリッドの列がない)
+    let no_grid =
+        count(&|r| (!r.mypota.is_empty() || !r.mywwff.is_empty()) && r.my_grid.is_empty());
+    if no_grid > 0 {
+        warnings.push(OutputWarning {
+            code: "missing_grid",
+            field: "grid",
+            severity: Severity::Recommended,
+            qsos: no_grid,
+        });
+    }
+    warnings
+}
+
+/// `compile` してから `check_output` する。
+pub fn check_log(text: &str) -> Vec<OutputWarning> {
+    check_output(&crate::compile_fle(text))
 }
 
 /// UTCの日付(`YYYYMMDD`)
@@ -813,5 +890,96 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
                 );
             }
         }
+    }
+
+    // ---- 出力前の警告(check_output) ----
+
+    fn codes(fle: &str) -> Vec<(&'static str, usize)> {
+        check_log(fle).iter().map(|w| (w.code, w.qsos)).collect()
+    }
+
+    const FULL: &str = "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JP-0117\nmygrid PM95pp\n0900 ja1aaa\n0910 ja1bbb";
+
+    #[test]
+    fn a_complete_log_has_no_warnings() {
+        assert!(check_log(FULL).is_empty());
+    }
+
+    #[test]
+    fn a_missing_mycall_is_required() {
+        let w = check_log(
+            "date 2026-10-18\n40m cw\nmypota JP-0117\nmygrid PM95pp\n0900 ja1aaa\n0910 ja1bbb",
+        );
+        assert_eq!(w.len(), 1);
+        assert_eq!(
+            (w[0].code, w[0].field, w[0].severity, w[0].qsos),
+            ("missing_mycall", "mycall", Severity::Required, 2)
+        );
+    }
+
+    #[test]
+    fn a_log_without_any_place_warns_that_no_adif_is_made() {
+        assert_eq!(
+            codes("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1aaa"),
+            vec![("missing_place", 1)]
+        );
+    }
+
+    #[test]
+    fn a_pota_log_without_a_grid_warns_about_the_grid() {
+        let w = check_log("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JP-0117\n0900 ja1aaa");
+        assert_eq!(
+            (w[0].code, w[0].severity),
+            ("missing_grid", Severity::Recommended)
+        );
+    }
+
+    #[test]
+    fn a_sota_only_log_does_not_need_a_grid() {
+        // SOTAのCSVには、グリッドの列がない
+        assert!(
+            check_log("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1aaa")
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn only_the_qsos_that_go_into_an_adif_count_for_the_grid() {
+        // 山(SOTA)で2件、公園(POTA)で1件。グリッドがないのは、公園の1件だけが対象
+        let fle = "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1aaa\n0910 ja1bbb\nmysota -\nmypota JP-0117\n1000 ja1ccc";
+        assert_eq!(codes(fle), vec![("missing_grid", 1)]);
+    }
+
+    #[test]
+    fn the_second_place_without_a_grid_is_counted() {
+        let fle = "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JP-0117\nmygrid PM95pp\n0900 ja1aaa\nmypota JP-0118\nmygrid -\n1000 ja1bbb\n1010 ja1ccc";
+        assert_eq!(codes(fle), vec![("missing_grid", 2)]);
+    }
+
+    #[test]
+    fn several_warnings_come_in_a_fixed_order() {
+        assert_eq!(
+            codes("date 2026-10-18\n40m cw\n0900 ja1aaa"),
+            vec![("missing_mycall", 1), ("missing_place", 1)]
+        );
+        assert_eq!(
+            codes("date 2026-10-18\n40m cw\nmypota JP-0117\n0900 ja1aaa"),
+            vec![("missing_mycall", 1), ("missing_grid", 1)]
+        );
+    }
+
+    #[test]
+    fn logs_with_errors_or_without_qsos_have_no_warnings() {
+        assert!(check_log("").is_empty());
+        assert!(check_log("mycall JA1ABC\n").is_empty());
+        assert!(check_log("mycall\n40m cw\n0900 ja1aaa").is_empty()); // 指令の誤り
+    }
+
+    #[test]
+    fn serializes_with_the_code_and_camel_case_severity() {
+        let json = serde_json::to_value(check_log("date 2026-10-18\n40m cw\n0900 ja1aaa")).unwrap();
+        assert_eq!(json[0]["code"], "missing_mycall");
+        assert_eq!(json[0]["severity"], "required");
+        assert_eq!(json[0]["qsos"], 1);
     }
 }

@@ -2,6 +2,7 @@ import type { Edit } from './edits'
 import init, {
   compile as wasmCompile,
   adifToFle as wasmAdifToFle,
+  checkOutput as wasmCheckOutput,
   complete as wasmComplete,
   sampleLog as wasmSampleLog,
   fill as wasmFill,
@@ -90,6 +91,17 @@ export interface StationPlan {
   errors: FieldError[]
 }
 
+/** 出力する前に知らせる、ログの不足。文面は画面が作る(コードで区別する) */
+export interface OutputWarning {
+  code: 'missing_mycall' | 'missing_place' | 'missing_grid'
+  /** 入力する項目 */
+  field: 'mycall' | 'place' | 'grid'
+  /** required: ないと出力が不完全。recommended: あったほうがよい */
+  severity: 'required' | 'recommended'
+  /** 影響を受けるQSOの数 */
+  qsos: number
+}
+
 let ready: Promise<unknown> | null = null
 let initialized = false
 
@@ -166,6 +178,12 @@ export async function stationPlan(text: string, line: number, want: Station): Pr
 export async function gridLocator(lat: number, lon: number): Promise<string | undefined> {
   await ensureReady()
   return wasmGridLocator(lat, lon)
+}
+
+/** ファイルを生成する前に、足りない情報(自局のコールサイン・運用場所・グリッド)を調べる */
+export async function checkOutput(text: string): Promise<OutputWarning[]> {
+  await ensureReady()
+  return wasmCheckOutput(text) as OutputWarning[]
 }
 
 export async function generateFleZip(text: string, now: Date = new Date()): Promise<Uint8Array> {

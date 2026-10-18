@@ -4,7 +4,7 @@
 
 use chrono::DateTime;
 use fle_core::{
-    adif_to_fle, compile_fle, compile_log, complete_at, fill_with, generate_fle_output,
+    adif_to_fle, check_log, compile_fle, compile_log, complete_at, fill_with, generate_fle_output,
     grid_locator, sample_log, station_at, station_plan, FillScope, Station,
 };
 use wasm_bindgen::prelude::*;
@@ -82,6 +82,13 @@ pub fn station_plan_for(text: &str, line: usize, want: JsValue) -> Result<JsValu
 #[wasm_bindgen(js_name = gridLocator)]
 pub fn grid_locator_of(lat: f64, lon: f64) -> Option<String> {
     grid_locator(lat, lon)
+}
+
+/// ログを出力する前に、足りない情報(自局のコールサイン・運用場所・グリッド)を調べる。
+/// 各項目は `code` / `field` / `severity`(`required` / `recommended`)/ `qsos` を持つ。
+#[wasm_bindgen(js_name = checkOutput)]
+pub fn check_output_of(text: &str) -> Result<JsValue, JsError> {
+    Ok(serde_wasm_bindgen::to_value(&check_log(text))?)
 }
 
 /// FLEテキストから各種ログファイルを含むZIPを生成する。

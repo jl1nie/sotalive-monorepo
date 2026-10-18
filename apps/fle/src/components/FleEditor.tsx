@@ -6,6 +6,7 @@ import {
   fillLine,
   generateFleZip,
   adifToFle,
+  checkOutput,
   sampleLog,
   stationAt,
   stationPlan,
@@ -14,6 +15,7 @@ import {
   type Completion,
   type FieldError,
   type LogView,
+  type OutputWarning,
   type QsoView,
 } from '@/lib/fle'
 import { lineOf, lineRange, replaceRange } from '@/lib/lines'
@@ -28,6 +30,7 @@ import { CandidateBar } from '@/components/CandidateBar'
 import { SuggestStrip } from '@/components/SuggestStrip'
 import { QsoSheet } from '@/components/QsoSheet'
 import { PlaceSheet } from '@/components/PlaceSheet'
+import { GenerateCheckSheet } from '@/components/GenerateCheckSheet'
 import { Sheet } from '@/components/Sheet'
 
 const HELP_URL = 'https://jl1nie.wordpress.com/2019/08/21/2019-08-21-203013/'
@@ -49,6 +52,8 @@ export function FleEditor() {
   const [previewed, setPreviewed] = useState<{ key: string; qso: QsoView } | null>(null)
   const [listOpen, setListOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  // 生成の前に知らせる、ログの不足(あるときだけ、確認のシートを開く)
+  const [check, setCheck] = useState<OutputWarning[] | null>(null)
   // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値
   const [place, setPlace] = useState<{ line: number; initial: Station; isNewLog: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -184,8 +189,7 @@ export function FleEditor() {
   }, [logCall])
 
   /** 場所のシートを開く。初期値は、カーソル位置で有効な自局と場所(自局が空なら前回のもの) */
-  const openPlace = async () => {
-    const line = caretLine
+  const openPlace = async (line = caretLine) => {
     const current = await stationAt(text, line)
     setPlace({
       line,
@@ -276,24 +280,64 @@ export function FleEditor() {
     setCaret(pos)
   }
 
+  /** `source` のログから、ファイルを生成してダウンロードする */
+  const generateNow = useCallback(
+    async (source: string) => {
+      try {
+        const zip = await generateFleZip(source)
+        const url = URL.createObjectURL(new Blob([zip as BlobPart], { type: 'application/zip' }))
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'fle.zip'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+        if (view?.status === 'ERR') {
+          notify('エラーのある行があります。エラー内容を書いたファイルを生成しました')
+        }
+      } catch (err) {
+        notify(err instanceof Error ? err.message : 'ファイルを生成できませんでした')
+      }
+    },
+    [view, notify]
+  )
+
+  /** 生成: 先に、足りない情報(自局のコールサイン・運用場所・グリッド)を調べ、あれば知らせる */
   const handleGenerate = useCallback(async () => {
     try {
-      const zip = await generateFleZip(text)
-      const url = URL.createObjectURL(new Blob([zip as BlobPart], { type: 'application/zip' }))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'fle.zip'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-      if (view?.status === 'ERR') {
-        notify('エラーのある行があります。エラー内容を書いたファイルを生成しました')
+      const warnings = await checkOutput(text)
+      if (warnings.length > 0) {
+        setCheck(warnings)
+        return
       }
-    } catch (err) {
-      notify(err instanceof Error ? err.message : 'ファイルを生成できませんでした')
+    } catch {
+      // 調べられなくても、生成は止めない
     }
-  }, [text, view, notify])
+    await generateNow(text)
+  }, [text, generateNow])
+
+  /** 足りない情報を、ログの先頭に書き込んでから生成する(書式の検証と行づくりはコア) */
+  const writeAndGenerate = async (values: { mycall: string; grid: string }): Promise<FieldError[]> => {
+    const plan = await stationPlan(text, 0, {
+      mycall: values.mycall,
+      sota: '',
+      pota: [],
+      wwff: '',
+      grid: values.grid,
+    })
+    if (plan.errors.length > 0) return plan.errors
+    let next = text
+    if (plan.edits.length > 0) {
+      next = applyEdits(text, plan.edits)
+      setText(next)
+      setCaret(mapCaret(caret, plan.edits))
+    }
+    saveLastCall(values.mycall)
+    setCheck(null)
+    await generateNow(next)
+    return []
+  }
 
   const readFile = (e: React.ChangeEvent<HTMLInputElement>, onText: (content: string) => void) => {
     const file = e.target.files?.[0]
@@ -375,6 +419,22 @@ export function FleEditor() {
       />
 
       <QsoSheet open={listOpen} onClose={() => setListOpen(false)} view={view} onJump={jump} />
+
+      <GenerateCheckSheet
+        open={check !== null}
+        onClose={() => setCheck(null)}
+        warnings={check ?? []}
+        initialCall={loadLastCall()}
+        onWriteAndGenerate={writeAndGenerate}
+        onGenerateAnyway={() => {
+          setCheck(null)
+          void generateNow(text)
+        }}
+        onOpenPlace={() => {
+          setCheck(null)
+          void openPlace(0)
+        }}
+      />
 
       <PlaceSheet
         open={place !== null}

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Crosshair } from 'lucide-react'
-import { gridLocator, type FieldError, type Station } from '@/lib/fle'
+import type { FieldError, Station } from '@/lib/fle'
 import { searchNearby, type RefCandidate, type SearchResult } from '@/lib/reference'
+import { useGridLocate } from '@/hooks/useGridLocate'
 import { useOnline } from '@/hooks/useOnline'
 import { useRefSearch } from '@/hooks/useRefSearch'
 import { RefList } from '@/components/RefList'
@@ -49,8 +50,6 @@ export function PlaceSheet(props: Props) {
 function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
   const [values, setValues] = useState<Values>(() => toValues(initial))
   const [errors, setErrors] = useState<FieldError[]>([])
-  const [geoMessage, setGeoMessage] = useState<string | null>(null)
-  const [locating, setLocating] = useState(false)
   // いま入力している欄(候補を出す欄)と、現在地の近くの一覧
   const [focused, setFocused] = useState<Key | null>(null)
   const [nearby, setNearby] = useState<SearchResult | 'loading' | null>(null)
@@ -83,31 +82,12 @@ function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
     }))
   }
 
-  // 位置情報の取得は画面(端末)の役目。グリッドの計算はコアに任せる
-  const locate = () => {
-    setGeoMessage(null)
-    if (!navigator.geolocation) {
-      setGeoMessage('この端末では位置情報を使えません')
-      return
-    }
-    setLocating(true)
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const grid = await gridLocator(pos.coords.latitude, pos.coords.longitude)
-        if (grid) set('grid', grid)
-        else setGeoMessage('位置からグリッドを求められませんでした')
-        setLocating(false)
-        // 近くの山・公園(オンラインのときだけ)
-        setNearby('loading')
-        setNearby(await searchNearby(pos.coords.latitude, pos.coords.longitude))
-      },
-      () => {
-        setGeoMessage('位置情報を取得できませんでした。ブラウザの許可を確認してください')
-        setLocating(false)
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
-    )
-  }
+  // 位置情報の取得は画面(端末)の役目。グリッドの計算はコアに任せる。取れたら、近くの山・公園も探す
+  const { locate, locating, message: geoMessage } = useGridLocate(async (grid, pos) => {
+    set('grid', grid)
+    setNearby('loading')
+    setNearby(await searchNearby(pos.coords.latitude, pos.coords.longitude))
+  })
 
   return (
     <Sheet
