@@ -19,26 +19,39 @@ export function WSPRTab() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    if (!file) {
+      setError('WSPRnet のスポットファイルを指定してください')
+      return
+    }
+    if (!startDate || !endDate || startDate > endDate) {
+      setError('開始日と終了日を正しく指定してください')
+      return
+    }
+
     setLoading(true)
     setError(null)
     setSvgContent(null)
-    
+
     try {
-      let csvData = ''
-      
-      if (file) {
-        csvData = await file.text()
-      }
-      
+      // サーバーの形式: 期間(plots)ごとに、スポット(WSPRnet の1行13項目)を振り分けて描く。
+      // 画面は期間が1つ。凡例は「コールサイン バンド」
       const jsonData = {
         title,
-        callsign,
-        band,
-        start_date: startDate,
-        end_date: endDate,
-        csv: csvData,
+        plots: [
+          {
+            label: [callsign, band].filter(Boolean).join(' '),
+            color: 'blue',
+            from: `${startDate} 00:00`,
+            to: `${endDate} 23:59`,
+          },
+        ],
+        spots: await file.text(),
+        min: 0,
+        max: 20000,
+        label: true,
+        width: 800,
       }
-      
+
       const response = await fetch('/api/v2/wspr/svg', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -131,7 +144,7 @@ export function WSPRTab() {
             
             <FileUpload
               id="wspr-file"
-              label="WSPRnet CSV (Optional)"
+              label="WSPRnet スポットファイル"
               accept=".csv,.txt"
               value={file}
               onChange={setFile}
@@ -163,8 +176,9 @@ export function WSPRTab() {
               )}
               
               {!loading && svgContent && (
-                <div 
-                  className="w-full"
+                <div
+                  // サーバーの SVG は幅が固定(800px)。欄の幅に合わせて縮める
+                  className="w-full [&_svg]:w-full [&_svg]:h-auto"
                   dangerouslySetInnerHTML={{ __html: svgContent }}
                 />
               )}

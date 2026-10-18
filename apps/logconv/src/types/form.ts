@@ -3,7 +3,6 @@ export type TabId =
   | 'pota-activator'
   | 'sota-activator'
   | 'sota-chaser'
-  | 'airhamlog'
   | 'wspr'
 
 export interface Tab {
@@ -61,7 +60,3 @@ export interface WSPRFormData {
   file: File | null
 }
 
-// AirHamLog form
-export interface AirHamLogFormData {
-  file: File | null
-}

@@ -4,7 +4,6 @@ import {
   POTAActivatorTab,
   SOTAActivatorTab,
   SOTAChaserTab,
-  AirHamLogTab,
   WSPRTab,
 } from '@/components/Tabs'
 import type { TabId } from '@/types/form'
@@ -18,8 +17,6 @@ function App() {
         return <SOTAActivatorTab />
       case 'sota-chaser':
         return <SOTAChaserTab />
-      case 'airhamlog':
-        return <AirHamLogTab />
       case 'wspr':
         return <WSPRTab />
       default:

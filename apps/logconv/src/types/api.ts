@@ -71,7 +71,7 @@ export interface QSORecord {
 
 // Conversion Options
 export interface ConversionOptions {
-  format: 'pota' | 'sota_a' | 'sota_c' | 'wwff' | 'airham'
+  format: 'pota' | 'sota_a' | 'sota_c' | 'wwff'
   callsign?: string
   myQTH: 'form' | 'rmks1' | 'rmks2'
   QTH: 'none' | 'rmks1' | 'rmks2' | 'qth'
