@@ -17,8 +17,13 @@ interface Props {
 
 const TONE = {
   ok: 'border-emerald-700 bg-emerald-50 text-emerald-950 dark:border-emerald-400 dark:bg-emerald-950 dark:text-emerald-100',
+  error:
+    'border-red-700 bg-red-50 text-red-950 dark:border-red-400 dark:bg-red-950 dark:text-red-100',
   plain: 'border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-gray-900',
 } as const
+
+/** 設定の漏れ(入力の途中ではなく、書き忘れ)。確定の前でも、すぐ赤で知らせる */
+const OMISSIONS = new Set(['missing_band', 'missing_mode'])
 
 const BAR = 'flex-1 min-w-0 rounded-xl border-2 overflow-hidden'
 
@@ -38,7 +43,8 @@ export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }
   }, [view, caretLine])
   const settled = Array.isArray(settledFor) && settledFor[0] === view && settledFor[1] === caretLine
   // 入力中の行の誤りは、まだ途中なので数えない(カーソルを離れた行の誤りだけ、赤で知らせる)
-  const errorCount = view?.errors.filter((e) => e.line !== caretLine).length ?? 0
+  const omissions = view?.errors.filter((e) => e.line === caretLine && OMISSIONS.has(e.code)) ?? []
+  const errorCount = (view?.errors.filter((e) => e.line !== caretLine).length ?? 0) + omissions.length
 
   const lastQso = view?.qsos.filter((q) => q.line < caretLine).at(-1)
   const context = view
@@ -98,11 +104,19 @@ export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }
       ) : (
         <div
           aria-live="polite"
-          className={`${BAR} px-3 py-2 flex flex-col justify-center gap-0.5 ${TONE.plain}`}
+          className={`${BAR} px-3 py-2 flex flex-col justify-center gap-0.5 ${
+            omissions.length > 0 ? TONE.error : TONE.plain
+          }`}
         >
-          <p className="font-semibold line-clamp-2">{context || t('bar.empty')}</p>
+          {omissions.length > 0 ? (
+            <p className="font-bold text-red-700 dark:text-red-300 line-clamp-2">
+              ⚠ {omissions.map((e) => errorText(e, lang)).join(' / ')}
+            </p>
+          ) : (
+            <p className="font-semibold line-clamp-2">{context || t('bar.empty')}</p>
+          )}
           {/* 入力中の誤りは、色も記号も付けず、小さく添えるだけ */}
-          {error && settled && (
+          {error && settled && omissions.length === 0 && (
             <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{errorText(error, lang)}</p>
           )}
         </div>

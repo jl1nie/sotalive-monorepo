@@ -1,4 +1,61 @@
 {
+  "band_missing": {
+    "errors": [
+      {
+        "line": 2,
+        "message": "Band or frequency must be specified before QSO."
+      },
+      {
+        "line": 2,
+        "message": "Mode must be specified."
+      }
+    ],
+    "has_contest": false,
+    "has_pota": false,
+    "has_sota": false,
+    "has_wwff": false,
+    "log_type": "NONE",
+    "mycall": "JA1ABC",
+    "mygrid": "",
+    "mypota": [],
+    "mysota": "",
+    "mywwff": "",
+    "operator": "JA1ABC",
+    "qslmsg": "",
+    "records": [
+      {
+        "band": "",
+        "callsign": "JA1XYZ",
+        "day": 18,
+        "freq": "",
+        "his_num": "",
+        "hispota": [],
+        "hissota": "",
+        "hiswwff": "",
+        "hour": 9,
+        "line": 2,
+        "min": 0,
+        "mode": "",
+        "month": 10,
+        "my_grid": "",
+        "my_num": "",
+        "mycall": "JA1ABC",
+        "mypota": [],
+        "mysota": "",
+        "mywwff": "",
+        "operator": "JA1ABC",
+        "qslmsg": "",
+        "qsomsg": "",
+        "qsormks": "",
+        "rigset": 0,
+        "rst_rcvd": "599",
+        "rst_sent": "599",
+        "tz": 0,
+        "year": 2026
+      }
+    ],
+    "status": "ERR"
+  },
   "band_uppercase": {
     "errors": [],
     "has_contest": false,

@@ -458,6 +458,14 @@ fn eval_qso(
     if env.current.call.is_empty() {
         return None;
     }
+    // モードは、行のどこに書いても、その行のQSOに効く。QSOの行で、まだ空なら誤り
+    if env.current.mode.is_empty() {
+        let span = items
+            .iter()
+            .find(|it| matches!(it.node, QsoItem::Call { .. }))
+            .map_or((0, 0), |it| it.span);
+        here.error(env, "missing_mode", &[], span, "Mode must be specified.");
+    }
     // UTC変換
     let utc = env.to_utc();
 
@@ -510,6 +518,24 @@ fn determine_log_type(has_sota: bool, has_wwff: bool, has_pota: bool) -> String 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_qso_without_a_mode_is_an_error() {
+        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m\n0900 ja1xyz");
+        assert_eq!(r.errors.len(), 1);
+        assert_eq!(r.errors[0].code, "missing_mode");
+        assert_eq!(r.errors[0].line, 3);
+        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\n0900 ja1xyz");
+        let codes: Vec<&str> = r.errors.iter().map(|e| e.code.as_str()).collect();
+        assert_eq!(codes, vec!["missing_band", "missing_mode"]);
+        // 同じ行で、コールサインのあとに書いたモードは有効
+        assert!(compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m\n0900 ja1xyz cw")
+            .errors
+            .is_empty());
+        assert!(compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz")
+            .errors
+            .is_empty());
+    }
 
     #[test]
     fn test_compile_simple() {

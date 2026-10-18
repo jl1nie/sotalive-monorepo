@@ -171,6 +171,11 @@ fn cases() -> Vec<(&'static str, String)> {
 
 /// 意図して変えたもの(決定の番号と、理由)。記録との一致は求めず、新しい挙動は別のテストで確かめる。
 const CHANGED: &[(&str, &str)] = &[
+    // モードを書かないQSOは、ADIF の MODE が空になるので誤りにする
+    (
+        "band_missing",
+        "モード未指定のQSOは誤り(missing_mode)。以前は誤りにならなかった",
+    ),
     // 決定3: 5桁以上の時刻・桁あふれの日付を誤りにする
     ("ignored_five_digit_time", "決定3: 5桁以上の時刻は誤り"),
     ("ignored_date_overflow", "決定3: 桁あふれの日付は誤り"),
