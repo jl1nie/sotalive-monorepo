@@ -37,6 +37,13 @@ export interface ErrorView {
   /** 元のテキストでの行番号(0始まり) */
   line: number
   message: string
+  /** 誤りの種類。言語ごとの文面を選ぶ鍵 */
+  code: string
+  /** 文面に入れる値 */
+  args: string[]
+  /** 誤りの範囲(テキスト全体での、UTF-16の文字位置) */
+  from: number
+  to: number
 }
 
 /** fle-core の `compile_log` が返す、行番号つきの表示用データ */

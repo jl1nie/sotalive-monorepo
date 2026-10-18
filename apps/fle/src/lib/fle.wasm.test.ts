@@ -39,7 +39,9 @@ describe('fle wasm', () => {
   it('compile: 誤りがあるとERRと行番号を返す', () => {
     const view = compile('mycall\n')
     expect(view.status).toBe('ERR')
-    expect(view.errors).toEqual([{ line: 0, message: 'Missing operand.' }])
+    expect(view.errors).toEqual([
+      { line: 0, message: 'Missing operand.', code: 'missing_operand', args: ['mycall'], from: 0, to: 6 },
+    ])
   })
 
   it('complete: 行頭の語からキーワードと、置き換える範囲を返す', () => {

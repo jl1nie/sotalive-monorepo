@@ -58,6 +58,13 @@ pub struct ErrorView {
     /// 元のテキストでの行番号(0始まり)
     pub line: usize,
     pub message: String,
+    /// 誤りの種類(画面が、言語ごとの文面を選ぶ鍵)
+    pub code: String,
+    /// 文面に入れる値
+    pub args: Vec<String>,
+    /// 誤りの範囲(テキスト全体での、UTF-16の文字位置)
+    pub from: usize,
+    pub to: usize,
 }
 
 impl From<&FleQsoRecord> for QsoView {
@@ -118,6 +125,10 @@ impl From<FleCompileResult> for LogView {
                 .map(|e| ErrorView {
                     line: e.line,
                     message: e.message,
+                    code: e.code,
+                    args: e.args,
+                    from: e.from,
+                    to: e.to,
                 })
                 .collect(),
         }
