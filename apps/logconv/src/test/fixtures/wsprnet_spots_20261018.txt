@@ -1,0 +1,62 @@
+Spot Database
+Specify query parameters
+
+50 spots:
+
+Timestamp    Call    MHz    SNR    Drift    Grid    Pwr    Reporter    RGrid    km    az    Mode
+ 2026-10-18 11:34      DL2NL      10.140193      +1      0      JO31      0.2      DL2NL/1      JO31      0      0      W-2 
+ 2026-10-18 11:34      KF4JU      10.140286      -13      0      EL87pt      5      KD3CCO      FN10cs      1509      16      W-2 
+ 2026-10-18 11:34      W0ABE      10.140279      -21      0      DN70jo      0.2      KD3CCO      FN10cs      2302      81      W-2 
+ 2026-10-18 11:34      KK4NDU      10.140203      -20      0      EM60      0.2      KD3CCO      FN10cs      1415      34      W-2 
+ 2026-10-18 11:34      WW0WWV      10.140154      -16      0      DN70mq      1      KD3CCO      FN10cs      2280      81      W-2 
+ 2026-10-18 11:34      TI4JWC      10.140121      -26      0      EK70wb      1      KD3CCO      FN10cs      3471      9      W-2 
+ 2026-10-18 11:34      KR4CQD      10.140104      -8      0      EL96      0.2      KD3CCO      FN10cs      1617      10      W-2 
+ 2026-10-18 11:34      DL2NL      7.040090      +1      0      JO31      0.2      DL2NL/1      JO31      0      0      W-2 
+ 2026-10-18 11:34      G3SPJ      14.097181      -25      -1      JO01bl      5      EA7URA      IM76gd      1762      197      W-2 
+ 2026-10-18 11:34      MM1TAG      14.097112      -27      0      IO85kw      5      EA7URA      IM76gd      2208      186      W-2 
+ 2026-10-18 11:34      IU0JJD      14.097024      -25      0      JN61tp      0.2      EA7URA      IM76gd      1757      256      W-2 
+ 2026-10-18 11:34      K4RHG      14.097105      -23      0      EL96      0.2      K3SBP      FN20      1652      18      W-2 
+ 2026-10-18 11:34      G4HSB      14.097044      -19      0      IO94ll      0.2      K3SBP      FN20      5498      286      W-2 
+ 2026-10-18 11:34      TI4JWC      14.097016      -27      0      EK70wb      1      K3SBP      FN20      3499      13      W-2 
+ 2026-10-18 11:33      IZ2FER      18.106158      -21      -1      JN45      0.1      DL7VXX      JO62sq      868      21      W-2 
+ 2026-10-18 11:33      EB5RCA      18.106122      -18      0      IM98      0.2      DL7VXX      JO62sq      1937      31      W-2 
+ 2026-10-18 11:33      TA4/G8SCU      18.106100      -16      0      KM56vo      5      DL7VXX      JO62sq      2285      327      W-2 
+ 2026-10-18 11:33      G8ORM      18.106061      -19      -1      IO93cu      5      DL7VXX      JO62sq      1026      91      W-2 
+ 2026-10-18 11:33      IK5ZVE      18.106031      -23      1      JN53fu      0.2      DL7VXX      JO62sq      1008      12      W-2 
+ 2026-10-18 11:33      DG8GAD      18.106013      -27      0      JN48      0.5      DL7VXX      JO62sq      569      33      W-2 
+ 2026-10-18 11:32      DK1CC      7.040049      -12      0      JN49ec      0.2      F62000      JO10jg      422      290      W-2 
+ 2026-10-18 11:32      F1RZV      10.140125      +1      0      JN18fn      0.2      PA5KT-15      JO11wl      340      17      W-2 
+ 2026-10-18 11:32      G7NSJ      14.097096      +2      0      IO82ql      0.2      HB9VQQ/KE      JN47kh      1002      120      W-2 
+ 2026-10-18 11:32      MM1TAG      14.097102      0      0      IO85kw      5      HB9VQQ/KE      JN47kh      1264      134      W-2 
+ 2026-10-18 11:32      M0LHP      7.040043      -14      0      IO91      0.2      F62000      JO10jg      301      115      W-2 
+ 2026-10-18 11:32      G1EIX      14.097106      0      0      IO92de      0.2      HB9VQQ/KE      JN47kh      932      121      W-2 
+ 2026-10-18 11:32      F4GMT      10.140094      -10      0      IN93      0.2      PA5KT-15      JO11wl      963      21      W-2 
+ 2026-10-18 11:32      G8LIK      14.097115      -12      0      IO93      0.2      HB9VQQ/KE      JN47kh      980      130      W-2 
+ 2026-10-18 11:32      SR0HWP      14.097144      -24      -1      II95      5      AUTO      LO96xt      8734      29      W-2 
+ 2026-10-18 11:32      G4SXT      7.040037      -14      0      IO70      0.2      F62000      JO10jg      556      89      W-2 
+ 2026-10-18 11:32      2E0COB      14.097121      -11      0      IO84      0.2      HB9VQQ/KE      JN47kh      1152      129      W-2 
+ 2026-10-18 11:32      HA6QL      10.140219      -4      0      JN97      2      DP0POL      JO43gn      998      317      W-2 
+ 2026-10-18 11:32      HF2N      14.097149      -13      0      JO94      0.2      HB9VQQ/KE      JN47kh      1063      226      W-2 
+ 2026-10-18 11:32      MM1TAG      14.097103      +2      0      IO85kw      5      SM7IUN      JO65mr      1008      85      W-2 
+ 2026-10-18 11:32      G4HSB      14.097049      -2      0      IO94ll      0.2      PD1AEM      JO21it      484      125      W-2 
+ 2026-10-18 11:32      ON4WS      7.040135      -4      0      JO20hi      1      DP0POL      JO43gn      446      35      W-2 
+ 2026-10-18 11:32      F4HHR      7.040195      -27      0      JN07      0.01      PA5KT-15      JO11wl      492      24      W-2 
+ 2026-10-18 11:32      G8LIK      14.097130      -21      0      IO93      0.2      AUTO      LO96xt      3764      59      W-2 
+ 2026-10-18 11:32      RL3DF      14.097152      -18      -1      KO95      0.01      HB9VQQ/KE      JN47kh      2253      259      W-2 
+ 2026-10-18 11:32      HG0GU      7.040096      -6      0      KN07uw      20      DP0POL      JO43gn      1115      309      W-2 
+ 2026-10-18 11:32      SM7URN      14.097157      -12      0      JO76      0.2      HB9VQQ/KE      JN47kh      1100      205      W-2 
+ 2026-10-18 11:32      G4SXT      7.040042      -27      0      IO70      0.2      SWL/HU1UB      JO21jn      698      76      W-2 
+ 2026-10-18 11:32      PA0ANH      7.040124      -8      -2      JO22lh      0.5      DP0POL      JO43gn      277      59      W-2 
+ 2026-10-18 11:32      G8WDZ      14.097171      +3      0      IO82rv      1      HB9VQQ/KE      JN47kh      1022      123      W-2 
+ 2026-10-18 11:32      F1RZV      10.140141      -11      0      JN18fn      0.2      DP0POL      JO43gn      699      35      W-2 
+ 2026-10-18 11:32      G3SWW      7.040189      -14      -1      IO94vc      0.2      PA5KT-15      JO11wl      401      135      W-2 
+ 2026-10-18 11:32      OE9PTI      7.040061      -20      0      JN47vl      0.2      SWL/HU1UB      JO21jn      580      323      W-2 
+ 2026-10-18 11:32      G4EDR      14.097176      -25      0      IO94uf      0.2      HB9VQQ/KE      JN47kh      1002      136      W-2 
+ 2026-10-18 11:32      G6CKK      7.040194      -12      0      JO01      0.2      DP0POL      JO43gn      563      63      W-2 
+ 2026-10-18 11:32      MM1TAG      14.097117      -22      0      IO85kw      5      AUTO      LO96xt      3746      62      W-2 
+Query time: 0.015 sec
+
+
+Link to old database interface
+For issues with this site, email the WSPRNET Admin Team or post to the site forum. Downloads and more information about WSPR program and the MEPT_JT mode, as well as other modes by Joe Taylor (K1JT), can be found at the WSJT Home Page.
+RoopleTheme!
