@@ -44,12 +44,22 @@ describe('fle wasm', () => {
 
   it('fill: 時刻のない行の行頭に、いまの時刻(UTC)を入れる修正を返す', () => {
     const now = Date.UTC(2026, 9, 18, 9, 5, 30)
-    expect(fill('mycall JA1ABC\nja1xyz', 1, now, 0)).toEqual([{ from: 14, to: 14, insert: '0905 ' }])
+    expect(fill('mycall JA1ABC\nja1xyz', 1, now, 0, false)).toEqual([{ from: 14, to: 14, insert: '0905 ' }])
   })
 
   it('fill: 既定のタイムゾーンがUTC以外なら、timezone の行も入れる', () => {
     const now = Date.UTC(2026, 9, 18, 9, 5, 30)
-    expect(fill('ja1xyz', 0, now, 9)).toEqual([{ from: 0, to: 0, insert: 'timezone +9\n1805 ' }])
+    expect(fill('ja1xyz', 0, now, 9, false)).toEqual([{ from: 0, to: 0, insert: 'timezone +9\n1805 ' }])
+  })
+
+  it('fill(full): 時刻・バンド・モード・RSTまで確定する修正を返す', () => {
+    const now = Date.UTC(2026, 9, 18, 9, 5, 30)
+    const text = '40m cw\nja1xyz'
+    const edits = fill(text, 1, now, 0, true) as { from: number; to: number; insert: string }[]
+    const result = [...edits]
+      .sort((a, b) => b.from - a.from)
+      .reduce((t, e) => t.slice(0, e.from) + e.insert + t.slice(e.to), text)
+    expect(result).toBe('40m cw\n0905 40m CW ja1xyz 599 599')
   })
 
   it('generateZip: ZIPのシグネチャで始まる', () => {

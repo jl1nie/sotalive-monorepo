@@ -1,10 +1,15 @@
-import type { LogView } from '@/lib/fle'
+import { Check } from 'lucide-react'
+import { timeLabel, type LogView, type QsoView } from '@/lib/fle'
 
 interface Props {
   view: LogView | null
+  /** 確定したあとの、この行の姿(時刻・バンド・モード・RSTが入ったもの)。なければ現在の解釈を使う */
+  preview: QsoView | null
   /** カーソルのある行(0始まり) */
   caretLine: number
   onOpenList: () => void
+  /** この行を確定して、次の行へ進む */
+  onConfirm: () => void
 }
 
 const TONE = {
@@ -14,12 +19,16 @@ const TONE = {
   plain: 'border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-gray-900',
 } as const
 
-/** カーソルのある行を、前の行から補完した結果で見せる(IMEの候補のような表示)。 */
-export function CandidateBar({ view, caretLine, onOpenList }: Props) {
-  const qso = view?.qsos.find((q) => q.line === caretLine)
+const BAR = 'flex-1 min-w-0 rounded-xl border-2 overflow-hidden'
+
+/**
+ * カーソルのある行を、補完した結果で見せる(IMEの候補のような表示)。
+ * 解釈できた行(緑)は、そのまま押して確定できる。
+ */
+export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }: Props) {
+  const qso = preview ?? view?.qsos.find((q) => q.line === caretLine) ?? null
   const error = view?.errors.find((e) => e.line === caretLine)
   const errorCount = view?.errors.length ?? 0
-  const tone = qso ? 'ok' : error ? 'typing' : 'plain'
 
   const lastQso = view?.qsos.filter((q) => q.line < caretLine).at(-1)
   const context = view
@@ -44,20 +53,24 @@ export function CandidateBar({ view, caretLine, onOpenList }: Props) {
         <small className="text-xs font-bold">QSO{errorCount > 0 && ` ⚠${errorCount}`}</small>
       </button>
 
-      <div
-        aria-live="polite"
-        className={`flex-1 min-w-0 px-3 py-2 rounded-xl border-2 overflow-hidden flex flex-col justify-center gap-0.5 ${TONE[tone]}`}
-      >
-        {qso ? (
-          <>
-            <div className="flex items-baseline justify-between gap-2">
+      {qso && !error ? (
+        <button
+          type="button"
+          onClick={onConfirm}
+          // 押してもテキスト入力からフォーカスを奪わない(キーボードを閉じない)
+          onPointerDown={(e) => e.preventDefault()}
+          aria-label="この行を確定して次の行へ"
+          className={`${BAR} ${TONE.ok} flex items-stretch text-left`}
+        >
+          <span className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-0.5">
+            <span className="flex items-baseline justify-between gap-2">
               <span className="font-mono text-xl font-bold break-all leading-tight">{qso.call}</span>
               <span className="font-bold whitespace-nowrap">
                 {qso.band} {qso.mode}
               </span>
-            </div>
-            <div className="flex flex-wrap gap-x-3 text-sm font-semibold font-mono tabular-nums">
-              <span>{qso.time}</span>
+            </span>
+            <span className="flex flex-wrap gap-x-3 text-sm font-semibold font-mono tabular-nums">
+              <span>{timeLabel(qso)}</span>
               <span>
                 {qso.rstSent}/{qso.rstRcvd}
               </span>
@@ -65,14 +78,25 @@ export function CandidateBar({ view, caretLine, onOpenList }: Props) {
                 <span key={r}>{r}</span>
               ))}
               {qso.comment && <span className="font-sans">{qso.comment}</span>}
-            </div>
-          </>
-        ) : error ? (
-          <p className="font-semibold line-clamp-2">入力中… {error.message}</p>
-        ) : (
-          <p className="font-semibold line-clamp-2">{context || 'ログを入力してください'}</p>
-        )}
-      </div>
+            </span>
+          </span>
+          <span className="flex-none w-16 flex flex-col items-center justify-center gap-0.5 border-l-2 border-emerald-700/40 dark:border-emerald-400/40 font-bold text-sm">
+            <Check className="w-6 h-6" aria-hidden="true" />
+            確定
+          </span>
+        </button>
+      ) : (
+        <div
+          aria-live="polite"
+          className={`${BAR} px-3 py-2 flex flex-col justify-center gap-0.5 ${error ? TONE.typing : TONE.plain}`}
+        >
+          {error ? (
+            <p className="font-semibold line-clamp-2">入力中… {error.message}</p>
+          ) : (
+            <p className="font-semibold line-clamp-2">{context || 'ログを入力してください'}</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

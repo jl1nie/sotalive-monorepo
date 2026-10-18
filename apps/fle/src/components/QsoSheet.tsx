@@ -1,4 +1,4 @@
-import type { LogView } from '@/lib/fle'
+import { timeLabel, type LogView } from '@/lib/fle'
 import { Sheet } from '@/components/Sheet'
 
 interface Props {
@@ -53,7 +53,7 @@ export function QsoSheet({ open, onClose, view, onJump }: Props) {
                     </b>
                   </span>
                   <span className="block text-sm font-semibold text-gray-700 dark:text-gray-300 tabular-nums">
-                    {q.time} {q.rstSent}/{q.rstRcvd} {q.refs.join(' ')}
+                    {timeLabel(q)} {q.rstSent}/{q.rstRcvd} {q.refs.join(' ')}
                   </span>
                 </span>
               </button>

@@ -281,6 +281,8 @@ impl FleEnvironment {
 pub struct FleQsoRecord {
     /// 元のFLEテキストでの行番号(0始まり)
     pub line: usize,
+    /// このQSOの時刻に使われたタイムゾーン(UTCからの時間差。指定がなければ 0)
+    pub tz: i32,
     pub mycall: String,
     pub operator: String,
     pub year: u16,

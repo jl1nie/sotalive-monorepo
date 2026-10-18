@@ -11,7 +11,12 @@ export interface QsoView {
   /** 元のテキストでの行番号(0始まり) */
   line: number
   date: string
+  /** UTCでの時刻(HH:MM) */
   time: string
+  /** このQSOのタイムゾーン(UTCからの時間差。UTC は 0) */
+  tz: number
+  /** ログに書かれている形(そのタイムゾーンでの時刻) */
+  localTime: string
   call: string
   band: string
   mode: string
@@ -46,6 +51,12 @@ export interface Candidate {
   kind: 'command' | 'band' | 'mode' | 'day'
 }
 
+/** ログに書かれている形の時刻。UTC以外のときは、時間帯を添える(例: 18:05 (UTC+9)) */
+export function timeLabel(q: Pick<QsoView, 'time' | 'tz' | 'localTime'>): string {
+  if (q.tz === 0) return q.time
+  return `${q.localTime} (UTC${q.tz > 0 ? '+' : '-'}${Math.abs(q.tz)})`
+}
+
 let ready: Promise<unknown> | null = null
 let initialized = false
 
@@ -69,12 +80,19 @@ export async function completeAt(textBeforeCaret: string): Promise<Candidate[]> 
 }
 
 /**
- * その行の補完を確定する修正を返す(時刻のない QSO 行の行頭に、いまの時刻を入れる)。
+ * その行の補完を確定する修正を返す。`full` が偽なら時刻だけ(Enter)、真なら時刻・バンド・
+ * モード・RSTまで(確定ボタン)。
  * キー入力の中で同期的に使うため、WASMの準備ができていなければ空を返す。
  */
-export function fillLine(text: string, line: number, nowMs: number, defaultTz: number): Edit[] {
+export function fillLine(
+  text: string,
+  line: number,
+  nowMs: number,
+  defaultTz: number,
+  full = false
+): Edit[] {
   if (!initialized) return []
-  return wasmFill(text, line, nowMs, defaultTz) as Edit[]
+  return wasmFill(text, line, nowMs, defaultTz, full) as Edit[]
 }
 
 export async function generateFleZip(text: string, now: Date = new Date()): Promise<Uint8Array> {

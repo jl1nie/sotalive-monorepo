@@ -3,6 +3,7 @@
 //! 入力中に毎回呼ばれる前提で、QSOとエラーを「元の行番号つき」で返す。
 //! 画面は行番号をたよりに、カーソルのある行の解釈(補完結果)を表示する。
 
+use chrono::{Duration, NaiveDate};
 use serde::Serialize;
 
 use crate::compiler::compile_fle;
@@ -34,7 +35,12 @@ pub struct QsoView {
     /// 元のテキストでの行番号(0始まり)
     pub line: usize,
     pub date: String,
+    /// UTCでの時刻(`HH:MM`)
     pub time: String,
+    /// このQSOのタイムゾーン(UTCからの時間差。UTC は 0)
+    pub tz: i32,
+    /// ログに書かれている形(そのタイムゾーンでの時刻、`HH:MM`)
+    pub local_time: String,
     pub call: String,
     pub band: String,
     pub mode: String,
@@ -68,10 +74,22 @@ impl From<&FleQsoRecord> for QsoView {
             .collect::<Vec<_>>()
             .join(" ");
 
+        let utc = NaiveDate::from_ymd_opt(i32::from(q.year), u32::from(q.month), u32::from(q.day))
+            .and_then(|d| d.and_hms_opt(u32::from(q.hour), u32::from(q.min), 0));
+        let local_time = utc
+            .map(|t| {
+                (t + Duration::hours(i64::from(q.tz)))
+                    .format("%H:%M")
+                    .to_string()
+            })
+            .unwrap_or_default();
+
         Self {
             line: q.line,
             date: format!("{:04}-{:02}-{:02}", q.year, q.month, q.day),
             time: format!("{:02}:{:02}", q.hour, q.min),
+            tz: q.tz,
+            local_time,
             call: q.callsign.clone(),
             band: q.band.clone(),
             mode: q.mode.clone(),
@@ -138,6 +156,32 @@ mod tests {
         assert_eq!(q.time, "09:05");
         assert_eq!(q.band, "40m");
         assert_eq!(q.mode, "CW");
+    }
+
+    #[test]
+    fn time_is_given_in_utc_and_in_the_log_timezone() {
+        // 18:05(+9) は 09:05Z
+        let q = &compile_log("timezone +9\n40m cw\n1805 ja1xyz").qsos[0];
+        assert_eq!(
+            (q.time.as_str(), q.local_time.as_str(), q.tz),
+            ("09:05", "18:05", 9)
+        );
+    }
+
+    #[test]
+    fn without_a_timezone_both_times_are_utc() {
+        let q = &compile_log("40m cw\n0905 ja1xyz").qsos[0];
+        assert_eq!(
+            (q.time.as_str(), q.local_time.as_str(), q.tz),
+            ("09:05", "09:05", 0)
+        );
+    }
+
+    #[test]
+    fn a_timezone_change_applies_from_that_line_on() {
+        let v = compile_log("40m cw\n0900 ja1qso\ntimezone +9\n1805 ja1xyz");
+        assert_eq!(v.qsos[0].tz, 0);
+        assert_eq!((v.qsos[1].tz, v.qsos[1].local_time.as_str()), (9, "18:05"));
     }
 
     #[test]

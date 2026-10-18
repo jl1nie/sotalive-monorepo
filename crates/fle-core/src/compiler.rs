@@ -527,6 +527,7 @@ fn process_qso_line(
 
         Some(FleQsoRecord {
             line: line_num,
+            tz: env.timezone.unwrap_or(0),
             mycall: env.mycall.clone(),
             operator: env.operator.clone(),
             year: utc.date().year() as u16,

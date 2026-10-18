@@ -507,6 +507,7 @@ mod tests {
             qslmsg: "TNX QSO".to_string(),
             records: vec![FleQsoRecord {
                 line: 0,
+                tz: 0,
                 mycall: "JA1ABC".to_string(),
                 operator: "JA1ABC".to_string(),
                 year: 2024,

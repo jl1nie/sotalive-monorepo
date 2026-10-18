@@ -7,6 +7,7 @@ import {
   generateFleZip,
   type Candidate,
   type LogView,
+  type QsoView,
 } from '@/lib/fle'
 import { adif2fle } from '@/lib/adif'
 import { generateSample } from '@/lib/sample'
@@ -38,6 +39,8 @@ export function FleEditor() {
   const [prev, setPrev] = useState(loadPrev)
   const [view, setView] = useState<LogView | null>(null)
   const [candidates, setCandidates] = useState<Candidate[]>([])
+  // 確定したあとの、カーソル行の姿。どの入力に対するものかを key で持ち、古くなったら使わない
+  const [previewed, setPreviewed] = useState<{ key: string; qso: QsoView } | null>(null)
   const [listOpen, setListOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
@@ -119,6 +122,29 @@ export function FleEditor() {
 
   const caretLine = lineOf(text, caret)
 
+  // この行を確定したら、どう見えるか(時刻・バンド・モード・RSTが入った姿)を先に見せる
+  const previewKey = `${caretLine}|${settings.timezone}|${text}`
+  useEffect(() => {
+    const line = caretLine
+    if (!view?.qsos.some((q) => q.line === line)) return
+    const edits = fillLine(text, line, startedAtFor(line), settings.timezone, true)
+    if (edits.length === 0) return
+    let current = true
+    const filled = applyEdits(text, edits)
+    const shift = filled.split('\n').length - text.split('\n').length // timezone行が先頭に増える分
+    compileLog(filled)
+      .then((v) => {
+        const qso = v.qsos.find((q) => q.line === line + shift)
+        if (current && qso) setPreviewed({ key: previewKey, qso })
+      })
+      .catch(() => {})
+    return () => {
+      current = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 時刻は、確定の直前に決める
+  }, [previewKey, view])
+  const preview = previewed?.key === previewKey ? previewed.qso : null
+
   const focusAt = useCallback((pos: number) => {
     // シートが閉じてフォーカスが戻った後に、入力欄へカーソルを置く
     window.setTimeout(() => {
@@ -153,6 +179,24 @@ export function FleEditor() {
     [text, focusAt]
   )
 
+  // その行を打ち始めた時刻(覚えていなければ、いま)
+  function startedAtFor(line: number) {
+    return lineStartedAt.current?.line === line ? lineStartedAt.current.ms : Date.now()
+  }
+
+  /** 緑の候補バー: 時刻・バンド・モード・RSTまで確定して、次の行へ進む */
+  const confirmLine = () => {
+    const line = caretLine
+    const edits = fillLine(text, line, startedAtFor(line), settings.timezone, true)
+    const filled = applyEdits(text, edits)
+    const shift = filled.split('\n').length - text.split('\n').length
+    const end = lineRange(filled, line + shift)[1]
+    lineStartedAt.current = null
+    pendingCaret.current = end + 1
+    setText(filled.slice(0, end) + '\n' + filled.slice(end))
+    setCaret(end + 1)
+  }
+
   /**
    * 入力の変化を受ける。行末で改行が1つ入ったときは、その行の補完(時刻)をテキストに確定する。
    * キーの種類(keydown)ではなくテキストの変化で判定するので、ソフトキーボードでも同じに動く。
@@ -169,9 +213,7 @@ export function FleEditor() {
 
     if (newlineAdded) {
       const done = lineOf(value, pos) - 1
-      const startedAt =
-        lineStartedAt.current?.line === done ? lineStartedAt.current.ms : Date.now()
-      const edits = fillLine(value, done, startedAt, settings.timezone)
+      const edits = fillLine(value, done, startedAtFor(done), settings.timezone)
       if (edits.length > 0) {
         const at = mapCaret(pos, edits)
         lineStartedAt.current = null
@@ -247,7 +289,13 @@ export function FleEditor() {
         <SuggestStrip candidates={candidates} onPick={pick} />
       </div>
 
-      <CandidateBar view={view} caretLine={caretLine} onOpenList={() => setListOpen(true)} />
+      <CandidateBar
+        view={view}
+        preview={preview}
+        caretLine={caretLine}
+        onOpenList={() => setListOpen(true)}
+        onConfirm={confirmLine}
+      />
 
       {notice && (
         <div

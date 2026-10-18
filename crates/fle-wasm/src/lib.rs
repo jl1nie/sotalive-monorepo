@@ -4,7 +4,8 @@
 
 use chrono::DateTime;
 use fle_core::{
-    compile_fle, compile_log, complete as complete_keywords, fill as fill_line, generate_fle_output,
+    compile_fle, compile_log, complete as complete_keywords, fill_with, generate_fle_output,
+    FillScope,
 };
 use wasm_bindgen::prelude::*;
 
@@ -25,14 +26,27 @@ pub fn complete(text_before_caret: &str) -> Result<JsValue, JsError> {
 /// `line`(0始まり)の行を確定するための修正(`from` / `to` / `insert`)を返す。
 ///
 /// 位置はUTF-16の文字位置。`now_ms` は `Date.now()` の値、`default_tz` は設定の既定の
-/// タイムゾーン(UTCからの時間差)。
+/// タイムゾーン(UTCからの時間差)。`full` が偽なら時刻だけ(Enter)、真なら時刻・バンド・
+/// モード・RSTまで(確定ボタン)。
 #[wasm_bindgen]
-pub fn fill(text: &str, line: usize, now_ms: f64, default_tz: i32) -> Result<JsValue, JsError> {
-    Ok(serde_wasm_bindgen::to_value(&fill_line(
+pub fn fill(
+    text: &str,
+    line: usize,
+    now_ms: f64,
+    default_tz: i32,
+    full: bool,
+) -> Result<JsValue, JsError> {
+    let scope = if full {
+        FillScope::Full
+    } else {
+        FillScope::Time
+    };
+    Ok(serde_wasm_bindgen::to_value(&fill_with(
         text,
         line,
         now_ms as i64,
         default_tz,
+        scope,
     ))?)
 }
 
