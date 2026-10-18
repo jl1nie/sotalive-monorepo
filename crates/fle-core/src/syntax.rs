@@ -1052,17 +1052,8 @@ pub fn expected_next(head: &str) -> Vec<Term> {
             _ => Vec::new(),
         },
         LineKind::Qso(items) => {
-            let only_settings = !items.is_empty()
-                && items.iter().all(|it| {
-                    matches!(
-                        it.node,
-                        QsoItem::Band { .. }
-                            | QsoItem::Freq(_)
-                            | QsoItem::Mode(_)
-                            | QsoItem::Comment { .. }
-                    )
-                });
-            if !only_settings {
+            // コールサインの前は、時刻のあとに、バンド(周波数)とモードを順不同で置ける
+            if !before_call(&items) {
                 return Vec::new();
             }
             let has_band = items
@@ -1077,6 +1068,49 @@ pub fn expected_next(head: &str) -> Vec<Term> {
                 out.extend(bands());
             }
             out
+        }
+    }
+}
+
+/// コールサインより前(時刻・バンド・周波数・モード・注釈だけ)の行か
+fn before_call(items: &[Spanned<QsoItem>]) -> bool {
+    !items.is_empty()
+        && items.iter().all(|it| {
+            matches!(
+                it.node,
+                QsoItem::Time { .. }
+                    | QsoItem::Band { .. }
+                    | QsoItem::Freq(_)
+                    | QsoItem::Mode(_)
+                    | QsoItem::Comment { .. }
+            )
+        })
+}
+
+/// 入力中の語が空のとき、候補を出してよいか。
+///
+/// 設定の行(`40m cw`)は、語が絞られているので、何も打っていなくても出す。
+/// 行頭や、時刻のあとのように、次がコールサインかもしれない位置では、語が多く邪魔になるので、
+/// 打ち始めてから出す(`prefix_len` 文字以上)。
+pub fn min_prefix_len(head: &str) -> usize {
+    match parse_line(head).kind {
+        LineKind::Blank => 1,
+        LineKind::Directive(_) => 0,
+        LineKind::Qso(items) => {
+            let only_settings = items.iter().all(|it| {
+                matches!(
+                    it.node,
+                    QsoItem::Band { .. }
+                        | QsoItem::Freq(_)
+                        | QsoItem::Mode(_)
+                        | QsoItem::Comment { .. }
+                )
+            });
+            if only_settings {
+                0
+            } else {
+                2
+            }
         }
     }
 }
@@ -1759,7 +1793,17 @@ mod tests {
     #[test]
     fn a_qso_line_expects_no_keywords() {
         assert!(expected_next("0900 ja1xyz").is_empty());
-        assert!(expected_next("0900").is_empty());
-        assert!(expected_next("0900 40m").is_empty());
+        assert!(
+            !expected_next("0900").is_empty(),
+            "時刻のあとは、バンドとモード"
+        );
+        assert!(expected_next("0900 40m")
+            .iter()
+            .all(|t| t.kind == TermKind::Mode));
+        assert!(expected_next("0900 40m cw").is_empty());
+        assert_eq!(min_prefix_len(""), 1);
+        assert_eq!(min_prefix_len("40m"), 0);
+        assert_eq!(min_prefix_len("0900"), 2);
+        assert_eq!(min_prefix_len("day"), 0);
     }
 }

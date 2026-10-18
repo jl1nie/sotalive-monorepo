@@ -9,7 +9,7 @@
 
 use serde::Serialize;
 
-use crate::syntax::{expected_next, TermKind};
+use crate::syntax::{expected_next, min_prefix_len, TermKind};
 
 /// よく使うモード・バンド。候補では、これらを先に並べる(残りは短い順・辞書順)
 const COMMON_MODES: [&str; 8] = ["cw", "ssb", "fm", "am", "ft8", "ft4", "rtty", "psk31"];
@@ -79,7 +79,7 @@ pub fn complete(text_before_caret: &str) -> Vec<Candidate> {
     let (head, token) = line.split_at(token_start);
     let prefix = token.to_lowercase();
 
-    if head.trim().is_empty() && prefix.is_empty() {
+    if prefix.chars().count() < min_prefix_len(head) {
         return Vec::new();
     }
 
@@ -156,6 +156,35 @@ mod tests {
 
     fn texts(c: &[Candidate]) -> Vec<&str> {
         c.iter().map(|c| c.text.as_str()).collect()
+    }
+
+    #[test]
+    fn mode_and_band_are_offered_after_the_time_once_two_characters_are_typed() {
+        // 次がコールサインかもしれないので、1文字では出さない
+        assert!(complete("0900 s").is_empty());
+        assert!(complete("0900 ").is_empty());
+        let c = complete("0900 ss");
+        assert_eq!(texts(&c), vec!["ssb"]);
+        assert_eq!(c[0].kind, CandidateKind::Mode);
+        assert!(texts(&complete("0900 40")).contains(&"40m"));
+    }
+
+    #[test]
+    fn a_word_after_the_callsign_gets_no_candidates() {
+        assert!(complete("0900 ja1xyz ss").is_empty());
+        assert!(complete("0900 ja1xyz 5").is_empty());
+    }
+
+    #[test]
+    fn only_the_missing_one_of_band_and_mode_is_offered_after_the_time() {
+        let c = complete("0900 40m cw ");
+        assert!(c.is_empty());
+        assert!(complete("0900 40m ss")
+            .iter()
+            .all(|c| c.kind == CandidateKind::Mode));
+        assert!(complete("0900 cw 4")
+            .iter()
+            .all(|c| c.kind == CandidateKind::Band));
     }
 
     #[test]
