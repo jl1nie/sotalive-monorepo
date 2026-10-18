@@ -18,6 +18,7 @@ import {
   type OutputWarning,
   type QsoView,
 } from '@/lib/fle'
+import { resolveLang } from '@/lib/errors'
 import { lineOf, lineRange, replaceRange } from '@/lib/lines'
 import { applyEdits, mapCaret } from '@/lib/edits'
 import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/lib/storage'
@@ -41,6 +42,7 @@ const MENU_ITEM =
 export function FleEditor() {
   useVisualViewport()
   const { settings, update: updateSettings } = useSettings()
+  const lang = resolveLang(settings.language)
 
   // 前回の入力を復元する(電池切れ・タブの終了でも失わない)
   const [text, setText] = useState(loadLog)
@@ -161,14 +163,15 @@ export function FleEditor() {
   }, [previewKey, view])
   const preview = previewed?.key === previewKey ? previewed.qso : null
 
-  const focusAt = useCallback((pos: number) => {
+  const focusAt = useCallback((pos: number, select?: [number, number]) => {
     // シートが閉じてフォーカスが戻った後に、入力欄へカーソルを置く
     window.setTimeout(() => {
       const ta = taRef.current
       if (!ta) return
       ta.focus()
-      ta.setSelectionRange(pos, pos)
-      setCaret(pos)
+      // 誤りの範囲があれば、それを選んで見せる
+      ta.setSelectionRange(select?.[0] ?? pos, select?.[1] ?? pos)
+      setCaret(select?.[1] ?? pos)
     }, 50)
   }, [])
 
@@ -215,14 +218,14 @@ export function FleEditor() {
   }
 
   const jump = useCallback(
-    (line: number) => {
+    (line: number, range?: [number, number]) => {
       setListOpen(false)
       const ta = taRef.current
       if (!ta) return
       const [, end] = lineRange(text, line)
       const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 26
       ta.scrollTop = Math.max(0, lineHeight * line - ta.clientHeight / 3)
-      focusAt(end)
+      focusAt(end, range)
     },
     [text, focusAt]
   )
@@ -378,6 +381,7 @@ export function FleEditor() {
 
       <CandidateBar
         view={view}
+        lang={lang}
         preview={preview}
         caretLine={caretLine}
         onOpenList={() => setListOpen(true)}
@@ -418,7 +422,14 @@ export function FleEditor() {
         }
       />
 
-      <QsoSheet open={listOpen} onClose={() => setListOpen(false)} view={view} onJump={jump} />
+      <QsoSheet
+        open={listOpen}
+        onClose={() => setListOpen(false)}
+        view={view}
+        lang={lang}
+        text={text}
+        onJump={jump}
+      />
 
       <GenerateCheckSheet
         open={check !== null}

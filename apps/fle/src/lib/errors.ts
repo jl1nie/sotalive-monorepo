@@ -1,0 +1,55 @@
+import type { ErrorView } from '@/lib/fle'
+
+/** 誤りの文面の言語。コアは、誤りの種類(`code`)と値(`args`)を返し、文面は画面が作る */
+export type Lang = 'ja' | 'en'
+export type LangPref = 'auto' | Lang
+
+export function resolveLang(pref: LangPref, navigatorLang: string = navigator.language): Lang {
+  if (pref !== 'auto') return pref
+  return navigatorLang.toLowerCase().startsWith('ja') ? 'ja' : 'en'
+}
+
+/** 指令の値の名前(`mysota` なら「SOTAの参照番号」) */
+const OPERAND_JA: Record<string, string> = {
+  mycall: 'コールサイン',
+  operator: '運用者のコールサイン',
+  mysota: 'SOTAの参照番号',
+  mywwff: 'WWFFの参照番号',
+  mypota: 'POTAの参照番号',
+  mygrid: 'グリッドロケータ',
+  date: '日付',
+  day: '+ か ++',
+  timezone: 'タイムゾーン(例 +9)',
+  rigset: 'リグの番号',
+}
+
+type Args = string[]
+const a = (args: Args, i: number) => args[i] ?? ''
+
+const JA: Record<string, (args: Args) => string> = {
+  date_out_of_range: () => '日付が範囲外です',
+  out_of_band: (x) => `周波数 ${a(x, 0)} は、バンドの範囲外です`,
+  unknown_band: (x) => `周波数 ${a(x, 0)} のバンドが分かりません`,
+  invalid_time: (x) => `時刻が正しくありません: ${a(x, 0)}`,
+  time_overflow: (x) => `時刻が24時を超えます(${a(x, 0)})。日をまたぐときは day + を書きます`,
+  duplicate_callsign: (x) => `1行に書けるコールサインは1つです: ${a(x, 0)}`,
+  missing_band: () => 'QSOより前に、バンドか周波数を書いてください',
+  unknown_word: (x) => `意味の分からない語です: ${a(x, 0)}`,
+  unexpected_keyword: (x) => `この位置に置けないキーワードです: ${a(x, 0)}`,
+  unexpected_word: (x) => `この位置に置けない語です: ${a(x, 0)}`,
+  missing_callsign: () => 'QSOの行には、コールサインが必要です',
+  unclosed_comment: () => '括弧が閉じていません',
+  missing_operand: (x) => `${a(x, 0)} の値(${OPERAND_JA[a(x, 0)] ?? '値'})がありません`,
+  invalid_operand: (x) => `${a(x, 0)} の値が正しくありません: ${a(x, 1)}`,
+  unknown_operand: (x) => `${a(x, 0)} の値が分かりません: ${a(x, 1)}`,
+  extra_operand: (x) => `${a(x, 0)} に余分な値があります: ${a(x, 1)}`,
+}
+
+/** 英語は、コアの文面(`message`)をそのまま使う */
+export function errorText(e: ErrorView, lang: Lang): string {
+  if (lang === 'ja') {
+    const make = JA[e.code]
+    if (make) return make(e.args)
+  }
+  return e.message
+}

@@ -1,15 +1,19 @@
 import { timeLabel, type LogView } from '@/lib/fle'
 import { Sheet } from '@/components/Sheet'
+import { errorText, type Lang } from '@/lib/errors'
 
 interface Props {
   open: boolean
   onClose: () => void
   view: LogView | null
-  /** 行番号(0始まり)の位置へカーソルを移す */
-  onJump: (line: number) => void
+  lang: Lang
+  /** 本文(誤りの語を見せるため) */
+  text: string
+  /** 行番号(0始まり)の位置へカーソルを移す。範囲があれば、その範囲を選ぶ */
+  onJump: (line: number, range?: [number, number]) => void
 }
 
-export function QsoSheet({ open, onClose, view, onJump }: Props) {
+export function QsoSheet({ open, onClose, view, lang, text, onJump }: Props) {
   const qsos = view?.qsos ?? []
   const errors = view?.errors ?? []
   const title = `${qsos.length} QSO${errors.length ? ` / エラー ${errors.length}` : ''}`
@@ -24,12 +28,15 @@ export function QsoSheet({ open, onClose, view, onJump }: Props) {
             <li key={`e${i}`}>
               <button
                 type="button"
-                onClick={() => onJump(e.line)}
+                onClick={() => onJump(e.line, [e.from, e.to])}
                 className="w-full text-left p-3 min-h-14 rounded-xl border-2 border-red-700 bg-red-50 text-red-950 dark:border-red-400 dark:bg-red-950 dark:text-red-100 flex gap-3 items-center"
               >
                 <span className="font-mono text-sm font-bold">L{e.line + 1}</span>
                 <span>
-                  <span className="block">{e.message}</span>
+                  <span className="block">{errorText(e, lang)}</span>
+                  {e.to > e.from && (
+                    <code className="block font-mono text-sm break-all">{text.slice(e.from, e.to)}</code>
+                  )}
                   <span className="block text-sm">タップでその行へ</span>
                 </span>
               </button>

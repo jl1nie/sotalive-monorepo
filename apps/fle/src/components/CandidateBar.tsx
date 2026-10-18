@@ -1,8 +1,10 @@
 import { Check } from 'lucide-react'
 import { timeLabel, type LogView, type QsoView } from '@/lib/fle'
+import { errorText, type Lang } from '@/lib/errors'
 
 interface Props {
   view: LogView | null
+  lang: Lang
   /** 確定したあとの、この行の姿(時刻・バンド・モード・RSTが入ったもの)。なければ現在の解釈を使う */
   preview: QsoView | null
   /** カーソルのある行(0始まり) */
@@ -23,7 +25,7 @@ const BAR = 'flex-1 min-w-0 rounded-xl border-2 overflow-hidden'
  * カーソルのある行を、補完した結果で見せる(IMEの候補のような表示)。
  * 解釈できた行(緑)は、そのまま押して確定できる。
  */
-export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }: Props) {
+export function CandidateBar({ view, lang, preview, caretLine, onOpenList, onConfirm }: Props) {
   const qso = preview ?? view?.qsos.find((q) => q.line === caretLine) ?? null
   const error = view?.errors.find((e) => e.line === caretLine)
   // 入力中の行の誤りは、まだ途中なので数えない(カーソルを離れた行の誤りだけ、赤で知らせる)
@@ -92,7 +94,7 @@ export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }
           <p className="font-semibold line-clamp-2">{context || 'ログを入力してください'}</p>
           {/* 入力中の誤りは、色も記号も付けず、小さく添えるだけ */}
           {error && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{error.message}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{errorText(error, lang)}</p>
           )}
         </div>
       )}

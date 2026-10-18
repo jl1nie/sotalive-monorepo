@@ -325,9 +325,14 @@ fn eval_qso(
             }
             QsoItem::Time { digits, value } => {
                 if let Err(message) = process_time(env, *digits, value) {
+                    let code = if message.starts_with("Time overflow") {
+                        "time_overflow"
+                    } else {
+                        "invalid_time"
+                    };
                     here.error(
                         env,
-                        "invalid_time",
+                        code,
                         &[value],
                         it.span,
                         format!("{message}: {value}"),

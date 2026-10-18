@@ -92,6 +92,22 @@ export function SettingsDialog({ open, onClose, settings, onChange }: Props) {
         </fieldset>
 
         <div>
+          <label htmlFor="language" className="label">
+            誤りの言語 / Error language
+          </label>
+          <select
+            id="language"
+            value={settings.language}
+            onChange={(e) => onChange({ language: e.target.value as Settings['language'] })}
+            className="input"
+          >
+            <option value="auto">端末に合わせる / Auto</option>
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div>
           <label htmlFor="timezone" className="label">
             既定のタイムゾーン
           </label>

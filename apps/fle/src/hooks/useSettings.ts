@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type Theme = 'light' | 'dark' | 'system'
+export type { LangPref } from '@/lib/errors'
+import type { LangPref } from '@/lib/errors'
 
 export interface Settings {
   theme: Theme
@@ -10,13 +12,15 @@ export interface Settings {
   writeBandMode: boolean
   /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も) */
   writeRst: boolean
+  /** 誤りの文面の言語(auto は端末の言語) */
+  language: LangPref
 }
 
 export const TIMEZONE_MIN = -12
 export const TIMEZONE_MAX = 14
 
 const KEY = 'fle.settings'
-const DEFAULTS: Settings = { theme: 'system', timezone: 0, writeBandMode: false, writeRst: true }
+const DEFAULTS: Settings = { theme: 'system', timezone: 0, writeBandMode: false, writeRst: true, language: 'auto' }
 
 function load(): Settings {
   try {
@@ -31,6 +35,7 @@ function load(): Settings {
       timezone,
       writeBandMode: typeof v.writeBandMode === 'boolean' ? v.writeBandMode : DEFAULTS.writeBandMode,
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
+      language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',
     }
   } catch {
     return DEFAULTS
