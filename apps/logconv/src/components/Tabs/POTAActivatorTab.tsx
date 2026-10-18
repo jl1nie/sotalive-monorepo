@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import { Upload, Download, AlertCircle, ExternalLink, FileText, Loader2 } from 'lucide-react'
 import { usePrefsStore } from '@/stores/prefsStore'
 import type { MyQTHOption, HisQTHOption } from '@/types/form'
@@ -52,7 +52,8 @@ export function POTAActivatorTab() {
   const [loading, setLoading] = useState(false)
   const [converting, setConverting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [csvChecked, setCsvChecked] = useState(false)
+  // 確認の結果。入力(ファイル・指定)が変わったら、古い結果は使わない(key で見分ける)
+  const [check, setCheck] = useState<{ key: string; errors: string[] } | null>(null)
 
   const {
     potaActivationCall,
@@ -67,13 +68,29 @@ export function POTAActivatorTab() {
     setActQTHPota,
   } = usePrefsStore()
 
+  const checkKey = useMemo(
+    () =>
+      JSON.stringify([
+        file && [file.name, file.size, file.lastModified],
+        potaActivationCall,
+        potaOperator,
+        potaPark,
+        myQTHPota,
+        actQTHPota,
+      ]),
+    [file, potaActivationCall, potaOperator, potaPark, myQTHPota, actQTHPota]
+  )
+  const checked = check?.key === checkKey ? check : null
+  // 確認でエラーが出たログは、ADIF を生成できない
+  const hasErrors = (checked?.errors.length ?? 0) > 0
+
   // Handle file selection
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) {
       setFile(selectedFile)
       setCsvData([])
-      setCsvChecked(false)
+      setCheck(null)
       setError(null)
     }
   }, [])
@@ -100,24 +117,11 @@ export function POTAActivatorTab() {
     return null
   }, [potaActivationCall, potaPark, myQTHPota, actQTHPota])
 
-  // Read CSV and check format
-  const handleReadCSV = useCallback(async () => {
-    const validationError = validateForm()
-    if (validationError) {
-      setError(validationError)
-      return
-    }
-    if (!file) {
-      setError('HAMLOG CSVファイルを指定してください')
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
-    try {
+  // CSV を確認する(サーバー)。エラーの一覧を返す。通信に失敗したら例外
+  const runCheck = useCallback(
+    async (target: File): Promise<string[]> => {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', target)
       formData.append(
         'options',
         JSON.stringify({
@@ -141,22 +145,42 @@ export function POTAActivatorTab() {
       }
 
       const data: LogConvCheckResponse = await response.json()
-
-      if (data.status === 'NG') {
-        setError(`CSVファイルにエラーがあります: ${data.error_log?.join(' / ') || data.error || '不明なエラー'}`)
-        setCsvChecked(false)
-      } else {
-        setCsvChecked(true)
-      }
-
+      const errors = data.status === 'NG' ? (data.error_log?.length ? data.error_log : [data.error || '不明なエラー']) : []
       setCsvData(data.log_text ?? [])
+      setCheck({ key: checkKey, errors })
+      return errors
+    },
+    [checkKey, potaActivationCall, potaOperator, potaPark, myQTHPota, actQTHPota]
+  )
+
+  const errorsMessage = (errors: string[]) =>
+    `CSVファイルにエラーがあります。直すまで、ADIFは生成できません: ${errors.join(' / ')}`
+
+  // Read CSV and check format
+  const handleReadCSV = useCallback(async () => {
+    const validationError = validateForm()
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+    if (!file) {
+      setError('HAMLOG CSVファイルを指定してください')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const errors = await runCheck(file)
+      if (errors.length > 0) setError(errorsMessage(errors))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'エラーが発生しました')
-      setCsvChecked(false)
+      setCheck(null)
     } finally {
       setLoading(false)
     }
-  }, [file, potaActivationCall, potaOperator, potaPark, myQTHPota, actQTHPota, validateForm])
+  }, [file, validateForm, runCheck])
 
   // Generate ADIF and download
   const handleGenerateADIF = useCallback(async () => {
@@ -170,16 +194,17 @@ export function POTAActivatorTab() {
       return
     }
 
-    if (!csvChecked) {
-      if (!window.confirm('HAMLOG CSVのチェックをせずにADIFを生成しますか？')) {
-        return
-      }
-    }
-
     setConverting(true)
     setError(null)
 
     try {
+      // まだ確認していないログは、先に確認する。エラーがあれば、ADIF は生成しない
+      const errors = checked ? checked.errors : await runCheck(file)
+      if (errors.length > 0) {
+        setError(errorsMessage(errors))
+        return
+      }
+
       const formData = new FormData()
       formData.append('file', file)
       formData.append(
@@ -200,7 +225,10 @@ export function POTAActivatorTab() {
       })
 
       if (!response.ok) {
-        throw new Error('ADIF生成に失敗しました')
+        // サーバーも、エラーのあるログは受け付けない(error_log で理由を返す)
+        const body = await response.json().catch(() => null)
+        const reasons: string[] | undefined = body?.error_log
+        throw new Error(reasons?.length ? errorsMessage(reasons) : 'ADIF生成に失敗しました')
       }
 
       // Download ZIP file
@@ -218,7 +246,7 @@ export function POTAActivatorTab() {
     } finally {
       setConverting(false)
     }
-  }, [file, potaActivationCall, potaOperator, potaPark, myQTHPota, actQTHPota, csvChecked, validateForm])
+  }, [file, potaActivationCall, potaOperator, potaPark, myQTHPota, actQTHPota, checked, runCheck, validateForm])
 
   return (
     <div className="space-y-4">
@@ -417,7 +445,8 @@ export function POTAActivatorTab() {
           <button
             type="button"
             onClick={handleGenerateADIF}
-            disabled={!file || converting}
+            disabled={!file || converting || hasErrors}
+            title={hasErrors ? 'CSVのエラーを直すまで、ADIFは生成できません' : undefined}
             className="btn-primary flex items-center gap-2"
           >
             {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
