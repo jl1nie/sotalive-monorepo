@@ -7,6 +7,7 @@ import { execSync } from 'node:child_process'
 
 // どの版が動いているか確認できるよう、コミットの番号を埋め込む
 const appVersion = (() => {
+  if (process.env.APP_VERSION) return process.env.APP_VERSION
   try {
     return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
   } catch {
@@ -20,7 +21,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      // 新しい版は、入力中に勝手に再読み込みしない。利用者が押したときだけ適用する
+      // 再読み込みは自動でしない。画面は常にネットワーク優先で取るので、開き直せば最新になる
       registerType: 'prompt',
       injectRegister: false,
       includeAssets: ['icons/icon.svg', 'icons/apple-touch-icon.png'],
@@ -42,9 +43,37 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // WASM(約1MB)も含めて、オフラインで動くよう事前にキャッシュする
-        globPatterns: ['**/*.{js,css,html,wasm,svg,png,webmanifest}'],
-        navigateFallback: '/fle/index.html',
+        // 画面(HTML)はキャッシュ優先にしない。つながるときは再読み込みで必ず最新が出て、
+        // つながらないとき(山頂など)だけ、前回のものを使う。
+        // HTML以外(ハッシュ付きのJS・CSS・WASM・アイコン)は、事前にキャッシュしてオフラインで動かす。
+        globPatterns: ['**/*.{js,css,wasm,svg,png,webmanifest}'],
+        navigateFallback: undefined,
+        runtimeCaching: [
+          {
+            // 画面が読み込んだアセット(ハッシュ付き・不変)は、その場で保存する。
+            // 新しい版の事前キャッシュが終わる前に電波が切れても、組み上がるようにするため
+            urlPattern: ({ url }) => url.pathname.startsWith('/fle/assets/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fle-assets',
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 40 },
+            },
+          },
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'fle-pages',
+              // 電波が弱いときに待たされないよう、3秒でキャッシュに切り替える
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 5 },
+            },
+          },
+        ],
+        // 新しい Service Worker はすぐ入れ替える(待たせない)
+        skipWaiting: true,
+        clientsClaim: true,
         cleanupOutdatedCaches: true,
       },
     }),

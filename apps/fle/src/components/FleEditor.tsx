@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { FileText, HelpCircle, Home, RefreshCw, Trash2, Undo2, Upload } from 'lucide-react'
+import { FileText, HelpCircle, Home, Trash2, Undo2, Upload } from 'lucide-react'
 import {
   compileLog,
   completeAt,
   fillLine,
   generateFleZip,
+  adifToFle,
+  sampleLog,
   type Candidate,
+  type Completion,
   type LogView,
   type QsoView,
 } from '@/lib/fle'
-import { adif2fle } from '@/lib/adif'
-import { generateSample } from '@/lib/sample'
-import { lineOf, lineRange, replaceToken } from '@/lib/lines'
+import { lineOf, lineRange, replaceRange } from '@/lib/lines'
 import { applyEdits, mapCaret } from '@/lib/edits'
 import { loadLog, loadPrev, rememberPrev } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
@@ -38,7 +39,7 @@ export function FleEditor() {
   const [caret, setCaret] = useState(text.length)
   const [prev, setPrev] = useState(loadPrev)
   const [view, setView] = useState<LogView | null>(null)
-  const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [completion, setCompletion] = useState<Completion>({ from: 0, candidates: [] })
   // 確定したあとの、カーソル行の姿。どの入力に対するものかを key で持ち、古くなったら使わない
   const [previewed, setPreviewed] = useState<{ key: string; qso: QsoView } | null>(null)
   const [listOpen, setListOpen] = useState(false)
@@ -64,11 +65,7 @@ export function FleEditor() {
     text,
     useCallback(() => notify('自動保存できません。ブラウザの設定を確認してください'), [notify])
   )
-  const pwa = usePwa({
-    onOfflineReady: useCallback(() => notify('オフラインでも使えます'), [notify]),
-    // 新しい版は、押されるまで適用しない。気づけるよう、一度知らせて、メニューにも印を付ける
-    onUpdateReady: useCallback(() => notify('新しい版があります。メニューから更新できます'), [notify]),
-  })
+  const pwa = usePwa(useCallback(() => notify('オフラインでも使えます'), [notify]))
 
   // 内容を置き換える前に、今の内容を取っておく(メニューから戻せる)
   const replaceText = useCallback(
@@ -104,8 +101,8 @@ export function FleEditor() {
   useEffect(() => {
     let current = true
     completeAt(text.slice(0, caret))
-      .then((c) => current && setCandidates(c))
-      .catch(() => current && setCandidates([]))
+      .then((c) => current && setCompletion(c))
+      .catch(() => current && setCompletion({ from: 0, candidates: [] }))
     return () => {
       current = false
     }
@@ -158,12 +155,12 @@ export function FleEditor() {
 
   const pick = useCallback(
     (candidate: Candidate) => {
-      const next = replaceToken(text, caret, candidate.text)
+      const next = replaceRange(text, completion.from, caret, candidate.text)
       pendingCaret.current = next.caret
       setText(next.text)
       setCaret(next.caret)
     },
-    [text, caret]
+    [text, caret, completion.from]
   )
 
   const jump = useCallback(
@@ -266,7 +263,6 @@ export function FleEditor() {
         onGenerate={handleGenerate}
         canGenerate={text.trim().length > 0}
         onMenu={() => setMenuOpen(true)}
-        updateReady={pwa.updateReady}
         settings={settings}
         onSettingsChange={updateSettings}
       />
@@ -286,7 +282,7 @@ export function FleEditor() {
           // 下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る
           className="input flex-1 h-full min-h-0 resize-none font-mono leading-relaxed pb-20"
         />
-        <SuggestStrip candidates={candidates} onPick={pick} />
+        <SuggestStrip candidates={completion.candidates} onPick={pick} />
       </div>
 
       <CandidateBar
@@ -323,9 +319,11 @@ export function FleEditor() {
         accept=".adi,.adif"
         className="hidden"
         onChange={(e) =>
-          readFile(e, (content) =>
-            setText((prev) => (prev && !prev.endsWith('\n') ? prev + '\n' : prev) + adif2fle(content))
-          )
+          readFile(e, async (content) => {
+            // ADIFの読み方(FLEの書式への変換)はコアが知っている
+            const fle = await adifToFle(content)
+            setText((prev) => (prev && !prev.endsWith('\n') ? prev + '\n' : prev) + fle)
+          })
         }
       />
 
@@ -333,18 +331,6 @@ export function FleEditor() {
 
       <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="ログ">
         <ul className="space-y-2">
-          {pwa.updateReady && (
-            <li>
-              <button
-                type="button"
-                className="btn-primary w-full !justify-start !min-h-14"
-                onClick={() => pwa.applyUpdate()}
-              >
-                <RefreshCw className="w-5 h-5" />
-                新しい版に更新する
-              </button>
-            </li>
-          )}
           <li>
             <button
               type="button"
@@ -377,7 +363,10 @@ export function FleEditor() {
               className={MENU_ITEM}
               onClick={() => {
                 setMenuOpen(false)
-                replaceText(generateSample(), 'サンプルを入れました。メニューから元に戻せます')
+                // 見本のログはコアが持つ。日付(いま)だけ、画面が渡す
+                sampleLog(new Date().toISOString().slice(0, 10)).then((sample) =>
+                  replaceText(sample, 'サンプルを入れました。メニューから元に戻せます')
+                )
               }}
             >
               サンプルを入れる

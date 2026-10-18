@@ -18,18 +18,20 @@ export function lineRange(text: string, line: number): [number, number] {
   return [start, end < 0 ? text.length : end]
 }
 
-/** カーソル直前の語を候補で置き換え、続けて打てるよう後ろに空白を入れる。 */
-export function replaceToken(
+/**
+ * `from` から `to` までを候補で置き換え、続けて打てるよう後ろに空白を入れる。
+ * どこからが入力中の語かは、コアが `from` で教える(画面は語の区切りを知らない)。
+ */
+export function replaceRange(
   text: string,
-  caret: number,
+  from: number,
+  to: number,
   insert: string
 ): { text: string; caret: number } {
-  const token = /\S*$/.exec(text.slice(0, caret))?.[0] ?? ''
-  const start = caret - token.length
   // すでに空白が続いているときは重ねず、その空白の後ろへカーソルを進める
-  const gap = text[caret] === ' ' ? '' : ' '
+  const gap = text[to] === ' ' ? '' : ' '
   return {
-    text: text.slice(0, start) + insert + gap + text.slice(caret),
-    caret: start + insert.length + 1,
+    text: text.slice(0, from) + insert + gap + text.slice(to),
+    caret: from + insert.length + 1,
   }
 }

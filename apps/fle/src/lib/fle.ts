@@ -1,7 +1,9 @@
 import type { Edit } from './edits'
 import init, {
   compile as wasmCompile,
+  adifToFle as wasmAdifToFle,
   complete as wasmComplete,
+  sampleLog as wasmSampleLog,
   fill as wasmFill,
   generateZip as wasmGenerateZip,
 } from '../wasm/fle/fle'
@@ -45,6 +47,13 @@ export interface LogView {
   errors: ErrorView[]
 }
 
+/** 補完の結果。候補と、確定するときに置き換える範囲の開始位置は、どちらもコアが決める。 */
+export interface Completion {
+  /** 置き換えの開始位置(UTF-16)。終わりはカーソル */
+  from: number
+  candidates: Candidate[]
+}
+
 /** 補完候補。文法上ありえるキーワードで、並べ方もコアが決める。 */
 export interface Candidate {
   text: string
@@ -74,9 +83,21 @@ export async function compileLog(text: string): Promise<LogView> {
 }
 
 /** カーソルより前のテキストから、次に入力できるキーワードを返す。 */
-export async function completeAt(textBeforeCaret: string): Promise<Candidate[]> {
+export async function completeAt(textBeforeCaret: string): Promise<Completion> {
   await ensureReady()
-  return wasmComplete(textBeforeCaret) as Candidate[]
+  return wasmComplete(textBeforeCaret) as Completion
+}
+
+/** ADIFのテキストを、FLE形式のテキストに変換する(ログの追記用)。 */
+export async function adifToFle(adif: string): Promise<string> {
+  await ensureReady()
+  return wasmAdifToFle(adif)
+}
+
+/** 書き方の見本になるFLEログ。`date` は `YYYY-MM-DD`。 */
+export async function sampleLog(date: string): Promise<string> {
+  await ensureReady()
+  return wasmSampleLog(date)
 }
 
 /**

@@ -2,7 +2,7 @@
 // 事前に `pnpm wasm` で src/wasm/fle を生成しておくこと。
 import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { initSync, compile, complete, fill, generateZip } from '../wasm/fle/fle'
+import { adifToFle, initSync, compile, complete, fill, generateZip, sampleLog } from '../wasm/fle/fle'
 
 const SAMPLE = 'mycall JA1ABC\ndate 2024-01-15\nmysota JA/TK-001\n40m cw\n0900 JA1XYZ 599 599\n'
 
@@ -30,16 +30,25 @@ describe('fle wasm', () => {
     expect(view.errors).toEqual([{ line: 0, message: 'Missing operand.' }])
   })
 
-  it('complete: 行頭の語からキーワードを返す', () => {
-    expect(complete('mys')).toEqual([{ text: 'mysota', kind: 'command' }])
-    expect(complete('day ')).toEqual([
-      { text: '+', kind: 'day' },
-      { text: '++', kind: 'day' },
-    ])
+  it('complete: 行頭の語からキーワードと、置き換える範囲を返す', () => {
+    expect(complete('mys')).toEqual({ from: 0, candidates: [{ text: 'mysota', kind: 'command' }] })
+    expect(complete('mycall JA1ABC\nmys').from).toBe(14)
+    expect(complete('day ')).toEqual({
+      from: 4,
+      candidates: [
+        { text: '+', kind: 'day' },
+        { text: '++', kind: 'day' },
+      ],
+    })
+  })
+
+  it('complete: バンドの次にモードを、改行なしで返す', () => {
+    const { candidates } = complete('40m ')
+    expect(candidates.slice(0, 3).map((c: { text: string }) => c.text)).toEqual(['cw', 'ssb', 'fm'])
   })
 
   it('complete: 自由入力の位置では何も返さない', () => {
-    expect(complete('0905 ja')).toEqual([])
+    expect(complete('0905 ja').candidates).toEqual([])
   })
 
   it('fill: 時刻のない行の行頭に、いまの時刻(UTC)を入れる修正を返す', () => {
@@ -60,6 +69,19 @@ describe('fle wasm', () => {
       .sort((a, b) => b.from - a.from)
       .reduce((t, e) => t.slice(0, e.from) + e.insert + t.slice(e.to), text)
     expect(result).toBe('40m cw\n0905 40m CW ja1xyz 599 599')
+  })
+
+  it('adifToFle: ADIFをFLEに変換し、そのまま解釈できる', () => {
+    const adif = '<CALL:6>JA1XYZ<QSO_DATE:8>20241228<TIME_ON:4>1234<MODE:2>CW<BAND:3>40m<RST_RCVD:3>579<EOR>'
+    const fle = adifToFle(adif)
+    expect(fle).toBe('date 2024-12-28\n40m CW\n1234 JA1XYZ 599 579\n')
+    expect(compile('mycall JA1ABC\n' + fle).status).toBe('OK')
+  })
+
+  it('sampleLog: 見本は有効なFLEで、日付は渡したもの', () => {
+    const view = compile(sampleLog('2026-10-18'))
+    expect(view.status).toBe('OK')
+    expect(view.qsos[0].date).toBe('2026-10-18')
   })
 
   it('generateZip: ZIPのシグネチャで始まる', () => {

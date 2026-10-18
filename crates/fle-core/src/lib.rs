@@ -53,19 +53,23 @@
 //! - `timezone +/-N` - タイムゾーン設定
 //! - `qslmsg <msg>` - QSLメッセージ設定
 
+pub mod adif;
 pub mod compiler;
 pub mod complete;
 pub mod fill;
 pub mod ham;
 pub mod output;
+pub mod sample;
 pub mod tokenizer;
 pub mod types;
 pub mod view;
 
+pub use adif::*;
 pub use compiler::*;
 pub use complete::*;
 pub use fill::*;
 pub use output::*;
+pub use sample::*;
 pub use tokenizer::*;
 pub use types::*;
 pub use view::*;

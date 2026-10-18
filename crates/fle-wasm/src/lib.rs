@@ -4,7 +4,7 @@
 
 use chrono::DateTime;
 use fle_core::{
-    compile_fle, compile_log, complete as complete_keywords, fill_with, generate_fle_output,
+    adif_to_fle, compile_fle, compile_log, complete_at, fill_with, generate_fle_output, sample_log,
     FillScope,
 };
 use wasm_bindgen::prelude::*;
@@ -15,12 +15,25 @@ pub fn compile(text: &str) -> Result<JsValue, JsError> {
     Ok(serde_wasm_bindgen::to_value(&compile_log(text))?)
 }
 
-/// カーソルより前のテキストから、次に入力できるキーワードの候補(`text` / `kind`)を返す。
+/// カーソルより前のテキストから、次に入力できるキーワードの候補(`candidates`)と、
+/// 確定するときに置き換える範囲の開始位置(`from`、UTF-16)を返す。
 #[wasm_bindgen]
 pub fn complete(text_before_caret: &str) -> Result<JsValue, JsError> {
-    Ok(serde_wasm_bindgen::to_value(&complete_keywords(
+    Ok(serde_wasm_bindgen::to_value(&complete_at(
         text_before_caret,
     ))?)
+}
+
+/// ADIFのテキストを、FLE形式のテキストに変換する。
+#[wasm_bindgen(js_name = adifToFle)]
+pub fn adif_to_fle_text(adif: &str) -> String {
+    adif_to_fle(adif)
+}
+
+/// 書き方の見本になるFLEログ。`date` は `YYYY-MM-DD`。
+#[wasm_bindgen(js_name = sampleLog)]
+pub fn sample_log_text(date: &str) -> String {
+    sample_log(date)
 }
 
 /// `line`(0始まり)の行を確定するための修正(`from` / `to` / `insert`)を返す。

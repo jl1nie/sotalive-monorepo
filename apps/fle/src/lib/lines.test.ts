@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lineOf, lineRange, replaceToken } from './lines'
+import { lineOf, lineRange, replaceRange } from './lines'
 
 describe('lineOf', () => {
   it('改行の数で行を数える', () => {
@@ -27,23 +27,24 @@ describe('lineRange', () => {
   })
 })
 
-describe('replaceToken', () => {
-  it('カーソル直前の語を置き換えて空白を足す', () => {
-    expect(replaceToken('mys', 3, 'mysota')).toEqual({ text: 'mysota ', caret: 7 })
+describe('replaceRange', () => {
+  it('指定の範囲を置き換えて、空白を足す', () => {
+    expect(replaceRange('mys', 0, 3, 'mysota')).toEqual({ text: 'mysota ', caret: 7 })
   })
 
-  it('行の途中でも、その語だけを置き換える', () => {
-    expect(replaceToken('40m cw\nmy\nssb', 9, 'mycall')).toEqual({
+  it('行の途中でも、その範囲だけを置き換える', () => {
+    // "40m cw\nmy\nssb" の "my"(7〜9)
+    expect(replaceRange('40m cw\nmy\nssb', 7, 9, 'mycall')).toEqual({
       text: '40m cw\nmycall \nssb',
       caret: 14,
     })
   })
 
-  it('語が空(空白の直後)なら、そのまま挿入する', () => {
-    expect(replaceToken('day ', 4, '+')).toEqual({ text: 'day + ', caret: 6 })
+  it('範囲が空(空白の直後)なら、そのまま挿入する', () => {
+    expect(replaceRange('day ', 4, 4, '+')).toEqual({ text: 'day + ', caret: 6 })
   })
 
   it('すぐ後ろが空白なら、空白を重ねない', () => {
-    expect(replaceToken('mys x', 3, 'mysota')).toEqual({ text: 'mysota x', caret: 7 })
+    expect(replaceRange('mys x', 0, 3, 'mysota')).toEqual({ text: 'mysota x', caret: 7 })
   })
 })

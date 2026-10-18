@@ -7,13 +7,11 @@ interface Props {
   onGenerate: () => void
   canGenerate: boolean
   onMenu: () => void
-  /** 新しい版がある(メニューに印を付ける) */
-  updateReady: boolean
   settings: Settings
   onSettingsChange: (patch: Partial<Settings>) => void
 }
 
-export function Header({ onGenerate, canGenerate, onMenu, updateReady, settings, onSettingsChange }: Props) {
+export function Header({ onGenerate, canGenerate, onMenu, settings, onSettingsChange }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
@@ -33,16 +31,10 @@ export function Header({ onGenerate, canGenerate, onMenu, updateReady, settings,
         <button
           type="button"
           onClick={onMenu}
-          aria-label={updateReady ? 'メニュー(新しい版があります)' : 'メニュー'}
-          className="btn-secondary !min-h-11 !min-w-11 !px-0 relative"
+          aria-label="メニュー"
+          className="btn-secondary !min-h-11 !min-w-11 !px-0"
         >
           <Ellipsis className="w-6 h-6" />
-          {updateReady && (
-            <span
-              aria-hidden="true"
-              className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-600 border-2 border-white dark:border-gray-950"
-            />
-          )}
         </button>
         <button
           type="button"
