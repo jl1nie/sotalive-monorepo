@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
-import { timeLabel, type LogView, type QsoView } from '@/lib/fle'
+import { timeLabel, zoneLabel, type LogView, type QsoView } from '@/lib/fle'
 import { errorText } from '@/lib/errors'
 import { keepFocus } from '@/lib/keepFocus'
 import { useI18n } from '@/lib/i18n'
@@ -13,6 +13,8 @@ interface Props {
   caretLine: number
   /** カーソルのある行の文字 */
   lineText: string
+  /** 設定の時間帯(ログにまだ QSO がないときの時計) */
+  timezone: number
   onOpenList: () => void
   /** この行を確定して、次の行へ進む */
   onConfirm: () => void
@@ -36,7 +38,7 @@ const BAR = 'flex-1 min-w-0 rounded-xl border-2 overflow-hidden'
  * カーソルのある行を、補完した結果で見せる(IMEの候補のような表示)。
  * 解釈できた行(緑)は、そのまま押して確定できる。
  */
-export function CandidateBar({ view, preview, caretLine, lineText, onOpenList, onConfirm }: Props) {
+export function CandidateBar({ view, preview, caretLine, lineText, timezone, onOpenList, onConfirm }: Props) {
   const { t, lang } = useI18n()
   const qso = preview ?? view?.qsos.find((q) => q.line === caretLine) ?? null
   const error = view?.errors.find((e) => e.line === caretLine)
@@ -51,16 +53,19 @@ export function CandidateBar({ view, preview, caretLine, lineText, onOpenList, o
   const omissions = view?.errors.filter((e) => e.line === caretLine && OMISSIONS.has(e.code)) ?? []
   const errorCount = (view?.errors.filter((e) => e.line !== caretLine).length ?? 0) + omissions.length
 
-  const lastQso = view?.qsos.filter((q) => q.line < caretLine).at(-1)
-  const context = view
-    ? [view.mycall, view.mysota, view.mywwff, ...view.mypota, lastQso?.band, lastQso?.mode]
-        .filter(Boolean)
-        .join('  ')
-    : ''
+  // 空の行では、いまの時刻とバンド・モードを見せる(次の QSO に入る値)
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 10_000)
+    return () => window.clearInterval(id)
+  }, [])
 
+  const lastQso = view?.qsos.filter((q) => q.line < caretLine).at(-1)
   // 入力の途中(まだ確定できない行)は、打った文字を、橙で見せる。確定できれば緑になる
   const typed = lineText.trim()
   const draft = !qso && typed !== '' && omissions.length === 0
+  const tz = lastQso ? lastQso.tz : timezone
+  const clock = new Date(now + tz * 3_600_000).toISOString().slice(11, 16)
   const prevSetting = [lastQso?.band, lastQso?.mode].filter(Boolean).join(' ')
 
   return (
@@ -131,7 +136,18 @@ export function CandidateBar({ view, preview, caretLine, lineText, onOpenList, o
               ⚠ {omissions.map((e) => errorText(e, lang)).join(' / ')}
             </p>
           ) : (
-            <p className="font-semibold line-clamp-2">{context || t('bar.empty')}</p>
+            <>
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="font-mono text-xl font-bold tabular-nums leading-tight">
+                  {clock}
+                  {tz !== 0 && <small className="ml-1 text-sm">{zoneLabel(tz)}</small>}
+                </span>
+                {prevSetting && <span className="font-bold whitespace-nowrap">{prevSetting}</span>}
+              </span>
+              <span className="text-sm text-gray-700 dark:text-gray-300 line-clamp-1">
+                {view?.qsos.length ? t('bar.next') : t('bar.empty')}
+              </span>
+            </>
           )}
           {/* 入力中の誤りは、色も記号も付けず、小さく添えるだけ */}
           {error && settled && omissions.length === 0 && !draft && (
