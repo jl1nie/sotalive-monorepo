@@ -1,12 +1,11 @@
-import { Sun, Moon, Monitor } from 'lucide-react'
+import { useState } from 'react'
+import { Cog } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
-
-const THEME_LABEL = { light: 'ライト', dark: 'ダーク', system: '自動' } as const
+import { SettingsDialog } from '@/components/Layout/SettingsDialog'
 
 export function Header() {
-  const { theme, toggleTheme } = useTheme()
-
-  const Icon = theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor
+  const { theme, setTheme } = useTheme()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <header className="sticky top-0 z-30 bg-white dark:bg-gray-950 border-b-2 border-gray-300 dark:border-gray-700 pt-[env(safe-area-inset-top)]">
@@ -26,14 +25,19 @@ export function Header() {
 
         <button
           type="button"
-          onClick={toggleTheme}
-          className="btn-secondary !min-h-11 !px-3"
-          aria-label={`表示テーマ: ${THEME_LABEL[theme]}(押すと切り替え)`}
+          onClick={() => setSettingsOpen(true)}
+          className="btn-secondary !min-h-11 !min-w-11 !px-0"
+          aria-label="設定"
         >
-          <Icon className="w-5 h-5" />
-          <span className="text-sm">{THEME_LABEL[theme]}</span>
+          <Cog className="w-6 h-6" />
         </button>
       </div>
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        theme={theme}
+        onThemeChange={setTheme}
+      />
     </header>
   )
 }

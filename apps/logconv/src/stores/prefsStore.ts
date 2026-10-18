@@ -46,7 +46,7 @@ export const usePrefsStore = create<PrefsState>()(
   persist(
     (set) => ({
       // Theme
-      theme: 'light',
+      theme: 'system',
       setTheme: (theme) => set({ theme }),
 
       // POTA defaults
