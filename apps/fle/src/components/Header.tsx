@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Cog, Download, Ellipsis } from 'lucide-react'
 import type { Settings } from '@/hooks/useSettings'
+import type { useSync } from '@/hooks/useSync'
 import { SettingsDialog } from '@/components/SettingsDialog'
 import { useT } from '@/lib/i18n'
 
@@ -10,9 +11,10 @@ interface Props {
   onMenu: () => void
   settings: Settings
   onSettingsChange: (patch: Partial<Settings>) => void
+  sync: ReturnType<typeof useSync>
 }
 
-export function Header({ onGenerate, canGenerate, onMenu, settings, onSettingsChange }: Props) {
+export function Header({ onGenerate, canGenerate, onMenu, settings, onSettingsChange, sync }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const t = useT()
 
@@ -52,6 +54,7 @@ export function Header({ onGenerate, canGenerate, onMenu, settings, onSettingsCh
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onChange={onSettingsChange}
+        sync={sync}
       />
     </header>
   )
