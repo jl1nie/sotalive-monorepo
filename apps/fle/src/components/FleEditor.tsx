@@ -61,7 +61,11 @@ export function FleEditor() {
     text,
     useCallback(() => notify('自動保存できません。ブラウザの設定を確認してください'), [notify])
   )
-  const pwa = usePwa(useCallback(() => notify('オフラインでも使えます'), [notify]))
+  const pwa = usePwa({
+    onOfflineReady: useCallback(() => notify('オフラインでも使えます'), [notify]),
+    // 新しい版は、押されるまで適用しない。気づけるよう、一度知らせて、メニューにも印を付ける
+    onUpdateReady: useCallback(() => notify('新しい版があります。メニューから更新できます'), [notify]),
+  })
 
   // 内容を置き換える前に、今の内容を取っておく(メニューから戻せる)
   const replaceText = useCallback(
@@ -149,27 +153,41 @@ export function FleEditor() {
     [text, focusAt]
   )
 
-  // Enterで、その行の補完(時刻)をテキストに確定してから改行する
-  const handleEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
-    const ta = e.currentTarget
-    if (ta.selectionStart !== ta.selectionEnd) return
-    const pos = ta.selectionStart
-    const line = lineOf(text, pos)
-    // 行の途中での改行は、行を分けるだけ
-    if (pos !== lineRange(text, line)[1]) return
+  /**
+   * 入力の変化を受ける。行末で改行が1つ入ったときは、その行の補完(時刻)をテキストに確定する。
+   * キーの種類(keydown)ではなくテキストの変化で判定するので、ソフトキーボードでも同じに動く。
+   */
+  const handleChange = (value: string, pos: number, native: Event) => {
+    const composing = (native as InputEvent).isComposing === true
+    const newlineAdded =
+      !composing &&
+      value.length === text.length + 1 &&
+      value[pos - 1] === '\n' &&
+      value.slice(0, pos - 1) + value.slice(pos) === text &&
+      // 行末での改行だけ。行の途中で分けるだけのときは確定しない
+      (pos === value.length || value[pos] === '\n')
 
-    const startedAt = lineStartedAt.current?.line === line ? lineStartedAt.current.ms : Date.now()
-    const edits = fillLine(text, line, startedAt, settings.timezone)
-    if (edits.length === 0) return // 通常の改行
-
-    e.preventDefault()
-    const filled = applyEdits(text, edits)
-    const at = mapCaret(pos, edits)
-    lineStartedAt.current = null
-    pendingCaret.current = at + 1
-    setText(filled.slice(0, at) + '\n' + filled.slice(at))
-    setCaret(at + 1)
+    if (newlineAdded) {
+      const done = lineOf(value, pos) - 1
+      const startedAt =
+        lineStartedAt.current?.line === done ? lineStartedAt.current.ms : Date.now()
+      const edits = fillLine(value, done, startedAt, settings.timezone)
+      if (edits.length > 0) {
+        const at = mapCaret(pos, edits)
+        lineStartedAt.current = null
+        pendingCaret.current = at
+        setText(applyEdits(value, edits))
+        setCaret(at)
+        return
+      }
+    }
+    // 確定しなかったとき: いま打っている行の、最初の1文字を打った時刻を覚える
+    const line = lineOf(value, pos)
+    const [start, end] = lineRange(value, line)
+    if (value.slice(start, end).trim() === '') lineStartedAt.current = null
+    else if (lineStartedAt.current?.line !== line) lineStartedAt.current = { line, ms: Date.now() }
+    setText(value)
+    setCaret(pos)
   }
 
   const handleGenerate = useCallback(async () => {
@@ -206,6 +224,7 @@ export function FleEditor() {
         onGenerate={handleGenerate}
         canGenerate={text.trim().length > 0}
         onMenu={() => setMenuOpen(true)}
+        updateReady={pwa.updateReady}
         settings={settings}
         onSettingsChange={updateSettings}
       />
@@ -214,19 +233,7 @@ export function FleEditor() {
         <textarea
           ref={taRef}
           value={text}
-          onChange={(e) => {
-            const value = e.target.value
-            const pos = e.target.selectionStart
-            const line = lineOf(value, pos)
-            const [start, end] = lineRange(value, line)
-            if (value.slice(start, end).trim() === '') lineStartedAt.current = null
-            else if (lineStartedAt.current?.line !== line) {
-              lineStartedAt.current = { line, ms: Date.now() }
-            }
-            setText(value)
-            setCaret(pos)
-          }}
-          onKeyDown={handleEnter}
+          onChange={(e) => handleChange(e.target.value, e.target.selectionStart, e.nativeEvent)}
           onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
           placeholder="0900 JA1XYZ 599 599"
           aria-label="FLEログ"
@@ -384,6 +391,9 @@ export function FleEditor() {
             </a>
           </li>
         </ul>
+        <p className="mt-3 text-center text-xs text-gray-700 dark:text-gray-300">
+          FLEonline 版 {__APP_VERSION__}
+        </p>
       </Sheet>
     </div>
   )

@@ -23,7 +23,13 @@ function isStandalone() {
  * Service Worker(オフライン・更新)とインストールの状態。
  * 新しい版は、入力中に勝手に再読み込みしないよう、利用者が押したときだけ適用する。
  */
-export function usePwa(onOfflineReady: () => void) {
+interface Callbacks {
+  onOfflineReady: () => void
+  /** 新しい版の準備ができた(適用は利用者が選ぶ) */
+  onUpdateReady: () => void
+}
+
+export function usePwa({ onOfflineReady, onUpdateReady }: Callbacks) {
   const [updateReady, setUpdateReady] = useState(false)
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null)
   const applyRef = useRef<(reload?: boolean) => Promise<void>>(undefined)
@@ -32,10 +38,13 @@ export function usePwa(onOfflineReady: () => void) {
     // 開発サーバーでは Service Worker を使わない
     if (!import.meta.env.PROD) return
     applyRef.current = registerSW({
-      onNeedRefresh: () => setUpdateReady(true),
+      onNeedRefresh: () => {
+        setUpdateReady(true)
+        onUpdateReady()
+      },
       onOfflineReady,
     })
-  }, [onOfflineReady])
+  }, [onOfflineReady, onUpdateReady])
 
   useEffect(() => {
     const onPrompt = (e: Event) => {

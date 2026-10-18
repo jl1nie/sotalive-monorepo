@@ -3,6 +3,16 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import { execSync } from 'node:child_process'
+
+// どの版が動いているか確認できるよう、コミットの番号を埋め込む
+const appVersion = (() => {
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    return 'dev'
+  }
+})()
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -40,6 +50,7 @@ export default defineConfig({
     }),
   ],
   base: '/fle/',
+  define: { __APP_VERSION__: JSON.stringify(appVersion) },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
