@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { TabId } from '@/types/form'
-import { FileText, Mountain, Radio, Smartphone, Activity } from 'lucide-react'
+import { FileText, Mountain, Radio, Activity } from 'lucide-react'
 
 interface Tab {
   id: TabId
@@ -27,12 +27,6 @@ const tabs: Tab[] = [
     label: 'SOTA Chaser',
     shortLabel: 'Chaser',
     icon: <Radio className="w-6 h-6" />,
-  },
-  {
-    id: 'airhamlog',
-    label: 'AirHamLog',
-    shortLabel: 'AirHam',
-    icon: <Smartphone className="w-6 h-6" />,
   },
   { id: 'wspr', label: 'WSPRnet SNR', shortLabel: 'WSPR', icon: <Activity className="w-6 h-6" /> },
 ]
