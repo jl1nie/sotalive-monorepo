@@ -1,3 +1,4 @@
+import { keepFocus } from '@/lib/keepFocus'
 import type { Candidate } from '@/lib/fle'
 import { useT } from '@/lib/i18n'
 
@@ -21,7 +22,7 @@ export function SuggestStrip({ candidates, onPick }: Props) {
     <ul
       aria-label={t('suggest.label')}
       // タップしても入力欄からフォーカスを奪わない(キーボードを閉じない)
-      onPointerDown={(e) => e.preventDefault()}
+      {...keepFocus}
       className="absolute inset-x-2 bottom-2 flex gap-2 overflow-x-auto p-1.5 rounded-xl border-2 border-gray-500 bg-white dark:bg-gray-950"
     >
       {candidates.map((c) => (

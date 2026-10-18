@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
 import { timeLabel, type LogView, type QsoView } from '@/lib/fle'
 import { errorText } from '@/lib/errors'
+import { keepFocus } from '@/lib/keepFocus'
 import { useI18n } from '@/lib/i18n'
 
 interface Props {
@@ -74,7 +75,7 @@ export function CandidateBar({ view, preview, caretLine, onOpenList, onConfirm }
           type="button"
           onClick={onConfirm}
           // 押してもテキスト入力からフォーカスを奪わない(キーボードを閉じない)
-          onPointerDown={(e) => e.preventDefault()}
+          {...keepFocus}
           aria-label={t('bar.confirmLabel')}
           className={`${BAR} ${TONE.ok} flex items-stretch text-left`}
         >

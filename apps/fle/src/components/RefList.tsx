@@ -1,4 +1,5 @@
 import { distanceLabel, type RefCandidate } from '@/lib/reference'
+import { keepFocus } from '@/lib/keepFocus'
 import { useI18n } from '@/lib/i18n'
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
 export function RefList({ items, onPick, showKind }: Props) {
   const { t, lang } = useI18n()
   return (
-    <ul onPointerDown={(e) => e.preventDefault()} className="mt-1 space-y-1">
+    <ul {...keepFocus} className="mt-1 space-y-1">
       {items.map((c) => (
         <li key={`${c.kind}:${c.code}`}>
           <button

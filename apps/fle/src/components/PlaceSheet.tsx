@@ -1,3 +1,4 @@
+import { keepFocus } from '@/lib/keepFocus'
 import { useState } from 'react'
 import { Crosshair } from 'lucide-react'
 import type { FieldError, Station } from '@/lib/fle'
@@ -101,7 +102,7 @@ function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
           type="button"
           onClick={apply}
           // 入力欄のフォーカスを外さない(外れると候補の一覧が閉じてボタンが動き、最初のタップが外れる)
-          onPointerDown={(e) => e.preventDefault()}
+          {...keepFocus}
           className="btn-success w-full"
         >
           {t('place.write')}
@@ -132,7 +133,13 @@ function PlaceForm({ onClose, initial, isNewLog, onApply }: Props) {
                   value={values[f.key]}
                   onChange={(e) => set(f.key, e.target.value)}
                   onFocus={() => setFocused(f.key)}
-                  onBlur={() => setFocused((k) => (k === f.key ? null : k))}
+                  onBlur={() => {
+                    // 候補をタップすると入力欄の focus が外れることがある。外れた直後に一覧を消すと、タップが空振りするので少し待つ
+                    window.setTimeout(() => {
+                      if (document.activeElement?.id === `place-${f.key}`) return // 戻ってきた
+                      setFocused((k) => (k === f.key ? null : k))
+                    }, 300)
+                  }}
                   placeholder={t('place.example', { value: f.example })}
                   autoCapitalize="characters"
                   autoCorrect="off"
