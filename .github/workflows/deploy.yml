@@ -5,6 +5,7 @@ on:
     branches:
       - main      # Production deploy
       - develop   # Preview deploy
+      - 'feat/**' # Preview deploy (動作確認用)
 
 jobs:
   deploy:
