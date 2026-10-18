@@ -6,13 +6,17 @@ export interface Settings {
   theme: Theme
   /** 既定のタイムゾーン(UTCからの時間差。UTC は 0) */
   timezone: number
+  /** 確定ボタンで、バンド・モードも書く(時刻は常に書く) */
+  writeBandMode: boolean
+  /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も) */
+  writeRst: boolean
 }
 
 export const TIMEZONE_MIN = -12
 export const TIMEZONE_MAX = 14
 
 const KEY = 'fle.settings'
-const DEFAULTS: Settings = { theme: 'system', timezone: 0 }
+const DEFAULTS: Settings = { theme: 'system', timezone: 0, writeBandMode: false, writeRst: true }
 
 function load(): Settings {
   try {
@@ -22,7 +26,12 @@ function load(): Settings {
       Number.isInteger(v.timezone) && v.timezone >= TIMEZONE_MIN && v.timezone <= TIMEZONE_MAX
         ? v.timezone
         : 0
-    return { theme, timezone }
+    return {
+      theme,
+      timezone,
+      writeBandMode: typeof v.writeBandMode === 'boolean' ? v.writeBandMode : DEFAULTS.writeBandMode,
+      writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
+    }
   } catch {
     return DEFAULTS
   }

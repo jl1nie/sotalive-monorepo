@@ -3,15 +3,18 @@
 //! 補完した結果はログのテキストに書き込んで残す(開き直しても、再解釈しても同じになる)。
 //! コアは時計を持たない。「いまの時刻」は呼び出し側から受け取る。
 //!
-//! 確定の範囲(`FillScope`):
-//! - `Time`: 時刻のない QSO 行の、行頭の時刻(`HHMM `)だけ。
-//! - `Full`: 時刻、バンド・モード、RST。省略されたものを挿入し、省略形(`15`、`4` など)は
-//!   解決した値に置き換える。利用者が書いたリファレンスやコメントは動かさない。
+//! 確定の範囲(`FillScope`)は、独立した3つの指定:
+//! - 時刻のない QSO 行の、行頭の時刻(`HHMM `)の挿入は、常に行う(「いま」はあとから再現できない)。
+//! - `expand_time`: 省略形の時刻(`15`、`115`)を、前の行から決まる `HHMM` に展開する。
+//! - `band_mode`: 省略されたバンド・モードを、コールサインの前に挿入する。
+//! - `rst`: 省略された RST を挿入し、省略形(`4` など)を解決した値に置き換える。
+//!
+//! 利用者が書いたリファレンスやコメントは動かさない。
 //!
 //! 時刻の書式は、ログの `timezone` 指定に従う(なければ UTC)。
 
 use chrono::{DateTime, Duration, NaiveDate};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::compiler::compile_fle;
 use crate::tokenizer::{tokenize, Token, TokenInfo};
@@ -28,17 +31,41 @@ pub struct Edit {
     pub insert: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FillScope {
-    /// 時刻だけ(Enter での確定)
-    Time,
-    /// 時刻・バンド・モード・RST(確定ボタン)
-    Full,
+/// 時刻の挿入に加えて、何を確定するか。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct FillScope {
+    /// 省略形の時刻(`15`、`115`)を `HHMM` に展開する
+    pub expand_time: bool,
+    /// 省略されたバンド・モードを書く
+    pub band_mode: bool,
+    /// 省略された RST を書き、省略形を解決した値に置き換える
+    pub rst: bool,
 }
 
-/// 時刻だけを確定する。`fill_with(.., FillScope::Time)` と同じ。
+impl FillScope {
+    /// 時刻の挿入だけ(Enter)
+    pub const TIME: Self = Self {
+        expand_time: false,
+        band_mode: false,
+        rst: false,
+    };
+    /// すべて
+    pub const FULL: Self = Self {
+        expand_time: true,
+        band_mode: true,
+        rst: true,
+    };
+
+    /// QSOの解釈結果(コンパイルの結果)が要るか
+    fn needs_record(self) -> bool {
+        self.expand_time || self.band_mode || self.rst
+    }
+}
+
+/// 時刻の挿入だけを行う。`fill_with(.., FillScope::TIME)` と同じ。
 pub fn fill(text: &str, line: usize, now_ms: i64, default_tz: i32) -> Vec<Edit> {
-    fill_with(text, line, now_ms, default_tz, FillScope::Time)
+    fill_with(text, line, now_ms, default_tz, FillScope::TIME)
 }
 
 /// `line`(0始まり)の行を確定する。直すところがなければ空を返す。適用した後に再び呼んでも、
@@ -72,19 +99,18 @@ pub fn fill_with(
     // 時刻の意味(タイムゾーン)は、ログで最初に決まったものに従う
     let before_tz = timezone_before(&lines[..line]);
 
-    // 確定ボタン: エラーのある行や、解釈できない行は、何も変えない
-    let record = match scope {
-        FillScope::Time => None,
-        FillScope::Full => {
-            let compiled = compile_fle(text);
-            if compiled.errors.iter().any(|e| e.line == line) {
-                return Vec::new();
-            }
-            match compiled.records.into_iter().find(|r| r.line == line) {
-                Some(r) => Some(r),
-                None => return Vec::new(),
-            }
+    // 解釈の結果が要る確定: エラーのある行や、解釈できない行は、何も変えない
+    let record = if scope.needs_record() {
+        let compiled = compile_fle(text);
+        if compiled.errors.iter().any(|e| e.line == line) {
+            return Vec::new();
         }
+        match compiled.records.into_iter().find(|r| r.line == line) {
+            Some(r) => Some(r),
+            None => return Vec::new(),
+        }
+    } else {
+        None
     };
 
     // (位置, 同じ位置に入れるときの順序, 修正)。同じ位置の挿入は、順序どおりに1つへまとめる
@@ -110,9 +136,9 @@ pub fn fill_with(
             parts.push((base, 1, insert_at(base, format!("{hhmm} "))));
         }
         Some(i) => {
-            // 省略形(分だけ・H:MM)は、確定ボタンのときだけ HHMM に展開する
-            if let (FillScope::Full, Some(rec), Token::Decimal { digits, .. }) =
-                (scope, record.as_ref(), &tokens[i].token)
+            // 省略形(分だけ・H:MM)は、指定があるときだけ HHMM に展開する
+            if let (true, Some(rec), Token::Decimal { digits, .. }) =
+                (scope.expand_time, record.as_ref(), &tokens[i].token)
             {
                 if *digits < 4 {
                     let hhmm = local_hhmm(rec, before_tz.unwrap_or(0));
@@ -133,10 +159,10 @@ pub fn fill_with(
         }
     }
 
-    if let (FillScope::Full, Some(rec)) = (scope, record.as_ref()) {
+    if let Some(rec) = record.as_ref() {
         // --- バンド・モード(コールサインの前に置く。RSTの既定値の判定にも使われる位置) ---
         let mut front = String::new();
-        if !shape.has_band {
+        if scope.band_mode && !shape.has_band {
             // 周波数で指定されているログでは、バンドを入れると周波数が既定値に戻ってしまうので、
             // 周波数そのものを入れる(バンドで指定されているなら、バンドを入れる)
             if is_mhz(&rec.freq) {
@@ -145,7 +171,7 @@ pub fn fill_with(
                 front.push_str(&format!("{} ", rec.band));
             }
         }
-        if !shape.has_mode && !rec.mode.is_empty() {
+        if scope.band_mode && !shape.has_mode && !rec.mode.is_empty() {
             front.push_str(&format!("{} ", rec.mode));
         }
         if !front.is_empty() {
@@ -156,7 +182,8 @@ pub fn fill_with(
         // --- RST(コールサインの直後の2つ) ---
         let (sent, rcvd) = (&rec.rst_sent, &rec.rst_rcvd);
         let mut last_end = spans.range(shape.call).1;
-        for (slot, value) in shape.rst.iter().zip([sent, rcvd]) {
+        let rst_slots = if scope.rst { shape.rst.as_slice() } else { &[] };
+        for (slot, value) in rst_slots.iter().zip([sent, rcvd]) {
             match slot {
                 Some(i) => {
                     let (from, to) = spans.range(*i);
@@ -501,7 +528,7 @@ mod tests {
     // ---- Full(確定ボタン) ----
 
     fn full(text: &str, line: usize, tz: i32) -> Vec<Edit> {
-        fill_with(text, line, NOW, tz, FillScope::Full)
+        fill_with(text, line, NOW, tz, FillScope::FULL)
     }
 
     #[test]
@@ -673,6 +700,128 @@ mod tests {
                 "{filled:?}"
             );
         }
+    }
+
+    // ---- 確定の範囲を選ぶ(時刻は常に。バンド・モードとRSTは独立) ----
+
+    fn with(band_mode: bool, rst: bool, text: &str, line: usize) -> String {
+        let scope = FillScope {
+            expand_time: true,
+            band_mode,
+            rst,
+        };
+        apply(text, &fill_with(text, line, NOW, 0, scope))
+    }
+
+    #[test]
+    fn time_only_writes_just_the_time() {
+        let text = "40m cw\nja1xyz";
+        assert_eq!(with(false, false, text, 1), "40m cw\n0905 ja1xyz");
+    }
+
+    #[test]
+    fn rst_only_leaves_band_and_mode_to_the_setting_lines() {
+        let text = "40m cw\nja1xyz";
+        assert_eq!(with(false, true, text, 1), "40m cw\n0905 ja1xyz 599 599");
+    }
+
+    #[test]
+    fn band_and_mode_only_leaves_the_rst_omitted() {
+        let text = "40m cw\nja1xyz";
+        assert_eq!(with(true, false, text, 1), "40m cw\n0905 40m CW ja1xyz");
+    }
+
+    #[test]
+    fn rst_only_still_expands_rst_shorthand() {
+        let text = "40m cw\n0900 ja1xyz 4";
+        assert_eq!(with(false, true, text, 1), "40m cw\n0900 ja1xyz 549 599");
+    }
+
+    #[test]
+    fn without_rst_the_shorthand_is_left_as_typed() {
+        let text = "40m cw\n0900 ja1xyz 4";
+        assert_eq!(with(true, false, text, 1), "40m cw\n0900 40m CW ja1xyz 4");
+    }
+
+    #[test]
+    fn time_shorthand_is_expanded_only_when_asked_to() {
+        let text = "40m cw\n0900 ja1qso\n15 ja1xyz";
+        assert_eq!(
+            with(false, false, text, 2),
+            "40m cw\n0900 ja1qso\n0915 ja1xyz"
+        );
+        let scope = FillScope::TIME;
+        assert!(fill_with(text, 2, NOW, 0, scope).is_empty());
+    }
+
+    #[test]
+    fn every_combination_keeps_the_meaning_and_is_idempotent() {
+        let cases = [
+            ("40m cw\nja1xyz", 1usize),
+            ("40m ssb\n0900 ja1qso\n15 ja1xyz 4 {QTH} jaff-0218", 2),
+            ("7.025 cw\nja1xyz 5 7 <hi>", 1),
+            ("20m ft8\nja1xyz -12", 1),
+        ];
+        for band_mode in [false, true] {
+            for rst in [false, true] {
+                let scope = FillScope {
+                    expand_time: true,
+                    band_mode,
+                    rst,
+                };
+                for (text, line) in cases {
+                    let before = compile_fle(text)
+                        .records
+                        .into_iter()
+                        .find(|r| r.line == line)
+                        .unwrap();
+                    let filled = apply(text, &fill_with(text, line, NOW, 0, scope));
+                    let after = compile_fle(&filled)
+                        .records
+                        .into_iter()
+                        .find(|r| r.line == line)
+                        .unwrap();
+                    let ctx = format!("band_mode={band_mode} rst={rst} {filled:?}");
+                    assert_eq!(before.callsign, after.callsign, "{ctx}");
+                    assert_eq!(
+                        (&before.band, &before.freq),
+                        (&after.band, &after.freq),
+                        "{ctx}"
+                    );
+                    assert_eq!(before.mode, after.mode, "{ctx}");
+                    assert_eq!(
+                        (&before.rst_sent, &before.rst_rcvd),
+                        (&after.rst_sent, &after.rst_rcvd),
+                        "{ctx}"
+                    );
+                    assert_eq!(
+                        (&before.qsomsg, &before.qsormks),
+                        (&after.qsomsg, &after.qsormks),
+                        "{ctx}"
+                    );
+
+                    let shift =
+                        filled.split('\n').count() as isize - text.split('\n').count() as isize;
+                    let again = fill_with(&filled, (line as isize + shift) as usize, NOW, 0, scope);
+                    assert!(again.is_empty(), "{ctx}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn scope_is_read_from_camel_case_json() {
+        let scope: FillScope = serde_json::from_str(r#"{"bandMode":true}"#).unwrap();
+        assert_eq!(
+            scope,
+            FillScope {
+                expand_time: false,
+                band_mode: true,
+                rst: false
+            }
+        );
+        let none: FillScope = serde_json::from_str("{}").unwrap();
+        assert_eq!(none, FillScope::TIME);
     }
 
     #[test]

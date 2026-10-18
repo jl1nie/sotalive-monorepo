@@ -13,6 +13,19 @@ const THEME_OPTIONS: { value: Theme; label: string; hint: string }[] = [
   { value: 'dark', label: 'ダーク', hint: '夜間や暗い場所向け' },
 ]
 
+const CONFIRM_OPTIONS: { key: 'writeBandMode' | 'writeRst'; label: string; hint: string }[] = [
+  {
+    key: 'writeRst',
+    label: 'RST',
+    hint: '省略したときの 599 / 59 も書きます。4 のような省略形は 549 のように直します',
+  },
+  {
+    key: 'writeBandMode',
+    label: 'バンド・モード',
+    hint: '各行に 40m CW のように書きます。設定行で決めていれば、書かなくても同じ意味です',
+  },
+]
+
 const TIMEZONES = Array.from({ length: TIMEZONE_MAX - TIMEZONE_MIN + 1 }, (_, i) => TIMEZONE_MIN + i)
 
 interface Props {
@@ -43,6 +56,31 @@ export function SettingsDialog({ open, onClose, settings, onChange }: Props) {
                 value={opt.value}
                 checked={settings.theme === opt.value}
                 onChange={() => onChange({ theme: opt.value })}
+                className="mt-1 w-5 h-5 accent-primary-700"
+              />
+              <span>
+                <span className="block font-semibold">{opt.label}</span>
+                <span className="block text-sm text-gray-700 dark:text-gray-300">{opt.hint}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+
+        <fieldset className="space-y-2">
+          <legend className="label">確定の書き方</legend>
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            緑の候補バーで確定するとき、時刻は必ず書きます。ほかに書くものを選べます。
+            省略したままでも、意味は同じです(バーには、いつも完全な解釈が出ます)。
+          </p>
+          {CONFIRM_OPTIONS.map((opt) => (
+            <label
+              key={opt.key}
+              className="flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 border-gray-300 dark:border-gray-700 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={settings[opt.key]}
+                onChange={(e) => onChange({ [opt.key]: e.target.checked })}
                 className="mt-1 w-5 h-5 accent-primary-700"
               />
               <span>

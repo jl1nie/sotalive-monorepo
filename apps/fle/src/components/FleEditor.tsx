@@ -119,12 +119,19 @@ export function FleEditor() {
 
   const caretLine = lineOf(text, caret)
 
+  // 確定ボタンで何を書くか(時刻は常に。省略形の時刻も直す)。Enterは時刻の挿入だけ
+  const confirmScope = {
+    expandTime: true,
+    bandMode: settings.writeBandMode,
+    rst: settings.writeRst,
+  }
+
   // この行を確定したら、どう見えるか(時刻・バンド・モード・RSTが入った姿)を先に見せる
-  const previewKey = `${caretLine}|${settings.timezone}|${text}`
+  const previewKey = `${caretLine}|${settings.timezone}|${settings.writeBandMode}|${settings.writeRst}|${text}`
   useEffect(() => {
     const line = caretLine
     if (!view?.qsos.some((q) => q.line === line)) return
-    const edits = fillLine(text, line, startedAtFor(line), settings.timezone, true)
+    const edits = fillLine(text, line, startedAtFor(line), settings.timezone, confirmScope)
     if (edits.length === 0) return
     let current = true
     const filled = applyEdits(text, edits)
@@ -184,7 +191,7 @@ export function FleEditor() {
   /** 緑の候補バー: 時刻・バンド・モード・RSTまで確定して、次の行へ進む */
   const confirmLine = () => {
     const line = caretLine
-    const edits = fillLine(text, line, startedAtFor(line), settings.timezone, true)
+    const edits = fillLine(text, line, startedAtFor(line), settings.timezone, confirmScope)
     const filled = applyEdits(text, edits)
     const shift = filled.split('\n').length - text.split('\n').length
     const end = lineRange(filled, line + shift)[1]

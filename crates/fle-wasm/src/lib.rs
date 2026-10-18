@@ -39,20 +39,20 @@ pub fn sample_log_text(date: &str) -> String {
 /// `line`(0始まり)の行を確定するための修正(`from` / `to` / `insert`)を返す。
 ///
 /// 位置はUTF-16の文字位置。`now_ms` は `Date.now()` の値、`default_tz` は設定の既定の
-/// タイムゾーン(UTCからの時間差)。`full` が偽なら時刻だけ(Enter)、真なら時刻・バンド・
-/// モード・RSTまで(確定ボタン)。
+/// タイムゾーン(UTCからの時間差)。時刻の挿入は常に行い、`options`
+/// (`{ expandTime, bandMode, rst }`、省略可)で、それ以外に何を確定するかを選ぶ。
 #[wasm_bindgen]
 pub fn fill(
     text: &str,
     line: usize,
     now_ms: f64,
     default_tz: i32,
-    full: bool,
+    options: JsValue,
 ) -> Result<JsValue, JsError> {
-    let scope = if full {
-        FillScope::Full
+    let scope: FillScope = if options.is_undefined() || options.is_null() {
+        FillScope::TIME
     } else {
-        FillScope::Time
+        serde_wasm_bindgen::from_value(options)?
     };
     Ok(serde_wasm_bindgen::to_value(&fill_with(
         text,
