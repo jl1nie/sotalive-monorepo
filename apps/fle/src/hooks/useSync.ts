@@ -90,12 +90,14 @@ export function useSync({ settings, update, records, replacePlans }: Args) {
     }
   }, [apply, fail])
 
-  // 変えたら送る。開いたとき・画面に戻ったとき・つながったときは、取り込む
+  // 内容を変えたら送る。同期のたびに state(最後に同期した内容)は新しくなるが、それでは送り直さない
+  // (state を依存に入れると、同期するたびに次の同期が始まり、終わらなくなる)
+  const code = state?.code ?? null
   useEffect(() => {
-    if (!stateRef.current) return
+    if (!code) return
     const id = window.setTimeout(() => void run(), DEBOUNCE_MS)
     return () => window.clearTimeout(id)
-  }, [key, run, state])
+  }, [key, run, code])
 
   useEffect(() => {
     void run()
