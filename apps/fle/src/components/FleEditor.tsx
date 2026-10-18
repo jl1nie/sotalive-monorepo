@@ -43,7 +43,8 @@ import { codeFromText } from '@/lib/sync'
 import { GenerateCheckSheet } from '@/components/GenerateCheckSheet'
 import { Sheet } from '@/components/Sheet'
 
-const HELP_URL = 'https://jl1nie.wordpress.com/2019/08/21/2019-08-21-203013/'
+/** 使い方(アプリと同じ場所に置く静的なページ。`public/manual/`) */
+const MANUAL_URL = `${import.meta.env.BASE_URL}manual/`
 
 const MENU_ITEM =
   'btn-secondary w-full !justify-start !min-h-14 text-left'
@@ -679,7 +680,7 @@ function Editor({
             </li>
           )}
           <li>
-            <a href={HELP_URL} target="_blank" rel="noopener noreferrer" className={MENU_ITEM}>
+            <a href={MANUAL_URL} target="_blank" rel="noopener noreferrer" className={MENU_ITEM}>
               <HelpCircle className="w-5 h-5" />
               {t('menu.help')}
             </a>
