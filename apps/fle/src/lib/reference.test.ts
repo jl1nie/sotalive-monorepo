@@ -108,7 +108,7 @@ describe('searchByName', () => {
     expect(r.status).toBe('ok')
     expect(seen[0].pathname).toBe('/api/v2/sota/summits/search')
     expect(seen[0].searchParams.get('name')).toBe('JA/TK-0')
-    expect(seen[0].searchParams.get('limit')).toBe('8')
+    expect(seen[0].searchParams.get('limit')).toBe('50')
     const pota = await searchByName('pota', 'JP-01', { fetchImpl: fakeFetch(() => [POTA_ROW]) })
     expect(pota.status === 'ok' && pota.items[0].code).toBe('JP-0117')
   })

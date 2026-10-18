@@ -5,6 +5,9 @@
  * オフラインのときは候補を出さない(場所は、登る前にオンラインで入れておく前提)。
  */
 
+/** 候補の最大件数(一覧は画面の中でスクロールする) */
+const SEARCH_LIMIT = 50
+
 export type RefKind = 'sota' | 'pota'
 
 export interface RefCandidate {
@@ -129,7 +132,7 @@ export async function searchByName(
 ): Promise<SearchResult> {
   if (isOffline()) return { status: 'offline' }
   try {
-    const raw = await getJson(PATH[kind], { name: query, limit: String(o.limit ?? 8) }, o)
+    const raw = await getJson(PATH[kind], { name: query, limit: String(o.limit ?? SEARCH_LIMIT) }, o)
     return { status: 'ok', items: PARSE[kind](raw) }
   } catch (e) {
     return failure(e)
@@ -184,7 +187,7 @@ export async function searchNearby(
         .map((c) => ({ ...c, distanceKm: distanceKm(lat, lon, c.lat, c.lon) }))
         .filter((c) => c.distanceKm <= km)
         .sort((a, b) => a.distanceKm - b.distanceKm)
-        .slice(0, o.max ?? 10)
+        .slice(0, o.max ?? SEARCH_LIMIT)
       if (items.length > 0) return { status: 'ok', items }
     }
     return { status: 'ok', items: [] }
