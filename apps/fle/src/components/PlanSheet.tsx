@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { DatePicker } from '@/components/DatePicker'
 import { Sheet } from '@/components/Sheet'
 import { StationFields } from '@/components/StationFields'
 import { stationPlan, type FieldError } from '@/lib/fle'
@@ -156,7 +155,7 @@ function PlanForm({
         </div>
         <div>
           <label htmlFor="plan-date" className="label">{t('plans.date')}</label>
-          <DatePicker id="plan-date" value={date} onChange={setDate} />
+          <input id="plan-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input" />
         </div>
         <StationFields values={values} onChange={setValues} errors={errors} idPrefix="plan" />
         <div>
