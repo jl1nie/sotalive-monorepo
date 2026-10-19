@@ -42,6 +42,7 @@ import { LangProvider } from '@/components/LangProvider'
 import { resolveLang, useI18n } from '@/lib/i18n'
 import { lineOf, lineRange, replaceRange } from '@/lib/lines'
 import { applyEdits, mapCaret } from '@/lib/edits'
+import { scrollCaretIntoView } from '@/lib/caretScroll'
 import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useAutosave } from '@/hooks/useAutosave'
@@ -205,6 +206,7 @@ function Editor({
     pendingCaret.current = null
     ta.focus()
     ta.setSelectionRange(pos, pos)
+    scrollCaretIntoView(ta, pos)
   }, [text])
 
   const caretLine = lineOf(text, caret)
@@ -268,6 +270,7 @@ function Editor({
       ta.focus()
       // 誤りの範囲があれば、それを選んで見せる
       ta.setSelectionRange(select?.[0] ?? pos, select?.[1] ?? pos)
+      scrollCaretIntoView(ta, select?.[0] ?? pos)
       setCaret(select?.[1] ?? pos)
     }, 50)
   }, [])
@@ -321,8 +324,6 @@ function Editor({
       const ta = taRef.current
       if (!ta) return
       const [, end] = lineRange(text, line)
-      const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 26
-      ta.scrollTop = Math.max(0, lineHeight * line - ta.clientHeight / 3)
       focusAt(end, range)
     },
     [text, focusAt]
@@ -394,8 +395,12 @@ function Editor({
     lastRst.current = part === 'rstRcvd' || part === 'rstSent' ? { part, text: after, caret: sel.to } : null
     if (sel.edits.length === 0) {
       const ta = taRef.current
-      ta?.focus()
-      ta?.setSelectionRange(sel.to, sel.to)
+      if (ta) {
+        ta.focus()
+        ta.setSelectionRange(sel.to, sel.to)
+        // 打っている行から離れてスクロールしていても、直す場所を見せる
+        scrollCaretIntoView(ta, sel.to)
+      }
       setCaret(sel.to)
       return
     }
@@ -413,6 +418,7 @@ function Editor({
     const base = start === end ? start : delta < 0 ? start : end
     const pos = Math.max(0, Math.min(text.length, base + delta))
     ta.setSelectionRange(pos, pos)
+    scrollCaretIntoView(ta, pos)
     setCaret(pos)
   }
 
