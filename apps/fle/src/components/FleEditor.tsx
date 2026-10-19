@@ -385,7 +385,8 @@ function Editor({
   /** 生成: 先に、足りない情報(自局のコールサイン・運用場所・グリッド)を調べ、あれば知らせる */
   const handleGenerate = useCallback(async () => {
     try {
-      const warnings = await checkOutput(text)
+      // 確かめるのは、必須の項目(日付・自局)が抜けているときだけ。グリッドや運用場所(推奨)では止めない
+      const warnings = (await checkOutput(text)).filter((w) => w.severity === 'required')
       if (warnings.length > 0) {
         setCheck(warnings)
         return

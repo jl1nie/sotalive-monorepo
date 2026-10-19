@@ -12,6 +12,7 @@ serde.workspace = true
 zip.workspace = true
 flate2.workspace = true
 nom = "7"
+encoding_rs = "0.8.42"
 
 [dev-dependencies]
 serde_json.workspace = true
