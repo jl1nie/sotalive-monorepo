@@ -70,7 +70,7 @@
   </li>
   <li><b>Insert the current time</b>: confirming a QSO line without a time inserts the current time (on by default). Turn it off when typing in a paper log; a line without a time then takes the time of the line before. This is set per device and is not synced.</li>
   <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST. The RST setting is kept per layout; in the compact layout it is off at first (the log stays as you typed it, and the green bar shows the filled-in values).</li>
-  <li><b>Screen layout</b>: "Classic" or "Compact (trial)". Compact keeps the line you are typing, the green bar and the digit keys together (see <a href="#compact">Compact layout</a>). This is set per device and is not synced.</li>
+  <li><b>Screen layout</b>: "Classic", "Compact (trial)" or "Full keys (trial)". Compact keeps the line you are typing, the green bar and the digit keys together (see <a href="#compact">Compact layout</a>). Full keys also shows an on-screen keyboard instead of the phone's (see <a href="#fullkey">Full keys layout</a>). This is set per device and is not synced.</li>
 </ul>
 
 <h3>Plans (destinations)</h3>
@@ -173,6 +173,21 @@ ssb
   <li><b>The QSO count on the left is display only</b> (tapping it does not open the list; use Menu → "QSO list"). When activating POTA or SOTA, the lower number is the QSOs needed for an activation (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once the activation is complete. It turns red when there are errors, with a count such as <code>⚠2</code>.</li>
   <li><b>Confirming keeps the log as you typed it</b> (writing the RST is off at first). Type <code>7</code> and the green bar shows the filled-in value such as <code>579/599</code>. To write it into the log, turn on RST under "What confirming writes" in the settings (this setting is kept separately from the classic layout).</li>
   <li>While the keyboard is shown, there is no gap between the digit keys and the keyboard.</li>
+</ul>
+
+<h3 id="fullkey">Full keys layout (trial)</h3>
+<p>Choose "Full keys" under "Screen layout" in the settings to get an on-screen keyboard, with just the keys needed to write FLE, instead of the phone's keyboard. No more switching the phone's keyboard between input modes. Everything else is the same as the <a href="#compact">compact layout</a> (the log at the bottom, suggestions, the QSO count, and confirming keeps the log as you typed it).</p>
+<pre><code>[1][2][3][4][5][6][7][8][9][0]
+[q][w][e][r][t][y][u][i][o][p]
+  [a][s][d][f][g][h][j][k][l]
+[ / ][z][x][c][v][b][n][m][ ⌫ ]
+[🌐][-][←][ Space  ][→][✓Confirm]</code></pre>
+<ul>
+  <li>Tapping the editor does not bring up the phone's keyboard (the cursor still shows).</li>
+  <li>Letters are typed in lowercase (FLE does not care about case).</li>
+  <li><b>The key at the bottom right moves to the next line</b>: "✓ Confirm" on a QSO line (green), "↵ Next" on a line such as <code>40m cw</code>. It works the same as the button at the right end of the green bar.</li>
+  <li>Hold ⌫ to keep deleting. Swipe left or right anywhere on the keyboard to move the cursor one character at a time (see <a href="#swipe">Swipe</a>).</li>
+  <li>For <b>Japanese</b> text (messages such as <code>&lt;Yamada-san&gt;</code>, remarks, <code>qslmsg</code>), tap 🌐 to switch to the phone's keyboard. When done, tap "Back to full keys" at the bottom.</li>
 </ul>
 
 <h3 id="fix">Fix a QSO</h3>
