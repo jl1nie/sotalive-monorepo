@@ -33,6 +33,7 @@ const COUNT_OPTIONS: { value: QsoCount; label: MessageKey; hint: MessageKey }[] 
 const LAYOUT_OPTIONS: { value: Layout; label: MessageKey; hint: MessageKey }[] = [
   { value: 'classic', label: 'settings.layout.classic', hint: 'settings.layout.classic.hint' },
   { value: 'compact', label: 'settings.layout.compact', hint: 'settings.layout.compact.hint' },
+  { value: 'fullkey', label: 'settings.layout.fullkey', hint: 'settings.layout.fullkey.hint' },
 ]
 
 const CONFIRM_OPTIONS: { key: 'writeBandMode' | 'writeRst'; label: MessageKey; hint: MessageKey }[] = [
@@ -103,7 +104,7 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
           </p>
           {CONFIRM_OPTIONS.map((opt) => {
             // RST は配置ごとに持つ(従来の配置は、リリース版の設定のまま)
-            const key = opt.key === 'writeRst' && settings.layout === 'compact' ? 'writeRstCompact' : opt.key
+            const key = opt.key === 'writeRst' && settings.layout !== 'classic' ? 'writeRstCompact' : opt.key
             return (
               <label
                 key={opt.key}

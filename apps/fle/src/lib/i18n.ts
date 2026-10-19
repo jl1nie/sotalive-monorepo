@@ -178,6 +178,12 @@ const ja = {
   'settings.layout.compact': 'コンパクト(試験中)',
   'settings.layout.compact.hint':
     '打っている行・緑のバー・数字キーを手元にまとめます。数字キーは2段で、← → 空白 ⌫ つき。ログは下に寄せ、補完候補は緑のバーに重ねて出します。QSO の数は表示だけ(一覧はメニューから)で、POTA・SOTA ではアクティベーション成立に必要な数を出します',
+  'settings.layout.fullkey': 'フルキー(試験中)',
+  'settings.layout.fullkey.hint':
+    'コンパクトに加えて、OS のキーボードの代わりに、数字・英字・/ - 空白 ⌫ と確定をまとめた画面のキーボードを出します。日本語は 🌐 で OS のキーボードに切り替えます',
+  'keys.label': 'キーボード',
+  'keys.os': 'OS のキーボードに切り替える(日本語など)',
+  'keys.back': 'フルキーに戻る',
   'settings.qsoCount': 'QSO の数',
   'settings.qsoCount.day': 'その日 / 全体',
   'settings.qsoCount.day.hint': 'カーソルの日(UTC)の QSO の数を大きく、全体の数を小さく出します(例: 3 /10)。コンパクトな配置で POTA・SOTA を運用するときは、小さい数はアクティベーション成立に必要な数(POTA 10、SOTA 4)になり、成立すると緑になります',
@@ -415,6 +421,12 @@ const en: Record<MessageKey, string> = {
   'settings.layout.compact': 'Compact (trial)',
   'settings.layout.compact.hint':
     'Keeps the line you are typing, the green bar and the digit keys together. Two rows of digit keys with ← → space and ⌫. The log sits at the bottom and suggestions appear over the green bar. The QSO count is display only (the list is in the menu) and shows the QSOs needed for a POTA or SOTA activation',
+  'settings.layout.fullkey': 'Full keys (trial)',
+  'settings.layout.fullkey.hint':
+    'Like compact, plus an on-screen keyboard instead of the phone\'s: digits, letters, / - space ⌫ and confirm in one place. Switch to the phone\'s keyboard with 🌐 for Japanese text',
+  'keys.label': 'Keyboard',
+  'keys.os': 'Switch to the phone\'s keyboard (for Japanese etc.)',
+  'keys.back': 'Back to full keys',
   'settings.qsoCount': 'QSO count',
   'settings.qsoCount.day': 'Day / total',
   'settings.qsoCount.day.hint': 'Shows the QSOs on the day at the cursor (UTC) large, and the total small (e.g. 3 /10). In the compact layout when activating POTA or SOTA, the small number is the QSOs needed for an activation (10 for POTA, 4 for SOTA), and turns green once the activation is complete',

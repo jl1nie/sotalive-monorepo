@@ -1,15 +1,8 @@
-import { useEffect, useRef, type PointerEvent } from 'react'
 import { Delete } from 'lucide-react'
+import { useKeyPad } from '@/hooks/useKeyPad'
 import { useT } from '@/lib/i18n'
 
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
-
-/** なぞりとみなす距離と、1文字動かす距離(px) */
-const SWIPE_START = 10
-const STEP = 20
-/** ⌫ を押し続けたとき、連続で消し始めるまでと、消す間隔(ms) */
-const REPEAT_DELAY = 400
-const REPEAT_EVERY = 70
 
 /** 従来の配置(リリース版と同じ見た目) */
 const CLASSIC_KEY =
@@ -34,92 +27,14 @@ interface Props {
  */
 export function DigitRow({ onKey, onMove = () => {}, onBackspace = () => {}, compact = false }: Props) {
   const t = useT()
-  const drag = useRef<{ x: number; moved: number; swiping: boolean } | null>(null)
-  // なぞったあとの click は、数字を入れない
-  const swiped = useRef(false)
-  // ⌫ の押し続け。連続で消したあとの click は、もう1文字は消さない
-  const repeat = useRef<{ timer: number; repeated: boolean } | null>(null)
-  const latestBackspace = useRef(onBackspace)
-  useEffect(() => {
-    latestBackspace.current = onBackspace
-  })
-
-  const stopRepeat = () => {
-    if (repeat.current) window.clearTimeout(repeat.current.timer)
-  }
-  useEffect(
-    () => () => {
-      if (repeat.current) window.clearTimeout(repeat.current.timer)
-    },
-    []
-  )
-
-  const down = (e: PointerEvent) => {
-    // フォーカスを奪わない
-    e.preventDefault()
-    drag.current = { x: e.clientX, moved: 0, swiping: false }
-    swiped.current = false
-  }
-  const move = (e: PointerEvent) => {
-    const d = drag.current
-    if (!d) return
-    const dx = e.clientX - d.x
-    if (!d.swiping && Math.abs(dx) < SWIPE_START) return
-    d.swiping = true
-    swiped.current = true
-    stopRepeat()
-    const steps = Math.trunc(dx / STEP)
-    if (steps !== d.moved) {
-      onMove(steps - d.moved)
-      d.moved = steps
-    }
-  }
-  const up = () => {
-    drag.current = null
-    stopRepeat()
-  }
-
-  /** 数字などのキー。なぞったあとの click では、打たない */
-  const tap = (f: () => void) => () => {
-    if (swiped.current) {
-      swiped.current = false
-      return
-    }
-    f()
-  }
-
-  const backspaceDown = () => {
-    stopRepeat()
-    const r = { timer: 0, repeated: false }
-    const tick = () => {
-      r.repeated = true
-      latestBackspace.current()
-      r.timer = window.setTimeout(tick, REPEAT_EVERY)
-    }
-    r.timer = window.setTimeout(tick, REPEAT_DELAY)
-    repeat.current = r
-  }
-  const backspaceClick = () => {
-    const repeated = repeat.current?.repeated ?? false
-    stopRepeat()
-    repeat.current = null
-    if (swiped.current) {
-      swiped.current = false
-      return
-    }
-    if (!repeated) onBackspace()
-  }
+  const { padProps, tap, backspaceProps } = useKeyPad(onMove, onBackspace)
 
   return (
     <div
       role="group"
       aria-label={t('digits.label')}
       title={t('digits.swipe')}
-      onPointerDown={down}
-      onPointerMove={move}
-      onPointerUp={up}
-      onPointerCancel={up}
-      onMouseDown={(e) => e.preventDefault()}
+      {...padProps}
       // なぞる操作を、ページのスクロールに取られない。押し続けで(⌫)、文字の選択やメニューを出さない
       className={
         compact
@@ -157,8 +72,7 @@ export function DigitRow({ onKey, onMove = () => {}, onBackspace = () => {}, com
           <button
             type="button"
             aria-label={t('digits.backspace')}
-            onPointerDown={backspaceDown}
-            onClick={backspaceClick}
+            {...backspaceProps}
             className={`${KEY} col-span-2`}
           >
             <Delete className="w-6 h-6" aria-hidden="true" />
