@@ -20,14 +20,16 @@ interface Props {
   onMove?: (delta: number) => void
   /** ⌫: カーソルの前の1文字(選択があれば、その範囲)を消す */
   onBackspace?: () => void
+  /** コンパクトな配置: 2段にし、2段目に ← → 空白 ⌫ を足す。従来の配置は、0〜9 と / - の1段 */
+  compact?: boolean
 }
 
 /**
- * ソフトキーボードの上に出す、数字と、よく使うキーの2段。押してもテキスト入力からフォーカスを奪わない
+ * ソフトキーボードの上に出す、数字の行(コンパクトでは、よく使うキーとの2段)。押してもテキスト入力からフォーカスを奪わない
  * (キーボードを切り替えずに数字が打てる)。⌫ と空白も、ここで打てる(OSのキーボードの端まで指と目を動かさない)。
  * 左右になぞると、数字は入らず、カーソルが動く(指先で文字の間を狙わずに、1文字ずつ直せる)。
  */
-export function DigitRow({ onKey, onMove = () => {}, onBackspace = () => {} }: Props) {
+export function DigitRow({ onKey, onMove = () => {}, onBackspace = () => {}, compact = false }: Props) {
   const t = useT()
   const drag = useRef<{ x: number; moved: number; swiping: boolean } | null>(null)
   // なぞったあとの click は、数字を入れない
@@ -117,7 +119,7 @@ export function DigitRow({ onKey, onMove = () => {}, onBackspace = () => {} }: P
       onPointerLeave={up}
       onMouseDown={(e) => e.preventDefault()}
       // なぞる操作を、ページのスクロールに取られない。押し続けで、文字の選択やメニューを出さない
-      className="flex-none grid grid-cols-10 gap-1 touch-none select-none [-webkit-touch-callout:none]"
+      className={`flex-none grid ${compact ? 'grid-cols-10' : 'grid-cols-12'} gap-1 touch-none select-none [-webkit-touch-callout:none]`}
     >
       {DIGITS.map((k) => (
         <button key={k} type="button" onClick={tap(() => onKey(k))} className={KEY}>
@@ -130,29 +132,33 @@ export function DigitRow({ onKey, onMove = () => {}, onBackspace = () => {} }: P
       <button type="button" onClick={tap(() => onKey('-'))} className={KEY}>
         -
       </button>
-      <button type="button" aria-label={t('digits.left')} onClick={tap(() => onMove(-1))} className={KEY}>
-        ←
-      </button>
-      <button type="button" aria-label={t('digits.right')} onClick={tap(() => onMove(1))} className={KEY}>
-        →
-      </button>
-      <button
-        type="button"
-        aria-label={t('digits.space')}
-        onClick={tap(() => onKey(' '))}
-        className={`${KEY} col-span-4 font-sans text-sm`}
-      >
-        {t('digits.space')}
-      </button>
-      <button
-        type="button"
-        aria-label={t('digits.backspace')}
-        onPointerDown={backspaceDown}
-        onClick={backspaceClick}
-        className={`${KEY} col-span-2`}
-      >
-        <Delete className="w-6 h-6" aria-hidden="true" />
-      </button>
+      {compact && (
+        <>
+          <button type="button" aria-label={t('digits.left')} onClick={tap(() => onMove(-1))} className={KEY}>
+            ←
+          </button>
+          <button type="button" aria-label={t('digits.right')} onClick={tap(() => onMove(1))} className={KEY}>
+            →
+          </button>
+          <button
+            type="button"
+            aria-label={t('digits.space')}
+            onClick={tap(() => onKey(' '))}
+            className={`${KEY} col-span-4 font-sans text-sm`}
+          >
+            {t('digits.space')}
+          </button>
+          <button
+            type="button"
+            aria-label={t('digits.backspace')}
+            onPointerDown={backspaceDown}
+            onClick={backspaceClick}
+            className={`${KEY} col-span-2`}
+          >
+            <Delete className="w-6 h-6" aria-hidden="true" />
+          </button>
+        </>
+      )}
     </div>
   )
 }

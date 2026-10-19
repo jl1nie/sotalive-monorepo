@@ -7,6 +7,11 @@ export type Theme = 'light' | 'dark' | 'system'
 export type EditorFont = 'gothic' | 'mono'
 /** QSO の数の出し方。その日(カーソルの日、UTC)の数と全体の数か、全体の数だけか */
 export type QsoCount = 'day' | 'total'
+/**
+ * 入力画面の配置(比べて選べるように、両方を残す)。classic は従来のもの。compact は、打っている行・候補バー・
+ * 数字キー・⌫ を手元にまとめたもの(数字キーは2段、ログは下寄せ、補完候補は候補バーに重ねる)
+ */
+export type Layout = 'classic' | 'compact'
 
 export interface Settings {
   theme: Theme
@@ -26,6 +31,8 @@ export interface Settings {
   editorFont: EditorFont
   /** 候補バーの左の、QSO の数の出し方 */
   qsoCount: QsoCount
+  /** 入力画面の配置。同期しない(端末ごと) */
+  layout: Layout
   /** よく使うリグ。`rig` の値(HAMLOG の `Rig=` の右辺)の候補になる */
   rigs: string[]
 }
@@ -52,6 +59,7 @@ const DEFAULTS: Settings = {
   digitRow: false,
   editorFont: 'mono',
   qsoCount: 'day',
+  layout: 'classic',
   rigs: [],
 }
 
@@ -73,6 +81,7 @@ function load(): Settings {
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
       editorFont: v.editorFont === 'gothic' ? 'gothic' : 'mono',
       qsoCount: v.qsoCount === 'total' ? 'total' : 'day',
+      layout: v.layout === 'compact' ? 'compact' : 'classic',
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
   } catch {

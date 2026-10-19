@@ -3,6 +3,7 @@ import {
   TIMEZONE_MIN,
   timezoneLabel,
   type EditorFont,
+  type Layout,
   type QsoCount,
   type Settings,
   type Theme,
@@ -27,6 +28,11 @@ const FONT_OPTIONS: { value: EditorFont; label: MessageKey; hint: MessageKey }[]
 const COUNT_OPTIONS: { value: QsoCount; label: MessageKey; hint: MessageKey }[] = [
   { value: 'day', label: 'settings.qsoCount.day', hint: 'settings.qsoCount.day.hint' },
   { value: 'total', label: 'settings.qsoCount.total', hint: 'settings.qsoCount.total.hint' },
+]
+
+const LAYOUT_OPTIONS: { value: Layout; label: MessageKey; hint: MessageKey }[] = [
+  { value: 'classic', label: 'settings.layout.classic', hint: 'settings.layout.classic.hint' },
+  { value: 'compact', label: 'settings.layout.compact', hint: 'settings.layout.compact.hint' },
 ]
 
 const CONFIRM_OPTIONS: { key: 'writeBandMode' | 'writeRst'; label: MessageKey; hint: MessageKey }[] = [
@@ -126,6 +132,33 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
             <span className="block text-sm text-gray-700 dark:text-gray-300">{t('settings.digitRow.hint')}</span>
           </span>
         </label>
+
+        <fieldset className="space-y-2">
+          <legend className="label">{t('settings.layout')}</legend>
+          {LAYOUT_OPTIONS.map((opt) => (
+            <label
+              key={opt.value}
+              className={`flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 cursor-pointer ${
+                settings.layout === opt.value
+                  ? 'border-primary-700 bg-primary-50 dark:border-primary-400 dark:bg-gray-800'
+                  : 'border-gray-300 dark:border-gray-700'
+              }`}
+            >
+              <input
+                type="radio"
+                name="layout"
+                value={opt.value}
+                checked={settings.layout === opt.value}
+                onChange={() => onChange({ layout: opt.value })}
+                className="mt-1 w-5 h-5 accent-primary-700"
+              />
+              <span>
+                <span className="block font-semibold">{t(opt.label)}</span>
+                <span className="block text-sm text-gray-700 dark:text-gray-300">{t(opt.hint)}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
 
         <fieldset className="space-y-2">
           <legend className="label">{t('settings.editorFont')}</legend>

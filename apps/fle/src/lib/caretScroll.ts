@@ -46,18 +46,18 @@ export function caretTop(ta: HTMLTextAreaElement, pos: number): number {
 }
 
 /**
- * キャレットが見えていなければ、見えるところまでスクロールする。見えていれば動かさない。
- * 下に隠れていれば、欄の下端に(打っている行を、候補バーのすぐ上に)。上に隠れていれば、上から 1/3 に。
- * 下端の余白は、見えないところとして扱う。
+ * キャレットが見えていなければ、見えるところ(上から 1/3)までスクロールする。見えていれば動かさない。
+ * `bottom` なら、下に隠れているときは欄の下端に置く(打っている行を、候補バーのすぐ上に)。
+ * 下端の余白(重なる補完候補の分)は、見えないところとして扱う。
  */
-export function scrollCaretIntoView(ta: HTMLTextAreaElement, pos: number) {
+export function scrollCaretIntoView(ta: HTMLTextAreaElement, pos: number, bottom = false) {
   const style = getComputedStyle(ta)
   const lineHeight = parseFloat(style.lineHeight) || 26
   const top = caretTop(ta, pos) + parseFloat(style.paddingTop)
   const visibleBottom = ta.scrollTop + ta.clientHeight - parseFloat(style.paddingBottom)
   if (top >= ta.scrollTop && top + lineHeight <= visibleBottom) return
   ta.scrollTop =
-    top > ta.scrollTop
+    bottom && top > ta.scrollTop
       ? top + lineHeight - (ta.clientHeight - parseFloat(style.paddingBottom))
       : Math.max(0, top - ta.clientHeight / 3)
 }

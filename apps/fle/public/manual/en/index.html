@@ -70,6 +70,7 @@
   </li>
   <li><b>Insert the current time</b>: confirming a QSO line without a time inserts the current time (on by default). Turn it off when typing in a paper log; a line without a time then takes the time of the line before. This is set per device and is not synced.</li>
   <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST. Neither is written at first (the log stays as you typed it, and the green bar shows the filled-in values).</li>
+  <li><b>Screen layout</b>: "Classic" or "Compact (trial)". Compact keeps the line you are typing, the green bar and the digit keys together (see <a href="#compact">Compact layout</a>). This is set per device and is not synced.</li>
 </ul>
 
 <h3>Plans (destinations)</h3>
@@ -144,11 +145,20 @@ ssb
 <tr><th>(empty line)</th><td>Shows the current time and the band and mode at that line. The next QSO gets these values.</td></tr>
 <tr><th>(settings line)</th><td>Shows what the line itself does not: the date after <code>day +</code> (with the weekday), the name of the summit or park for <code>mysota</code> etc. (when online), the message of <code>qslmsg</code> with its variables replaced, or the rig for <code>rig</code> ("No rig" for <code>rig -</code>). Lines with nothing to add (<code>mycall</code>, comments, ...) look like an empty line.</td></tr>
 </table>
-<p>The small number at the right end is the QSOs on the day at the cursor (UTC), with the total (such as <code>/10</code>) under it. When activating POTA or SOTA, the lower number is the QSOs needed (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once reached. It turns red when there are errors, with a count such as <code>⚠2</code>. Choose "Total" under "QSO count" in the settings to show only the total. See the QSO list and errors from Menu → "QSO list". Tapping an error jumps to that line.</p>
+<p>The number on the left is the QSOs on the day at the cursor (UTC), with the total (such as <code>/10</code>) under it. Choose "Total" under "QSO count" in the settings to show only the total. Tap it to see the QSO list and errors. Tapping an error jumps to that line.</p>
 <ul>
-  <li>Tap a <b>suggestion</b> (shown over the green bar) to insert a keyword, band or mode.</li>
-  <li>Turn on "Digit key row" in the settings for two rows of keys above the keyboard: digits (handy for callsigns such as 7L1WRK), then <code>/</code> <code>-</code> ← → space and ⌫. Hold ⌫ to keep deleting. <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
+  <li>Tap a <b>suggestion</b> above the editor to insert a keyword, band or mode.</li>
+  <li>Turn on "Digit key row" in the settings for a row of digits above the keyboard (handy for callsigns such as 7L1WRK). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
   <li>If you move, use Menu → "New log" to switch the location for the QSOs from there on.</li>
+  <li>The QSO list can also be opened from Menu → "QSO list".</li>
+</ul>
+<h3 id="compact">Compact layout (trial)</h3>
+<p>Choose "Compact" under "Screen layout" in the settings to change the input screen so your eyes and fingers move less:</p>
+<ul>
+  <li>The digit keys get a second row with <code>/</code> <code>-</code> ← → space and ⌫. Hold ⌫ to keep deleting.</li>
+  <li>The log sits at the bottom of the editor, so the line you are typing is right above the green bar.</li>
+  <li>Suggestions appear over the green bar.</li>
+  <li>The QSO count on the left is display only (the list is in Menu → "QSO list"). When activating POTA or SOTA, the lower number is the QSOs needed (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once reached.</li>
 </ul>
 
 <h3 id="fix">Fix a QSO</h3>
@@ -165,7 +175,7 @@ ssb
   <li><b>Example: it was JA1XYW, not JA1XYZ</b> → tap the callsign → ⌫ → <code>w</code>.</li>
   <li>If the RST or time was left out (the bar shows the filled-in value), tapping it writes that value into the line first, then moves to its end. On the line <code>ja1xyz</code>, tapping the RST gives <code>ja1xyz 599 599|</code>.</li>
   <li>To fix a character <b>in the middle</b>, tap the part to get to its end, then <b>swipe the digit row left or right</b> to move the cursor (<a href="#swipe">next section</a>).</li>
-  <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, open Menu → "QSO list" and tap an error to jump to its line.</li>
+  <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line.</li>
   <li>Only ✓ at the right end of the green bar confirms (moves to the next line). Tapping a part never confirms.</li>
 </ul>
 
