@@ -1,5 +1,18 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ClipboardList, FileText, HelpCircle, Home, MapPin, Trash2, Undo2, Upload } from 'lucide-react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  BookOpen,
+  ClipboardList,
+  Download,
+  FileText,
+  HelpCircle,
+  Home,
+  MapPin,
+  Save,
+  Trash2,
+  Undo2,
+  Upload,
+  type LucideIcon,
+} from 'lucide-react'
 import {
   compileLog,
   completeAt,
@@ -188,6 +201,12 @@ function Editor({
   }, [text])
 
   const caretLine = lineOf(text, caret)
+  const hasText = text.trim().length > 0
+  /** メニューの項目: メニューを閉じてから行う */
+  const fromMenu = (f: () => void) => () => {
+    setMenuOpen(false)
+    f()
+  }
 
   // 確定ボタンで何を書くか(時刻は、自動で入れる設定なら。省略形の時刻も直す)。Enterは時刻の挿入だけ
   const noClock = !settings.autoTime
@@ -398,14 +417,7 @@ function Editor({
     async (source: string) => {
       try {
         const zip = await generateFleZip(source)
-        const url = URL.createObjectURL(new Blob([zip as BlobPart], { type: 'application/zip' }))
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'fle.zip'
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        URL.revokeObjectURL(url)
+        download(new Blob([zip as BlobPart], { type: 'application/zip' }), 'fle.zip')
         if (view?.status === 'ERR') {
           notify(t('notice.errorsFile'))
         }
@@ -415,6 +427,14 @@ function Editor({
     },
     [view, notify, t]
   )
+
+  /** FLE のログを、そのままテキストで保存する(あとで「FLEログを開く」で読める) */
+  const saveFle = () => {
+    const d = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const name = `fle-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.txt`
+    download(new Blob([text], { type: 'text/plain;charset=utf-8' }), name)
+  }
 
   /** 生成: 先に、足りない情報(自局のコールサイン・運用場所・グリッド)を調べ、あれば知らせる */
   const handleGenerate = useCallback(async () => {
@@ -477,8 +497,6 @@ function Editor({
   return (
     <div className="fixed inset-x-0 top-[var(--vvt,0px)] h-[var(--vvh,100dvh)] max-w-3xl mx-auto px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2">
       <Header
-        onGenerate={handleGenerate}
-        canGenerate={text.trim().length > 0}
         onMenu={() => setMenuOpen(true)}
         settings={settings}
         onSettingsChange={updateSettings}
@@ -620,134 +638,93 @@ function Editor({
       />
 
       <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title={t('menu.title')}>
-        <ul className="space-y-2">
-          <li>
-            <button
-              type="button"
-              className={MENU_ITEM}
-              onClick={() => {
-                setMenuOpen(false)
-                void openPlace()
-              }}
-            >
-              <MapPin className="w-5 h-5" />
-              {t('menu.place')}
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={MENU_ITEM}
-              onClick={() => {
-                setMenuOpen(false)
-                setPlansOpen(true)
-              }}
-            >
-              <ClipboardList className="w-5 h-5" />
-              {t('menu.plans')}
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={MENU_ITEM}
-              onClick={() => {
-                setMenuOpen(false)
-                fleInputRef.current?.click()
-              }}
-            >
-              <Upload className="w-5 h-5" />
-              {t('menu.openFle')}
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={MENU_ITEM}
-              onClick={() => {
-                setMenuOpen(false)
-                adifInputRef.current?.click()
-              }}
-            >
-              <FileText className="w-5 h-5" />
-              {t('menu.addAdif')}
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={MENU_ITEM}
-              onClick={() => {
-                setMenuOpen(false)
-                // 見本のログはコアが持つ。日付(いま)だけ、画面が渡す
-                sampleLog(new Date().toISOString().slice(0, 10)).then((sample) =>
-                  replaceText(sample, t('notice.sampleInserted'))
-                )
-              }}
-            >
-              {t('menu.sample')}
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={MENU_ITEM}
-              onClick={() => {
-                setMenuOpen(false)
-                replaceText('', t('notice.cleared'))
-              }}
-            >
-              <Trash2 className="w-5 h-5" />
-              {t('menu.clear')}
-            </button>
-          </li>
-          {prev && prev !== text && (
-            <li>
-              <button
-                type="button"
-                className={MENU_ITEM}
-                onClick={() => {
-                  setMenuOpen(false)
-                  replaceText(prev)
-                }}
-              >
-                <Undo2 className="w-5 h-5" />
-                {t('menu.undo')}
-              </button>
-            </li>
-          )}
-          {pwa.canInstall && (
-            <li>
-              <button
-                type="button"
-                className={MENU_ITEM}
-                onClick={() => {
-                  setMenuOpen(false)
-                  pwa.install()
-                }}
-              >
-                <Home className="w-5 h-5" />
-                {t('menu.install')}
-              </button>
-            </li>
-          )}
-          {pwa.showIosHint && (
-            <li className="p-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 text-sm">
-              <Home className="inline w-4 h-4 mr-1 align-text-bottom" />
-              {t('menu.installIos')}
-            </li>
-          )}
+        <MenuGroup title={t('menu.group.before')}>
+          <MenuButton icon={MapPin} label={t('menu.place')} onClick={fromMenu(() => void openPlace())} />
+          <MenuButton icon={ClipboardList} label={t('menu.plans')} onClick={fromMenu(() => setPlansOpen(true))} />
+        </MenuGroup>
+        <MenuGroup title={t('menu.group.output')}>
+          <MenuButton icon={Download} label={t('menu.export')} disabled={!hasText} onClick={fromMenu(() => void handleGenerate())} />
+          <MenuButton icon={Save} label={t('menu.saveFle')} disabled={!hasText} onClick={fromMenu(saveFle)} />
+        </MenuGroup>
+        <MenuGroup title={t('menu.group.input')}>
+          <MenuButton icon={Upload} label={t('menu.openFle')} onClick={fromMenu(() => fleInputRef.current?.click())} />
+          <MenuButton icon={FileText} label={t('menu.addAdif')} onClick={fromMenu(() => adifInputRef.current?.click())} />
+        </MenuGroup>
+        <MenuGroup title={t('menu.group.edit')}>
+          {prev && prev !== text && <MenuButton icon={Undo2} label={t('menu.undo')} onClick={fromMenu(() => replaceText(prev))} />}
+          <MenuButton icon={Trash2} label={t('menu.clear')} onClick={fromMenu(() => replaceText('', t('notice.cleared')))} />
+        </MenuGroup>
+        <MenuGroup title={t('menu.group.help')}>
           <li>
             <a href={lang === 'en' ? MANUAL_URL_EN : MANUAL_URL} target="_blank" rel="noopener noreferrer" className={MENU_ITEM}>
               <HelpCircle className="w-5 h-5" />
               {t('menu.help')}
             </a>
           </li>
-        </ul>
-        <p className="mt-3 text-center text-xs text-gray-700 dark:text-gray-300">
-          {t('menu.version', { version: __APP_VERSION__ })}
-        </p>
+          <MenuButton
+            icon={BookOpen}
+            label={t('menu.sample')}
+            onClick={fromMenu(() =>
+              // 見本のログはコアが持つ。日付(いま)だけ、画面が渡す
+              void sampleLog(new Date().toISOString().slice(0, 10)).then((sample) =>
+                replaceText(sample, t('notice.sampleInserted'))
+              )
+            )}
+          />
+          {pwa.canInstall && <MenuButton icon={Home} label={t('menu.install')} onClick={fromMenu(() => pwa.install())} />}
+          {pwa.showIosHint && (
+            <li className="p-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 text-sm">
+              <Home className="inline w-4 h-4 mr-1 align-text-bottom" />
+              {t('menu.installIos')}
+            </li>
+          )}
+        </MenuGroup>
+        <p className="mt-3 text-center text-xs text-gray-700 dark:text-gray-300 font-mono">{__APP_VERSION__}</p>
       </Sheet>
     </div>
+  )
+}
+
+/** ファイルとしてダウンロードさせる */
+function download(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+/** メニューの項目 */
+function MenuButton({
+  icon: Icon,
+  label,
+  onClick,
+  disabled = false,
+}: {
+  icon: LucideIcon
+  label: string
+  onClick: () => void
+  disabled?: boolean
+}) {
+  return (
+    <li>
+      <button type="button" className={MENU_ITEM} onClick={onClick} disabled={disabled}>
+        <Icon className="w-5 h-5" />
+        {label}
+      </button>
+    </li>
+  )
+}
+
+/** メニューの見出しと、その項目 */
+function MenuGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="mt-3 first:mt-0">
+      <h3 className="px-1 mb-1 text-xs font-bold text-gray-700 dark:text-gray-300">{title}</h3>
+      <ul className="space-y-2">{children}</ul>
+    </section>
   )
 }
