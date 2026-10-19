@@ -8,6 +8,7 @@ import init, {
   fill as wasmFill,
   gridLocator as wasmGridLocator,
   stationAt as wasmStationAt,
+  lineInfo as wasmLineInfo,
   stationPlan as wasmStationPlan,
   generateZip as wasmGenerateZip,
 } from '../wasm/fle/fle'
@@ -181,6 +182,37 @@ export function fillLine(
 export async function stationAt(text: string, line: number): Promise<Station> {
   await ensureReady()
   return wasmStationAt(text, line) as Station
+}
+
+/** `line` の行までを読んだ時点の状態。候補バーが、カーソルのある行の意味を出すのに使う。 */
+export interface LineInfo {
+  /** `blank`(空行・注釈だけの行) / `directive` / `qso`(バンド・モードだけの行を含む) */
+  kind: 'blank' | 'directive' | 'qso'
+  /** 指令の行なら、そのキーワード(小文字)。ほかは空 */
+  directive: string
+  /** 基準日付(`YYYY-MM-DD`、ログのタイムゾーンでの日付)。`date` がまだなければ空 */
+  date: string
+  /** 基準日付の曜日(月曜が 1、日曜が 7)。日付がなければ 0 */
+  weekday: number
+  /** `timezone` の指定(UTCからの時間差)。指定がなければ null */
+  timezone: number | null
+  band: string
+  mode: string
+  /** `rig -` のあとや指定がなければ空 */
+  rig: string
+  sota: string
+  pota: string[]
+  wwff: string
+  /** 変数を置き換えたQSLメッセージ */
+  qslmsg: string
+  qslmsg2: string
+  /** この時点で数える日(UTC、`YYYY-MM-DD`)。この日のQSOの数を出す */
+  qsoDate: string
+}
+
+export async function lineInfo(text: string, line: number): Promise<LineInfo> {
+  await ensureReady()
+  return wasmLineInfo(text, line) as LineInfo
 }
 
 /** 自局と運用場所を、ログに書き込む修正にする。`line` の行の前に、指令の行が入る。 */

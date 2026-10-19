@@ -11,7 +11,7 @@ operator jl1nie
 mywwff jaff-0218
 mypota jp-1151 jp-1164
 mysota ja/st-012
-qslmsg $sat丸山$mysota $mypota $rig
+qslmsg 丸山 $mysota $mypota $rig
 #Log
 timezone +0
 date {date}

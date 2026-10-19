@@ -139,6 +139,28 @@ export async function searchByName(
   }
 }
 
+/** 名前を引く場所の種類。WWFF は、対応する POTA の公園から引く(WWFF の検索はない) */
+export type PlaceKind = RefKind | 'wwff'
+
+/** 番号から引いた名前(見つからなければ空)。同じ番号を何度も問い合わせない */
+const placeNames = new Map<string, string>()
+
+/**
+ * 番号(JA/ST-012、JP-1151、JAFF-0218)から、山・公園の名前を引く。
+ * 見つからなければ空、オフラインや通信の誤りなら undefined(覚えず、次に引き直す)。
+ */
+export async function placeName(kind: PlaceKind, code: string, o: Options = {}): Promise<string | undefined> {
+  const key = `${kind}|${code}`
+  const known = placeNames.get(key)
+  if (known !== undefined) return known
+  const result = await searchByName(kind === 'wwff' ? 'pota' : kind, code, { ...o, limit: 10 })
+  if (result.status !== 'ok') return undefined
+  const hit = result.items.find((c) => (kind === 'wwff' ? c.wwff === code : c.code === code))
+  const name = hit?.name ?? ''
+  placeNames.set(key, name)
+  return name
+}
+
 /** 緯度・経度を中心に、半径 km を覆う範囲 */
 export function bboxAround(lat: number, lon: number, km: number) {
   const dLat = km / 111.32
