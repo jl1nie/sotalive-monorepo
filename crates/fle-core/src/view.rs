@@ -49,6 +49,8 @@ pub struct QsoView {
     pub rst_rcvd: String,
     /// 相手局のリファレンス(SOTA / WWFF / POTA)
     pub refs: Vec<String>,
+    /// 相手局のグリッドロケータ(QSOの行に書いたもの)。なければ空
+    pub grid: String,
     pub comment: String,
 }
 
@@ -104,6 +106,7 @@ impl From<&FleQsoRecord> for QsoView {
             rst_sent: q.rst_sent.clone(),
             rst_rcvd: q.rst_rcvd.clone(),
             refs,
+            grid: q.his_grid.clone(),
             comment,
         }
     }

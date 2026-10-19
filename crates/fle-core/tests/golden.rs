@@ -268,6 +268,8 @@ fn snapshot(text: &str) -> Value {
         for r in records {
             if let Some(o) = r.as_object_mut() {
                 o.remove("rig");
+                // 相手局のグリッド(QSOの行に書く)は、旧実装にない
+                o.remove("his_grid");
                 o.insert("rigset".to_string(), json!(0));
             }
         }

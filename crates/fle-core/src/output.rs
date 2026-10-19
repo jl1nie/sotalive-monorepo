@@ -365,6 +365,15 @@ fn pota_refs(r: &FleQsoRecord) -> Vec<String> {
     r.mypota.clone()
 }
 
+/// 相手局のグリッド。QSOの行に書いたものがなければ、備考(`{PM85rl}`)の中のもの
+fn his_grid(r: &FleQsoRecord) -> String {
+    if r.his_grid.is_empty() {
+        get_ref(&r.qsormks).loc_org
+    } else {
+        r.his_grid.clone()
+    }
+}
+
 /// ADIFレコード生成パラメータ
 struct AdifRecordParams<'a> {
     record: &'a FleQsoRecord,
@@ -397,6 +406,7 @@ fn generate_adif_record(params: &AdifRecordParams<'_>) -> String {
     fields.push(adif_field("MY_SIG", params.sig));
     fields.push(adif_field("MY_SIG_INFO", params.sig_info));
     fields.push(adif_field("MY_GRIDSQUARE", &params.record.my_grid));
+    fields.push(adif_field("GRIDSQUARE", &his_grid(params.record)));
 
     if let Some(his) = params.his_sig {
         fields.push(adif_field("SIG", params.sig));
@@ -474,6 +484,7 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
 
         // QTH/Remarks構築
         let rmks = get_ref(&record.qsormks);
+        let grid = his_grid(record);
         let mut his_refs = Vec::new();
         if !record.hissota.is_empty() {
             his_refs.push(record.hissota.clone());
@@ -506,8 +517,8 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
             &freq,
             &record.mode,
             "", // Code
-            &rmks.loc_org,
-            "", // GL
+            &grid,
+            "", // QSL
             &record.qsomsg,
             &qth_str,
             "", // Remarks1
@@ -717,6 +728,7 @@ mod tests {
                 mypota: Vec::new(),
                 my_grid: String::new(),
                 hispota: Vec::new(),
+                his_grid: String::new(),
                 qsomsg: String::new(),
                 qsormks: String::new(),
                 qslmsg: "TNX QSO".to_string(),
@@ -955,6 +967,33 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
                 );
             }
         }
+    }
+
+    #[test]
+    fn the_other_stations_grid_goes_to_adif_and_the_hamlog_gl() {
+        let fle = "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JA-0001\n0900 ja1aaa pm85rl\n0910 ja1bbb {PM95uq}\n0920 ja1ccc";
+        let files = output_of(fle);
+        let adif = &files["JA1ABC@JA-0001-20261018.adi"];
+        assert!(
+            adif.contains("<GRIDSQUARE:6>PM85rl"),
+            "QSOの行に書いたもの: {adif}"
+        );
+        assert!(
+            adif.contains("<GRIDSQUARE:6>PM95uq"),
+            "備考に書いたもの: {adif}"
+        );
+        assert_eq!(
+            adif.matches("<GRIDSQUARE:").count(),
+            2,
+            "書いていないQSOには出さない"
+        );
+        let gl: Vec<String> = hamlog_lines(&files)
+            .iter()
+            .map(|l| l.split(',').nth(8).unwrap().trim_matches('"').to_string())
+            .collect();
+        assert_eq!(gl, vec!["PM85rl", "PM95uq", ""], "HAMLOG の9列目(GL)");
+        // QSOの行に書いたグリッドは、名前(11列目)に入らない
+        assert!(hamlog_lines(&files)[0].split(',').nth(10).unwrap() == "\"\"");
     }
 
     /// HAMLOG のファイルの、そのままのバイト列

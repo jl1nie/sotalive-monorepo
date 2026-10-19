@@ -405,6 +405,7 @@ fn eval_qso(
                 RefKind::Wwff => env.current.his_wwff = code.clone(),
                 RefKind::Pota => env.current.his_pota.push(code.clone()),
             },
+            QsoItem::Grid(grid) => env.current.his_grid = grid.clone(),
             QsoItem::ContestSent(num) => {
                 if let Some(contest_num) = &mut env.contest_num {
                     if let Ok(n) = num.parse::<u32>() {
@@ -551,6 +552,7 @@ fn eval_qso(
         mypota: env.mypota.clone(),
         my_grid: env.mygrid.clone(),
         hispota: env.current.his_pota.clone(),
+        his_grid: env.current.his_grid.clone(),
         qsomsg: env.current.qso_msg.clone(),
         qsormks: env.current.qso_rmks.clone(),
         qslmsg: expand_rig(&env.qslmsg, &env.rig),
