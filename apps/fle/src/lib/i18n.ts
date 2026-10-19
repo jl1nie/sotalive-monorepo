@@ -12,8 +12,6 @@ export function resolveLang(pref: LangPref, navigatorLang: string = navigator.la
 /** 文面の表。日本語が原本で、英語は同じキーをすべて持つ(型で保証する)。`{name}` は引数で置き換える */
 const ja = {
   // ヘッダー
-  'header.generate': '生成',
-  'header.generateLabel': 'ファイル生成',
   'header.menu': 'メニュー',
   'header.settings': '設定',
   'sheet.close': '閉じる',
@@ -45,16 +43,22 @@ const ja = {
 
   // メニュー
   'menu.title': 'ログ',
-  'menu.place': '新しいログ・場所を設定',
-  'menu.openFle': 'FLEログを読み込む',
+  'menu.place': '新しいログ',
+  'menu.openFle': 'FLEログを開く',
+  'menu.saveFle': 'FLEログを保存',
+  'menu.export': '書き出し (ADIF等)',
+  'menu.group.before': '運用前',
+  'menu.group.output': '出力',
+  'menu.group.input': '入力',
+  'menu.group.edit': '編集',
+  'menu.group.help': 'ヘルプ',
   'menu.addAdif': 'ADIFを追加',
-  'menu.sample': 'サンプルを入れる',
+  'menu.sample': 'サンプル',
   'menu.clear': 'すべて消す',
-  'menu.undo': '直前の内容に戻す',
+  'menu.undo': '元に戻す',
   'menu.install': 'ホーム画面に追加',
   'menu.installIos': 'ホーム画面に追加するには、Safariの共有ボタンから「ホーム画面に追加」を選びます。',
   'menu.help': '使い方',
-  'menu.version': 'FLEonline 版 {version}',
 
   // 通知
   'notice.autosaveFailed': '自動保存できません。ブラウザの設定を確認してください',
@@ -80,7 +84,7 @@ const ja = {
     '緑の候補バーで確定するとき、時刻のほかに書くものを選べます。省略したままでも、意味は同じです(バーには、いつも完全な解釈が出ます)。',
   'settings.confirm.rst': 'RST',
   'settings.confirm.rst.hint': '省略したときの 599 / 59 も書きます。4 のような省略形は 549 のように直します',
-  'menu.plans': '予定(行き先)',
+  'menu.plans': '予定',
   'plans.title': '予定',
   'plans.intro': '行く前に、自局と行き先を登録しておきます。山や公園で、「新しいログ・場所を設定」から選ぶと、ログの先頭の行として書き込まれます。同期すると、PC で登録した予定を、スマホでも使えます。',
   'plans.add': '予定を追加',
@@ -223,8 +227,6 @@ const ja = {
 export type MessageKey = keyof typeof ja
 
 const en: Record<MessageKey, string> = {
-  'header.generate': 'Export',
-  'header.generateLabel': 'Export files',
   'header.menu': 'Menu',
   'header.settings': 'Settings',
   'sheet.close': 'Close',
@@ -252,16 +254,22 @@ const en: Record<MessageKey, string> = {
   'list.sameError': '{n} more with the same error: {lines}',
 
   'menu.title': 'Log',
-  'menu.place': 'New log / set location',
-  'menu.openFle': 'Open an FLE log',
+  'menu.place': 'New log',
+  'menu.openFle': 'Open FLE log',
+  'menu.saveFle': 'Save FLE log',
+  'menu.export': 'Export (ADIF etc.)',
+  'menu.group.before': 'Before operating',
+  'menu.group.output': 'Output',
+  'menu.group.input': 'Input',
+  'menu.group.edit': 'Edit',
+  'menu.group.help': 'Help',
   'menu.addAdif': 'Add ADIF',
-  'menu.sample': 'Insert a sample',
+  'menu.sample': 'Sample',
   'menu.clear': 'Clear all',
-  'menu.undo': 'Restore previous content',
+  'menu.undo': 'Undo',
   'menu.install': 'Add to home screen',
   'menu.installIos': 'To add to the home screen, choose "Add to Home Screen" from Safari\'s share button.',
   'menu.help': 'Manual (Japanese)',
-  'menu.version': 'FLEonline version {version}',
 
   'notice.autosaveFailed': 'Cannot autosave. Check your browser settings',
   'notice.offlineReady': 'Ready to use offline',
@@ -285,7 +293,7 @@ const en: Record<MessageKey, string> = {
     'Choose what confirming with the green bar writes besides the time. The meaning is the same if you leave them out (the bar always shows the full interpretation).',
   'settings.confirm.rst': 'RST',
   'settings.confirm.rst.hint': 'Also writes the default 599 / 59. A short form such as 4 is rewritten like 549',
-  'menu.plans': 'Plans (destinations)',
+  'menu.plans': 'Plans',
   'plans.title': 'Plans',
   'plans.intro': 'Register your callsign and destination before you go. At the summit or park, choose it in "New log / set location" and it is written as the first lines of the log. With sync, plans made on a PC are available on your phone.',
   'plans.add': 'Add a plan',
