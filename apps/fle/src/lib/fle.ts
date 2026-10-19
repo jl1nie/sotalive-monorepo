@@ -235,6 +235,9 @@ export interface LineInfo {
   mode: string
   /** `rig -` のあとや指定がなければ空 */
   rig: string
+  /** 自局のコールサインとグリッド(まだなければ空) */
+  mycall: string
+  mygrid: string
   sota: string
   pota: string[]
   wwff: string

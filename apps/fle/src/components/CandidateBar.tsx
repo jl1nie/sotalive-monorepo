@@ -92,6 +92,10 @@ function resolved(info: LineInfo | null, names: Record<string, string>, t: Trans
       const codes = placeCodes(info)
       return codes.length > 0 ? codes.map((c) => (names[c] ? `${c} ${names[c]}` : c)) : null
     }
+    case 'mycall':
+      return info.mycall ? [info.mycall] : null
+    case 'mygrid':
+      return info.mygrid ? [info.mygrid] : null
     case 'qslmsg':
       return info.qslmsg ? [info.qslmsg] : null
     case 'qslmsg2':

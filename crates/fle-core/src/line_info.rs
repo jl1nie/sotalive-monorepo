@@ -29,6 +29,9 @@ pub struct LineInfo {
     pub mode: String,
     /// HAMLOG の `Rig=` の右辺。`rig -` のあとや指定がなければ空
     pub rig: String,
+    /// 自局のコールサインとグリッド(`mycall` / `mygrid`)。まだなければ空
+    pub mycall: String,
+    pub mygrid: String,
     pub sota: String,
     pub pota: Vec<String>,
     pub wwff: String,
@@ -77,6 +80,8 @@ pub fn line_info(text: &str, line: usize) -> LineInfo {
         band: env.current.band.clone(),
         mode: env.current.mode.clone(),
         rig: env.rig.clone(),
+        mycall: env.mycall.clone(),
+        mygrid: env.mygrid.clone(),
         sota: env.mysota.clone(),
         pota: env.mypota.clone(),
         wwff: env.mywwff.clone(),
@@ -158,6 +163,14 @@ rig -
         );
         let before_rig = line_info("mysota ja/st-012\nqslmsg TNX $rig", 1);
         assert_eq!(before_rig.qslmsg, "TNX $rig");
+    }
+
+    #[test]
+    fn mycall_and_mygrid_are_as_written_so_far() {
+        let log = "mycall ja1abc\nmygrid pm95uq\n40m cw";
+        assert_eq!(line_info(log, 0).mycall, "JA1ABC");
+        assert_eq!(line_info(log, 0).mygrid, "");
+        assert_eq!(line_info(log, 1).mygrid, "PM95uq");
     }
 
     #[test]
