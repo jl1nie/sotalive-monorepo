@@ -36,3 +36,18 @@ describe('useSettings: 入力欄の文字', () => {
     expect(result.current.settings.editorFont).toBe('mono')
   })
 })
+
+describe('useSettings: QSO の数', () => {
+  it('初めては、その日 / 全体', () => {
+    const { result } = renderHook(() => useSettings())
+    expect(result.current.settings.qsoCount).toBe('day')
+  })
+
+  it('全体を選ぶと保存され、知らない値は、その日 / 全体として読む', () => {
+    const first = renderHook(() => useSettings())
+    act(() => first.result.current.update({ qsoCount: 'total' }))
+    expect(renderHook(() => useSettings()).result.current.settings.qsoCount).toBe('total')
+    localStorage.setItem(KEY, JSON.stringify({ qsoCount: 'week' }))
+    expect(renderHook(() => useSettings()).result.current.settings.qsoCount).toBe('day')
+  })
+})

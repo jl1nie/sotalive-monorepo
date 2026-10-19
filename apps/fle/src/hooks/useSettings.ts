@@ -5,6 +5,8 @@ import { parseRigs } from '@/lib/rig'
 export type Theme = 'light' | 'dark' | 'system'
 /** 入力欄の文字。等幅(同梱の Roboto Mono)か、ゴシック(本文と同じ)か */
 export type EditorFont = 'gothic' | 'mono'
+/** QSO の数の出し方。その日(カーソルの日、UTC)の数と全体の数か、全体の数だけか */
+export type QsoCount = 'day' | 'total'
 
 export interface Settings {
   theme: Theme
@@ -20,6 +22,8 @@ export interface Settings {
   digitRow: boolean
   /** 入力欄の文字(どちらも太め。屋外で読めるように) */
   editorFont: EditorFont
+  /** 候補バーの左の、QSO の数の出し方 */
+  qsoCount: QsoCount
   /** よく使うリグ。`rig` の値(HAMLOG の `Rig=` の右辺)の候補になる */
   rigs: string[]
 }
@@ -44,6 +48,7 @@ const DEFAULTS: Settings = {
   language: 'auto',
   digitRow: false,
   editorFont: 'mono',
+  qsoCount: 'day',
   rigs: [],
 }
 
@@ -63,6 +68,7 @@ function load(): Settings {
       language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
       editorFont: v.editorFont === 'gothic' ? 'gothic' : 'mono',
+      qsoCount: v.qsoCount === 'total' ? 'total' : 'day',
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
   } catch {

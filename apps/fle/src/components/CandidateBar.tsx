@@ -5,6 +5,7 @@ import { errorText } from '@/lib/errors'
 import { keepFocus } from '@/lib/keepFocus'
 import { useI18n, type Translate } from '@/lib/i18n'
 import { usePlaceNames } from '@/hooks/usePlaceNames'
+import type { QsoCount } from '@/hooks/useSettings'
 import type { PlaceKind } from '@/lib/reference'
 
 interface Props {
@@ -19,6 +20,8 @@ interface Props {
   lineText: string
   /** 設定の時間帯(ログに timezone がないときの時計) */
   timezone: number
+  /** QSO の数の出し方(既定は、その日の数と全体の数) */
+  count?: QsoCount
   onOpenList: () => void
   /** この行を確定して、次の行へ進む */
   onConfirm: () => void
@@ -85,7 +88,7 @@ function resolved(info: LineInfo | null, names: Record<string, string>, t: Trans
     case 'qslmsg2':
       return info.qslmsg2 ? [info.qslmsg2] : null
     case 'rig':
-      return info.rig ? null : [t('bar.noRig')]
+      return [info.rig || t('bar.noRig')]
     default:
       return null
   }
@@ -103,6 +106,7 @@ export function CandidateBar({
   caretLine,
   lineText,
   timezone,
+  count = 'day',
   onOpenList,
   onConfirm,
 }: Props) {
@@ -138,25 +142,26 @@ export function CandidateBar({
   const setting = [info?.band, info?.mode].filter(Boolean).join(' ')
   const meaning = resolved(info, names, t)
 
-  // カーソルの日(UTC)のQSOの数を大きく、全体の数を小さく
+  // その日(カーソルの日、UTC)のQSOの数を大きく、全体の数を小さく。設定で、全体の数だけにもできる
   const total = view?.qsos.length ?? 0
   const today = info?.qsoDate ? (view?.qsos.filter((q) => q.date === info.qsoDate).length ?? 0) : total
+  const byDay = count === 'day'
 
   return (
     <div className="flex-none flex gap-2 h-[72px]">
       <button
         type="button"
         onClick={onOpenList}
-        aria-label={`${t('bar.openList')} (${t('bar.todayLabel', { today, total })})`}
+        aria-label={byDay ? `${t('bar.openList')} (${t('bar.todayLabel', { today, total })})` : t('bar.openList')}
         className={`flex-none min-w-16 px-2 rounded-xl border-2 bg-white dark:bg-gray-950 flex flex-col items-center justify-center leading-tight tabular-nums ${
           errorCount > 0
             ? 'border-red-700 text-red-700 dark:border-red-400 dark:text-red-300'
             : 'border-gray-500'
         }`}
       >
-        <b className="text-xl">{today}</b>
+        <b className="text-xl">{byDay ? today : total}</b>
         <small className="text-xs font-bold">
-          {today === total ? 'QSO' : `/${total}`}
+          {byDay ? `/${total}` : 'QSO'}
           {errorCount > 0 && ` ⚠${errorCount}`}
         </small>
       </button>

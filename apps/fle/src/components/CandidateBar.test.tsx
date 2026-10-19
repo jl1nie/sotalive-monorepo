@@ -39,7 +39,7 @@ afterEach(() => {
 const CONFIRM = 'この行を確定して次の行へ'
 
 /** `text` を解釈し、`line` 行目にカーソルがあるときの候補バーを出す */
-function renderAt(text: string, line: number) {
+function renderAt(text: string, line: number, count: 'day' | 'total' = 'day') {
   const view = compile(text) as LogView
   const info = lineInfo(text, line) as LineInfo
   render(
@@ -50,6 +50,7 @@ function renderAt(text: string, line: number) {
       caretLine={line}
       lineText={text.split('\n')[line] ?? ''}
       timezone={0}
+      count={count}
       onOpenList={() => {}}
       onConfirm={() => {}}
     />
@@ -66,7 +67,9 @@ describe('CandidateBar: 指令の行は、解決した値を出す', () => {
     // サンプルでは date より前。日付がまだないので、時間帯の名前だけ
     ['timezone +0', 'UTC'],
     // サンプルでは rig より前。$rig は QSO ごとに置き換わるので、そのまま見せる
-    ['qslmsg 丸山 $mysota $mypota $rig', '丸山 JA/ST-012 JP-1151 JP-1164 $rig'],
+    ['qslmsg $mysota $mypota $rig', 'JA/ST-012 JP-1151 JP-1164 $rig'],
+    // rig は、値があればその値、- ならリグなし(どちらも出す)
+    ['rig KX2+EFHW', 'KX2+EFHW'],
     ['rig -', 'リグなし'],
   ])('%s → %s', (l, want) => {
     renderAt(sample, lineOf(l))
@@ -100,7 +103,7 @@ describe('CandidateBar: 指令の行は、解決した値を出す', () => {
 })
 
 describe('CandidateBar: 補うものがない行は、時刻とバンド・モードだけ', () => {
-  it.each(['#Header', 'mycall jl1nie/0', 'rig KX2+EFHW', '#Log'])('%s', (l) => {
+  it.each(['#Header', 'mycall jl1nie/0', '#Log'])('%s', (l) => {
     renderAt(sample, lineOf(l))
     expect(barText()).toMatch(/^\d\d:\d\dUTC/)
     expect(screen.queryByRole('button', { name: CONFIRM })).not.toBeInTheDocument()
@@ -154,8 +157,14 @@ describe('CandidateBar: QSO の行と、QSO の数', () => {
     expect(count).toHaveAccessibleName('QSO一覧を開く (カーソルの日(UTC)の 3 QSO / 全部で 10 QSO)')
   })
 
-  it('全部が同じ日なら、数と QSO だけ', () => {
+  it('全部が同じ日でも、その日 / 全体の形', () => {
     renderAt('mycall JA1ABC\ndate 2026-10-19\n40m cw\n0900 ja1aaa\n0910 ja1bbb', 4)
-    expect(screen.getByRole('button', { name: /QSO一覧を開く/ })).toHaveTextContent(/^2QSO$/)
+    expect(screen.getByRole('button', { name: /QSO一覧を開く/ })).toHaveTextContent(/^2\/2$/)
+  })
+
+  it('設定で「全体」にすると、全体の数と QSO だけ', () => {
+    renderAt(sample, lines.length - 1, 'total')
+    const count = screen.getByRole('button', { name: 'QSO一覧を開く' })
+    expect(count).toHaveTextContent(/^10QSO$/)
   })
 })
