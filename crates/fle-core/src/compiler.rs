@@ -19,12 +19,60 @@ pub use crate::syntax::canonical_grid;
 
 /// FLEテキストをコンパイル
 pub fn compile_fle(input: &str) -> FleCompileResult {
+    let Fold {
+        env,
+        records,
+        has_sota,
+        has_wwff,
+        has_pota,
+        has_contest,
+        ..
+    } = fold(input);
+
+    // 結果を構築
+    let status = if env.errors.is_empty() { "OK" } else { "ERR" };
+    let log_type = determine_log_type(has_sota, has_wwff, has_pota);
+
+    FleCompileResult {
+        status: status.to_string(),
+        log_type,
+        mycall: env.mycall.clone(),
+        operator: env.operator.clone(),
+        mysota: env.mysota.clone(),
+        mywwff: env.mywwff.clone(),
+        mypota: env.mypota.clone(),
+        mygrid: env.mygrid.clone(),
+        qslmsg: expand_rig(&env.qslmsg, &env.rig),
+        records,
+        errors: env.errors,
+        has_sota,
+        has_wwff,
+        has_pota,
+        has_contest,
+    }
+}
+
+/// 行ごとに畳み込んだ結果。コンパイルの結果と、ある行の時点の状態(`line_info`)の、両方の元。
+pub(crate) struct Fold {
+    /// 最後の行を読んだあとの状態
+    pub env: FleEnvironment,
+    pub records: Vec<FleQsoRecord>,
+    pub has_sota: bool,
+    pub has_wwff: bool,
+    pub has_pota: bool,
+    pub has_contest: bool,
+    /// 最後のQSOのあとに、`date` / `day` で日付を変えたか
+    pub date_moved: bool,
+}
+
+pub(crate) fn fold(input: &str) -> Fold {
     let mut env = FleEnvironment::default();
     let mut records: Vec<FleQsoRecord> = Vec::new();
     let mut has_sota = false;
     let mut has_wwff = false;
     let mut has_pota = false;
     let mut has_contest = false;
+    let mut date_moved = false;
     let mut line_start = 0usize; // この行の、テキスト全体での位置(UTF-16)
 
     for (line_num, raw_line) in input.split('\n').enumerate() {
@@ -49,6 +97,7 @@ pub fn compile_fle(input: &str) -> FleCompileResult {
             LineKind::Blank => {}
             LineKind::Directive(d) => {
                 apply_directive(&mut env, d, here);
+                date_moved |= matches!(d.value, Some(DirValue::Date(_) | DirValue::Day(_)));
                 has_sota |= !env.mysota.is_empty();
                 has_wwff |= !env.mywwff.is_empty();
                 has_pota |= !env.mypota.is_empty();
@@ -57,31 +106,20 @@ pub fn compile_fle(input: &str) -> FleCompileResult {
             LineKind::Qso(items) => {
                 if let Some(record) = eval_qso(items, &mut env, here) {
                     records.push(record);
+                    date_moved = false;
                 }
             }
         }
     }
 
-    // 結果を構築
-    let status = if env.errors.is_empty() { "OK" } else { "ERR" };
-    let log_type = determine_log_type(has_sota, has_wwff, has_pota);
-
-    FleCompileResult {
-        status: status.to_string(),
-        log_type,
-        mycall: env.mycall.clone(),
-        operator: env.operator.clone(),
-        mysota: env.mysota.clone(),
-        mywwff: env.mywwff.clone(),
-        mypota: env.mypota.clone(),
-        mygrid: env.mygrid.clone(),
-        qslmsg: expand_rig(&env.qslmsg, &env.rig),
+    Fold {
+        env,
         records,
-        errors: env.errors,
         has_sota,
         has_wwff,
         has_pota,
         has_contest,
+        date_moved,
     }
 }
 
@@ -520,7 +558,7 @@ fn eval_qso(
 }
 
 /// QSLメッセージの `$rig` を、そのQSOの `rig` で置き換える。`rig` が空のとき、末尾に空白が残らないようにする
-fn expand_rig(qslmsg: &str, rig: &str) -> String {
+pub(crate) fn expand_rig(qslmsg: &str, rig: &str) -> String {
     if !qslmsg.contains("$rig") {
         return qslmsg.to_string();
     }

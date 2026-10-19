@@ -5,7 +5,7 @@
 use chrono::DateTime;
 use fle_core::{
     adif_to_fle, check_log, compile_fle, compile_log, complete_at, fill_with, generate_fle_output,
-    grid_locator, sample_log, station_at, station_plan, FillScope, Station,
+    grid_locator, line_info, sample_log, station_at, station_plan, FillScope, Station,
 };
 use wasm_bindgen::prelude::*;
 
@@ -67,6 +67,12 @@ pub fn fill(
 #[wasm_bindgen(js_name = stationAt)]
 pub fn station_at_line(text: &str, line: usize) -> Result<JsValue, JsError> {
     Ok(serde_wasm_bindgen::to_value(&station_at(text, line))?)
+}
+
+/// `line`(0始まり)の行までを読んだ時点の状態(行の種類、日付、バンド・モード、場所、QSLの文面など)。
+#[wasm_bindgen(js_name = lineInfo)]
+pub fn line_info_at(text: &str, line: usize) -> Result<JsValue, JsError> {
+    Ok(serde_wasm_bindgen::to_value(&line_info(text, line))?)
 }
 
 /// 自局と運用場所を、ログに書き込む修正(`edits`)と、入力の誤り(`errors`)にする。

@@ -5,6 +5,7 @@ import {
   distanceLabel,
   parsePota,
   parseSota,
+  placeName,
   searchByName,
   searchNearby,
 } from './reference'
@@ -198,5 +199,33 @@ describe('searchNearby', () => {
   it('オフラインなら、通信せずにそう返す', async () => {
     vi.stubGlobal('navigator', { onLine: false })
     expect(await searchNearby(35, 139)).toEqual({ status: 'offline' })
+  })
+})
+
+describe('placeName', () => {
+  it('番号から名前を引き、同じ番号は問い合わせ直さない', async () => {
+    let calls = 0
+    const fetchImpl = fakeFetch(() => (calls++, [SOTA_ROW]))
+    expect(await placeName('sota', 'JA/TK-001', { fetchImpl })).toBe('雲取山')
+    expect(await placeName('sota', 'JA/TK-001', { fetchImpl })).toBe('雲取山')
+    expect(calls).toBe(1)
+  })
+
+  it('WWFF は、対応する POTA の公園から引く', async () => {
+    const seen: string[] = []
+    const fetchImpl = fakeFetch((u) => (seen.push(u.pathname), [POTA_ROW]))
+    expect(await placeName('wwff', 'JAFF-0049', { fetchImpl })).toBe('明治の森高尾国定公園')
+    expect(seen).toEqual(['/api/v2/pota/parks/search'])
+  })
+
+  it('部分一致しか当たらなければ、名前はない', async () => {
+    expect(await placeName('pota', 'JP-0001', { fetchImpl: fakeFetch(() => [POTA_ROW]) })).toBe('')
+  })
+
+  it('オフラインなら undefined(覚えず、次に引き直す)', async () => {
+    vi.stubGlobal('navigator', { onLine: false })
+    expect(await placeName('sota', 'JA/TK-999')).toBeUndefined()
+    vi.unstubAllGlobals()
+    expect(await placeName('sota', 'JA/TK-999', { fetchImpl: fakeFetch(() => [{ ...SOTA_ROW, summitCode: 'JA/TK-999' }]) })).toBe('雲取山')
   })
 })

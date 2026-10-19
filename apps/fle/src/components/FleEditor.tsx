@@ -5,6 +5,7 @@ import {
   completeAt,
   fillLine,
   generateFleZip,
+  lineInfo,
   adifToFle,
   checkOutput,
   sampleLog,
@@ -14,6 +15,7 @@ import {
   type Candidate,
   type Completion,
   type FieldError,
+  type LineInfo,
   type LogView,
   type OutputWarning,
   type QsoView,
@@ -212,6 +214,19 @@ function Editor({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 時刻は、確定の直前に決める
   }, [previewKey, view])
   const preview = previewed?.key === previewKey ? previewed.qso : null
+
+  // カーソルのある行までを読んだ時点の状態(候補バーが、その行の意味を出す)。
+  // 打つたびに一瞬消えないよう、新しい結果が来るまでは前の結果を使う
+  const [info, setInfo] = useState<LineInfo | null>(null)
+  useEffect(() => {
+    let current = true
+    lineInfo(text, caretLine)
+      .then((value) => current && setInfo(value))
+      .catch(() => {})
+    return () => {
+      current = false
+    }
+  }, [text, caretLine])
 
   const focusAt = useCallback((pos: number, select?: [number, number]) => {
     // シートが閉じてフォーカスが戻った後に、入力欄へカーソルを置く
@@ -459,6 +474,7 @@ function Editor({
       <CandidateBar
         view={view}
         preview={preview}
+        info={info}
         caretLine={caretLine}
         timezone={settings.timezone}
         lineText={text.slice(...lineRange(text, caretLine))}
