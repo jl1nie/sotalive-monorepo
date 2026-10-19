@@ -20,6 +20,7 @@
   h1 { font-size: 1.5rem; margin: .5rem 0; }
   h2 { font-size: 1.25rem; margin: 2.5rem 0 .5rem; padding-top: .75rem; border-top: 2px solid var(--line); }
   h3 { font-size: 1.05rem; margin: 1.5rem 0 .25rem; }
+  h4 { font-size: 1rem; margin: 1.25rem 0 .25rem; }
   a { color: var(--accent); }
   nav ol { padding-left: 1.25rem; }
   pre { background: var(--card); border: 1px solid var(--line); border-radius: .5rem; padding: .75rem; overflow-x: auto; line-height: 1.6; }
@@ -161,6 +162,22 @@ ssb
   <li>To fix a character <b>in the middle</b>, tap the part to get to its end, then <b>swipe the digit row left or right</b> to move the cursor (about 20px per character). Turn on the digit row with "Digit key row" in the settings.</li>
   <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line.</li>
   <li>Only ✓ at the right end of the green bar confirms (moves to the next line). Tapping a part never confirms.</li>
+</ul>
+
+<h4>Swipe the digit row to move the cursor</h4>
+<p>You can move the cursor one character at a time without aiming your finger between characters.</p>
+<pre><code>[1][2][3][4][5][6][7][8][9][0][/][-]
+ ← keep your finger down, slide →</code></pre>
+<ol>
+  <li>Put a finger anywhere on the digit row (any key will do).</li>
+  <li>Without lifting it, slide left or right. The cursor moves <b>one character per about 20px</b> in that direction, across parts and lines.</li>
+  <li>Lift the finger to stop. A swipe never types a digit.</li>
+</ol>
+<ul>
+  <li>If you lift almost without moving (less than 10px), it is a normal tap and types that digit.</li>
+  <li><b>Example: change the middle 5 of the sent report 559 to 7</b> → tap the RST twice for <code>559|</code> → swipe the digit row left by one character for <code>55|9</code> → ⌫ → <code>7</code>, giving <code>579</code>.</li>
+  <li>Tap the editor to get near, then swipe for the fine position.</li>
+  <li>Show the digit row with "Digit key row" in the settings (it is on from the start on touch devices).</li>
 </ul>
 
 <h2 id="out">5. After operating: make the files</h2>
