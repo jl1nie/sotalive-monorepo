@@ -477,6 +477,7 @@ function Editor({
         info={info}
         caretLine={caretLine}
         timezone={settings.timezone}
+        count={settings.qsoCount}
         lineText={text.slice(...lineRange(text, caretLine))}
         onOpenList={() => setListOpen(true)}
         onConfirm={confirmLine}
