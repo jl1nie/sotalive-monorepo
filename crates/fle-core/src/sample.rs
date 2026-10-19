@@ -18,14 +18,14 @@ date {date}
 rig KX2+EFHW
 40m cw
 2302 ja1qsa
-4 ja4qru 6 7 <曽田さん>{{島根市}}
-4 ja8qsw 4 {{札幌市}}
+4 ja4qru 6 7 <曽田さん>
+4 ja8qsw 4
 ssb
 14 ja4qsy
 40 jq1qso/1 5 3 jaff-0218 ja-1151 ja-1164
 70cm fm
-55 jg0qro/0 ja/nn-001 {{松本市 AO-91/FM/144MHz}}
-58 jk2qsu {{PM85rl AO-91/FM/144MHz}}
+55 jg0qro/0 ja/nn-001
+58 jk2qsu pm85rl
 day +
 17m cw
 rig -

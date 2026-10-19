@@ -133,6 +133,8 @@ pub enum QsoItem {
         kind: RefKind,
         code: String,
     },
+    /// 相手局のグリッドロケータ(コールサインより後ろの、グリッドの形の語。`PM85rl` の形にそろえる)
+    Grid(String),
     ContestSent(String),
     ContestRcvd(String),
     Comment {
@@ -861,6 +863,8 @@ fn directive_value(
 /// QSOの行の要素を1つ読む(コールサインは、直後の RST と、間の注釈まで、まとめて読む)
 fn qso_items<'a>(conv: &'a Conv<'a>) -> impl FnMut(&'a str) -> Res<'a, Vec<Spanned<QsoItem>>> + 'a {
     let total = conv.line.len();
+    // コールサインより後ろの、グリッドの形の語は、相手のグリッド(前ならコールサインとして読む。PM85RL は両方の形)
+    let mut after_call = false;
     move |i| {
         let (i, _) = ws0(i)?;
         let from = total - i.len();
@@ -884,8 +888,16 @@ fn qso_items<'a>(conv: &'a Conv<'a>) -> impl FnMut(&'a str) -> Res<'a, Vec<Spann
         let (rest, w) = word(i)?;
         let span = conv.span(from, total - rest.len());
         let one = |node: QsoItem| Ok((rest, vec![Spanned { span, node }]));
+        if after_call {
+            if let Some(grid) = canonical_grid(&fold_fullwidth(w)) {
+                return one(QsoItem::Grid(grid));
+            }
+        }
         match classify(w) {
-            Class::Call(call) => call_group(conv, rest, span, call),
+            Class::Call(call) => {
+                after_call = true;
+                call_group(conv, rest, span, call)
+            }
             Class::Decimal { digits, value } => one(QsoItem::Time { digits, value }),
             Class::Band { band, freq } => one(QsoItem::Band { band, freq }),
             Class::Freq(f) => one(QsoItem::Freq(f)),
@@ -1661,6 +1673,30 @@ mod tests {
             }
         ));
         assert_eq!(it.len(), 2);
+    }
+
+    #[test]
+    fn a_grid_after_the_callsign_is_the_other_stations_grid() {
+        let it = nodes("0958 jk2qsu 5 7 pm85rl");
+        assert_eq!(it.last(), Some(&QsoItem::Grid("PM85rl".into())));
+        // 4文字・全角も、グリッドとして読む
+        assert_eq!(
+            nodes("ja1xyz PM85").last(),
+            Some(&QsoItem::Grid("PM85".into()))
+        );
+        assert_eq!(
+            nodes("ja1xyz ｐｍ８５ｒｌ").last(),
+            Some(&QsoItem::Grid("PM85rl".into()))
+        );
+    }
+
+    #[test]
+    fn a_grid_shaped_word_before_the_callsign_is_a_callsign() {
+        // PM85RL はコールサインの形でもある。コールサインがまだなければ、コールサイン
+        assert!(matches!(&nodes("pm85rl")[0], QsoItem::Call { call, .. } if call == "PM85RL"));
+        assert!(!nodes("pm85rl ja1xyz")
+            .iter()
+            .any(|i| matches!(i, QsoItem::Grid(_))));
     }
 
     #[test]

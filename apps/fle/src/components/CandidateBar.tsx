@@ -190,6 +190,7 @@ export function CandidateBar({
               {qso.refs.map((r) => (
                 <span key={r}>{r}</span>
               ))}
+              {qso.grid && <span>{qso.grid}</span>}
               {qso.comment && <span className="font-sans">{qso.comment}</span>}
             </span>
           </span>

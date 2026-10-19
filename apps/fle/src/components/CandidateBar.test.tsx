@@ -143,6 +143,11 @@ describe('CandidateBar: 入力の途中(橙)と書き忘れ(赤)', () => {
 })
 
 describe('CandidateBar: QSO の行と、QSO の数', () => {
+  it('相手のグリッドも出す', () => {
+    renderAt(sample, lineOf('58 jk2qsu pm85rl'))
+    expect(screen.getByRole('button', { name: CONFIRM })).toHaveTextContent('PM85rl')
+  })
+
   it('解釈できた QSO の行は、確定できる', () => {
     renderAt(sample, lineOf('2302 ja1qsa'))
     expect(screen.getByRole('button', { name: CONFIRM })).toBeInTheDocument()

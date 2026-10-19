@@ -100,6 +100,8 @@ pub struct CurrentQsoState {
     pub his_wwff: String,
     pub his_sota: String,
     pub his_pota: Vec<String>,
+    /// 相手局のグリッドロケータ(QSOの行に書いたもの)
+    pub his_grid: String,
 
     // RST
     pub rst_sent: RstValue,
@@ -264,6 +266,7 @@ impl FleEnvironment {
         self.current.his_wwff.clear();
         self.current.his_sota.clear();
         self.current.his_pota.clear();
+        self.current.his_grid.clear();
         self.current.qso_msg.clear();
         self.current.qso_rmks.clear();
         self.current.qsl_msg.clear();
@@ -314,6 +317,8 @@ pub struct FleQsoRecord {
     /// 自局のグリッドロケータ(そのQSOの時点のもの)
     pub my_grid: String,
     pub hispota: Vec<String>,
+    /// 相手局のグリッドロケータ(QSOの行に書いたもの)。なければ空
+    pub his_grid: String,
     pub qsomsg: String,
     pub qsormks: String,
     pub qslmsg: String,

@@ -88,6 +88,17 @@ describe('fle wasm', () => {
     expect(apply({ bandMode: true, rst: true })).toBe('40m cw\n0905 40m CW ja1xyz 599 599')
   })
 
+  it('fill: 相手のグリッドは、RST を書き込んでも残る', () => {
+    const now = Date.UTC(2026, 9, 18, 9, 5, 30)
+    const text = '40m cw\nja1xyz pm85rl'
+    const edits = fill(text, 1, now, 0, { rst: true }) as { from: number; to: number; insert: string }[]
+    const filled = edits
+      .sort((a, b) => b.from - a.from)
+      .reduce((t, e) => t.slice(0, e.from) + e.insert + t.slice(e.to), text)
+    expect(filled).toBe('40m cw\n0905 ja1xyz 599 599 pm85rl')
+    expect(compile(filled).qsos[0].grid).toBe('PM85rl')
+  })
+
   it('adifToFle: ADIFをFLEに変換し、そのまま解釈できる', () => {
     const adif = '<CALL:6>JA1XYZ<QSO_DATE:8>20241228<TIME_ON:4>1234<MODE:2>CW<BAND:3>40m<RST_RCVD:3>579<EOR>'
     const fle = adifToFle(adif)

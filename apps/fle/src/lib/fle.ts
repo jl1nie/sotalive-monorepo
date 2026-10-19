@@ -31,6 +31,8 @@ export interface QsoView {
   rstSent: string
   rstRcvd: string
   refs: string[]
+  /** 相手局のグリッドロケータ(QSOの行に書いたもの)。なければ空 */
+  grid: string
   comment: string
 }
 
