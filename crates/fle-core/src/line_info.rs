@@ -52,10 +52,22 @@ pub fn line_info(text: &str, line: usize) -> LineInfo {
     let env = &f.env;
 
     let raw = lines.get(line).copied().unwrap_or("");
+    // 値が読めなかった自局の行は、無視される。前の値を、この行の値として出さない
+    let mut ignored = false;
     let (kind, directive) = match parse_line(raw.strip_suffix('\r').unwrap_or(raw)).kind {
         LineKind::Blank => ("blank", ""),
-        LineKind::Directive(d) => ("directive", d.spec.key),
+        LineKind::Directive(d) => {
+            ignored = d.value.is_none();
+            ("directive", d.spec.key)
+        }
         LineKind::Qso(_) => ("qso", ""),
+    };
+    let own = |key: &str, value: &String| {
+        if ignored && directive == key {
+            String::new()
+        } else {
+            value.clone()
+        }
     };
 
     let base = env
@@ -80,8 +92,8 @@ pub fn line_info(text: &str, line: usize) -> LineInfo {
         band: env.current.band.clone(),
         mode: env.current.mode.clone(),
         rig: env.rig.clone(),
-        mycall: env.mycall.clone(),
-        mygrid: env.mygrid.clone(),
+        mycall: own("mycall", &env.mycall),
+        mygrid: own("mygrid", &env.mygrid),
         sota: env.mysota.clone(),
         pota: env.mypota.clone(),
         wwff: env.mywwff.clone(),
@@ -171,6 +183,16 @@ rig -
         assert_eq!(line_info(log, 0).mycall, "JA1ABC");
         assert_eq!(line_info(log, 0).mygrid, "");
         assert_eq!(line_info(log, 1).mygrid, "PM95uq");
+    }
+
+    #[test]
+    fn an_ignored_mycall_or_mygrid_line_shows_no_value() {
+        let log = "mycall ja1abc\nmygrid pm95uq\nmycall ???\nmygrid zz\nmygrid -\n40m cw";
+        assert_eq!(line_info(log, 2).mycall, "", "読めない行は、前の値を出さない");
+        assert_eq!(line_info(log, 3).mygrid, "");
+        assert_eq!(line_info(log, 4).mygrid, "", "mygrid - で空に戻る");
+        assert_eq!(line_info(log, 5).mycall, "JA1ABC", "あとの行には、前の値が続く");
+        assert_eq!(line_info(log, 5).mygrid, "", "mygrid - のあと");
     }
 
     #[test]

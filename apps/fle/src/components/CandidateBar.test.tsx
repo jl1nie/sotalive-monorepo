@@ -122,6 +122,11 @@ describe('CandidateBar: 自局の指令の行は、その値を出す', () => {
     expect(barText()).toMatch(/^\d\d:\d\dUTC/)
   })
 
+  it('読めない値の行は、前の値を出さない', () => {
+    renderAt('mycall JA1ABC\nmycall ???', 1)
+    expect(barText()).toMatch(/^\d\d:\d\dUTC/)
+  })
+
   it('mygrid', () => {
     renderAt('mycall JA1ABC\nmygrid pm95uq', 1)
     expect(barText()).toBe('PM95uq')
