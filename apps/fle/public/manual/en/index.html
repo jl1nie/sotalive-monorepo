@@ -69,7 +69,8 @@
     </ul>
   </li>
   <li><b>Insert the current time</b>: confirming a QSO line without a time inserts the current time (on by default). Turn it off when typing in a paper log; a line without a time then takes the time of the line before. This is set per device and is not synced.</li>
-  <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST.</li>
+  <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST. The RST setting is kept per layout; in the compact layout it is off at first (the log stays as you typed it, and the green bar shows the filled-in values).</li>
+  <li><b>Screen layout</b>: "Classic" or "Compact (trial)". Compact keeps the line you are typing, the green bar and the digit keys together (see <a href="#compact">Compact layout</a>). This is set per device and is not synced.</li>
 </ul>
 
 <h3>Plans (destinations)</h3>
@@ -149,6 +150,15 @@ ssb
   <li>Tap a <b>suggestion</b> above the editor to insert a keyword, band or mode.</li>
   <li>Turn on "Digit key row" in the settings for a row of digits above the keyboard (handy for callsigns such as 7L1WRK). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
   <li>If you move, use Menu → "New log" to switch the location for the QSOs from there on.</li>
+  <li>The QSO list can also be opened from Menu → "QSO list".</li>
+</ul>
+<h3 id="compact">Compact layout (trial)</h3>
+<p>Choose "Compact" under "Screen layout" in the settings to change the input screen so your eyes and fingers move less:</p>
+<ul>
+  <li>The digit keys get a second row with <code>/</code> <code>-</code> ← → space and ⌫. Hold ⌫ to keep deleting.</li>
+  <li>The log sits at the bottom of the editor, so the line you are typing is right above the green bar.</li>
+  <li>Suggestions appear over the green bar.</li>
+  <li>The QSO count on the left is display only (the list is in Menu → "QSO list"). When activating POTA or SOTA, the lower number is the QSOs needed (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once reached.</li>
 </ul>
 
 <h3 id="fix">Fix a QSO</h3>

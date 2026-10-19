@@ -73,3 +73,29 @@ describe('useSettings: 時刻を自動で入れる', () => {
     expect(SYNCED_KEYS).not.toContain('autoTime')
   })
 })
+
+describe('useSettings: 画面の配置', () => {
+  it('初めては、従来の配置', () => {
+    const { result } = renderHook(() => useSettings())
+    expect(result.current.settings.layout).toBe('classic')
+  })
+
+  it('コンパクトを選ぶと保存され、開き直してもコンパクト。知らない値は従来として読む', () => {
+    const first = renderHook(() => useSettings())
+    act(() => first.result.current.update({ layout: 'compact' }))
+    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('compact')
+    localStorage.setItem(KEY, JSON.stringify({ layout: 'grid' }))
+    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
+  })
+
+  it('同期しない(端末ごとに選ぶ)', () => {
+    expect(SYNCED_KEYS).not.toContain('layout')
+    expect(SYNCED_KEYS).not.toContain('writeRstCompact')
+  })
+
+  it('確定で RST を書くかは、従来はリリース版のまま書き、コンパクトは書かない', () => {
+    const { result } = renderHook(() => useSettings())
+    expect(result.current.settings.writeRst).toBe(true)
+    expect(result.current.settings.writeRstCompact).toBe(false)
+  })
+})

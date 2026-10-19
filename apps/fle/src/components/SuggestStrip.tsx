@@ -14,10 +14,14 @@ const KIND_KEY = {
 interface Props {
   candidates: Candidate[]
   onPick: (candidate: Candidate) => void
+  overBar?: boolean
 }
 
-/** 入力欄の下端に重ねる補完候補。出入りしても入力欄の高さは変わらない。 */
-export function SuggestStrip({ candidates, onPick }: Props) {
+/**
+ * 補完候補。入力欄の下端か(従来の配置)、候補バー(`overBar`、コンパクトな配置。打っている行のすぐ下、目の行く所)に重ねる。
+ * 出入りしても、入力欄の高さも、打っている行の位置も変わらない。
+ */
+export function SuggestStrip({ candidates, onPick, overBar = false }: Props) {
   const t = useT()
   if (candidates.length === 0) return null
   return (
@@ -25,7 +29,9 @@ export function SuggestStrip({ candidates, onPick }: Props) {
       aria-label={t('suggest.label')}
       // タップしても入力欄からフォーカスを奪わない(キーボードを閉じない)
       {...keepFocus}
-      className="absolute inset-x-2 bottom-2 flex gap-2 overflow-x-auto p-1.5 rounded-xl border-2 border-gray-500 bg-white dark:bg-gray-950"
+      className={`absolute flex gap-2 overflow-x-auto rounded-xl border-2 border-gray-500 bg-white dark:bg-gray-950 ${
+        overBar ? 'inset-0 z-10 items-center px-1.5' : 'inset-x-2 bottom-2 p-1.5'
+      }`}
     >
       {candidates.map((c) => (
         <li key={`${c.kind}:${c.text}`} className="flex-none">

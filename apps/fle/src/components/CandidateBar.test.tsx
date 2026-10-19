@@ -45,7 +45,8 @@ function renderAt(
   count: 'day' | 'total' = 'day',
   autoTime = true,
   onSelectPart: (part: string) => void = () => {},
-  timezone = 0
+  timezone = 0,
+  compact = false
 ) {
   const view = compile(text) as LogView
   const info = lineInfo(text, line) as LineInfo
@@ -59,12 +60,17 @@ function renderAt(
       timezone={timezone}
       count={count}
       autoTime={autoTime}
+      compact={compact}
       onOpenList={() => {}}
       onConfirm={() => {}}
       onSelectPart={onSelectPart}
     />
   )
 }
+
+/** コンパクトな配置で出す */
+const renderCompact = (text: string, line: number, count: 'day' | 'total' = 'day') =>
+  renderAt(text, line, count, true, () => {}, 0, true)
 
 /** 候補バー(QSOの数のボタンの隣)の文字 */
 const barText = () => document.querySelector('[aria-live]')?.textContent ?? ''
@@ -235,5 +241,43 @@ describe('CandidateBar: QSO の行と、QSO の数', () => {
     renderAt(sample, lines.length - 1, 'total')
     const count = screen.getByRole('button', { name: 'QSO一覧を開く' })
     expect(count).toHaveTextContent(/^10QSO$/)
+  })
+})
+
+describe('CandidateBar: コンパクトな配置の QSO の数', () => {
+  it('POTA の運用では、カーソルの日(UTC)の数を大きく、要る数(10)を小さく出す', () => {
+    renderCompact(sample, lines.length - 1)
+    const count = screen.getByLabelText(/カーソルの日/)
+    expect(count).toHaveTextContent(/^3\/10$/)
+    expect(count).toHaveAccessibleName('カーソルの日(UTC)の 3 QSO / 全部で 10 QSO / 10 QSO まで、あと 7')
+  })
+
+  it('数は表示だけ(押せない。一覧はメニューから)で、バーの左端に出す', () => {
+    renderCompact(sample, lines.length - 1)
+    const count = screen.getByRole('img', { name: /カーソルの日/ })
+    expect(count.closest('button')).toBeNull()
+    expect(screen.queryByRole('button', { name: /QSO一覧を開く/ })).not.toBeInTheDocument()
+    expect(count.parentElement?.firstElementChild).toBe(count)
+  })
+
+  it('運用場所がなければ、その日 / 全体の形', () => {
+    renderCompact('mycall JA1ABC\ndate 2026-10-19\n40m cw\n0900 ja1aaa\n0910 ja1bbb', 4)
+    expect(screen.getByLabelText(/カーソルの日/)).toHaveTextContent(/^2\/2$/)
+  })
+
+  it('SOTA は 4 QSO に届くと、届いたと知らせる', () => {
+    const log = 'mycall JA1ABC\nmysota JA/ST-012\ndate 2026-10-19\n40m cw\n0900 ja1aaa\n0910 ja1bbb\n0920 ja1ccc'
+    renderCompact(log, 6)
+    expect(screen.getByLabelText(/カーソルの日/)).toHaveTextContent(/^3\/4$/)
+    cleanup()
+    renderCompact(`${log}\n0930 ja1ddd`, 7)
+    const count = screen.getByLabelText(/カーソルの日/)
+    expect(count).toHaveTextContent(/^4\/4$/)
+    expect(count).toHaveAccessibleName(/4 QSO に届きました/)
+  })
+
+  it('設定で「全体」にすると、全体の数と QSO だけ', () => {
+    renderCompact(sample, lines.length - 1, 'total')
+    expect(screen.getByLabelText('全部で 10 QSO')).toHaveTextContent(/^10QSO$/)
   })
 })

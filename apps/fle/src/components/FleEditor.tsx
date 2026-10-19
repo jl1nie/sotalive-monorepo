@@ -6,6 +6,7 @@ import {
   FileText,
   HelpCircle,
   Home,
+  List,
   MapPin,
   Save,
   Trash2,
@@ -42,7 +43,7 @@ import { LangProvider } from '@/components/LangProvider'
 import { resolveLang, useI18n } from '@/lib/i18n'
 import { lineOf, lineRange, replaceRange } from '@/lib/lines'
 import { applyEdits, mapCaret } from '@/lib/edits'
-import { scrollCaretIntoView } from '@/lib/caretScroll'
+import { alignToBottom, scrollCaretIntoView } from '@/lib/caretScroll'
 import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useAutosave } from '@/hooks/useAutosave'
@@ -96,7 +97,7 @@ function Editor({
   settings: Settings
   updateSettings: (patch: Partial<Settings>) => void
 }) {
-  useVisualViewport()
+  const keyboard = useVisualViewport()
   const { t, lang } = useI18n()
   const plansStore = usePlans()
   const sync = useSync({
@@ -199,6 +200,23 @@ function Editor({
     }
   }, [text, caret, settings.rigs])
 
+  // コンパクトな配置では、打っている行を、欄の下端(候補バーのすぐ上)に寄せる。内容が変わったときと、欄の大きさが変わったとき。
+  // キャレットを置き直すより先に(寄せたあとの位置で、見えるところまで動かす)
+  const compact = settings.layout === 'compact'
+  useLayoutEffect(() => {
+    const ta = taRef.current
+    if (!ta) return
+    if (compact) alignToBottom(ta)
+    else ta.style.paddingTop = ''
+  }, [text, settings.editorFont, compact])
+  useEffect(() => {
+    const ta = taRef.current
+    if (!compact || !ta || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => alignToBottom(ta))
+    observer.observe(ta)
+    return () => observer.disconnect()
+  }, [compact])
+
   useLayoutEffect(() => {
     const pos = pendingCaret.current
     const ta = taRef.current
@@ -206,8 +224,8 @@ function Editor({
     pendingCaret.current = null
     ta.focus()
     ta.setSelectionRange(pos, pos)
-    scrollCaretIntoView(ta, pos)
-  }, [text])
+    scrollCaretIntoView(ta, pos, compact)
+  }, [text, compact])
 
   const caretLine = lineOf(text, caret)
   const hasText = text.trim().length > 0
@@ -219,15 +237,17 @@ function Editor({
 
   // 確定ボタンで何を書くか(時刻は、自動で入れる設定なら。省略形の時刻も直す)。Enterは時刻の挿入だけ
   const noClock = !settings.autoTime
+  // RST を書くかは、配置ごとに持つ(コンパクトの既定は書かない。従来はリリース版のまま)
+  const writeRst = settings.layout === 'compact' ? settings.writeRstCompact : settings.writeRst
   const confirmScope = {
     noClock,
     expandTime: true,
     bandMode: settings.writeBandMode,
-    rst: settings.writeRst,
+    rst: writeRst,
   }
 
   // この行を確定したら、どう見えるか(時刻・バンド・モード・RSTが入った姿)を先に見せる
-  const previewKey = `${caretLine}|${settings.timezone}|${noClock}|${settings.writeBandMode}|${settings.writeRst}|${text}`
+  const previewKey = `${caretLine}|${settings.timezone}|${noClock}|${settings.writeBandMode}|${writeRst}|${text}`
   useEffect(() => {
     const line = caretLine
     if (!view?.qsos.some((q) => q.line === line)) return
@@ -399,7 +419,7 @@ function Editor({
         ta.focus()
         ta.setSelectionRange(sel.to, sel.to)
         // 打っている行から離れてスクロールしていても、直す場所を見せる
-        scrollCaretIntoView(ta, sel.to)
+        scrollCaretIntoView(ta, sel.to, compact)
       }
       setCaret(sel.to)
       return
@@ -418,7 +438,7 @@ function Editor({
     const base = start === end ? start : delta < 0 ? start : end
     const pos = Math.max(0, Math.min(text.length, base + delta))
     ta.setSelectionRange(pos, pos)
-    scrollCaretIntoView(ta, pos)
+    scrollCaretIntoView(ta, pos, compact)
     setCaret(pos)
   }
 
@@ -430,6 +450,21 @@ function Editor({
     const value = text.slice(0, from) + key + text.slice(to)
     pendingCaret.current = from + key.length
     handleChange(value, from + key.length, new Event('input'))
+  }
+
+  /** 数字の行の ⌫。カーソルの前の1文字(選択があれば、その範囲)を消す。打ったときと同じ経路を通す */
+  const backspace = () => {
+    const ta = taRef.current
+    const to = ta?.selectionEnd ?? caret
+    let from = ta?.selectionStart ?? caret
+    if (from === to) {
+      if (from === 0) return
+      // サロゲートペア(絵文字など)は、2つで1文字
+      const low = text.charCodeAt(from - 1)
+      from -= low >= 0xdc00 && low <= 0xdfff && from >= 2 ? 2 : 1
+    }
+    pendingCaret.current = from
+    handleChange(text.slice(0, from) + text.slice(to), from, new Event('input'))
   }
 
   /** `source` のログから、ファイルを生成してダウンロードする */
@@ -540,7 +575,10 @@ function Editor({
   }
 
   return (
-    <div className="fixed inset-x-0 top-[var(--vvt,0px)] h-[var(--vvh,100dvh)] max-w-3xl mx-auto px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col gap-2">
+    <div className={`fixed inset-x-0 top-[var(--vvt,0px)] h-[var(--vvh,100dvh)] max-w-3xl mx-auto px-3 ${
+      // コンパクトな配置では、キーボードが出ている間は、ホームバーの分の余白を取らない(数字キーとキーボードの間が空く)
+      compact && keyboard ? 'pb-2' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+    } flex flex-col gap-2`}>
       <Header
         onMenu={() => setMenuOpen(true)}
         settings={settings}
@@ -560,31 +598,36 @@ function Editor({
           autoCapitalize="none"
           autoCorrect="off"
           autoComplete="off"
-          // 下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
+          // 従来の配置では、下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
           // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
-          className={`input flex-1 h-full min-h-0 resize-none font-semibold leading-relaxed pb-20 ${
+          className={`input flex-1 h-full min-h-0 resize-none font-semibold leading-relaxed ${compact ? '' : 'pb-20'} ${
             settings.editorFont === 'mono' ? 'font-mono' : ''
           }`}
         />
-        <SuggestStrip candidates={completion.candidates} onPick={pick} />
+        {!compact && <SuggestStrip candidates={completion.candidates} onPick={pick} />}
       </div>
 
-      <CandidateBar
-        view={view}
-        preview={preview}
-        info={info}
-        caretLine={caretLine}
-        timezone={settings.timezone}
-        count={settings.qsoCount}
-        autoTime={settings.autoTime}
-        lineText={text.slice(...lineRange(text, caretLine))}
-        onOpenList={() => setListOpen(true)}
-        onConfirm={confirmLine}
-        onSelectPart={caretToPart}
-      />
+      {/* コンパクトな配置では、補完候補は候補バーに重ねて出す(打っている行のすぐ下) */}
+      <div className="relative flex-none">
+        <CandidateBar
+          view={view}
+          preview={preview}
+          info={info}
+          caretLine={caretLine}
+          timezone={settings.timezone}
+          count={settings.qsoCount}
+          autoTime={settings.autoTime}
+          lineText={text.slice(...lineRange(text, caretLine))}
+          compact={compact}
+          onOpenList={() => setListOpen(true)}
+          onConfirm={confirmLine}
+          onSelectPart={caretToPart}
+        />
+        {compact && <SuggestStrip candidates={completion.candidates} onPick={pick} overBar />}
+      </div>
 
       {/* 数字の行は一番下。ソフトキーボードのすぐ上で、指が近い */}
-      {settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} />}
+      {settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} onBackspace={backspace} compact={compact} />}
 
       {notice && (
         <div
@@ -698,6 +741,12 @@ function Editor({
           <MenuButton icon={MapPin} label={t('menu.place')} onClick={fromMenu(() => void openPlace())} />
           <MenuButton icon={ClipboardList} label={t('menu.plans')} onClick={fromMenu(() => setPlansOpen(true))} />
         </MenuGroup>
+        {/* コンパクトな配置では、QSO の数は表示だけ。一覧はここから */}
+        {compact && (
+          <MenuGroup title={t('menu.group.log')}>
+            <MenuButton icon={List} label={t('menu.list')} onClick={fromMenu(() => setListOpen(true))} />
+          </MenuGroup>
+        )}
         <MenuGroup title={t('menu.group.output')}>
           <MenuButton icon={Download} label={t('menu.export')} disabled={!hasText} onClick={fromMenu(() => void handleGenerate())} />
           <MenuButton icon={Save} label={t('menu.saveFle')} disabled={!hasText} onClick={fromMenu(() => void saveFle())} />

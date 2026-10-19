@@ -7,6 +7,11 @@ export type Theme = 'light' | 'dark' | 'system'
 export type EditorFont = 'gothic' | 'mono'
 /** QSO の数の出し方。その日(カーソルの日、UTC)の数と全体の数か、全体の数だけか */
 export type QsoCount = 'day' | 'total'
+/**
+ * 入力画面の配置(比べて選べるように、両方を残す)。classic は従来のもの。compact は、打っている行・候補バー・
+ * 数字キー・⌫ を手元にまとめたもの(数字キーは2段、ログは下寄せ、補完候補は候補バーに重ねる)
+ */
+export type Layout = 'classic' | 'compact'
 
 export interface Settings {
   theme: Theme
@@ -18,6 +23,11 @@ export interface Settings {
   writeBandMode: boolean
   /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も) */
   writeRst: boolean
+  /**
+   * コンパクトな配置での writeRst。既定は書かない(打ったまま。意味はバーに出る)。
+   * 従来の配置(リリース版)の動きを変えないよう、別に持つ。同期しない(端末ごと)
+   */
+  writeRstCompact: boolean
   /** 誤りの文面の言語(auto は端末の言語) */
   language: LangPref
   /** キーボードの上に、数字の行(0〜9 と / と -)を出す(ソフトキーボードで、文字と数字の切り替えを減らす) */
@@ -26,6 +36,8 @@ export interface Settings {
   editorFont: EditorFont
   /** 候補バーの左の、QSO の数の出し方 */
   qsoCount: QsoCount
+  /** 入力画面の配置。同期しない(端末ごと) */
+  layout: Layout
   /** よく使うリグ。`rig` の値(HAMLOG の `Rig=` の右辺)の候補になる */
   rigs: string[]
 }
@@ -48,10 +60,12 @@ const DEFAULTS: Settings = {
   autoTime: true,
   writeBandMode: false,
   writeRst: true,
+  writeRstCompact: false,
   language: 'auto',
   digitRow: false,
   editorFont: 'mono',
   qsoCount: 'day',
+  layout: 'classic',
   rigs: [],
 }
 
@@ -69,10 +83,12 @@ function load(): Settings {
       autoTime: typeof v.autoTime === 'boolean' ? v.autoTime : DEFAULTS.autoTime,
       writeBandMode: typeof v.writeBandMode === 'boolean' ? v.writeBandMode : DEFAULTS.writeBandMode,
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
+      writeRstCompact: typeof v.writeRstCompact === 'boolean' ? v.writeRstCompact : DEFAULTS.writeRstCompact,
       language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
       editorFont: v.editorFont === 'gothic' ? 'gothic' : 'mono',
       qsoCount: v.qsoCount === 'total' ? 'total' : 'day',
+      layout: v.layout === 'compact' ? 'compact' : 'classic',
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
   } catch {
