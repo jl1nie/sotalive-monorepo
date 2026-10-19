@@ -156,6 +156,8 @@ export async function sampleLog(date: string): Promise<string> {
 
 /** 時刻の挿入に加えて、何を確定するか(すべて省略可。省略は偽) */
 export interface FillOptions {
+  /** 時刻のない行に、いまの時刻を入れない(紙ログの打ち込み)。その行は前の時刻を引き継ぐ */
+  noClock?: boolean
   /** 省略形の時刻(15 など)を HHMM に展開する */
   expandTime?: boolean
   /** 省略されたバンド・モードを書く */
@@ -165,7 +167,7 @@ export interface FillOptions {
 }
 
 /**
- * その行の補完を確定する修正を返す。時刻の挿入は常に行い、`options` で、それ以外に何を
+ * その行の補完を確定する修正を返す。時刻の挿入は `noClock` でなければ常に行い、`options` で、それ以外に何を
  * 確定するかを選ぶ(Enter は指定なし、確定ボタンは設定に従う)。
  * キー入力の中で同期的に使うため、WASMの準備ができていなければ空を返す。
  */
@@ -198,6 +200,8 @@ export interface LineInfo {
   weekday: number
   /** `timezone` の指定(UTCからの時間差)。指定がなければ null */
   timezone: number | null
+  /** この時点の時刻(`HH:MM`、ログのタイムゾーンで)。時刻のない次の行は、これを引き継ぐ */
+  time: string
   band: string
   mode: string
   /** `rig -` のあとや指定がなければ空 */
