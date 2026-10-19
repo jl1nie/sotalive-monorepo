@@ -25,7 +25,7 @@ interface Props {
   /** 時刻を自動で入れるか。入れないときは、時計ではなく、次の QSO が引き継ぐログの時刻を出す */
   autoTime?: boolean
   /**
-   * コンパクトな配置。QSO の数は小さな表示だけ(押せない。一覧はメニューから)にし、POTA・SOTA では要る数を出す。
+   * コンパクトな配置。QSO の数は小さな表示だけ(押せない。一覧はメニューから)にし、POTA・SOTA ではアクティベーション成立に必要な数を出す。
    * 従来の配置では、QSO の数は押すと一覧が開くボタン
    */
   compact?: boolean
@@ -56,7 +56,7 @@ const BIG = 'font-mono text-xl font-bold leading-tight'
 /** 緑のバーの、押すと選べる要素 */
 const PART = 'text-left rounded-lg active:bg-emerald-200 dark:active:bg-emerald-800'
 
-/** その日に要る QSO の数(POTA は 10、SOTA は 4)。どちらでもなければ null */
+/** アクティベーション成立に必要な、その日の QSO の数(POTA は 10、SOTA は 4)。どちらでもなければ null */
 function qsoTarget(info: LineInfo | null): number | null {
   if (info?.pota.length) return 10
   if (info?.sota) return 4
@@ -172,7 +172,7 @@ export function CandidateBar({
   const setting = [info?.band, info?.mode].filter(Boolean).join(' ')
   const meaning = resolved(info, names, t)
 
-  // その日(カーソルの日、UTC)のQSOの数を大きく、全体の数(コンパクトで POTA・SOTA なら要る数)を小さく。設定で、全体の数だけにもできる
+  // その日(カーソルの日、UTC)のQSOの数を大きく、全体の数(コンパクトで POTA・SOTA なら、アクティベーション成立に必要な数)を小さく。設定で、全体の数だけにもできる
   const total = view?.qsos.length ?? 0
   const today = info?.qsoDate ? (view?.qsos.filter((q) => q.date === info.qsoDate).length ?? 0) : total
   const byDay = count === 'day'
@@ -189,7 +189,7 @@ export function CandidateBar({
 
   return (
     <div className={`flex-none flex h-[72px] ${compact ? 'gap-1.5' : 'gap-2'}`}>
-      {/* その日(または全体)の QSO の数。コンパクトでは表示だけ(一覧はメニューから)。要る数に届いたら緑、誤りがあれば赤 */}
+      {/* その日(または全体)の QSO の数。コンパクトでは表示だけ(一覧はメニューから)。アクティベーションが成立したら緑、誤りがあれば赤 */}
       {compact ? (
         <span
           // ただの span の aria-label は読まれないことがあるので、1つの絵として名前を持たせる

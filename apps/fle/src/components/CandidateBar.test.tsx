@@ -245,11 +245,11 @@ describe('CandidateBar: QSO の行と、QSO の数', () => {
 })
 
 describe('CandidateBar: コンパクトな配置の QSO の数', () => {
-  it('POTA の運用では、カーソルの日(UTC)の数を大きく、要る数(10)を小さく出す', () => {
+  it('POTA の運用では、カーソルの日(UTC)の数を大きく、アクティベーション成立に必要な数(10)を小さく出す', () => {
     renderCompact(sample, lines.length - 1)
     const count = screen.getByLabelText(/カーソルの日/)
     expect(count).toHaveTextContent(/^3\/10$/)
-    expect(count).toHaveAccessibleName('カーソルの日(UTC)の 3 QSO / 全部で 10 QSO / 10 QSO まで、あと 7')
+    expect(count).toHaveAccessibleName('カーソルの日(UTC)の 3 QSO / 全部で 10 QSO / アクティベーション成立(10 QSO)まで、あと 7')
   })
 
   it('数は表示だけ(押せない。一覧はメニューから)で、バーの左端に出す', () => {
@@ -265,7 +265,7 @@ describe('CandidateBar: コンパクトな配置の QSO の数', () => {
     expect(screen.getByLabelText(/カーソルの日/)).toHaveTextContent(/^2\/2$/)
   })
 
-  it('SOTA は 4 QSO に届くと、届いたと知らせる', () => {
+  it('SOTA は 4 QSO で、アクティベーション成立を知らせる', () => {
     const log = 'mycall JA1ABC\nmysota JA/ST-012\ndate 2026-10-19\n40m cw\n0900 ja1aaa\n0910 ja1bbb\n0920 ja1ccc'
     renderCompact(log, 6)
     expect(screen.getByLabelText(/カーソルの日/)).toHaveTextContent(/^3\/4$/)
@@ -273,7 +273,7 @@ describe('CandidateBar: コンパクトな配置の QSO の数', () => {
     renderCompact(`${log}\n0930 ja1ddd`, 7)
     const count = screen.getByLabelText(/カーソルの日/)
     expect(count).toHaveTextContent(/^4\/4$/)
-    expect(count).toHaveAccessibleName(/4 QSO に届きました/)
+    expect(count).toHaveAccessibleName(/アクティベーション成立\(4 QSO\)$/)
   })
 
   it('設定で「全体」にすると、全体の数と QSO だけ', () => {
