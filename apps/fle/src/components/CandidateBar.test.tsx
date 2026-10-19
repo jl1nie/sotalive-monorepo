@@ -39,7 +39,7 @@ afterEach(() => {
 const CONFIRM = 'この行を確定して次の行へ'
 
 /** `text` を解釈し、`line` 行目にカーソルがあるときの候補バーを出す */
-function renderAt(text: string, line: number, count: 'day' | 'total' = 'day') {
+function renderAt(text: string, line: number, count: 'day' | 'total' = 'day', autoTime = true) {
   const view = compile(text) as LogView
   const info = lineInfo(text, line) as LineInfo
   render(
@@ -51,6 +51,7 @@ function renderAt(text: string, line: number, count: 'day' | 'total' = 'day') {
       lineText={text.split('\n')[line] ?? ''}
       timezone={0}
       count={count}
+      autoTime={autoTime}
       onOpenList={() => {}}
       onConfirm={() => {}}
     />
@@ -113,6 +114,11 @@ describe('CandidateBar: 補うものがない行は、時刻とバンド・モ�
     // 直前の QSO は 70cm FM。この行で 17m CW になる
     renderAt(sample, lineOf('17m cw'))
     expect(barText()).toMatch(/17m CW$/)
+  })
+
+  it('時刻を自動で入れないときは、時計ではなく、次の QSO が引き継ぐ時刻', () => {
+    renderAt('mycall JA1ABC\ndate 2026-10-19\n40m cw\n0905 ja1aaa\n', 4, 'day', false)
+    expect(barText()).toBe('09:05UTC40m CW')
   })
 
   it('空の行も同じ(説明の文はない)', () => {

@@ -23,6 +23,8 @@ pub struct LineInfo {
     pub weekday: u8,
     /// `timezone` の指定(UTCからの時間差)。指定がなければ None
     pub timezone: Option<i32>,
+    /// この時点の時刻(`HH:MM`、ログのタイムゾーンで)。時刻のない次の行は、これを引き継ぐ
+    pub time: String,
     pub band: String,
     pub mode: String,
     /// HAMLOG の `Rig=` の右辺。`rig -` のあとや指定がなければ空
@@ -71,6 +73,7 @@ pub fn line_info(text: &str, line: usize) -> LineInfo {
         date: base.map(ymd).unwrap_or_default(),
         weekday: base.map_or(0, |d| d.weekday().number_from_monday() as u8),
         timezone: env.timezone,
+        time: format!("{:02}:{:02}", env.current.hour, env.current.min),
         band: env.current.band.clone(),
         mode: env.current.mode.clone(),
         rig: env.rig.clone(),
@@ -129,6 +132,13 @@ rig -
         let next = at("day +");
         assert_eq!((next.date.as_str(), next.weekday), ("2026-10-20", 2));
         assert_eq!(at("# 注釈").date, "", "date がまだない");
+    }
+
+    #[test]
+    fn the_time_is_carried_over_and_reset_by_day() {
+        assert_eq!(at("2302 ja1qsa").time, "23:02");
+        assert_eq!(at("17m cw").time, "00:00", "day + で 00:00 に戻る");
+        assert_eq!(at("0004 zl1qsb").time, "00:04");
     }
 
     #[test]

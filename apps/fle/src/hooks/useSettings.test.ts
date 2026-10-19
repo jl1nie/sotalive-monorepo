@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { useSettings } from './useSettings'
+import { SYNCED_KEYS } from '@/lib/sync'
 
 const KEY = 'fle.settings'
 
@@ -49,5 +50,15 @@ describe('useSettings: QSO の数', () => {
     expect(renderHook(() => useSettings()).result.current.settings.qsoCount).toBe('total')
     localStorage.setItem(KEY, JSON.stringify({ qsoCount: 'week' }))
     expect(renderHook(() => useSettings()).result.current.settings.qsoCount).toBe('day')
+  })
+})
+
+describe('useSettings: 時刻を自動で入れる', () => {
+  it('初めてはオン。オフにすると保存され、同期の対象ではない', () => {
+    const first = renderHook(() => useSettings())
+    expect(first.result.current.settings.autoTime).toBe(true)
+    act(() => first.result.current.update({ autoTime: false }))
+    expect(renderHook(() => useSettings()).result.current.settings.autoTime).toBe(false)
+    expect(SYNCED_KEYS).not.toContain('autoTime')
   })
 })

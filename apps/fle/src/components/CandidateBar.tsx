@@ -22,6 +22,8 @@ interface Props {
   timezone: number
   /** QSO の数の出し方(既定は、その日の数と全体の数) */
   count?: QsoCount
+  /** 時刻を自動で入れるか。入れないときは、時計ではなく、次の QSO が引き継ぐログの時刻を出す */
+  autoTime?: boolean
   onOpenList: () => void
   /** この行を確定して、次の行へ進む */
   onConfirm: () => void
@@ -107,6 +109,7 @@ export function CandidateBar({
   lineText,
   timezone,
   count = 'day',
+  autoTime = true,
   onOpenList,
   onConfirm,
 }: Props) {
@@ -124,7 +127,7 @@ export function CandidateBar({
   const omissions = view?.errors.filter((e) => e.line === caretLine && OMISSIONS.has(e.code)) ?? []
   const errorCount = (view?.errors.filter((e) => e.line !== caretLine).length ?? 0) + omissions.length
 
-  // 時計(10秒ごとに進める)
+  // 時計(10秒ごとに進める)。時刻を自動で入れないときは、ログの時刻を出す
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 10_000)
@@ -138,7 +141,7 @@ export function CandidateBar({
   const typed = lineText.trim()
   const draft = !qso && !!error && typed !== '' && omissions.length === 0
   const tz = info?.timezone ?? timezone
-  const clock = new Date(now + tz * 3_600_000).toISOString().slice(11, 16)
+  const clock = autoTime || !info ? new Date(now + tz * 3_600_000).toISOString().slice(11, 16) : info.time
   const setting = [info?.band, info?.mode].filter(Boolean).join(' ')
   const meaning = resolved(info, names, t)
 

@@ -12,7 +12,9 @@ export interface Settings {
   theme: Theme
   /** 既定のタイムゾーン(UTCからの時間差。UTC は 0) */
   timezone: number
-  /** 確定ボタンで、バンド・モードも書く(時刻は常に書く) */
+  /** 時刻のない QSO の行を確定するとき、いまの時刻を入れる(紙ログの打ち込みではオフ)。同期しない(端末ごと) */
+  autoTime: boolean
+  /** 確定ボタンで、バンド・モードも書く */
   writeBandMode: boolean
   /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も) */
   writeRst: boolean
@@ -43,6 +45,7 @@ const touchDevice = () => {
 const DEFAULTS: Settings = {
   theme: 'system',
   timezone: 0,
+  autoTime: true,
   writeBandMode: false,
   writeRst: true,
   language: 'auto',
@@ -63,6 +66,7 @@ function load(): Settings {
     return {
       theme,
       timezone,
+      autoTime: typeof v.autoTime === 'boolean' ? v.autoTime : DEFAULTS.autoTime,
       writeBandMode: typeof v.writeBandMode === 'boolean' ? v.writeBandMode : DEFAULTS.writeBandMode,
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
       language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',

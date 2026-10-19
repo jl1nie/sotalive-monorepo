@@ -3,8 +3,9 @@
 //! 補完した結果はログのテキストに書き込んで残す(開き直しても、再解釈しても同じになる)。
 //! コアは時計を持たない。「いまの時刻」は呼び出し側から受け取る。
 //!
-//! 確定の範囲(`FillScope`)は、独立した3つの指定:
-//! - 時刻のない QSO 行の、行頭の時刻(`HHMM `)の挿入は、常に行う(「いま」はあとから再現できない)。
+//! 確定の範囲(`FillScope`)は、独立した指定:
+//! - 時刻のない QSO 行の、行頭の時刻(`HHMM `)の挿入は、`no_clock` でなければ常に行う
+//!   (「いま」はあとから再現できない)。`no_clock` は紙ログの打ち込み用で、その行は前の時刻を引き継ぐ。
 //! - `expand_time`: 省略形の時刻(`15`、`115`)を、前の行から決まる `HHMM` に展開する。
 //! - `band_mode`: 省略されたバンド・モードを、コールサインの前に挿入する。
 //! - `rst`: 省略された RST を挿入し、省略形(`4` など)を解決した値に置き換える。
@@ -41,6 +42,8 @@ pub struct FillScope {
     pub band_mode: bool,
     /// 省略された RST を書き、省略形を解決した値に置き換える
     pub rst: bool,
+    /// 時刻のない行に、いまの時刻を入れない(紙ログの打ち込み用)。その行は前の時刻を引き継ぐ
+    pub no_clock: bool,
 }
 
 impl FillScope {
@@ -49,12 +52,14 @@ impl FillScope {
         expand_time: false,
         band_mode: false,
         rst: false,
+        no_clock: false,
     };
     /// すべて
     pub const FULL: Self = Self {
         expand_time: true,
         band_mode: true,
         rst: true,
+        no_clock: false,
     };
 
     /// QSOの解釈結果(コンパイルの結果)が要るか
@@ -118,6 +123,7 @@ pub fn fill_with(
 
     // --- 時刻 ---
     match shape.time {
+        None if scope.no_clock => {}
         None => {
             let Some(now) = DateTime::from_timestamp_millis(now_ms) else {
                 return Vec::new();
@@ -488,6 +494,35 @@ mod tests {
         assert_eq!(json[0]["insert"], "0905 ");
     }
 
+    // ---- いまの時刻を入れない(紙ログの打ち込み) ----
+
+    #[test]
+    fn no_clock_leaves_the_line_without_a_time() {
+        let scope = FillScope {
+            no_clock: true,
+            ..FillScope::TIME
+        };
+        assert!(fill_with("40m cw\nja1xyz", 1, NOW, 0, scope).is_empty());
+        // 既定のタイムゾーンの行も書かない(時刻を入れないので要らない)
+        assert!(fill_with("40m cw\nja1xyz", 1, NOW, 9, scope).is_empty());
+    }
+
+    #[test]
+    fn no_clock_still_writes_band_mode_and_rst_and_expands_shorthand() {
+        let scope = FillScope {
+            no_clock: true,
+            ..FillScope::FULL
+        };
+        let text = "mycall JA1ABC\ndate 2026-10-18\n40m cw\n1000 ja1aaa\nja1xyz\n5 ja1qqq";
+        let once = apply(text, &fill_with(text, 4, NOW, 0, scope));
+        assert!(
+            once.ends_with("\n40m CW ja1xyz 599 599\n5 ja1qqq"),
+            "{once}"
+        );
+        let twice = apply(&once, &fill_with(&once, 5, NOW, 0, scope));
+        assert!(twice.ends_with("\n1005 40m CW ja1qqq 599 599"), "{twice}");
+    }
+
     // ---- Full(確定ボタン) ----
 
     fn full(text: &str, line: usize, tz: i32) -> Vec<Edit> {
@@ -672,6 +707,7 @@ mod tests {
             expand_time: true,
             band_mode,
             rst,
+            ..FillScope::TIME
         };
         apply(text, &fill_with(text, line, NOW, 0, scope))
     }
@@ -731,6 +767,7 @@ mod tests {
                     expand_time: true,
                     band_mode,
                     rst,
+                    ..FillScope::TIME
                 };
                 for (text, line) in cases {
                     let before = compile_fle(text)
@@ -780,7 +817,8 @@ mod tests {
             FillScope {
                 expand_time: false,
                 band_mode: true,
-                rst: false
+                rst: false,
+                no_clock: false,
             }
         );
         let none: FillScope = serde_json::from_str("{}").unwrap();

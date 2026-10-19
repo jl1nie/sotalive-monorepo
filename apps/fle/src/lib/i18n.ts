@@ -77,7 +77,7 @@ const ja = {
   'settings.theme.dark.hint': '夜間や暗い場所向け',
   'settings.confirm': '確定の書き方',
   'settings.confirm.intro':
-    '緑の候補バーで確定するとき、時刻は必ず書きます。ほかに書くものを選べます。省略したままでも、意味は同じです(バーには、いつも完全な解釈が出ます)。',
+    '緑の候補バーで確定するとき、時刻のほかに書くものを選べます。省略したままでも、意味は同じです(バーには、いつも完全な解釈が出ます)。',
   'settings.confirm.rst': 'RST',
   'settings.confirm.rst.hint': '省略したときの 599 / 59 も書きます。4 のような省略形は 549 のように直します',
   'menu.plans': '予定(行き先)',
@@ -137,6 +137,9 @@ const ja = {
   'settings.rigs.hint': '1行に1つ。HAMLOG の Rig= の右辺(HAMLOG で定義した値)や、KX2/IC-705+EFHW のような自由な文字列を書きます。ログで rig と打つと、この一覧が候補に出ます。',
   'settings.rigs.placeholder': '40mST1\n20mST1',
   'digits.label': '数字キー',
+  'settings.autoTime': '時刻を自動で入れる',
+  'settings.autoTime.hint':
+    '時刻のない QSO の行を確定すると、いまの時刻を入れます。紙ログを打ち込むときはオフに(時刻のない行は、前の行の時刻を引き継ぎます)。この端末だけの設定です。',
   'settings.digitRow': '数字キーの行',
   'settings.digitRow.hint': 'キーボードの上に 0〜9 と / と - を出します。7L1WRK や JA-1151 のような、数字と文字・記号が混ざる入力で、キーボードを切り替えずに済みます。',
   'settings.qsoCount': 'QSO の数',
@@ -275,7 +278,7 @@ const en: Record<MessageKey, string> = {
   'settings.theme.dark.hint': 'For night or dark places',
   'settings.confirm': 'What confirming writes',
   'settings.confirm.intro':
-    'When you confirm with the green bar, the time is always written. Choose what else to write. The meaning is the same if you leave them out (the bar always shows the full interpretation).',
+    'Choose what confirming with the green bar writes besides the time. The meaning is the same if you leave them out (the bar always shows the full interpretation).',
   'settings.confirm.rst': 'RST',
   'settings.confirm.rst.hint': 'Also writes the default 599 / 59. A short form such as 4 is rewritten like 549',
   'menu.plans': 'Plans (destinations)',
@@ -335,6 +338,9 @@ const en: Record<MessageKey, string> = {
   'settings.rigs.hint': 'One per line: the value after HAMLOG\'s Rig= (as you defined it in HAMLOG), or free text such as KX2/IC-705+EFHW. Type rig in the log to get these as suggestions.',
   'settings.rigs.placeholder': '40mST1\n20mST1',
   'digits.label': 'Digit keys',
+  'settings.autoTime': 'Insert the current time',
+  'settings.autoTime.hint':
+    'Confirming a QSO line without a time inserts the current time. Turn this off when typing in a paper log (a line without a time takes the time of the line before). This device only.',
   'settings.digitRow': 'Digit key row',
   'settings.digitRow.hint': 'Shows 0-9, / and - above the keyboard, so you can type things like 7L1WRK or JA-1151 without switching keyboards.',
   'settings.qsoCount': 'QSO count',

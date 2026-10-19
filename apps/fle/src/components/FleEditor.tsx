@@ -185,15 +185,17 @@ function Editor({
 
   const caretLine = lineOf(text, caret)
 
-  // 確定ボタンで何を書くか(時刻は常に。省略形の時刻も直す)。Enterは時刻の挿入だけ
+  // 確定ボタンで何を書くか(時刻は、自動で入れる設定なら。省略形の時刻も直す)。Enterは時刻の挿入だけ
+  const noClock = !settings.autoTime
   const confirmScope = {
+    noClock,
     expandTime: true,
     bandMode: settings.writeBandMode,
     rst: settings.writeRst,
   }
 
   // この行を確定したら、どう見えるか(時刻・バンド・モード・RSTが入った姿)を先に見せる
-  const previewKey = `${caretLine}|${settings.timezone}|${settings.writeBandMode}|${settings.writeRst}|${text}`
+  const previewKey = `${caretLine}|${settings.timezone}|${noClock}|${settings.writeBandMode}|${settings.writeRst}|${text}`
   useEffect(() => {
     const line = caretLine
     if (!view?.qsos.some((q) => q.line === line)) return
@@ -330,7 +332,7 @@ function Editor({
 
     if (newlineAdded) {
       const done = lineOf(value, pos) - 1
-      const edits = fillLine(value, done, startedAtFor(done), settings.timezone)
+      const edits = fillLine(value, done, startedAtFor(done), settings.timezone, { noClock })
       if (edits.length > 0) {
         const at = mapCaret(pos, edits)
         lineStartedAt.current = null
@@ -479,6 +481,7 @@ function Editor({
         caretLine={caretLine}
         timezone={settings.timezone}
         count={settings.qsoCount}
+        autoTime={settings.autoTime}
         lineText={text.slice(...lineRange(text, caretLine))}
         onOpenList={() => setListOpen(true)}
         onConfirm={confirmLine}
