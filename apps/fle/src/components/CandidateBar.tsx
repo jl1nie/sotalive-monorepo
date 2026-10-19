@@ -192,6 +192,8 @@ export function CandidateBar({
       {/* その日(または全体)の QSO の数。コンパクトでは表示だけ(一覧はメニューから)。要る数に届いたら緑、誤りがあれば赤 */}
       {compact ? (
         <span
+          // ただの span の aria-label は読まれないことがあるので、1つの絵として名前を持たせる
+          role="img"
           aria-label={countLabel}
           title={countLabel}
           className={`flex-none min-w-10 px-1 rounded-lg border-2 flex flex-col items-center justify-center leading-none tabular-nums font-bold ${

@@ -254,7 +254,7 @@ describe('CandidateBar: コンパクトな配置の QSO の数', () => {
 
   it('数は表示だけ(押せない。一覧はメニューから)で、バーの左端に出す', () => {
     renderCompact(sample, lines.length - 1)
-    const count = screen.getByLabelText(/カーソルの日/)
+    const count = screen.getByRole('img', { name: /カーソルの日/ })
     expect(count.closest('button')).toBeNull()
     expect(screen.queryByRole('button', { name: /QSO一覧を開く/ })).not.toBeInTheDocument()
     expect(count.parentElement?.firstElementChild).toBe(count)
