@@ -345,6 +345,101 @@ fn leading_spaces_utf16(line: &str) -> usize {
     utf16_len(&line[..line.len() - line.trim_start().len()])
 }
 
+/// 修正を、後ろの位置のものから順に適用する(UTF-16の位置で)
+pub fn apply_edits(text: &str, edits: &[Edit]) -> String {
+    let mut units: Vec<u16> = text.encode_utf16().collect();
+    let mut sorted: Vec<&Edit> = edits.iter().collect();
+    sorted.sort_by_key(|e| std::cmp::Reverse(e.from));
+    for e in sorted {
+        units.splice(e.from..e.to, e.insert.encode_utf16());
+    }
+    String::from_utf16_lossy(&units)
+}
+
+/// QSO の行で、直すために選ぶ要素(候補バーで押したもの)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Part {
+    Call,
+    Time,
+    /// 受信の RST(相手からもらった方)
+    RstRcvd,
+    /// 送信の RST
+    RstSent,
+}
+
+/// 要素を選ぶための修正と、選ぶ範囲。範囲は、修正を適用した後のテキストでの位置(UTF-16)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Selection {
+    pub edits: Vec<Edit>,
+    pub from: usize,
+    pub to: usize,
+}
+
+/// `line` の QSO の行で、`part` の範囲を返す。行に書かれていなければ、書き込む修正もつける
+/// (RST は既定値、時刻はいまの時刻。`no_clock` なら、前から引き継いだ時刻)。
+/// 解釈できない行・誤りのある行は None。
+pub fn select_part(
+    text: &str,
+    line: usize,
+    part: Part,
+    now_ms: i64,
+    default_tz: i32,
+    no_clock: bool,
+) -> Option<Selection> {
+    let edits = match (part, find_part(text, line, part)) {
+        (_, Some(_)) => Vec::new(),
+        (Part::Call, None) => return None,
+        (Part::Time, None) if !no_clock => {
+            fill_with(text, line, now_ms, default_tz, FillScope::TIME)
+        }
+        (Part::Time, None) => {
+            let lines: Vec<&str> = text.split('\n').collect();
+            let compiled = compile_fle(text);
+            if compiled.errors.iter().any(|e| e.line == line) {
+                return None;
+            }
+            let rec = compiled.records.iter().find(|r| r.line == line)?;
+            let hhmm = local_hhmm(rec, timezone_before(&lines[..line]).unwrap_or(0))?;
+            let at = line_start_utf16(&lines, line) + leading_spaces_utf16(lines[line]);
+            vec![insert_at(at, format!("{hhmm} "))]
+        }
+        (Part::RstRcvd | Part::RstSent, None) => {
+            let scope = FillScope {
+                rst: true,
+                no_clock: true,
+                ..FillScope::TIME
+            };
+            fill_with(text, line, now_ms, default_tz, scope)
+        }
+    };
+    if edits.is_empty() && find_part(text, line, part).is_none() {
+        return None;
+    }
+    let after = apply_edits(text, &edits);
+    // 先頭に timezone の行が入ると、行がずれる
+    let shift = after.split('\n').count() - text.split('\n').count();
+    let (from, to) = find_part(&after, line + shift, part)?;
+    Some(Selection { edits, from, to })
+}
+
+/// `line` の QSO の行での、`part` の範囲(テキスト全体での UTF-16 の位置)
+fn find_part(text: &str, line: usize, part: Part) -> Option<Span> {
+    let lines: Vec<&str> = text.split('\n').collect();
+    let LineKind::Qso(items) = parse_line(lines.get(line)?).kind else {
+        return None;
+    };
+    let shape = QsoShape::of(&items)?;
+    let (from, to) = match part {
+        Part::Call => items[shape.call].span,
+        Part::Time => items[shape.time?].span,
+        Part::RstSent => shape.rst[0].as_ref()?.span,
+        Part::RstRcvd => shape.rst[1].as_ref()?.span,
+    };
+    let start = line_start_utf16(&lines, line);
+    Some((start + from, start + to))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -360,15 +455,8 @@ mod tests {
         }
     }
 
-    /// 修正を、後ろの位置のものから順に適用する(UTF-16の位置で)
     fn apply(text: &str, edits: &[Edit]) -> String {
-        let mut units: Vec<u16> = text.encode_utf16().collect();
-        let mut sorted: Vec<&Edit> = edits.iter().collect();
-        sorted.sort_by_key(|e| std::cmp::Reverse(e.from));
-        for e in sorted {
-            units.splice(e.from..e.to, e.insert.encode_utf16());
-        }
-        String::from_utf16(&units).unwrap()
+        apply_edits(text, edits)
     }
 
     #[test]
@@ -521,6 +609,85 @@ mod tests {
         );
         let twice = apply(&once, &fill_with(&once, 5, NOW, 0, scope));
         assert!(twice.ends_with("\n1005 40m CW ja1qqq 599 599"), "{twice}");
+    }
+
+    // ---- 候補バーで要素を選ぶ ----
+
+    /// 選んだ後のテキストと、選んだ文字
+    fn pick(text: &str, line: usize, part: Part, no_clock: bool) -> (String, String) {
+        let sel = select_part(text, line, part, NOW, 0, no_clock).expect("selection");
+        let after = apply(text, &sel.edits);
+        let units: Vec<u16> = after.encode_utf16().collect();
+        let picked = String::from_utf16(&units[sel.from..sel.to]).unwrap();
+        (after, picked)
+    }
+
+    const LOG: &str = "mycall JA1ABC\ndate 2026-10-18\n40m cw\n1000 ja1aaa\n";
+
+    #[test]
+    fn selects_what_is_written() {
+        let text = format!("{LOG}5 ja1xyz 579 449 <hi>");
+        assert_eq!(
+            pick(&text, 4, Part::Call, false),
+            (text.clone(), "ja1xyz".into())
+        );
+        assert_eq!(pick(&text, 4, Part::Time, false).1, "5");
+        assert_eq!(pick(&text, 4, Part::RstSent, false).1, "579");
+        assert_eq!(pick(&text, 4, Part::RstRcvd, false).1, "449");
+    }
+
+    #[test]
+    fn writes_the_default_rst_then_selects_it() {
+        let text = format!("{LOG}0905 ja1xyz");
+        let (after, picked) = pick(&text, 4, Part::RstRcvd, false);
+        assert_eq!(
+            (after.as_str(), picked.as_str()),
+            (format!("{LOG}0905 ja1xyz 599 599").as_str(), "599")
+        );
+        let sel = select_part(&text, 4, Part::RstRcvd, NOW, 0, false).unwrap();
+        assert!(
+            after.encode_utf16().count() == sel.to,
+            "受信の方(後ろ)を選ぶ"
+        );
+        // 送信だけ書いてあれば、受信だけ足す
+        let text = format!("{LOG}0905 ja1xyz 57");
+        assert_eq!(
+            pick(&text, 4, Part::RstRcvd, false).0,
+            format!("{LOG}0905 ja1xyz 57 599")
+        );
+    }
+
+    #[test]
+    fn writes_the_time_then_selects_it() {
+        let text = format!("{LOG}ja1xyz");
+        assert_eq!(
+            pick(&text, 4, Part::Time, false),
+            (format!("{LOG}0905 ja1xyz"), "0905".into())
+        );
+        // いまの時刻を入れない設定では、前から引き継いだ時刻を書く
+        assert_eq!(
+            pick(&text, 4, Part::Time, true),
+            (format!("{LOG}1000 ja1xyz"), "1000".into())
+        );
+    }
+
+    #[test]
+    fn follows_the_shift_of_a_timezone_line() {
+        let text = "mycall JA1ABC\nja1xyz";
+        let sel = select_part(text, 1, Part::Time, NOW, 9, false).unwrap();
+        let after = apply(text, &sel.edits);
+        assert_eq!(after, "timezone +9\nmycall JA1ABC\n1805 ja1xyz");
+        let units: Vec<u16> = after.encode_utf16().collect();
+        assert_eq!(
+            String::from_utf16(&units[sel.from..sel.to]).unwrap(),
+            "1805"
+        );
+    }
+
+    #[test]
+    fn nothing_to_select_on_a_line_that_is_not_a_qso() {
+        assert!(select_part(LOG, 2, Part::Call, NOW, 0, false).is_none());
+        assert!(select_part(LOG, 0, Part::RstRcvd, NOW, 0, false).is_none());
     }
 
     // ---- Full(確定ボタン) ----

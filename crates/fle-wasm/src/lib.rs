@@ -5,7 +5,8 @@
 use chrono::DateTime;
 use fle_core::{
     adif_to_fle, check_log, compile_fle, compile_log, complete_at, fill_with, generate_fle_output,
-    grid_locator, line_info, sample_log, station_at, station_plan, FillScope, Station,
+    grid_locator, line_info, sample_log, select_part, station_at, station_plan, FillScope, Part,
+    Station,
 };
 use wasm_bindgen::prelude::*;
 
@@ -39,8 +40,8 @@ pub fn sample_log_text(date: &str) -> String {
 /// `line`(0始まり)の行を確定するための修正(`from` / `to` / `insert`)を返す。
 ///
 /// 位置はUTF-16の文字位置。`now_ms` は `Date.now()` の値、`default_tz` は設定の既定の
-/// タイムゾーン(UTCからの時間差)。時刻の挿入は常に行い、`options`
-/// (`{ expandTime, bandMode, rst }`、省略可)で、それ以外に何を確定するかを選ぶ。
+/// タイムゾーン(UTCからの時間差)。`options`(`{ noClock, expandTime, bandMode, rst }`、省略可)で、
+/// 何を確定するかを選ぶ。時刻の挿入は、`noClock` でなければ常に行う。
 #[wasm_bindgen]
 pub fn fill(
     text: &str,
@@ -61,6 +62,24 @@ pub fn fill(
         default_tz,
         scope,
     ))?)
+}
+
+/// QSO の行で、直す要素(`call` / `time` / `rstRcvd` / `rstSent`)を選ぶ。行に書かれていなければ、
+/// 書き込む修正もつける。`{ edits, from, to }`(範囲は修正を適用した後の位置)か、選べなければ null。
+#[wasm_bindgen(js_name = selectPart)]
+pub fn select_part_at(
+    text: &str,
+    line: usize,
+    part: &str,
+    now_ms: f64,
+    default_tz: i32,
+    no_clock: bool,
+) -> Result<JsValue, JsError> {
+    let part: Part = serde_wasm_bindgen::from_value(JsValue::from_str(part))?;
+    match select_part(text, line, part, now_ms as i64, default_tz, no_clock) {
+        Some(sel) => Ok(serde_wasm_bindgen::to_value(&sel)?),
+        None => Ok(JsValue::NULL),
+    }
 }
 
 /// `line`(0始まり)の行の直前までで有効な、自局と運用場所(`mycall` / `sota` / `pota` / `wwff` / `grid`)。

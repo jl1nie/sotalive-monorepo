@@ -6,6 +6,7 @@ import init, {
   complete as wasmComplete,
   sampleLog as wasmSampleLog,
   fill as wasmFill,
+  selectPart as wasmSelectPart,
   gridLocator as wasmGridLocator,
   stationAt as wasmStationAt,
   lineInfo as wasmLineInfo,
@@ -180,6 +181,32 @@ export function fillLine(
 ): Edit[] {
   if (!initialized) return []
   return wasmFill(text, line, nowMs, defaultTz, options) as Edit[]
+}
+
+/** 候補バーで選んで直す、QSO の行の要素 */
+export type QsoPart = 'call' | 'time' | 'rstRcvd' | 'rstSent'
+
+/** 要素を選ぶための修正と、選ぶ範囲(修正を適用した後の位置、UTF-16) */
+export interface PartSelection {
+  edits: Edit[]
+  from: number
+  to: number
+}
+
+/**
+ * QSO の行で `part` を選ぶ。行に書かれていなければ、書き込む修正もつける(RST は既定値、時刻はいまの時刻。
+ * `noClock` なら前から引き継いだ時刻)。選べない行は null。
+ */
+export function selectPart(
+  text: string,
+  line: number,
+  part: QsoPart,
+  nowMs: number,
+  defaultTz: number,
+  noClock: boolean
+): PartSelection | null {
+  if (!initialized) return null
+  return (wasmSelectPart(text, line, part, nowMs, defaultTz, noClock) as PartSelection | null) ?? null
 }
 
 /** `line` の行の直前までで有効な、自局と運用場所(カーソルの位置で、どの場所かが変わる) */

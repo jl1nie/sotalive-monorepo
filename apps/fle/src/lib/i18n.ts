@@ -137,6 +137,10 @@ const ja = {
   'settings.rigs.hint': '1行に1つ。HAMLOG の Rig= の右辺(HAMLOG で定義した値)や、KX2/IC-705+EFHW のような自由な文字列を書きます。ログで rig と打つと、この一覧が候補に出ます。',
   'settings.rigs.placeholder': '40mST1\n20mST1',
   'digits.label': '数字キー',
+  'bar.selectCall': 'コールを選んで直す',
+  'bar.selectRst': 'RSTを選んで直す(押すたびに受信と送信)',
+  'bar.selectTime': '時刻を選んで直す',
+  'digits.swipe': '左右になぞるとカーソルが動きます',
   'settings.autoTime': '時刻を自動で入れる',
   'settings.autoTime.hint':
     '時刻のない QSO の行を確定すると、いまの時刻を入れます。紙ログを打ち込むときはオフに(時刻のない行は、前の行の時刻を引き継ぎます)。この端末だけの設定です。',
@@ -338,6 +342,10 @@ const en: Record<MessageKey, string> = {
   'settings.rigs.hint': 'One per line: the value after HAMLOG\'s Rig= (as you defined it in HAMLOG), or free text such as KX2/IC-705+EFHW. Type rig in the log to get these as suggestions.',
   'settings.rigs.placeholder': '40mST1\n20mST1',
   'digits.label': 'Digit keys',
+  'bar.selectCall': 'Select the callsign to fix it',
+  'bar.selectRst': 'Select the RST to fix it (received, then sent)',
+  'bar.selectTime': 'Select the time to fix it',
+  'digits.swipe': 'Swipe left or right to move the cursor',
   'settings.autoTime': 'Insert the current time',
   'settings.autoTime.hint':
     'Confirming a QSO line without a time inserts the current time. Turn this off when typing in a paper log (a line without a time takes the time of the line before). This device only.',
