@@ -8,6 +8,7 @@ import { act, cleanup, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { compile, initSync, lineInfo, sampleLog } from '@/wasm/fle/fle'
 import type { LineInfo, LogView } from '@/lib/fle'
+import type { ReactNode } from 'react'
 import { CandidateBar } from './CandidateBar'
 
 let sample = ''
@@ -46,7 +47,8 @@ function renderAt(
   autoTime = true,
   onSelectPart: (part: string) => void = () => {},
   timezone = 0,
-  compact = false
+  compact = false,
+  extra: { suggest?: ReactNode; onNewline?: () => void } = {}
 ) {
   const view = compile(text) as LogView
   const info = lineInfo(text, line) as LineInfo
@@ -61,6 +63,8 @@ function renderAt(
       count={count}
       autoTime={autoTime}
       compact={compact}
+      suggest={extra.suggest}
+      onNewline={extra.onNewline}
       onOpenList={() => {}}
       onConfirm={() => {}}
       onSelectPart={onSelectPart}
@@ -279,5 +283,40 @@ describe('CandidateBar: コンパクトな配置の QSO の数', () => {
   it('設定で「全体」にすると、全体の数と QSO だけ', () => {
     renderCompact(sample, lines.length - 1, 'total')
     expect(screen.getByLabelText('全部で 10 QSO')).toHaveTextContent(/^10QSO$/)
+  })
+})
+
+describe('CandidateBar: コンパクトな配置の右端のボタン', () => {
+  const log = 'mycall JA1ABC\ndate 2026-10-19\n40m cw\n0900 ja1aaa'
+  const NEXT = '改行して次の行へ'
+  const suggest = <button type="button">ssb</button>
+
+  it('QSO でない行(40m cw)では、確定の代わりに「次の行」を出し、押すと改行する', () => {
+    const onNewline = vi.fn()
+    renderAt(log, 2, 'day', true, () => {}, 0, true, { onNewline })
+    expect(screen.queryByRole('button', { name: CONFIRM })).not.toBeInTheDocument()
+    act(() => screen.getByRole('button', { name: NEXT }).click())
+    expect(onNewline).toHaveBeenCalledTimes(1)
+  })
+
+  it('補完候補が出ていても、「次の行」は覆わない', () => {
+    renderAt(log, 2, 'day', true, () => {}, 0, true, { suggest })
+    const next = screen.getByRole('button', { name: NEXT })
+    expect(next.contains(screen.getByRole('button', { name: 'ssb' }))).toBe(false)
+    expect(screen.getByRole('button', { name: 'ssb' }).closest('div')?.contains(next)).toBe(false)
+  })
+
+  it('確定できる行では ✓ を出し(次の行は出さない)、補完候補は ✓ を避けて重ねる', () => {
+    renderAt(log, 3, 'day', true, () => {}, 0, true, { suggest })
+    expect(screen.queryByRole('button', { name: NEXT })).not.toBeInTheDocument()
+    const confirm = screen.getByRole('button', { name: CONFIRM })
+    const layer = screen.getByRole('button', { name: 'ssb' }).parentElement!
+    expect(layer).toHaveClass('right-[4.25rem]')
+    expect(layer.contains(confirm)).toBe(false)
+  })
+
+  it('従来の配置には「次の行」はない', () => {
+    renderAt(log, 2)
+    expect(screen.queryByRole('button', { name: NEXT })).not.toBeInTheDocument()
   })
 })

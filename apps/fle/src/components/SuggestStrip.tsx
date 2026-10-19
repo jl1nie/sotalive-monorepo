@@ -30,7 +30,8 @@ export function SuggestStrip({ candidates, onPick, overBar = false }: Props) {
       // タップしても入力欄からフォーカスを奪わない(キーボードを閉じない)
       {...keepFocus}
       className={`absolute flex gap-2 overflow-x-auto rounded-xl border-2 border-gray-500 bg-white dark:bg-gray-950 ${
-        overBar ? 'inset-0 z-10 items-center px-1.5' : 'inset-x-2 bottom-2 p-1.5'
+        // 重ねる先は、呼ぶ側の枠(押せない枠の中で、候補だけ押せる)
+        overBar ? 'inset-0 items-center px-1.5 pointer-events-auto' : 'inset-x-2 bottom-2 p-1.5'
       }`}
     >
       {candidates.map((c) => (
