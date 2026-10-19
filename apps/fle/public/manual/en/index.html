@@ -159,13 +159,13 @@ ssb
   <li><b>Example: you received 579, not 599</b> → tap the RST → ⌫ ⌫ → <code>79</code>.</li>
   <li><b>Example: it was JA1XYW, not JA1XYZ</b> → tap the callsign → ⌫ → <code>w</code>.</li>
   <li>If the RST or time was left out (the bar shows the filled-in value), tapping it writes that value into the line first, then moves to its end. On the line <code>ja1xyz</code>, tapping the RST gives <code>ja1xyz 599 599|</code>.</li>
-  <li>To fix a character <b>in the middle</b>, tap the part to get to its end, then <b>swipe the digit row left or right</b> to move the cursor (about 20px per character). Turn on the digit row with "Digit key row" in the settings.</li>
+  <li>To fix a character <b>in the middle</b>, tap the part to get to its end, then <b>swipe the digit row left or right</b> to move the cursor (<a href="#swipe">next section</a>).</li>
   <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line.</li>
   <li>Only ✓ at the right end of the green bar confirms (moves to the next line). Tapping a part never confirms.</li>
 </ul>
 
-<h4>Swipe the digit row to move the cursor</h4>
-<p>You can move the cursor one character at a time without aiming your finger between characters.</p>
+<h3 id="swipe">Swipe the digit row to move the cursor</h3>
+<p>You can move the cursor one character at a time without aiming your finger between characters. <b>Lines other than QSOs (<code>date</code>, <code>mysota</code>, <code>qslmsg</code>, comments, ...) have no parts to tap in the green bar, so this is the main way to fix them.</b> On QSO lines, use it to fix a character in the middle of a part.</p>
 <pre><code>[1][2][3][4][5][6][7][8][9][0][/][-]
  ← keep your finger down, slide →</code></pre>
 <ol>
@@ -175,6 +175,8 @@ ssb
 </ol>
 <ul>
   <li>If you lift almost without moving (less than 10px), it is a normal tap and types that digit.</li>
+  <li><b>Example: change 1151 to 1152 in <code>mypota jp-1151 jp-1164</code></b> → tap near <code>1151</code> in the editor → swipe the digit row to <code>1151|</code> → ⌫ → <code>2</code>.</li>
+  <li><b>Example: change <code>date 2026-10-19</code> to the 18th</b> → tap the end of the line (<code>19|</code>) → ⌫ → <code>8</code>. No swipe is needed at the end of a line.</li>
   <li><b>Example: change the middle 5 of the sent report 559 to 7</b> → tap the RST twice for <code>559|</code> → swipe the digit row left by one character for <code>55|9</code> → ⌫ → <code>7</code>, giving <code>579</code>.</li>
   <li>Tap the editor to get near, then swipe for the fine position.</li>
   <li>Show the digit row with "Digit key row" in the settings (it is on from the start on touch devices).</li>
