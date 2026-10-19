@@ -169,7 +169,7 @@ const ja = {
   'settings.autoTime.hint':
     '時刻のない QSO の行を確定すると、いまの時刻を入れます。紙ログを打ち込むときはオフに(時刻のない行は、前の行の時刻を引き継ぎます)。この端末だけの設定です。',
   'settings.digitRow': '数字キーの行',
-  'settings.digitRow.hint': 'キーボードの上に 0〜9 と / と - を出します(コンパクトな配置では、← → 空白 ⌫ も)。7L1WRK や JA-1151 のような、数字と文字・記号が混ざる入力で、キーボードを切り替えずに済みます。',
+  'settings.digitRow.hint': 'キーボードの上に 0〜9 と / と - を出します(コンパクトな配置では、← → 空白 ⌫ も)。JA1ABC/1 や JA-1151 のような、数字と文字・記号が混ざる入力で、キーボードを切り替えずに済みます。',
   'settings.layout': '画面の配置',
   'settings.layout.classic': '従来',
   'settings.layout.classic.hint': '数字キーは 0〜9 と / - の1段。左の QSO の数を押すと一覧が開きます',
@@ -404,7 +404,7 @@ const en: Record<MessageKey, string> = {
   'settings.autoTime.hint':
     'Confirming a QSO line without a time inserts the current time. Turn this off when typing in a paper log (a line without a time takes the time of the line before). This device only.',
   'settings.digitRow': 'Digit key row',
-  'settings.digitRow.hint': 'Shows 0-9, / and - above the keyboard (plus ← → space and ⌫ in the compact layout), so you can type things like 7L1WRK or JA-1151 without switching keyboards.',
+  'settings.digitRow.hint': 'Shows 0-9, / and - above the keyboard (plus ← → space and ⌫ in the compact layout), so you can type things like JA1ABC/1 or JA-1151 without switching keyboards.',
   'settings.layout': 'Screen layout',
   'settings.layout.classic': 'Classic',
   'settings.layout.classic.hint': 'One row of digit keys (0-9, / and -). Tap the QSO count on the left to open the list',
