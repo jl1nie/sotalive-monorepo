@@ -515,16 +515,38 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
             "0", // QSL
         ];
 
-        // Shift-JIS出力 (簡易実装としてUTF-8で出力)
         let row = fields
             .iter()
             .map(|f: &&str| format!("\"{}\"", f.replace('"', "\"\"")))
             .collect::<Vec<_>>()
             .join(",");
-        output.extend(format!("{}\n", row).as_bytes());
+        // HAMLOG(Windows)は、Shift_JIS(cp932)・CRLF で読む
+        output.extend(to_cp932(&format!("{}\r\n", row)));
     }
 
     output
+}
+
+/// Shift_JIS(cp932)にする。表せない文字(絵文字など)は、旧実装(Python の `backslashreplace`)と同じく
+/// `\u2603` / `\U0001f600` の形で残す(文字化けや、黙って消えるのを避ける)
+fn to_cp932(s: &str) -> Vec<u8> {
+    let mut out = Vec::with_capacity(s.len());
+    let mut buf = [0u8; 4];
+    for c in s.chars() {
+        let (bytes, _, unmappable) = encoding_rs::SHIFT_JIS.encode(c.encode_utf8(&mut buf));
+        if unmappable {
+            let code = u32::from(c);
+            let escaped = match code {
+                0..=0xff => format!("\\x{code:02x}"),
+                0x100..=0xffff => format!("\\u{code:04x}"),
+                _ => format!("\\U{code:08x}"),
+            };
+            out.extend(escaped.bytes());
+        } else {
+            out.extend_from_slice(&bytes);
+        }
+    }
+    out
 }
 
 /// AirHam CSV形式を生成
@@ -779,10 +801,13 @@ mod tests {
                 let mut f = archive.by_index(i).unwrap();
                 let mut body = Vec::new();
                 f.read_to_end(&mut body).unwrap();
-                (
-                    f.name().to_string(),
-                    String::from_utf8_lossy(&body).into_owned(),
-                )
+                // HAMLOG は Shift_JIS。ほかは UTF-8
+                let text = if f.name().starts_with("hamlog-") {
+                    encoding_rs::SHIFT_JIS.decode(&body).0.into_owned()
+                } else {
+                    String::from_utf8_lossy(&body).into_owned()
+                };
+                (f.name().to_string(), text)
             })
             .collect()
     }
@@ -930,6 +955,55 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
                 );
             }
         }
+    }
+
+    /// HAMLOG のファイルの、そのままのバイト列
+    fn hamlog_bytes(fle: &str) -> Vec<u8> {
+        let result = compile_fle(fle);
+        let zip = generate_fle_output(&result, test_now()).unwrap();
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(zip)).unwrap();
+        let name = archive
+            .file_names()
+            .find(|n| n.starts_with("hamlog-"))
+            .unwrap()
+            .to_string();
+        let mut body = Vec::new();
+        archive
+            .by_name(&name)
+            .unwrap()
+            .read_to_end(&mut body)
+            .unwrap();
+        body
+    }
+
+    #[test]
+    fn the_hamlog_file_is_shift_jis_with_crlf() {
+        let body = hamlog_bytes(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1aaa <曽田さん>{島根市}\n0910 ja1bbb",
+        );
+        assert!(std::str::from_utf8(&body).is_err(), "UTF-8 ではない");
+        let (sjis, _, _) = encoding_rs::SHIFT_JIS.encode("曽田さん");
+        assert!(
+            body.windows(sjis.len()).any(|w| w == &sjis[..]),
+            "曽田さんが Shift_JIS で入る"
+        );
+        let (text, _, had_errors) = encoding_rs::SHIFT_JIS.decode(&body);
+        assert!(!had_errors);
+        assert!(
+            text.contains("\"曽田さん\"") && text.contains("島根市"),
+            "{text}"
+        );
+        assert_eq!(text.matches("\r\n").count(), 2, "行の区切りは CRLF");
+        assert!(!text.replace("\r\n", "").contains('\n'));
+    }
+
+    #[test]
+    fn characters_shift_jis_lacks_are_kept_as_escapes() {
+        // 旧実装(Python の backslashreplace)と同じ形
+        assert_eq!(
+            to_cp932("A☃😀①"),
+            [&b"A\\u2603\\U0001f600"[..], &[0x87, 0x40]].concat()
+        );
     }
 
     // ---- 出力前の警告(check_output) ----
