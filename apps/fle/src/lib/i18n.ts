@@ -78,6 +78,7 @@ const ja = {
   'retime.convert': '変換する',
   'retime.convert.hint': '同じ瞬間の {zone} の時刻に書き直します。0 時をまたぐときは、日付も直します。',
   'retime.keep': '時刻はそのまま',
+  'retime.cancel': 'やめる',
   'retime.keep.hint': '書いてある時刻を、{zone} の時刻として読みます({zone} で書いたのに、timezone を書き忘れたとき)。',
 
   // 設定
@@ -298,6 +299,7 @@ const en: Record<MessageKey, string> = {
   'retime.convert': 'Convert',
   'retime.convert.hint': 'Rewrites each time as the same moment in {zone}. Dates are fixed when a time crosses midnight.',
   'retime.keep': 'Keep the times',
+  'retime.cancel': 'Cancel',
   'retime.keep.hint': 'Reads the written times as {zone} (when you wrote in {zone} but forgot the timezone line).',
 
   'settings.title': 'Settings',

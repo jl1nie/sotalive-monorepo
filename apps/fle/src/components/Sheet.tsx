@@ -8,10 +8,12 @@ interface Props {
   children: ReactNode
   /** 「閉じる」の上に置く操作(任意) */
   actions?: ReactNode
+  /** 閉じるボタンの文字(既定は「閉じる」) */
+  closeLabel?: string
 }
 
 /** 画面下から出るシート。スマホでは下から、広い画面では中央に出る。 */
-export function Sheet({ open, onClose, title, children, actions }: Props) {
+export function Sheet({ open, onClose, title, children, actions, closeLabel }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const t = useT()
@@ -45,7 +47,7 @@ export function Sheet({ open, onClose, title, children, actions }: Props) {
           onClick={onClose}
           className={`${actions ? 'btn-secondary' : 'btn-primary'} w-full mt-2`}
         >
-          {t('sheet.close')}
+          {closeLabel ?? t('sheet.close')}
         </button>
       </div>
     </dialog>

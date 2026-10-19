@@ -22,6 +22,7 @@ export function RetimeSheet({ open, onClose, zone, from, to, qsos, onConvert, on
       open={open}
       onClose={onClose}
       title={t('retime.title', { zone })}
+      closeLabel={t('retime.cancel')}
       actions={
         <>
           <button type="button" onClick={onConvert} className="btn-success w-full">
