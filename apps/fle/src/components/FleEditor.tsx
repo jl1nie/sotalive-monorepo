@@ -124,8 +124,7 @@ function Editor({
   // いま打っている行を、最初の1文字を打った時刻とともに覚える(その行の時刻にする)
   const lineStartedAt = useRef<{ line: number; ms: number } | null>(null)
   // 候補の確定後に置くカーソル位置。描画(コミット)の直後、次の入力より先に反映する
-  /** テキストを変えた後に置くカーソル(範囲なら選択) */
-  const pendingCaret = useRef<number | [number, number] | null>(null)
+  const pendingCaret = useRef<number | null>(null)
 
   /** 取り消せる操作のあとは、通知に「元に戻す」を添える(戻す先の内容を持つ) */
   const [undoTo, setUndoTo] = useState<string | null>(null)
@@ -196,8 +195,7 @@ function Editor({
     if (pos === null || !ta) return
     pendingCaret.current = null
     ta.focus()
-    const [from, to] = typeof pos === 'number' ? [pos, pos] : pos
-    ta.setSelectionRange(from, to)
+    ta.setSelectionRange(pos, pos)
   }, [text])
 
   const caretLine = lineOf(text, caret)
@@ -374,20 +372,23 @@ function Editor({
     setCaret(pos)
   }
 
-  /** 緑の候補バーで押した要素を選ぶ(打てば置き換わる)。行に書かれていなければ、書き込んでから選ぶ */
-  const selectQsoPart = (part: QsoPart) => {
+  /**
+   * 緑の候補バーで押した要素の末尾に、キャレットを置く(⌫ で末尾から直す)。選択はしない(打つと消えてしまう)。
+   * 行に書かれていなければ、書き込んでから置く
+   */
+  const caretToPart = (part: QsoPart) => {
     const sel = selectPart(text, caretLine, part, startedAtFor(caretLine), settings.timezone, noClock)
     if (!sel) return
     if (sel.edits.length === 0) {
       const ta = taRef.current
       ta?.focus()
-      ta?.setSelectionRange(sel.from, sel.to)
-      setCaret(sel.from)
+      ta?.setSelectionRange(sel.to, sel.to)
+      setCaret(sel.to)
       return
     }
-    pendingCaret.current = [sel.from, sel.to]
+    pendingCaret.current = sel.to
     setText(applyEdits(text, sel.edits))
-    setCaret(sel.from)
+    setCaret(sel.to)
   }
 
   /** 数字の行をなぞったとき: カーソルを `delta` 文字動かす(選択があれば、動かす向きの端から) */
@@ -535,7 +536,7 @@ function Editor({
         lineText={text.slice(...lineRange(text, caretLine))}
         onOpenList={() => setListOpen(true)}
         onConfirm={confirmLine}
-        onSelectPart={selectQsoPart}
+        onSelectPart={caretToPart}
       />
 
       {/* 数字の行は一番下。ソフトキーボードのすぐ上で、指が近い */}
