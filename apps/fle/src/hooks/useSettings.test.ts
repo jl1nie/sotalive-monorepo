@@ -9,7 +9,14 @@ const KEY = 'fle.settings'
 beforeEach(() => {
   // jsdom には matchMedia がない(テーマの反映と、タッチ端末の判定で使う)
   vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }))
-  localStorage.clear()
+  // Node 25 以降は、組み込みの localStorage が jsdom のものを隠してしまう。メモリ上の Storage に差し替える
+  const store = new Map<string, string>()
+  vi.stubGlobal('localStorage', {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, String(v)),
+    removeItem: (k: string) => void store.delete(k),
+    clear: () => store.clear(),
+  })
 })
 
 afterEach(() => {
