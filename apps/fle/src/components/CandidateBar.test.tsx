@@ -59,7 +59,6 @@ function renderAt(
       timezone={timezone}
       count={count}
       autoTime={autoTime}
-      onOpenList={() => {}}
       onConfirm={() => {}}
       onSelectPart={onSelectPart}
     />
@@ -218,22 +217,38 @@ describe('CandidateBar: QSO の行と、QSO の数', () => {
     expect(screen.getByText('JA1QSA')).toBeInTheDocument()
   })
 
-  it('カーソルの日(UTC)の数を大きく、全体の数を小さく出す', () => {
+  it('POTA の運用では、カーソルの日(UTC)の数を大きく、要る数(10)を小さく出す', () => {
     // day + のあとの QSO は 3 つ(zl1qsb, zl1qrz, jj1qth)。全体は 10
     renderAt(sample, lines.length - 1)
-    const count = screen.getByRole('button', { name: /QSO一覧を開く/ })
-    expect(count).toHaveTextContent('3/10')
-    expect(count).toHaveAccessibleName('QSO一覧を開く (カーソルの日(UTC)の 3 QSO / 全部で 10 QSO)')
+    const count = screen.getByLabelText(/カーソルの日/)
+    expect(count).toHaveTextContent(/^3\/10$/)
+    expect(count).toHaveAccessibleName('カーソルの日(UTC)の 3 QSO / 全部で 10 QSO / 10 QSO まで、あと 7')
   })
 
-  it('全部が同じ日でも、その日 / 全体の形', () => {
+  it('数は表示だけ(押せない。一覧はメニューから)', () => {
+    renderAt(sample, lines.length - 1)
+    expect(screen.getByLabelText(/カーソルの日/).closest('button')).toBeNull()
+  })
+
+  it('運用場所がなければ、その日 / 全体の形', () => {
     renderAt('mycall JA1ABC\ndate 2026-10-19\n40m cw\n0900 ja1aaa\n0910 ja1bbb', 4)
-    expect(screen.getByRole('button', { name: /QSO一覧を開く/ })).toHaveTextContent(/^2\/2$/)
+    expect(screen.getByLabelText(/カーソルの日/)).toHaveTextContent(/^2\/2$/)
+  })
+
+  it('SOTA は 4 QSO に届くと、届いたと知らせる', () => {
+    const log = 'mycall JA1ABC\nmysota JA/ST-012\ndate 2026-10-19\n40m cw\n0900 ja1aaa\n0910 ja1bbb\n0920 ja1ccc'
+    renderAt(log, 6)
+    expect(screen.getByLabelText(/カーソルの日/)).toHaveTextContent(/^3\/4$/)
+    cleanup()
+    renderAt(`${log}\n0930 ja1ddd`, 7)
+    const count = screen.getByLabelText(/カーソルの日/)
+    expect(count).toHaveTextContent(/^4\/4$/)
+    expect(count).toHaveAccessibleName(/4 QSO に届きました/)
   })
 
   it('設定で「全体」にすると、全体の数と QSO だけ', () => {
     renderAt(sample, lines.length - 1, 'total')
-    const count = screen.getByRole('button', { name: 'QSO一覧を開く' })
+    const count = screen.getByLabelText('全部で 10 QSO')
     expect(count).toHaveTextContent(/^10QSO$/)
   })
 })

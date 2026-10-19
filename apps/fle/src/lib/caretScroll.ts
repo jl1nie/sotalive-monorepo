@@ -46,8 +46,9 @@ export function caretTop(ta: HTMLTextAreaElement, pos: number): number {
 }
 
 /**
- * キャレットが見えていなければ、見えるところ(上から 1/3)までスクロールする。見えていれば動かさない。
- * 下端の余白(重なる補完候補の分)は、見えないところとして扱う。
+ * キャレットが見えていなければ、見えるところまでスクロールする。見えていれば動かさない。
+ * 下に隠れていれば、欄の下端に(打っている行を、候補バーのすぐ上に)。上に隠れていれば、上から 1/3 に。
+ * 下端の余白は、見えないところとして扱う。
  */
 export function scrollCaretIntoView(ta: HTMLTextAreaElement, pos: number) {
   const style = getComputedStyle(ta)
@@ -55,5 +56,23 @@ export function scrollCaretIntoView(ta: HTMLTextAreaElement, pos: number) {
   const top = caretTop(ta, pos) + parseFloat(style.paddingTop)
   const visibleBottom = ta.scrollTop + ta.clientHeight - parseFloat(style.paddingBottom)
   if (top >= ta.scrollTop && top + lineHeight <= visibleBottom) return
-  ta.scrollTop = Math.max(0, top - ta.clientHeight / 3)
+  ta.scrollTop =
+    top > ta.scrollTop
+      ? top + lineHeight - (ta.clientHeight - parseFloat(style.paddingBottom))
+      : Math.max(0, top - ta.clientHeight / 3)
+}
+
+/**
+ * 内容が欄より短いとき、上に余白を足して、最後の行を欄の下端に寄せる
+ * (打っている行が、候補バーと数字キーのすぐ上に来る。目を上下に動かさない)。空のときは寄せない(見本の文字を上から見せる)。
+ */
+export function alignToBottom(ta: HTMLTextAreaElement) {
+  ta.style.paddingTop = ''
+  if (ta.value === '') return
+  const style = getComputedStyle(ta)
+  const base = parseFloat(style.paddingTop)
+  const lineHeight = parseFloat(style.lineHeight) || 26
+  const content = caretTop(ta, ta.value.length) + lineHeight
+  const room = ta.clientHeight - base - parseFloat(style.paddingBottom) - content
+  if (room > 0) ta.style.paddingTop = `${base + room}px`
 }

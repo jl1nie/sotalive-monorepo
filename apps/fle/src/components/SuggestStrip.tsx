@@ -16,7 +16,10 @@ interface Props {
   onPick: (candidate: Candidate) => void
 }
 
-/** 入力欄の下端に重ねる補完候補。出入りしても入力欄の高さは変わらない。 */
+/**
+ * 候補バーに重ねる補完候補。出入りしても、入力欄の高さも、打っている行の位置も変わらない
+ * (打っている行のすぐ下、目の行く所に出る)。
+ */
 export function SuggestStrip({ candidates, onPick }: Props) {
   const t = useT()
   if (candidates.length === 0) return null
@@ -25,7 +28,7 @@ export function SuggestStrip({ candidates, onPick }: Props) {
       aria-label={t('suggest.label')}
       // タップしても入力欄からフォーカスを奪わない(キーボードを閉じない)
       {...keepFocus}
-      className="absolute inset-x-2 bottom-2 flex gap-2 overflow-x-auto p-1.5 rounded-xl border-2 border-gray-500 bg-white dark:bg-gray-950"
+      className="absolute inset-0 z-10 flex items-center gap-2 overflow-x-auto px-1.5 rounded-xl border-2 border-gray-500 bg-white dark:bg-gray-950"
     >
       {candidates.map((c) => (
         <li key={`${c.kind}:${c.text}`} className="flex-none">

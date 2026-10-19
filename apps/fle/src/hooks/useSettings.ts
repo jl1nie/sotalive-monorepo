@@ -16,7 +16,7 @@ export interface Settings {
   autoTime: boolean
   /** 確定ボタンで、バンド・モードも書く */
   writeBandMode: boolean
-  /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も) */
+  /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も)。既定は書かない(打ったまま。意味はバーに出る) */
   writeRst: boolean
   /** 誤りの文面の言語(auto は端末の言語) */
   language: LangPref
@@ -47,7 +47,7 @@ const DEFAULTS: Settings = {
   timezone: 0,
   autoTime: true,
   writeBandMode: false,
-  writeRst: true,
+  writeRst: false,
   language: 'auto',
   digitRow: false,
   editorFont: 'mono',

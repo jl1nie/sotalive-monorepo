@@ -24,7 +24,6 @@ interface Props {
   count?: QsoCount
   /** 時刻を自動で入れるか。入れないときは、時計ではなく、次の QSO が引き継ぐログの時刻を出す */
   autoTime?: boolean
-  onOpenList: () => void
   /** この行を確定して、次の行へ進む */
   onConfirm: () => void
   /** 緑のバーで押した要素(コール・RST・時刻)の末尾に、ログ欄のキャレットを置く。RST の受信・送信は、呼ぶ側が決める */
@@ -50,6 +49,13 @@ const BAR = 'flex-1 min-w-0 rounded-xl border-2 overflow-hidden'
 const BIG = 'font-mono text-xl font-bold leading-tight'
 /** 緑のバーの、押すと選べる要素 */
 const PART = 'text-left rounded-lg active:bg-emerald-200 dark:active:bg-emerald-800'
+
+/** その日に要る QSO の数(POTA は 10、SOTA は 4)。どちらでもなければ null */
+function qsoTarget(info: LineInfo | null): number | null {
+  if (info?.pota.length) return 10
+  if (info?.sota) return 4
+  return null
+}
 
 /** 場所の指令と、名前を引く種類 */
 const PLACE: Record<string, PlaceKind> = { mysota: 'sota', mypota: 'pota', mywwff: 'wwff' }
@@ -121,7 +127,6 @@ export function CandidateBar({
   timezone,
   count = 'day',
   autoTime = true,
-  onOpenList,
   onConfirm,
   onSelectPart = () => {},
 }: Props) {
@@ -159,30 +164,23 @@ export function CandidateBar({
   const setting = [info?.band, info?.mode].filter(Boolean).join(' ')
   const meaning = resolved(info, names, t)
 
-  // その日(カーソルの日、UTC)のQSOの数を大きく、全体の数を小さく。設定で、全体の数だけにもできる
+  // その日(カーソルの日、UTC)のQSOの数を大きく、全体の数(POTA・SOTA なら要る数)を小さく。設定で、全体の数だけにもできる
   const total = view?.qsos.length ?? 0
   const today = info?.qsoDate ? (view?.qsos.filter((q) => q.date === info.qsoDate).length ?? 0) : total
   const byDay = count === 'day'
 
-  return (
-    <div className="flex-none flex gap-2 h-[72px]">
-      <button
-        type="button"
-        onClick={onOpenList}
-        aria-label={byDay ? `${t('bar.openList')} (${t('bar.todayLabel', { today, total })})` : t('bar.openList')}
-        className={`flex-none min-w-16 px-2 rounded-xl border-2 bg-white dark:bg-gray-950 flex flex-col items-center justify-center leading-tight tabular-nums ${
-          errorCount > 0
-            ? 'border-red-700 text-red-700 dark:border-red-400 dark:text-red-300'
-            : 'border-gray-500'
-        }`}
-      >
-        <b className="text-xl">{byDay ? today : total}</b>
-        <small className="text-xs font-bold">
-          {byDay ? `/${total}` : 'QSO'}
-          {errorCount > 0 && ` ⚠${errorCount}`}
-        </small>
-      </button>
+  const shown = byDay ? today : total
+  const target = byDay ? qsoTarget(info) : null
+  const reached = target !== null && today >= target
+  const countLabel = [
+    byDay ? t('bar.todayLabel', { today, total }) : t('bar.totalLabel', { total }),
+    target === null ? '' : reached ? t('bar.reached', { target }) : t('bar.remaining', { target, n: target - today }),
+  ]
+    .filter(Boolean)
+    .join(' / ')
 
+  return (
+    <div className="flex-none flex gap-1.5 h-[72px]">
       {qso && !error ? (
         // コール・RST・時刻は、押すとログ欄のその末尾へキャレットを置く(直す機会の多い順に、的を大きく)。確定は右端の ✓
         <div className={`${BAR} ${TONE.ok} flex items-stretch`} {...keepFocus}>
@@ -277,6 +275,23 @@ export function CandidateBar({
           )}
         </div>
       )}
+
+      {/* その日(または全体)の QSO の数。表示だけ(一覧はメニューから)。要る数に届いたら緑、誤りがあれば赤 */}
+      <span
+        aria-label={countLabel}
+        title={countLabel}
+        className={`flex-none min-w-10 px-1 rounded-lg border-2 flex flex-col items-center justify-center leading-none tabular-nums font-bold ${
+          errorCount > 0
+            ? 'border-red-700 text-red-700 dark:border-red-400 dark:text-red-300'
+            : reached
+              ? 'border-emerald-700 bg-emerald-50 text-emerald-900 dark:border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200'
+              : 'border-gray-300 text-gray-800 dark:border-gray-700 dark:text-gray-200'
+        }`}
+      >
+        <span className="text-base">{shown}</span>
+        <small className="mt-0.5 text-[11px]">{byDay ? `/${target ?? total}` : 'QSO'}</small>
+        {errorCount > 0 && <small className="mt-0.5 text-[11px]">⚠{errorCount}</small>}
+      </span>
     </div>
   )
 }
