@@ -5,8 +5,8 @@
 use chrono::DateTime;
 use fle_core::{
     adif_to_fle, check_log, compile_fle, compile_log, complete_at, fill_with, generate_fle_output,
-    grid_locator, line_info, sample_log, select_part, station_at, station_plan, FillScope, Part,
-    Station,
+    grid_locator, line_info, retime, sample_log, select_part, station_at, station_plan, FillScope,
+    Part, Station,
 };
 use wasm_bindgen::prelude::*;
 
@@ -123,6 +123,12 @@ pub fn check_output_of(text: &str) -> Result<JsValue, JsError> {
 #[wasm_bindgen(js_name = logFileStem)]
 pub fn log_file_stem_of(text: &str) -> Option<String> {
     fle_core::log_file_stem(&compile_fle(text))
+}
+
+/// ログの時間帯を `tz` にしたテキスト。`convert` なら時刻を変換し、そうでなければ `timezone` 行だけを書き換える
+#[wasm_bindgen(js_name = retime)]
+pub fn retime_log(text: &str, tz: i32, convert: bool) -> String {
+    retime(text, tz, convert)
 }
 
 #[wasm_bindgen(js_name = generateZip)]

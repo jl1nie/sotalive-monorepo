@@ -69,6 +69,17 @@ const ja = {
   'notice.loaded': 'ログを読み込みました',
   'notice.sampleInserted': 'サンプルを入れました',
   'notice.cleared': '消しました',
+  'notice.retimed': 'ログの時刻を {zone} に変換しました',
+  'notice.relabeled': 'ログの時間帯を {zone} にしました(時刻はそのまま)',
+
+  // 時間帯の変更
+  'retime.title': 'ログの時刻を {zone} に変換しますか？',
+  'retime.example': '例) {from} → {to}({qsos} QSO)',
+  'retime.convert': '変換する',
+  'retime.convert.hint': '同じ瞬間の {zone} の時刻に書き直します。0 時をまたぐときは、日付も直します。',
+  'retime.keep': '時刻はそのまま',
+  'retime.cancel': 'やめる',
+  'retime.keep.hint': '書いてある時刻を、{zone} の時刻として読みます({zone} で書いたのに、timezone を書き忘れたとき)。',
 
   // 設定
   'settings.title': '設定',
@@ -165,9 +176,9 @@ const ja = {
     '各行に 40m CW のように書きます。設定行で決めていれば、書かなくても同じ意味です',
   'settings.language': '言語 / Language',
   'settings.language.auto': '端末に合わせる / Auto',
-  'settings.timezone': '既定のタイムゾーン',
+  'settings.timezone': 'タイムゾーン',
   'settings.timezone.hint':
-    '時刻を自動で入れるとき、ログに timezone の指定がなければ、この時間帯で入れて、ログにも timezone の行を書き込みます。',
+    'ログの時刻を、この時間帯で書きます(ログの先頭に timezone の行が入ります)。QSO があるときに変えると、時刻を変換するかを確かめます。',
   'tz.utc': 'UTC(世界標準時)',
   'tz.jst': '(日本標準時)',
 
@@ -279,6 +290,17 @@ const en: Record<MessageKey, string> = {
   'notice.loaded': 'Log loaded',
   'notice.sampleInserted': 'Sample inserted',
   'notice.cleared': 'Cleared',
+  'notice.retimed': 'Converted the log times to {zone}',
+  'notice.relabeled': 'Set the log time zone to {zone} (times kept)',
+
+  // Changing the time zone
+  'retime.title': 'Convert the log times to {zone}?',
+  'retime.example': 'e.g. {from} → {to} ({qsos} QSOs)',
+  'retime.convert': 'Convert',
+  'retime.convert.hint': 'Rewrites each time as the same moment in {zone}. Dates are fixed when a time crosses midnight.',
+  'retime.keep': 'Keep the times',
+  'retime.cancel': 'Cancel',
+  'retime.keep.hint': 'Reads the written times as {zone} (when you wrote in {zone} but forgot the timezone line).',
 
   'settings.title': 'Settings',
   'settings.theme': 'Theme',
@@ -374,9 +396,9 @@ const en: Record<MessageKey, string> = {
     'Writes e.g. 40m CW on each line. The meaning is the same if a settings line already sets them',
   'settings.language': '言語 / Language',
   'settings.language.auto': '端末に合わせる / Auto',
-  'settings.timezone': 'Default time zone',
+  'settings.timezone': 'Time zone',
   'settings.timezone.hint':
-    'When the time is filled in automatically and the log has no timezone line, this zone is used and a timezone line is also written to the log.',
+    'Log times are written in this zone (a timezone line goes at the top of the log). If the log already has QSOs, you are asked whether to convert their times.',
   'tz.utc': 'UTC (universal time)',
   'tz.jst': ' (Japan Standard Time)',
 

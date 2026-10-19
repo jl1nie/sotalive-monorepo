@@ -13,6 +13,7 @@ import init, {
   stationPlan as wasmStationPlan,
   generateZip as wasmGenerateZip,
   logFileStem as wasmLogFileStem,
+  retime as wasmRetime,
 } from '../wasm/fle/fle'
 
 /** 1QSO分。省略された時刻・バンド・モード・RSTは前の行から補完済み。 */
@@ -271,6 +272,15 @@ export async function checkOutput(text: string): Promise<OutputWarning[]> {
 export async function logFileStem(text: string): Promise<string | null> {
   await ensureReady()
   return wasmLogFileStem(text) ?? null
+}
+
+/**
+ * ログの時間帯を `tz` にしたテキスト(`timezone` の行は、最初の QSO より前に1つ。UTC なら置かない)。
+ * `convert` なら QSO の時刻を変換し(UTC の瞬間は変わらない)、そうでなければ `timezone` の行だけを書き換える。
+ */
+export async function retimeLog(text: string, tz: number, convert: boolean): Promise<string> {
+  await ensureReady()
+  return wasmRetime(text, tz, convert)
 }
 
 export async function generateFleZip(text: string, now: Date = new Date()): Promise<Uint8Array> {

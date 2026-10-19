@@ -44,7 +44,8 @@ function renderAt(
   line: number,
   count: 'day' | 'total' = 'day',
   autoTime = true,
-  onSelectPart: (part: string) => void = () => {}
+  onSelectPart: (part: string) => void = () => {},
+  timezone = 0
 ) {
   const view = compile(text) as LogView
   const info = lineInfo(text, line) as LineInfo
@@ -55,7 +56,7 @@ function renderAt(
       info={info}
       caretLine={line}
       lineText={text.split('\n')[line] ?? ''}
-      timezone={0}
+      timezone={timezone}
       count={count}
       autoTime={autoTime}
       onOpenList={() => {}}
@@ -126,6 +127,16 @@ describe('CandidateBar: 補うものがない行は、時刻とバンド・モ�
   it('時刻を自動で入れないときは、時計ではなく、次の QSO が引き継ぐ時刻', () => {
     renderAt('mycall JA1ABC\ndate 2026-10-19\n40m cw\n0905 ja1aaa\n', 4, 'day', false)
     expect(barText()).toBe('09:05UTC40m CW')
+  })
+
+  it('timezone のないログに QSO があれば、設定が JST でも、時計は実際に入る UTC', () => {
+    renderAt('40m cw\n0905 ja1aaa\n', 2, 'day', true, () => {}, 9)
+    expect(barText()).toMatch(/^\d\d:\d\dUTC/)
+  })
+
+  it('QSO がまだなければ、設定の時間帯(最初の QSO で timezone の行を書く)', () => {
+    renderAt('40m cw\n', 1, 'day', true, () => {}, 9)
+    expect(barText()).toMatch(/^\d\d:\d\dJST/)
   })
 
   it('空の行も同じ(説明の文はない)', () => {

@@ -62,7 +62,12 @@
 <p>画面右上の歯車が設定です。</p>
 <ul>
   <li><b>リグの一覧</b>: 使うリグ・アンテナを 1 行に 1 つ書いておくと、ログで <code>rig </code> と打ったときに候補に出ます(例: <code>KX2+EFHW</code>)。HAMLOG を使う人は、HAMLOG に登録している名前を書きます。</li>
-  <li><b>時間帯</b>: 時刻をどの時間帯で書くか(UTC / JST など)。SOTA・POTA の ADIF は、いつも UTC で出ます。HAMLOG のファイルだけは、ここで選んだ時間帯で出ます。</li>
+  <li><b>タイムゾーン</b>: ログの時刻を、どの時間帯で書くか(UTC / JST など)。1 つのログは 1 つの時間帯で書き、ログの先頭に <code>timezone</code> の行が入ります(UTC なら入りません)。
+    <ul>
+      <li>QSO があるログで変えると、時刻を変換するかを確かめます。<b>変換する</b>は、同じ瞬間の新しい時間帯の時刻に書き直します(0 時をまたぐときは日付も直します)。<b>時刻はそのまま</b>は、<code>timezone</code> の行だけを書き換えます(JST で書いたのに <code>timezone</code> を書き忘れたとき)。<b>やめる</b>と、変えません。書き換えたあとは、通知の「元に戻す」で戻せます。</li>
+      <li>SOTA・POTA・WWFF のファイルは、いつも UTC で出ます。HAMLOG のファイルは、ログの時間帯で出ます(JST は <code>J</code>、それ以外は UTC の <code>U</code>)。</li>
+    </ul>
+  </li>
   <li><b>時刻を自動で入れる</b>: 時刻のない QSO の行を確定すると、いまの時刻を入れます(既定はオン)。紙ログを後から打ち込むときはオフにします。時刻のない行は、前の行の時刻を引き継ぎます。端末ごとの設定で、同期しません。</li>
   <li><b>確定の書き方</b>: 緑のバーで確定するとき、バンド・モードや RST も書くかどうか。</li>
 </ul>
@@ -209,8 +214,8 @@ ssb
 <tr><th><code>mywwff JAFF-0001</code></th><td>自局の WWFF</td></tr>
 <tr><th><code>mygrid PM95uq</code></th><td>自局のグリッド(4・6・8 文字)</td></tr>
 <tr><th><code>date 2026-10-25</code></th><td>日付(<code>10/25</code> も可)。時刻は 00:00 に戻る</td></tr>
-<tr><th><code>day +</code> / <code>day ++</code></th><td>日付を 1 / 2 日進める(UTC の日付をまたぐとき)</td></tr>
-<tr><th><code>timezone jst</code></th><td>以降の時刻の時間帯。<code>jst</code>、<code>utc</code>、<code>+9</code> のような数字。省略は UTC</td></tr>
+<tr><th><code>day +</code> / <code>day ++</code></th><td>日付を 1 / 2 日進める(0 時をまたぐとき)</td></tr>
+<tr><th><code>timezone jst</code></th><td>時刻の時間帯。<code>jst</code>、<code>utc</code>、<code>+9</code> のような数字。省略は UTC。ふつうは設定の「タイムゾーン」が先頭に書きます</td></tr>
 <tr><th><code>rig KX2+EFHW</code></th><td>リグ(HAMLOG の <code>Rig=</code>)。<code>-</code> で解除</td></tr>
 <tr><th><code>qslmsg …</code></th><td>QSLメッセージ。<code>$mysota</code> <code>$mypota</code> <code>$mywwff</code> <code>$rig</code> が使える</td></tr>
 </table>
