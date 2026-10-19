@@ -147,18 +147,32 @@ ssb
 </table>
 <p>The number on the left is the QSOs on the day at the cursor (UTC), with the total (such as <code>/10</code>) under it. Choose "Total" under "QSO count" in the settings to show only the total. Tap it to see the QSO list and errors. Tapping an error jumps to that line.</p>
 <ul>
-  <li>Tap a <b>suggestion</b> above the editor to insert a keyword, band or mode.</li>
+  <li>Tap a <b>suggestion</b> shown at the bottom of the editor to insert a keyword, band or mode (in the compact layout, suggestions appear over the green bar).</li>
   <li>Turn on "Digit key row" in the settings for a row of digits above the keyboard (handy for callsigns such as JA1ABC/1). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
   <li>If you move, use Menu → "New log" to switch the location for the QSOs from there on.</li>
   <li>The QSO list can also be opened from Menu → "QSO list".</li>
 </ul>
 <h3 id="compact">Compact layout (trial)</h3>
-<p>Choose "Compact" under "Screen layout" in the settings to change the input screen so your eyes and fingers move less:</p>
+<p>Choose "Compact" under "Screen layout" in the settings to keep the line you are typing, the green bar, the digit keys and ⌫ together, so your eyes and fingers move less. You can switch back to the classic layout in the settings at any time (the log stays as it is).</p>
+<pre><code>│ 1111 jj0pic         │
+│ 2107 ja1xyz 7▌      │ (typing)
+[3/10][JA1XYZ 579/599][✓Confirm]
+[1][2][3][4][5][6][7][8][9][0]
+[/][-][←][→][  Space ][ ⌫ ]
+[ the phone's keyboard ]</code></pre>
 <ul>
-  <li>The digit keys get a second row with <code>/</code> <code>-</code> ← → space and ⌫. Hold ⌫ to keep deleting.</li>
-  <li>The log sits at the bottom of the editor, so the line you are typing is right above the green bar.</li>
-  <li>Suggestions appear over the green bar.</li>
-  <li>The QSO count on the left is display only (the list is in Menu → "QSO list"). When activating POTA or SOTA, the lower number is the QSOs needed for an activation (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once the activation is complete.</li>
+  <li><b>The log sits at the bottom</b> of the editor, so the line you are typing is right above the green bar.</li>
+  <li><b>Two rows of digit keys</b>, the second with <code>/</code> <code>-</code> ← → space and ⌫, so you can type a space or delete without reaching for the edge of the phone's keyboard.
+    <ul>
+      <li>Hold ⌫ to keep deleting.</li>
+      <li>← → move the cursor one character. Swiping either row also moves the cursor (starting on ⌫ moves it without deleting).</li>
+    </ul>
+  </li>
+  <li><b>The button at the right end moves to the next line.</b> On a QSO line (green) it is ✓ Confirm; on a line that is not a QSO, such as <code>40m cw</code>, it is "↵ Next". "Next" starts a new line at the end of the current one, the same as Enter.</li>
+  <li><b>Suggestions appear over the green bar.</b> They never cover the button at the right end or the QSO count on the left, so you can move on while they are shown.</li>
+  <li><b>The QSO count on the left is display only</b> (tapping it does not open the list; use Menu → "QSO list"). When activating POTA or SOTA, the lower number is the QSOs needed for an activation (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once the activation is complete. It turns red when there are errors, with a count such as <code>⚠2</code>.</li>
+  <li><b>Confirming keeps the log as you typed it</b> (writing the RST is off at first). Type <code>7</code> and the green bar shows the filled-in value such as <code>579/599</code>. To write it into the log, turn on RST under "What confirming writes" in the settings (this setting is kept separately from the classic layout).</li>
+  <li>While the keyboard is shown, there is no gap between the digit keys and the keyboard.</li>
 </ul>
 
 <h3 id="fix">Fix a QSO</h3>
@@ -175,14 +189,15 @@ ssb
   <li><b>Example: it was JA1XYW, not JA1XYZ</b> → tap the callsign → ⌫ → <code>w</code>.</li>
   <li>If the RST or time was left out (the bar shows the filled-in value), tapping it writes that value into the line first, then moves to its end. On the line <code>ja1xyz</code>, tapping the RST gives <code>ja1xyz 599 599|</code>.</li>
   <li>To fix a character <b>in the middle</b>, tap the part to get to its end, then <b>swipe the digit row left or right</b> to move the cursor (<a href="#swipe">next section</a>).</li>
-  <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line.</li>
-  <li>Only ✓ at the right end of the green bar confirms (moves to the next line). Tapping a part never confirms.</li>
+  <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line (in the compact layout, use Menu → "QSO list").</li>
+  <li>Only ✓ at the right end of the green bar confirms (moves to the next line). Tapping a part never confirms. (In the compact layout, lines that are not QSOs also get "Next" at the right end.)</li>
 </ul>
 
 <h3 id="swipe">Swipe the digit row to move the cursor</h3>
 <p>You can move the cursor one character at a time without aiming your finger between characters. <b>Lines other than QSOs (<code>date</code>, <code>mysota</code>, <code>qslmsg</code>, comments, ...) have no parts to tap in the green bar, so this is the main way to fix them.</b> On QSO lines, use it to fix a character in the middle of a part.</p>
 <pre><code>[1][2][3][4][5][6][7][8][9][0][/][-]
  ← keep your finger down, slide →</code></pre>
+<p>In the compact layout, you can swipe from anywhere on either row of digit keys. For a single character, you can also tap ← or →.</p>
 <ol>
   <li>Put a finger anywhere on the digit row (any key will do).</li>
   <li>Without lifting it, slide left or right. The cursor moves <b>one character per about 20px</b> in that direction, across parts and lines.</li>
