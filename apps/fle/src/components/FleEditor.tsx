@@ -6,6 +6,7 @@ import {
   FileText,
   HelpCircle,
   Home,
+  Keyboard,
   List,
   MapPin,
   Save,
@@ -43,6 +44,7 @@ import { LangProvider } from '@/components/LangProvider'
 import { resolveLang, useI18n } from '@/lib/i18n'
 import { lineOf, lineRange, replaceRange } from '@/lib/lines'
 import { applyEdits, mapCaret } from '@/lib/edits'
+import { keepFocus } from '@/lib/keepFocus'
 import { alignToBottom, scrollCaretIntoView } from '@/lib/caretScroll'
 import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
@@ -51,6 +53,7 @@ import { usePwa } from '@/hooks/usePwa'
 import { useSettings, type Settings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
 import { DigitRow } from '@/components/DigitRow'
+import { FullKeyboard } from '@/components/FullKeyboard'
 import { rigCompletion } from '@/lib/rig'
 import { CandidateBar, type BarPart } from '@/components/CandidateBar'
 import { nextRst, type RstMark } from '@/lib/rstToggle'
@@ -200,9 +203,20 @@ function Editor({
     }
   }, [text, caret, settings.rigs])
 
-  // コンパクトな配置では、打っている行を、欄の下端(候補バーのすぐ上)に寄せる。内容が変わったときと、欄の大きさが変わったとき。
+  // コンパクト(とフルキー)の配置では、打っている行を、欄の下端(候補バーのすぐ上)に寄せる。内容が変わったときと、欄の大きさが変わったとき。
   // キャレットを置き直すより先に(寄せたあとの位置で、見えるところまで動かす)
-  const compact = settings.layout === 'compact'
+  const compact = settings.layout !== 'classic'
+  // フルキー: OS のキーボードの代わりに、画面のキーボードを出す。🌐 で、OS のキーボード(日本語など)に切り替える
+  const fullkey = settings.layout === 'fullkey'
+  const [osKeyboard, setOsKeyboard] = useState(false)
+  const onScreenKeys = fullkey && !osKeyboard
+  // inputmode は、フォーカスし直さないと効かない(iOS)。入力中に切り替えたときは、いったん外して戻す
+  useEffect(() => {
+    const ta = taRef.current
+    if (!ta || document.activeElement !== ta) return
+    ta.blur()
+    ta.focus()
+  }, [onScreenKeys])
   useLayoutEffect(() => {
     const ta = taRef.current
     if (!ta) return
@@ -228,6 +242,8 @@ function Editor({
   }, [text, compact])
 
   const caretLine = lineOf(text, caret)
+  // カーソル行が、確定できる QSO の行(緑のバー)か。フルキーの右下のキーが、確定か次の行かを決める
+  const confirmable = !!view?.qsos.some((q) => q.line === caretLine) && !view?.errors.some((e) => e.line === caretLine)
   const hasText = text.trim().length > 0
   /** メニューの項目: メニューを閉じてから行う */
   const fromMenu = (f: () => void) => () => {
@@ -238,7 +254,7 @@ function Editor({
   // 確定ボタンで何を書くか(時刻は、自動で入れる設定なら。省略形の時刻も直す)。Enterは時刻の挿入だけ
   const noClock = !settings.autoTime
   // RST を書くかは、配置ごとに持つ(コンパクトの既定は書かない。従来はリリース版のまま)
-  const writeRst = settings.layout === 'compact' ? settings.writeRstCompact : settings.writeRst
+  const writeRst = settings.layout === 'classic' ? settings.writeRst : settings.writeRstCompact
   const confirmScope = {
     noClock,
     expandTime: true,
@@ -605,6 +621,8 @@ function Editor({
           autoCapitalize="none"
           autoCorrect="off"
           autoComplete="off"
+          // フルキー: OS のキーボードを出さない(キャレットは出る)
+          inputMode={onScreenKeys ? 'none' : undefined}
           // 従来の配置では、下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
           // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
           className={`input flex-1 h-full min-h-0 resize-none font-semibold leading-relaxed ${compact ? '' : 'pb-20'} ${
@@ -635,7 +653,30 @@ function Editor({
       </div>
 
       {/* 数字の行は一番下。ソフトキーボードのすぐ上で、指が近い */}
-      {settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} onBackspace={backspace} compact={compact} />}
+      {onScreenKeys ? (
+        <FullKeyboard
+          onKey={typeKey}
+          onMove={moveCaret}
+          onBackspace={backspace}
+          confirmable={confirmable}
+          onConfirm={confirmLine}
+          onNewline={newline}
+          onOsKeyboard={() => setOsKeyboard(true)}
+        />
+      ) : fullkey ? (
+        // OS のキーボードを使っている間: フルキーに戻るボタン(数字キーは、OS のキーボードにある)
+        <button
+          type="button"
+          {...keepFocus}
+          onClick={() => setOsKeyboard(false)}
+          className="flex-none h-11 rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-800 font-bold text-sm flex items-center justify-center gap-2 active:bg-gray-300 dark:active:bg-gray-700"
+        >
+          <Keyboard className="w-5 h-5" aria-hidden="true" />
+          {t('keys.back')}
+        </button>
+      ) : (
+        settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} onBackspace={backspace} compact={compact} />
+      )}
 
       {notice && (
         <div

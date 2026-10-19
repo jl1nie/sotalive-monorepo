@@ -8,10 +8,11 @@ export type EditorFont = 'gothic' | 'mono'
 /** QSO の数の出し方。その日(カーソルの日、UTC)の数と全体の数か、全体の数だけか */
 export type QsoCount = 'day' | 'total'
 /**
- * 入力画面の配置(比べて選べるように、両方を残す)。classic は従来のもの。compact は、打っている行・候補バー・
- * 数字キー・⌫ を手元にまとめたもの(数字キーは2段、ログは下寄せ、補完候補は候補バーに重ねる)
+ * 入力画面の配置(比べて選べるように、どれも残す)。classic は従来のもの。compact は、打っている行・候補バー・
+ * 数字キー・⌫ を手元にまとめたもの(数字キーは2段、ログは下寄せ、補完候補は候補バーに重ねる)。
+ * fullkey は、compact に加えて、OS のキーボードの代わりに画面のキーボード(数字・英字・記号・確定)を出すもの
  */
-export type Layout = 'classic' | 'compact'
+export type Layout = 'classic' | 'compact' | 'fullkey'
 
 export interface Settings {
   theme: Theme
@@ -24,7 +25,7 @@ export interface Settings {
   /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も) */
   writeRst: boolean
   /**
-   * コンパクトな配置での writeRst。既定は書かない(打ったまま。意味はバーに出る)。
+   * コンパクト・フルキーの配置での writeRst。既定は書かない(打ったまま。意味はバーに出る)。
    * 従来の配置(リリース版)の動きを変えないよう、別に持つ。同期しない(端末ごと)
    */
   writeRstCompact: boolean
@@ -88,7 +89,7 @@ function load(): Settings {
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
       editorFont: v.editorFont === 'gothic' ? 'gothic' : 'mono',
       qsoCount: v.qsoCount === 'total' ? 'total' : 'day',
-      layout: v.layout === 'compact' ? 'compact' : 'classic',
+      layout: v.layout === 'compact' || v.layout === 'fullkey' ? v.layout : 'classic',
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
   } catch {

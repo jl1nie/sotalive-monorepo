@@ -88,6 +88,12 @@ describe('useSettings: 画面の配置', () => {
     expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
   })
 
+  it('フルキーを選ぶと保存され、開き直してもフルキー', () => {
+    const first = renderHook(() => useSettings())
+    act(() => first.result.current.update({ layout: 'fullkey' }))
+    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('fullkey')
+  })
+
   it('同期しない(端末ごとに選ぶ)', () => {
     expect(SYNCED_KEYS).not.toContain('layout')
     expect(SYNCED_KEYS).not.toContain('writeRstCompact')
