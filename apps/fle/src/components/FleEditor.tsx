@@ -376,11 +376,36 @@ function Editor({
     const edits = fillLine(text, line, startedAtFor(line), settings.timezone, confirmScope)
     const filled = applyEdits(text, edits)
     const shift = filled.split('\n').length - text.split('\n').length
-    const end = lineRange(filled, line + shift)[1]
     lineStartedAt.current = null
+    // コンパクト(とフルキー)では、前の行を直したあとは、次の行へ移るだけ(改行を足すと、空の行ができる)
+    if (compact && toNextLine(filled, line + shift)) return
+    const end = lineRange(filled, line + shift)[1]
     pendingCaret.current = end + 1
     setText(filled.slice(0, end) + '\n' + filled.slice(end))
     setCaret(end + 1)
+  }
+
+  /**
+   * `value` の `line` 行目に次の行があれば、その行末へキャレットを移して true。最後の行なら何もせず false
+   * (呼ぶ側が改行を足す)。`value` が今の内容と違えば、書き換えてから移る
+   */
+  const toNextLine = (value: string, line: number): boolean => {
+    if (line >= value.split('\n').length - 1) return false
+    const pos = lineRange(value, line + 1)[1]
+    if (value !== text) {
+      pendingCaret.current = pos
+      setText(value)
+      setCaret(pos)
+      return true
+    }
+    const ta = taRef.current
+    if (ta) {
+      ta.focus()
+      ta.setSelectionRange(pos, pos)
+      scrollCaretIntoView(ta, pos, compact)
+    }
+    setCaret(pos)
+    return true
   }
 
   /**
@@ -468,8 +493,13 @@ function Editor({
     handleChange(value, from + key.length, new Event('input'))
   }
 
-  /** コンパクトな配置の「次の行」: QSO でない行(40m cw など)で、行末で改行する(Enter と同じ経路。時刻の補完も同じ) */
+  /**
+   * コンパクトな配置の「次の行」: QSO でない行(40m cw など)で、次の行へ。最後の行なら、行末で改行する
+   * (Enter と同じ経路。時刻の補完も同じ)
+   */
   const newline = () => {
+    // 前の行(40m cw など)を直したあとは、次の行へ移るだけ。最後の行なら、行末で改行する
+    if (toNextLine(text, caretLine)) return
     const [, end] = lineRange(text, caretLine)
     pendingCaret.current = end + 1
     handleChange(text.slice(0, end) + '\n' + text.slice(end), end + 1, new Event('input'))
@@ -644,6 +674,7 @@ function Editor({
           autoTime={settings.autoTime}
           lineText={text.slice(...lineRange(text, caretLine))}
           compact={compact}
+          rightButton={!onScreenKeys}
           suggest={compact && <SuggestStrip candidates={completion.candidates} onPick={pick} overBar />}
           onNewline={newline}
           onOpenList={() => setListOpen(true)}
