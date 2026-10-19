@@ -452,6 +452,13 @@ function Editor({
     handleChange(value, from + key.length, new Event('input'))
   }
 
+  /** コンパクトな配置の「次の行」: QSO でない行(40m cw など)で、行末で改行する(Enter と同じ経路。時刻の補完も同じ) */
+  const newline = () => {
+    const [, end] = lineRange(text, caretLine)
+    pendingCaret.current = end + 1
+    handleChange(text.slice(0, end) + '\n' + text.slice(end), end + 1, new Event('input'))
+  }
+
   /** 数字の行の ⌫。カーソルの前の1文字(選択があれば、その範囲)を消す。打ったときと同じ経路を通す */
   const backspace = () => {
     const ta = taRef.current
@@ -607,7 +614,7 @@ function Editor({
         {!compact && <SuggestStrip candidates={completion.candidates} onPick={pick} />}
       </div>
 
-      {/* コンパクトな配置では、補完候補は候補バーに重ねて出す(打っている行のすぐ下) */}
+      {/* コンパクトな配置では、補完候補は候補バーに重ねて出す(打っている行のすぐ下。右端のボタンは覆わない) */}
       <div className="relative flex-none">
         <CandidateBar
           view={view}
@@ -619,11 +626,12 @@ function Editor({
           autoTime={settings.autoTime}
           lineText={text.slice(...lineRange(text, caretLine))}
           compact={compact}
+          suggest={compact && <SuggestStrip candidates={completion.candidates} onPick={pick} overBar />}
+          onNewline={newline}
           onOpenList={() => setListOpen(true)}
           onConfirm={confirmLine}
           onSelectPart={caretToPart}
         />
-        {compact && <SuggestStrip candidates={completion.candidates} onPick={pick} overBar />}
       </div>
 
       {/* 数字の行は一番下。ソフトキーボードのすぐ上で、指が近い */}
