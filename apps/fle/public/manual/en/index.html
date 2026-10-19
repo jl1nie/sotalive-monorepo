@@ -62,7 +62,12 @@
 <p>The gear at the top right opens the settings.</p>
 <ul>
   <li><b>Frequently used rigs</b>: one rig/antenna per line. When you type <code>rig </code> in the log, these appear as suggestions (e.g. <code>KX2+EFHW</code>). If you use HAMLOG, write the names you defined in HAMLOG.</li>
-  <li><b>Default time zone</b>: the time zone the times in the log are written in (UTC, JST, ...). ADIF for SOTA and POTA is always in UTC; only the HAMLOG file follows the log's time zone.</li>
+  <li><b>Time zone</b>: the time zone the times in the log are written in (UTC, JST, ...). One log uses one time zone, and a <code>timezone</code> line goes at the top of the log (none for UTC).
+    <ul>
+      <li>If you change it when the log has QSOs, you are asked whether to convert the times. <b>Convert</b> rewrites each time as the same moment in the new zone (fixing the date when a time crosses midnight). <b>Keep the times</b> only rewrites the <code>timezone</code> line (when you wrote in JST but forgot the <code>timezone</code> line). <b>Close</b> changes nothing. After a rewrite, "Undo" in the notice brings the log back.</li>
+      <li>SOTA, POTA and WWFF files are always in UTC. The HAMLOG file follows the log's time zone (<code>J</code> for JST; any other zone goes out in UTC as <code>U</code>).</li>
+    </ul>
+  </li>
   <li><b>Insert the current time</b>: confirming a QSO line without a time inserts the current time (on by default). Turn it off when typing in a paper log; a line without a time then takes the time of the line before. This is set per device and is not synced.</li>
   <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST.</li>
 </ul>
@@ -209,8 +214,8 @@ ssb
 <tr><th><code>mywwff JAFF-0001</code></th><td>Your WWFF reference</td></tr>
 <tr><th><code>mygrid PM95uq</code></th><td>Your grid (4, 6 or 8 characters)</td></tr>
 <tr><th><code>date 2026-10-25</code></th><td>The date (<code>10/25</code> also works). Resets the time to 00:00</td></tr>
-<tr><th><code>day +</code> / <code>day ++</code></th><td>Advance the date by 1 / 2 days (when crossing a UTC date)</td></tr>
-<tr><th><code>timezone jst</code></th><td>Time zone of the times that follow: <code>jst</code>, <code>utc</code>, or a number such as <code>+9</code>. Default UTC</td></tr>
+<tr><th><code>day +</code> / <code>day ++</code></th><td>Advance the date by 1 / 2 days (when crossing midnight)</td></tr>
+<tr><th><code>timezone jst</code></th><td>Time zone of the times: <code>jst</code>, <code>utc</code>, or a number such as <code>+9</code>. Default UTC. Normally the "Time zone" setting writes it at the top</td></tr>
 <tr><th><code>rig KX2+EFHW</code></th><td>The rig (HAMLOG's <code>Rig=</code>). <code>-</code> clears it</td></tr>
 <tr><th><code>qslmsg …</code></th><td>QSL message. Can use <code>$mysota</code> <code>$mypota</code> <code>$mywwff</code> <code>$rig</code></td></tr>
 </table>

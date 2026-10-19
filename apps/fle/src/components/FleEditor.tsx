@@ -26,6 +26,8 @@ import {
   stationAt,
   stationPlan,
   selectPart,
+  retimeLog,
+  zoneLabel,
   type QsoPart,
   type Station,
   type Candidate,
@@ -62,6 +64,8 @@ import { extraLines, withExtras, type PlanExtras } from '@/lib/planApply'
 import { codeFromText } from '@/lib/sync'
 import { GenerateCheckSheet } from '@/components/GenerateCheckSheet'
 import { Sheet } from '@/components/Sheet'
+import { RetimeSheet } from '@/components/RetimeSheet'
+import { planTzChange } from '@/lib/tzChange'
 
 /** 使い方(アプリと同じ場所に置く静的なページ。`public/manual/`) */
 const MANUAL_URL = `${import.meta.env.BASE_URL}manual/`
@@ -119,6 +123,8 @@ function Editor({
   // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値
   const [place, setPlace] = useState<{ line: number; initial: Station; isNewLog: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // 時間帯を変えるときの確認(QSO のあるログで、時刻を変換するか)
+  const [retime, setRetime] = useState<{ tz: number; from: string; to: string; qsos: number } | null>(null)
 
   const taRef = useRef<HTMLTextAreaElement>(null)
   const fleInputRef = useRef<HTMLInputElement>(null)
@@ -492,6 +498,32 @@ function Editor({
     return []
   }
 
+  /** 設定画面での変更。時間帯は、ログの時刻も合わせる(同期で届いた設定は、ここを通らない) */
+  const changeSettings = (patch: Partial<Settings>) => {
+    const tz = patch.timezone
+    if (tz === undefined || tz === settings.timezone || !view) {
+      updateSettings(patch)
+      return
+    }
+    const plan = planTzChange(text, view, tz)
+    if (plan.kind === 'ask') {
+      setRetime({ tz, from: plan.from, to: plan.to, qsos: plan.qsos })
+      return
+    }
+    updateSettings(patch)
+    if (plan.kind === 'rewrite') void retimeLog(text, tz, false).then((next) => next !== text && setText(next))
+  }
+
+  const applyRetime = async (convert: boolean) => {
+    if (!retime) return
+    const { tz } = retime
+    setRetime(null)
+    updateSettings({ timezone: tz })
+    const next = await retimeLog(text, tz, convert)
+    const zone = zoneLabel(tz) || 'UTC'
+    if (next !== text) replaceText(next, t(convert ? 'notice.retimed' : 'notice.relabeled', { zone }))
+  }
+
   const readFile = (e: React.ChangeEvent<HTMLInputElement>, onText: (content: string) => void) => {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -506,7 +538,7 @@ function Editor({
       <Header
         onMenu={() => setMenuOpen(true)}
         settings={settings}
-        onSettingsChange={updateSettings}
+        onSettingsChange={changeSettings}
         sync={sync}
       />
 
@@ -600,6 +632,17 @@ function Editor({
         view={view}
         text={text}
         onJump={jump}
+      />
+
+      <RetimeSheet
+        open={retime !== null}
+        onClose={() => setRetime(null)}
+        zone={retime ? zoneLabel(retime.tz) || 'UTC' : ''}
+        from={retime?.from ?? ''}
+        to={retime?.to ?? ''}
+        qsos={retime?.qsos ?? 0}
+        onConvert={() => void applyRetime(true)}
+        onKeep={() => void applyRetime(false)}
       />
 
       <GenerateCheckSheet

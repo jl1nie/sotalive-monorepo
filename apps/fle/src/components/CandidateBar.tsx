@@ -148,7 +148,9 @@ export function CandidateBar({
   // 途中かどうかは、その行に誤りがあるかで見る(書き終えた指令やコメントの行は、誤りがなく、QSO でもない)
   const typed = lineText.trim()
   const draft = !qso && !!error && typed !== '' && omissions.length === 0
-  const tz = info?.timezone ?? timezone
+  // 実際にログに入る時刻と同じ時間帯で出す。timezone のないログに、もう QSO があれば、UTC のまま入る
+  const qsoBefore = view?.qsos.some((q) => q.line < caretLine) ?? false
+  const tz = info?.timezone ?? (qsoBefore ? 0 : timezone)
   const clock = autoTime || !info ? new Date(now + tz * 3_600_000).toISOString().slice(11, 16) : info.time
   const setting = [info?.band, info?.mode].filter(Boolean).join(' ')
   const meaning = resolved(info, names, t)
