@@ -111,8 +111,20 @@ describe('CandidateBar: 指令の行は、解決した値を出す', () => {
   })
 })
 
+describe('CandidateBar: 自局の指令の行は、その値を出す', () => {
+  it('mycall', () => {
+    renderAt(sample, lineOf('mycall jl1nie/0'))
+    expect(barText()).toBe('JL1NIE/0')
+  })
+
+  it('mygrid', () => {
+    renderAt('mycall JA1ABC\nmygrid pm95uq', 1)
+    expect(barText()).toBe('PM95uq')
+  })
+})
+
 describe('CandidateBar: 補うものがない行は、時刻とバンド・モードだけ', () => {
-  it.each(['#Header', 'mycall jl1nie/0', '#Log'])('%s', (l) => {
+  it.each(['#Header', '#Log'])('%s', (l) => {
     renderAt(sample, lineOf(l))
     expect(barText()).toMatch(/^\d\d:\d\dUTC/)
     expect(screen.queryByRole('button', { name: CONFIRM })).not.toBeInTheDocument()
