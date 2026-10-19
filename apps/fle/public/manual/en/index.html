@@ -133,7 +133,7 @@ ssb
 <p>The candidate bar under the editor shows how the current line is understood.</p>
 <table>
 <tr><th class="draft">Orange</th><td>You are still typing. The callsign etc. is not yet in a form that can be confirmed. Pause, and the bar tells you what is missing.</td></tr>
-<tr><th class="ok">Green</th><td>Understood. The bar shows the line with band, mode, time and report filled in. <b>Tap ✓ at the right end to confirm</b> and move to the next line. <b>Tap the callsign, RST or time to move the cursor to its end</b> in the editor, then fix it with ⌫ (each tap on the RST switches between received and sent; an RST or time that is not written is written first). To reach a character in the middle, swipe the digit row.</td></tr>
+<tr><th class="ok">Green</th><td>Understood. The bar shows the line with band, mode, time and report filled in. <b>Tap ✓ at the right end to confirm</b> and move to the next line. <b>Tap the callsign, RST or time to move the cursor to its end</b> in the editor, then fix it with ⌫ (each tap on the RST switches between received and sent; an RST or time that is not written is written first). To reach a character in the middle, swipe the digit row (see <a href="#fix">Fix a QSO</a>).</td></tr>
 <tr><th class="err">Red</th><td>Something must be fixed, e.g. a missing band or mode.</td></tr>
 <tr><th>(empty line)</th><td>Shows the current time and the band and mode at that line. The next QSO gets these values.</td></tr>
 <tr><th>(settings line)</th><td>Shows what the line itself does not: the date after <code>day +</code> (with the weekday), the name of the summit or park for <code>mysota</code> etc. (when online), the message of <code>qslmsg</code> with its variables replaced, or the rig for <code>rig</code> ("No rig" for <code>rig -</code>). Lines with nothing to add (<code>mycall</code>, comments, ...) look like an empty line.</td></tr>
@@ -143,6 +143,24 @@ ssb
   <li>Tap a <b>suggestion</b> above the editor to insert a keyword, band or mode.</li>
   <li>Turn on "Digit key row" in the settings for a row of digits above the keyboard (handy for callsigns such as 7L1WRK). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
   <li>If you move, use Menu → "New log" to switch the location for the QSOs from there on.</li>
+</ul>
+
+<h3 id="fix">Fix a QSO</h3>
+<p>If the other station corrects a report or a callsign during the QSO, <b>tap that part in the green candidate bar</b>. The cursor in the editor moves to the <b>end</b> of that part, so delete from the end with ⌫ and type again (nothing is selected, so typing never erases other text).</p>
+<table>
+<tr><th>Tap</th><th>Where the cursor goes (<code>|</code>)</th></tr>
+<tr><td>Callsign</td><td><code>1005 ja1xyz| 57 599</code></td></tr>
+<tr><td>RST (first tap)</td><td><code>1005 ja1xyz 57 599|</code> the report you received (the one usually corrected)</td></tr>
+<tr><td>RST (tap again right away)</td><td><code>1005 ja1xyz 57| 599</code> the report you sent</td></tr>
+<tr><td>Time</td><td><code>1005| ja1xyz 57 599</code></td></tr>
+</table>
+<ul>
+  <li><b>Example: you received 579, not 599</b> → tap the RST → ⌫ ⌫ → <code>79</code>.</li>
+  <li><b>Example: it was JA1XYW, not JA1XYZ</b> → tap the callsign → ⌫ → <code>w</code>.</li>
+  <li>If the RST or time was left out (the bar shows the filled-in value), tapping it writes that value into the line first, then moves to its end. On the line <code>ja1xyz</code>, tapping the RST gives <code>ja1xyz 599 599|</code>.</li>
+  <li>To fix a character <b>in the middle</b>, tap the part to get to its end, then <b>swipe the digit row left or right</b> to move the cursor (about 20px per character). Turn on the digit row with "Digit key row" in the settings.</li>
+  <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line.</li>
+  <li>Only ✓ at the right end of the green bar confirms (moves to the next line). Tapping a part never confirms.</li>
 </ul>
 
 <h2 id="out">5. After operating: make the files</h2>
