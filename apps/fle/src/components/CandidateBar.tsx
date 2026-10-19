@@ -61,9 +61,10 @@ export function CandidateBar({ view, preview, caretLine, lineText, timezone, onO
   }, [])
 
   const lastQso = view?.qsos.filter((q) => q.line < caretLine).at(-1)
-  // 入力の途中(まだ確定できない行)は、打った文字を、橙で見せる。確定できれば緑になる
+  // 入力の途中(まだ確定できない行)は、打った文字を、橙で見せる。確定できれば緑になる。
+  // 途中かどうかは、その行に誤りがあるかで見る(書き終えた指令やコメントの行は、誤りがなく、QSO でもない)
   const typed = lineText.trim()
-  const draft = !qso && typed !== '' && omissions.length === 0
+  const draft = !qso && !!error && typed !== '' && omissions.length === 0
   const tz = lastQso ? lastQso.tz : timezone
   const clock = new Date(now + tz * 3_600_000).toISOString().slice(11, 16)
   const prevSetting = [lastQso?.band, lastQso?.mode].filter(Boolean).join(' ')
