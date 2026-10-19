@@ -3,7 +3,7 @@ import type { LangPref, Translate } from '@/lib/i18n'
 import { parseRigs } from '@/lib/rig'
 
 export type Theme = 'light' | 'dark' | 'system'
-/** 入力欄の文字。ゴシック(本文と同じ)か、等幅か */
+/** 入力欄の文字。等幅(同梱の Roboto Mono)か、ゴシック(本文と同じ)か */
 export type EditorFont = 'gothic' | 'mono'
 
 export interface Settings {
@@ -43,7 +43,7 @@ const DEFAULTS: Settings = {
   writeRst: true,
   language: 'auto',
   digitRow: false,
-  editorFont: 'gothic',
+  editorFont: 'mono',
   rigs: [],
 }
 
@@ -62,7 +62,7 @@ function load(): Settings {
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
       language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
-      editorFont: v.editorFont === 'mono' ? 'mono' : 'gothic',
+      editorFont: v.editorFont === 'gothic' ? 'gothic' : 'mono',
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
   } catch {

@@ -141,9 +141,9 @@ const ja = {
   'settings.digitRow.hint': 'キーボードの上に 0〜9 と / と - を出します。7L1WRK や JA-1151 のような、数字と文字・記号が混ざる入力で、キーボードを切り替えずに済みます。',
   'settings.editorFont': '入力欄の文字',
   'settings.editorFont.gothic': 'ゴシック',
-  'settings.editorFont.gothic.hint': '端末の標準のゴシックで、太めに出します',
-  'settings.editorFont.mono': '等幅',
-  'settings.editorFont.mono.hint': '文字の幅がそろい、0 と O、1 と l の見分けがつきやすくなります(日本語の文字は、そろいません)',
+  'settings.editorFont.gothic.hint': '端末の標準のゴシックで、太めに出します(文字の幅はそろいません)',
+  'settings.editorFont.mono': '等幅(Roboto Mono)',
+  'settings.editorFont.mono.hint': '太めの等幅で、0 と O、1 と l の見分けがつきます。日本語はゴシックで出します',
   'settings.confirm.bandMode': 'バンド・モード',
   'settings.confirm.bandMode.hint':
     '各行に 40m CW のように書きます。設定行で決めていれば、書かなくても同じ意味です',
@@ -335,8 +335,8 @@ const en: Record<MessageKey, string> = {
   'settings.editorFont': 'Log text',
   'settings.editorFont.gothic': 'Sans-serif',
   'settings.editorFont.gothic.hint': 'Your device\'s standard sans-serif, in a heavier weight',
-  'settings.editorFont.mono': 'Monospace',
-  'settings.editorFont.mono.hint': 'Characters line up, and 0/O and 1/l are easier to tell apart',
+  'settings.editorFont.mono': 'Monospace (Roboto Mono)',
+  'settings.editorFont.mono.hint': 'A heavier monospace where 0/O and 1/l are easy to tell apart',
   'settings.confirm.bandMode': 'Band and mode',
   'settings.confirm.bandMode.hint':
     'Writes e.g. 40m CW on each line. The meaning is the same if a settings line already sets them',

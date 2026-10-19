@@ -19,8 +19,8 @@ const THEME_OPTIONS: { value: Theme; label: MessageKey; hint: MessageKey }[] = [
 ]
 
 const FONT_OPTIONS: { value: EditorFont; label: MessageKey; hint: MessageKey }[] = [
-  { value: 'gothic', label: 'settings.editorFont.gothic', hint: 'settings.editorFont.gothic.hint' },
   { value: 'mono', label: 'settings.editorFont.mono', hint: 'settings.editorFont.mono.hint' },
+  { value: 'gothic', label: 'settings.editorFont.gothic', hint: 'settings.editorFont.gothic.hint' },
 ]
 
 const CONFIRM_OPTIONS: { key: 'writeBandMode' | 'writeRst'; label: MessageKey; hint: MessageKey }[] = [

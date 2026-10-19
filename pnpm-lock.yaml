@@ -20,6 +20,9 @@ importers:
 
   apps/fle:
     dependencies:
+      '@fontsource-variable/roboto-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
       jsqr:
         specifier: ^1.4.0
         version: 1.4.0
@@ -1162,6 +1165,9 @@ packages:
     peerDependenciesMeta:
       '@exodus/crypto':
         optional: true
+
+  '@fontsource-variable/roboto-mono@5.3.0':
+    resolution: {integrity: sha512-h5r+KY/6qy8JEOj33JgcrFO81YAnvrc1EAwMpl/EPJLb2OIvOy0/jmB5M7qs7x/uXk5JUP5Ux4LrkeOK7faHkQ==}
 
   '@fortawesome/fontawesome-common-types@7.1.0':
     resolution: {integrity: sha512-l/BQM7fYntsCI//du+6sEnHOP6a74UixFyOYUyz2DLMXKx+6DEhfR3F2NYGE45XH1JJuIamacb4IZs9S0ZOWLA==}
@@ -4691,6 +4697,8 @@ snapshots:
       levn: 0.4.1
 
   '@exodus/bytes@1.6.0': {}
+
+  '@fontsource-variable/roboto-mono@5.3.0': {}
 
   '@fortawesome/fontawesome-common-types@7.1.0': {}
 

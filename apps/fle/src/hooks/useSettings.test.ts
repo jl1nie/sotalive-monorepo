@@ -17,22 +17,22 @@ afterEach(() => {
 })
 
 describe('useSettings: 入力欄の文字', () => {
-  it('初めては、ゴシック', () => {
+  it('初めては、等幅(Roboto Mono)', () => {
     const { result } = renderHook(() => useSettings())
-    expect(result.current.settings.editorFont).toBe('gothic')
+    expect(result.current.settings.editorFont).toBe('mono')
   })
 
-  it('等幅を選ぶと保存され、開き直しても等幅', () => {
+  it('ゴシックを選ぶと保存され、開き直してもゴシック', () => {
     const first = renderHook(() => useSettings())
-    act(() => first.result.current.update({ editorFont: 'mono' }))
-    expect(JSON.parse(localStorage.getItem(KEY)!).editorFont).toBe('mono')
+    act(() => first.result.current.update({ editorFont: 'gothic' }))
+    expect(JSON.parse(localStorage.getItem(KEY)!).editorFont).toBe('gothic')
     const again = renderHook(() => useSettings())
-    expect(again.result.current.settings.editorFont).toBe('mono')
+    expect(again.result.current.settings.editorFont).toBe('gothic')
   })
 
-  it('知らない値は、ゴシックとして読む', () => {
+  it('知らない値は、等幅として読む', () => {
     localStorage.setItem(KEY, JSON.stringify({ editorFont: 'serif' }))
     const { result } = renderHook(() => useSettings())
-    expect(result.current.settings.editorFont).toBe('gothic')
+    expect(result.current.settings.editorFont).toBe('mono')
   })
 })
