@@ -11,6 +11,9 @@ const STEP = 20
 const REPEAT_DELAY = 400
 const REPEAT_EVERY = 70
 
+/** 従来の配置(リリース版と同じ見た目) */
+const CLASSIC_KEY =
+  'flex-1 min-w-0 h-11 rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 font-mono text-lg font-bold'
 const KEY =
   'min-w-0 h-11 rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 font-mono text-lg font-bold flex items-center justify-center active:bg-gray-300 dark:active:bg-gray-700'
 
@@ -116,20 +119,23 @@ export function DigitRow({ onKey, onMove = () => {}, onBackspace = () => {}, com
       onPointerMove={move}
       onPointerUp={up}
       onPointerCancel={up}
-      onPointerLeave={up}
       onMouseDown={(e) => e.preventDefault()}
-      // なぞる操作を、ページのスクロールに取られない。押し続けで、文字の選択やメニューを出さない
-      className={`flex-none grid ${compact ? 'grid-cols-10' : 'grid-cols-12'} gap-1 touch-none select-none [-webkit-touch-callout:none]`}
+      // なぞる操作を、ページのスクロールに取られない。押し続けで(⌫)、文字の選択やメニューを出さない
+      className={
+        compact
+          ? 'flex-none grid grid-cols-10 gap-1 touch-none select-none [-webkit-touch-callout:none]'
+          : 'flex-none flex gap-1 touch-none'
+      }
     >
       {DIGITS.map((k) => (
-        <button key={k} type="button" onClick={tap(() => onKey(k))} className={KEY}>
+        <button key={k} type="button" onClick={tap(() => onKey(k))} className={compact ? KEY : CLASSIC_KEY}>
           {k}
         </button>
       ))}
-      <button type="button" onClick={tap(() => onKey('/'))} className={KEY}>
+      <button type="button" onClick={tap(() => onKey('/'))} className={compact ? KEY : CLASSIC_KEY}>
         /
       </button>
-      <button type="button" onClick={tap(() => onKey('-'))} className={KEY}>
+      <button type="button" onClick={tap(() => onKey('-'))} className={compact ? KEY : CLASSIC_KEY}>
         -
       </button>
       {compact && (

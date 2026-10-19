@@ -21,8 +21,13 @@ export interface Settings {
   autoTime: boolean
   /** 確定ボタンで、バンド・モードも書く */
   writeBandMode: boolean
-  /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も)。既定は書かない(打ったまま。意味はバーに出る) */
+  /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も) */
   writeRst: boolean
+  /**
+   * コンパクトな配置での writeRst。既定は書かない(打ったまま。意味はバーに出る)。
+   * 従来の配置(リリース版)の動きを変えないよう、別に持つ。同期しない(端末ごと)
+   */
+  writeRstCompact: boolean
   /** 誤りの文面の言語(auto は端末の言語) */
   language: LangPref
   /** キーボードの上に、数字の行(0〜9 と / と -)を出す(ソフトキーボードで、文字と数字の切り替えを減らす) */
@@ -54,7 +59,8 @@ const DEFAULTS: Settings = {
   timezone: 0,
   autoTime: true,
   writeBandMode: false,
-  writeRst: false,
+  writeRst: true,
+  writeRstCompact: false,
   language: 'auto',
   digitRow: false,
   editorFont: 'mono',
@@ -77,6 +83,7 @@ function load(): Settings {
       autoTime: typeof v.autoTime === 'boolean' ? v.autoTime : DEFAULTS.autoTime,
       writeBandMode: typeof v.writeBandMode === 'boolean' ? v.writeBandMode : DEFAULTS.writeBandMode,
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
+      writeRstCompact: typeof v.writeRstCompact === 'boolean' ? v.writeRstCompact : DEFAULTS.writeRstCompact,
       language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
       editorFont: v.editorFont === 'gothic' ? 'gothic' : 'mono',

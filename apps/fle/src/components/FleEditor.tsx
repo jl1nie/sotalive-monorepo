@@ -237,15 +237,17 @@ function Editor({
 
   // 確定ボタンで何を書くか(時刻は、自動で入れる設定なら。省略形の時刻も直す)。Enterは時刻の挿入だけ
   const noClock = !settings.autoTime
+  // RST を書くかは、配置ごとに持つ(コンパクトの既定は書かない。従来はリリース版のまま)
+  const writeRst = settings.layout === 'compact' ? settings.writeRstCompact : settings.writeRst
   const confirmScope = {
     noClock,
     expandTime: true,
     bandMode: settings.writeBandMode,
-    rst: settings.writeRst,
+    rst: writeRst,
   }
 
   // この行を確定したら、どう見えるか(時刻・バンド・モード・RSTが入った姿)を先に見せる
-  const previewKey = `${caretLine}|${settings.timezone}|${noClock}|${settings.writeBandMode}|${settings.writeRst}|${text}`
+  const previewKey = `${caretLine}|${settings.timezone}|${noClock}|${settings.writeBandMode}|${writeRst}|${text}`
   useEffect(() => {
     const line = caretLine
     if (!view?.qsos.some((q) => q.line === line)) return
@@ -574,8 +576,8 @@ function Editor({
 
   return (
     <div className={`fixed inset-x-0 top-[var(--vvt,0px)] h-[var(--vvh,100dvh)] max-w-3xl mx-auto px-3 ${
-      // キーボードが出ている間は、ホームバーの分の余白を取らない(数字キーとキーボードの間が空く)
-      keyboard ? 'pb-2' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+      // コンパクトな配置では、キーボードが出ている間は、ホームバーの分の余白を取らない(数字キーとキーボードの間が空く)
+      compact && keyboard ? 'pb-2' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'
     } flex flex-col gap-2`}>
       <Header
         onMenu={() => setMenuOpen(true)}
@@ -739,9 +741,12 @@ function Editor({
           <MenuButton icon={MapPin} label={t('menu.place')} onClick={fromMenu(() => void openPlace())} />
           <MenuButton icon={ClipboardList} label={t('menu.plans')} onClick={fromMenu(() => setPlansOpen(true))} />
         </MenuGroup>
-        <MenuGroup title={t('menu.group.log')}>
-          <MenuButton icon={List} label={t('menu.list')} onClick={fromMenu(() => setListOpen(true))} />
-        </MenuGroup>
+        {/* コンパクトな配置では、QSO の数は表示だけ。一覧はここから */}
+        {compact && (
+          <MenuGroup title={t('menu.group.log')}>
+            <MenuButton icon={List} label={t('menu.list')} onClick={fromMenu(() => setListOpen(true))} />
+          </MenuGroup>
+        )}
         <MenuGroup title={t('menu.group.output')}>
           <MenuButton icon={Download} label={t('menu.export')} disabled={!hasText} onClick={fromMenu(() => void handleGenerate())} />
           <MenuButton icon={Save} label={t('menu.saveFle')} disabled={!hasText} onClick={fromMenu(() => void saveFle())} />

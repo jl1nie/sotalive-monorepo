@@ -90,5 +90,12 @@ describe('useSettings: 画面の配置', () => {
 
   it('同期しない(端末ごとに選ぶ)', () => {
     expect(SYNCED_KEYS).not.toContain('layout')
+    expect(SYNCED_KEYS).not.toContain('writeRstCompact')
+  })
+
+  it('確定で RST を書くかは、従来はリリース版のまま書き、コンパクトは書かない', () => {
+    const { result } = renderHook(() => useSettings())
+    expect(result.current.settings.writeRst).toBe(true)
+    expect(result.current.settings.writeRstCompact).toBe(false)
   })
 })

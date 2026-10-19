@@ -101,23 +101,27 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
           <p className="text-sm text-gray-700 dark:text-gray-300">
             {t('settings.confirm.intro')}
           </p>
-          {CONFIRM_OPTIONS.map((opt) => (
-            <label
-              key={opt.key}
-              className="flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 border-gray-300 dark:border-gray-700 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={settings[opt.key]}
-                onChange={(e) => onChange({ [opt.key]: e.target.checked })}
-                className="mt-1 w-5 h-5 accent-primary-700"
-              />
-              <span>
-                <span className="block font-semibold">{t(opt.label)}</span>
-                <span className="block text-sm text-gray-700 dark:text-gray-300">{t(opt.hint)}</span>
-              </span>
-            </label>
-          ))}
+          {CONFIRM_OPTIONS.map((opt) => {
+            // RST は配置ごとに持つ(従来の配置は、リリース版の設定のまま)
+            const key = opt.key === 'writeRst' && settings.layout === 'compact' ? 'writeRstCompact' : opt.key
+            return (
+              <label
+                key={opt.key}
+                className="flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 border-gray-300 dark:border-gray-700 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={settings[key]}
+                  onChange={(e) => onChange({ [key]: e.target.checked })}
+                  className="mt-1 w-5 h-5 accent-primary-700"
+                />
+                <span>
+                  <span className="block font-semibold">{t(opt.label)}</span>
+                  <span className="block text-sm text-gray-700 dark:text-gray-300">{t(opt.hint)}</span>
+                </span>
+              </label>
+            )
+          })}
         </fieldset>
 
         <label className="flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 border-gray-300 dark:border-gray-700 cursor-pointer">
