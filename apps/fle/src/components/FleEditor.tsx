@@ -11,6 +11,8 @@ import {
   sampleLog,
   stationAt,
   stationPlan,
+  selectPart,
+  type QsoPart,
   type Station,
   type Candidate,
   type Completion,
@@ -109,7 +111,8 @@ function Editor({
   // いま打っている行を、最初の1文字を打った時刻とともに覚える(その行の時刻にする)
   const lineStartedAt = useRef<{ line: number; ms: number } | null>(null)
   // 候補の確定後に置くカーソル位置。描画(コミット)の直後、次の入力より先に反映する
-  const pendingCaret = useRef<number | null>(null)
+  /** テキストを変えた後に置くカーソル(範囲なら選択) */
+  const pendingCaret = useRef<number | [number, number] | null>(null)
 
   /** 取り消せる操作のあとは、通知に「元に戻す」を添える(戻す先の内容を持つ) */
   const [undoTo, setUndoTo] = useState<string | null>(null)
@@ -180,7 +183,8 @@ function Editor({
     if (pos === null || !ta) return
     pendingCaret.current = null
     ta.focus()
-    ta.setSelectionRange(pos, pos)
+    const [from, to] = typeof pos === 'number' ? [pos, pos] : pos
+    ta.setSelectionRange(from, to)
   }, [text])
 
   const caretLine = lineOf(text, caret)
@@ -351,6 +355,34 @@ function Editor({
     setCaret(pos)
   }
 
+  /** 緑の候補バーで押した要素を選ぶ(打てば置き換わる)。行に書かれていなければ、書き込んでから選ぶ */
+  const selectQsoPart = (part: QsoPart) => {
+    const sel = selectPart(text, caretLine, part, startedAtFor(caretLine), settings.timezone, noClock)
+    if (!sel) return
+    if (sel.edits.length === 0) {
+      const ta = taRef.current
+      ta?.focus()
+      ta?.setSelectionRange(sel.from, sel.to)
+      setCaret(sel.from)
+      return
+    }
+    pendingCaret.current = [sel.from, sel.to]
+    setText(applyEdits(text, sel.edits))
+    setCaret(sel.from)
+  }
+
+  /** 数字の行をなぞったとき: カーソルを `delta` 文字動かす(選択があれば、動かす向きの端から) */
+  const moveCaret = (delta: number) => {
+    const ta = taRef.current
+    if (!ta) return
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    const base = start === end ? start : delta < 0 ? start : end
+    const pos = Math.max(0, Math.min(text.length, base + delta))
+    ta.setSelectionRange(pos, pos)
+    setCaret(pos)
+  }
+
   /** 数字の行のキー。カーソル位置(選択があれば、その範囲)に1文字入れる。打ったときと同じ経路を通す */
   const typeKey = (key: string) => {
     const ta = taRef.current
@@ -485,10 +517,11 @@ function Editor({
         lineText={text.slice(...lineRange(text, caretLine))}
         onOpenList={() => setListOpen(true)}
         onConfirm={confirmLine}
+        onSelectPart={selectQsoPart}
       />
 
       {/* 数字の行は一番下。ソフトキーボードのすぐ上で、指が近い */}
-      {settings.digitRow && <DigitRow onKey={typeKey} />}
+      {settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} />}
 
       {notice && (
         <div

@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Check } from 'lucide-react'
-import { timeLabel, zoneLabel, type LineInfo, type LogView, type QsoView } from '@/lib/fle'
+import { timeLabel, zoneLabel, type LineInfo, type LogView, type QsoPart, type QsoView } from '@/lib/fle'
 import { errorText } from '@/lib/errors'
 import { keepFocus } from '@/lib/keepFocus'
 import { useI18n, type Translate } from '@/lib/i18n'
@@ -27,6 +27,8 @@ interface Props {
   onOpenList: () => void
   /** この行を確定して、次の行へ進む */
   onConfirm: () => void
+  /** 緑のバーで押した要素(コール・RST・時刻)を、ログ欄で選ぶ */
+  onSelectPart?: (part: QsoPart) => void
 }
 
 const TONE = {
@@ -43,6 +45,8 @@ const OMISSIONS = new Set(['missing_band', 'missing_mode'])
 
 const BAR = 'flex-1 min-w-0 rounded-xl border-2 overflow-hidden'
 const BIG = 'font-mono text-xl font-bold leading-tight'
+/** 緑のバーの、押すと選べる要素 */
+const PART = 'text-left rounded-lg active:bg-emerald-200 dark:active:bg-emerald-800'
 
 /** 場所の指令と、名前を引く種類 */
 const PLACE: Record<string, PlaceKind> = { mysota: 'sota', mypota: 'pota', mywwff: 'wwff' }
@@ -98,7 +102,7 @@ function resolved(info: LineInfo | null, names: Record<string, string>, t: Trans
 
 /**
  * カーソルのある行を、補完した結果で見せる(IMEの候補のような表示)。
- * 解釈できた行(緑)は、そのまま押して確定できる。QSO の行以外では、その行の意味(解決した値)か、
+ * 解釈できた行(緑)は、右端の ✓ で確定できる。コール・RST・時刻を押すと、ログ欄のその部分を選ぶ。QSO の行以外では、その行の意味(解決した値)か、
  * いまの時刻とバンド・モードを見せる。
  */
 export function CandidateBar({
@@ -112,6 +116,7 @@ export function CandidateBar({
   autoTime = true,
   onOpenList,
   onConfirm,
+  onSelectPart = () => {},
 }: Props) {
   const { t, lang } = useI18n()
   const qso = preview ?? view?.qsos.find((q) => q.line === caretLine) ?? null
@@ -133,6 +138,14 @@ export function CandidateBar({
     const id = window.setInterval(() => setNow(Date.now()), 10_000)
     return () => window.clearInterval(id)
   }, [])
+
+  // RST は1つの的。同じ行で押すたびに、受信 → 送信 → 受信 …(言い直してくるのは、主に受信の方)
+  const [lastRst, setLastRst] = useState<{ line: number; part: QsoPart } | null>(null)
+  const pickRst = () => {
+    const part: QsoPart = lastRst?.line === caretLine && lastRst.part === 'rstRcvd' ? 'rstSent' : 'rstRcvd'
+    setLastRst({ line: caretLine, part })
+    onSelectPart(part)
+  }
 
   const names = usePlaceNames(PLACE[info?.directive ?? ''] ?? 'sota', placeCodes(info))
 
@@ -170,38 +183,63 @@ export function CandidateBar({
       </button>
 
       {qso && !error ? (
-        <button
-          type="button"
-          onClick={onConfirm}
-          // 押してもテキスト入力からフォーカスを奪わない(キーボードを閉じない)
-          {...keepFocus}
-          aria-label={t('bar.confirmLabel')}
-          className={`${BAR} ${TONE.ok} flex items-stretch text-left`}
-        >
-          <span className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-0.5">
-            <span className="flex items-baseline justify-between gap-2">
-              <span className={`${BIG} break-all`}>{qso.call}</span>
-              <span className="font-bold whitespace-nowrap">
+        // コール・RST・時刻は、押すとログ欄のその部分を選ぶ(直す機会の多い順に、的を大きく)。確定は右端の ✓
+        <div className={`${BAR} ${TONE.ok} flex items-stretch`} {...keepFocus}>
+          <span className="flex-1 min-w-0 flex flex-col">
+            <span className="flex-1 flex items-center justify-between gap-2 min-h-0">
+              <button
+                type="button"
+                {...keepFocus}
+                onClick={() => onSelectPart('call')}
+                aria-label={t('bar.selectCall')}
+                className={`${PART} ${BIG} flex-1 min-w-0 h-full pl-3 break-all line-clamp-1`}
+              >
+                {qso.call}
+              </button>
+              <span className="font-bold whitespace-nowrap pr-2">
                 {qso.band} {qso.mode}
               </span>
             </span>
-            <span className="flex flex-wrap gap-x-3 text-sm font-semibold font-mono tabular-nums">
-              <span>{timeLabel(qso)}</span>
-              <span>
+            <span className="flex-1 flex items-center gap-x-1 min-h-0 font-semibold font-mono tabular-nums">
+              <button
+                type="button"
+                {...keepFocus}
+                onClick={pickRst}
+                aria-label={t('bar.selectRst')}
+                className={`${PART} h-full pl-3 pr-2 text-base`}
+              >
                 {qso.rstSent}/{qso.rstRcvd}
+              </button>
+              <button
+                type="button"
+                {...keepFocus}
+                onClick={() => onSelectPart('time')}
+                aria-label={t('bar.selectTime')}
+                className={`${PART} h-full px-2 text-sm`}
+              >
+                {timeLabel(qso)}
+              </button>
+              <span className="flex-1 min-w-0 flex gap-x-3 text-sm line-clamp-1 overflow-hidden">
+                {qso.refs.map((r) => (
+                  <span key={r}>{r}</span>
+                ))}
+                {qso.grid && <span>{qso.grid}</span>}
+                {qso.comment && <span className="font-sans">{qso.comment}</span>}
               </span>
-              {qso.refs.map((r) => (
-                <span key={r}>{r}</span>
-              ))}
-              {qso.grid && <span>{qso.grid}</span>}
-              {qso.comment && <span className="font-sans">{qso.comment}</span>}
             </span>
           </span>
-          <span className="flex-none w-16 flex flex-col items-center justify-center gap-0.5 border-l-2 border-emerald-700/40 dark:border-emerald-400/40 font-bold text-sm">
+          <button
+            type="button"
+            onClick={onConfirm}
+            // 押してもテキスト入力からフォーカスを奪わない(キーボードを閉じない)
+            {...keepFocus}
+            aria-label={t('bar.confirmLabel')}
+            className="flex-none w-16 flex flex-col items-center justify-center gap-0.5 border-l-2 border-emerald-700/40 dark:border-emerald-400/40 font-bold text-sm active:bg-emerald-200 dark:active:bg-emerald-800"
+          >
             <Check className="w-6 h-6" aria-hidden="true" />
             {t('bar.confirm')}
-          </span>
-        </button>
+          </button>
+        </div>
       ) : omissions.length > 0 || draft ? (
         // 書き忘れ(赤)と入力の途中(橙)は同じ形: 打った文字と、足りないもの。書き忘れは、すぐ知らせる
         <div

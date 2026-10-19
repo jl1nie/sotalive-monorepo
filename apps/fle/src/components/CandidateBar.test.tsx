@@ -39,7 +39,13 @@ afterEach(() => {
 const CONFIRM = 'この行を確定して次の行へ'
 
 /** `text` を解釈し、`line` 行目にカーソルがあるときの候補バーを出す */
-function renderAt(text: string, line: number, count: 'day' | 'total' = 'day', autoTime = true) {
+function renderAt(
+  text: string,
+  line: number,
+  count: 'day' | 'total' = 'day',
+  autoTime = true,
+  onSelectPart: (part: string) => void = () => {}
+) {
   const view = compile(text) as LogView
   const info = lineInfo(text, line) as LineInfo
   render(
@@ -54,6 +60,7 @@ function renderAt(text: string, line: number, count: 'day' | 'total' = 'day', au
       autoTime={autoTime}
       onOpenList={() => {}}
       onConfirm={() => {}}
+      onSelectPart={onSelectPart}
     />
   )
 }
@@ -151,7 +158,24 @@ describe('CandidateBar: 入力の途中(橙)と書き忘れ(赤)', () => {
 describe('CandidateBar: QSO の行と、QSO の数', () => {
   it('相手のグリッドも出す', () => {
     renderAt(sample, lineOf('58 jk2qsu pm85rl'))
-    expect(screen.getByRole('button', { name: CONFIRM })).toHaveTextContent('PM85rl')
+    expect(screen.getByRole('button', { name: CONFIRM }).parentElement).toHaveTextContent('PM85rl')
+  })
+
+  it('コール・時刻を押すと、その部分を選ぶ。RST は押すたびに受信、送信、受信', () => {
+    const picked: string[] = []
+    renderAt(sample, lineOf('2302 ja1qsa'), 'day', true, (p) => picked.push(p))
+    act(() => screen.getByRole('button', { name: 'コールを選んで直す' }).click())
+    act(() => screen.getByRole('button', { name: '時刻を選んで直す' }).click())
+    const rst = screen.getByRole('button', { name: /RSTを選んで直す/ })
+    for (let i = 0; i < 3; i++) act(() => rst.click())
+    expect(picked).toEqual(['call', 'time', 'rstRcvd', 'rstSent', 'rstRcvd'])
+  })
+
+  it('2段目は RST が先頭で、時刻はその後ろ', () => {
+    renderAt(sample, lineOf('2302 ja1qsa'))
+    const rst = screen.getByRole('button', { name: /RSTを選んで直す/ })
+    expect(rst).toHaveTextContent('599/599')
+    expect(rst.nextElementSibling).toHaveAccessibleName('時刻を選んで直す')
   })
 
   it('解釈できた QSO の行は、確定できる', () => {
