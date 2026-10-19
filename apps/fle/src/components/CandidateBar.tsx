@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Check } from 'lucide-react'
-import { timeLabel, zoneLabel, type LineInfo, type LogView, type QsoPart, type QsoView } from '@/lib/fle'
+import { timeLabel, zoneLabel, type LineInfo, type LogView, type QsoView } from '@/lib/fle'
 import { errorText } from '@/lib/errors'
 import { keepFocus } from '@/lib/keepFocus'
 import { useI18n, type Translate } from '@/lib/i18n'
@@ -27,9 +27,12 @@ interface Props {
   onOpenList: () => void
   /** この行を確定して、次の行へ進む */
   onConfirm: () => void
-  /** 緑のバーで押した要素(コール・RST・時刻)の末尾に、ログ欄のキャレットを置く */
-  onSelectPart?: (part: QsoPart) => void
+  /** 緑のバーで押した要素(コール・RST・時刻)の末尾に、ログ欄のキャレットを置く。RST の受信・送信は、呼ぶ側が決める */
+  onSelectPart?: (part: BarPart) => void
 }
+
+/** 緑のバーで押せる要素。RST は1つの的(受信か送信かは、押した状況で決まる) */
+export type BarPart = 'call' | 'time' | 'rst'
 
 const TONE = {
   ok: 'border-emerald-700 bg-emerald-50 text-emerald-950 dark:border-emerald-400 dark:bg-emerald-950 dark:text-emerald-100',
@@ -139,14 +142,6 @@ export function CandidateBar({
     return () => window.clearInterval(id)
   }, [])
 
-  // RST は1つの的。同じ行で押すたびに、受信 → 送信 → 受信 …(言い直してくるのは、主に受信の方)
-  const [lastRst, setLastRst] = useState<{ line: number; part: QsoPart } | null>(null)
-  const pickRst = () => {
-    const part: QsoPart = lastRst?.line === caretLine && lastRst.part === 'rstRcvd' ? 'rstSent' : 'rstRcvd'
-    setLastRst({ line: caretLine, part })
-    onSelectPart(part)
-  }
-
   const names = usePlaceNames(PLACE[info?.directive ?? ''] ?? 'sota', placeCodes(info))
 
   // 入力の途中(まだ確定できない行)は、打った文字を、橙で見せる。確定できれば緑になる。
@@ -204,7 +199,7 @@ export function CandidateBar({
               <button
                 type="button"
                 {...keepFocus}
-                onClick={pickRst}
+                onClick={() => onSelectPart('rst')}
                 aria-label={t('bar.selectRst')}
                 className={`${PART} h-full pl-3 pr-2 text-base`}
               >
