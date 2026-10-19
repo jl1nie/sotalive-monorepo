@@ -15,7 +15,7 @@ use std::borrow::Cow;
 use nom::{
     branch::alt,
     bytes::complete::{take_till, take_while, take_while1},
-    character::complete::{char as ch, digit1, one_of},
+    character::complete::{char as ch, digit1, one_of, satisfy},
     combinator::{all_consuming, map, value},
     sequence::tuple,
     IResult,
@@ -329,9 +329,19 @@ pub struct LineAst {
 // 字句(nom)
 // ---------------------------------------------------------------------------
 
-/// 語を構成する文字。空白と、注釈の開始(`#` `<` `[` `{`)で、語は切れる。
+/// 語を構成する文字。空白と、注釈の開始(`#` `<` `[` `{`。全角も)で、語は切れる。
 fn is_word_char(c: char) -> bool {
-    !c.is_whitespace() && !matches!(c, '#' | '<' | '[' | '{')
+    !c.is_whitespace() && !matches!(half(c), '#' | '<' | '[' | '{')
+}
+
+/// 全角の英数字・記号(U+FF01〜U+FF5E)の1文字を、半角にする(`fold_fullwidth` の1文字版)。
+/// 語を分類する前に見る記号(注釈の括弧・`#`)も、全角を半角として読むため
+fn half(c: char) -> char {
+    if ('\u{FF01}'..='\u{FF5E}').contains(&c) {
+        char::from_u32(c as u32 - 0xFEE0).unwrap_or(c)
+    } else {
+        c
+    }
 }
 
 fn ws0(i: &str) -> Res<'_, &str> {
@@ -342,20 +352,23 @@ fn word(i: &str) -> Res<'_, &str> {
     take_while1(is_word_char)(i)
 }
 
-/// `<…>` / `[…]` / `{…}`。閉じていなければ、行末までが注釈で、`closed` は偽。
+/// `<…>` / `[…]` / `{…}`(全角の括弧も)。閉じていなければ、行末までが注釈で、`closed` は偽。
 fn comment(i: &str) -> Res<'_, (CommentKind, &str, bool)> {
+    let open = |o: char| satisfy(move |c| half(c) == o);
     let (i, kind) = alt((
-        value(CommentKind::Angle, ch('<')),
-        value(CommentKind::Square, ch('[')),
-        value(CommentKind::Curly, ch('{')),
+        value(CommentKind::Angle, open('<')),
+        value(CommentKind::Square, open('[')),
+        value(CommentKind::Curly, open('{')),
     ))(i)?;
     let close = match kind {
         CommentKind::Angle => '>',
         CommentKind::Square => ']',
         CommentKind::Curly => '}',
     };
-    let (i, content) = take_till(|c| c == close)(i)?;
-    let (i, closed) = map(nom::combinator::opt(ch(close)), |o| o.is_some())(i)?;
+    let (i, content) = take_till(|c| half(c) == close)(i)?;
+    let (i, closed) = map(nom::combinator::opt(satisfy(|c| half(c) == close)), |o| {
+        o.is_some()
+    })(i)?;
     Ok((i, (kind, content, closed)))
 }
 
@@ -377,17 +390,7 @@ impl Conv<'_> {
 /// 全角の英数字・記号(U+FF01〜U+FF5E)を、半角にする
 fn fold_fullwidth(s: &str) -> Cow<'_, str> {
     if s.chars().any(|c| ('\u{FF01}'..='\u{FF5E}').contains(&c)) {
-        Cow::Owned(
-            s.chars()
-                .map(|c| {
-                    if ('\u{FF01}'..='\u{FF5E}').contains(&c) {
-                        char::from_u32(c as u32 - 0xFEE0).unwrap_or(c)
-                    } else {
-                        c
-                    }
-                })
-                .collect(),
-        )
+        Cow::Owned(s.chars().map(half).collect())
     } else {
         Cow::Borrowed(s)
     }
@@ -559,7 +562,7 @@ struct Arg {
 pub fn parse_line(line: &str) -> LineAst {
     let conv = Conv { line };
     let (rest, _) = ws0(line).unwrap_or((line, ""));
-    if rest.is_empty() || rest.starts_with('#') {
+    if rest.is_empty() || rest.starts_with(|c| half(c) == '#') {
         return LineAst {
             kind: LineKind::Blank,
             errors: Vec::new(),
@@ -1335,9 +1338,52 @@ mod tests {
 
     #[test]
     fn blank_and_comment_only_lines() {
-        for l in ["", "   ", "\t", "# 注釈", "  # 注釈", "#"] {
+        for l in [
+            "",
+            "   ",
+            "\t",
+            "# 注釈",
+            "  # 注釈",
+            "#",
+            "＃ 注釈",
+            "　＃Header",
+        ] {
             assert_eq!(parse_line(l).kind, LineKind::Blank, "{l:?}");
         }
+    }
+
+    #[test]
+    fn full_width_brackets_and_hash_are_read_as_half_width() {
+        // 日本語の入力で打ちやすい全角の括弧・# も、半角と同じ注釈
+        let kinds = |l: &str| {
+            nodes(l)
+                .into_iter()
+                .filter_map(|n| match n {
+                    QsoItem::Comment {
+                        kind,
+                        content,
+                        closed,
+                    } => Some((kind, content, closed)),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            kinds("ja1xyz ＜山田さん＞ ［TNX］ ｛QRP｝"),
+            vec![
+                (CommentKind::Angle, "山田さん".to_string(), true),
+                (CommentKind::Square, "TNX".to_string(), true),
+                (CommentKind::Curly, "QRP".to_string(), true),
+            ]
+        );
+        // 開きと閉じが全角・半角で混ざっていても閉じる
+        assert_eq!(
+            kinds("ja1xyz ＜山田さん>"),
+            vec![(CommentKind::Angle, "山田さん".to_string(), true)]
+        );
+        // 行の途中の ＃ から後ろは、# と同じく読まない
+        assert_eq!(nodes("ja1xyz 599 ＃ あと").len(), 1);
+        assert_eq!(nodes("ja1xyz 599 # あと").len(), 1);
     }
 
     // ---- 指令 ----
