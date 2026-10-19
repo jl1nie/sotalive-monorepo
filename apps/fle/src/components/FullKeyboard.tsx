@@ -30,14 +30,15 @@ interface Props {
 /**
  * フルキーの配置の、画面のキーボード(OS のキーボードの代わり)。FLE で打つのは、ほとんどが英数字と記号なので、
  * 数字・英字・/ - 空白 ⌫ と、確定(次の行)を1枚にまとめる。押してもテキスト入力からフォーカスを奪わない。
- * どこからでも左右になぞると、キーは入らず、カーソルが動く。英字は小文字で入れる(FLE は大文字・小文字を区別しない)。
+ * どこからでも左右になぞると、キーは入らず、カーソルが動く。英字のキーは大文字で見せ、小文字で入れる(FLE は大文字・小文字を区別しない)。
  */
 export function FullKeyboard({ onKey, onMove, onBackspace, confirmable, onConfirm, onNewline, onOsKeyboard }: Props) {
   const t = useT()
   const { padProps, tap, backspaceProps } = useKeyPad(onMove, onBackspace)
 
+  // キーの表示は大文字(見慣れた形で、屋外でも読みやすい)。打つのは小文字
   const letter = (k: string) => (
-    <button key={k} type="button" onClick={tap(() => onKey(k))} className={`${KEY} col-span-2`}>
+    <button key={k} type="button" onClick={tap(() => onKey(k))} className={`${KEY} col-span-2 uppercase`}>
       {k}
     </button>
   )
