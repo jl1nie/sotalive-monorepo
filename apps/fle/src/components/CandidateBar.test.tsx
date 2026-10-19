@@ -117,6 +117,11 @@ describe('CandidateBar: 自局の指令の行は、その値を出す', () => {
     expect(barText()).toBe('JL1NIE/0')
   })
 
+  it('値がまだないときは、時刻とバンド・モード', () => {
+    renderAt('mygrid pm95uq\nmygrid -', 1)
+    expect(barText()).toMatch(/^\d\d:\d\dUTC/)
+  })
+
   it('mygrid', () => {
     renderAt('mycall JA1ABC\nmygrid pm95uq', 1)
     expect(barText()).toBe('PM95uq')
