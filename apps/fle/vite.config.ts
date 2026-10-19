@@ -45,8 +45,8 @@ export default defineConfig({
       workbox: {
         // 画面(HTML)はキャッシュ優先にしない。つながるときは再読み込みで必ず最新が出て、
         // つながらないとき(山頂など)だけ、前回のものを使う。
-        // HTML以外(ハッシュ付きのJS・CSS・WASM・アイコン)は、事前にキャッシュしてオフラインで動かす。
-        globPatterns: ['**/*.{js,css,wasm,svg,png,webmanifest}'],
+        // HTML以外(ハッシュ付きのJS・CSS・WASM・フォント・アイコン)は、事前にキャッシュしてオフラインで動かす。
+        globPatterns: ['**/*.{js,css,wasm,woff2,svg,png,webmanifest}'],
         navigateFallback: undefined,
         runtimeCaching: [
           {

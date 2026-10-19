@@ -20,6 +20,9 @@ importers:
 
   apps/fle:
     dependencies:
+      '@fontsource-variable/roboto-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
       jsqr:
         specifier: ^1.4.0
         version: 1.4.0
@@ -42,6 +45,12 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.1.18(vite@7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.51.2))
+      '@testing-library/jest-dom':
+        specifier: ^6.9.1
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.3.1
+        version: 16.3.1(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/node':
         specifier: ^24.10.1
         version: 24.10.4
@@ -66,6 +75,9 @@ importers:
       globals:
         specifier: ^16.5.0
         version: 16.5.0
+      jsdom:
+        specifier: ^27.4.0
+        version: 27.4.0
       tailwindcss:
         specifier: ^4.1.18
         version: 4.1.18
@@ -1153,6 +1165,9 @@ packages:
     peerDependenciesMeta:
       '@exodus/crypto':
         optional: true
+
+  '@fontsource-variable/roboto-mono@5.3.0':
+    resolution: {integrity: sha512-h5r+KY/6qy8JEOj33JgcrFO81YAnvrc1EAwMpl/EPJLb2OIvOy0/jmB5M7qs7x/uXk5JUP5Ux4LrkeOK7faHkQ==}
 
   '@fortawesome/fontawesome-common-types@7.1.0':
     resolution: {integrity: sha512-l/BQM7fYntsCI//du+6sEnHOP6a74UixFyOYUyz2DLMXKx+6DEhfR3F2NYGE45XH1JJuIamacb4IZs9S0ZOWLA==}
@@ -4682,6 +4697,8 @@ snapshots:
       levn: 0.4.1
 
   '@exodus/bytes@1.6.0': {}
+
+  '@fontsource-variable/roboto-mono@5.3.0': {}
 
   '@fortawesome/fontawesome-common-types@7.1.0': {}
 

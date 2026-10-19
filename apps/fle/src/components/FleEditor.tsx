@@ -447,8 +447,11 @@ function Editor({
           autoCapitalize="none"
           autoCorrect="off"
           autoComplete="off"
-          // 下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る
-          className="input flex-1 h-full min-h-0 resize-none font-mono leading-relaxed pb-20"
+          // 下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
+          // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
+          className={`input flex-1 h-full min-h-0 resize-none font-semibold leading-relaxed pb-20 ${
+            settings.editorFont === 'mono' ? 'font-mono' : ''
+          }`}
         />
         <SuggestStrip candidates={completion.candidates} onPick={pick} />
       </div>

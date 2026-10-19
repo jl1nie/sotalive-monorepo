@@ -1,7 +1,7 @@
 import { keepFocus } from '@/lib/keepFocus'
 import { useT } from '@/lib/i18n'
 
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '/']
+const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '/', '-']
 
 interface Props {
   onKey: (key: string) => void

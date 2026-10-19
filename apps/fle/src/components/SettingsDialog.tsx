@@ -2,6 +2,7 @@ import {
   TIMEZONE_MAX,
   TIMEZONE_MIN,
   timezoneLabel,
+  type EditorFont,
   type Settings,
   type Theme,
 } from '@/hooks/useSettings'
@@ -15,6 +16,11 @@ const THEME_OPTIONS: { value: Theme; label: MessageKey; hint: MessageKey }[] = [
   { value: 'system', label: 'settings.theme.system', hint: 'settings.theme.system.hint' },
   { value: 'light', label: 'settings.theme.light', hint: 'settings.theme.light.hint' },
   { value: 'dark', label: 'settings.theme.dark', hint: 'settings.theme.dark.hint' },
+]
+
+const FONT_OPTIONS: { value: EditorFont; label: MessageKey; hint: MessageKey }[] = [
+  { value: 'mono', label: 'settings.editorFont.mono', hint: 'settings.editorFont.mono.hint' },
+  { value: 'gothic', label: 'settings.editorFont.gothic', hint: 'settings.editorFont.gothic.hint' },
 ]
 
 const CONFIRM_OPTIONS: { key: 'writeBandMode' | 'writeRst'; label: MessageKey; hint: MessageKey }[] = [
@@ -101,6 +107,33 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
             <span className="block text-sm text-gray-700 dark:text-gray-300">{t('settings.digitRow.hint')}</span>
           </span>
         </label>
+
+        <fieldset className="space-y-2">
+          <legend className="label">{t('settings.editorFont')}</legend>
+          {FONT_OPTIONS.map((opt) => (
+            <label
+              key={opt.value}
+              className={`flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 cursor-pointer ${
+                settings.editorFont === opt.value
+                  ? 'border-primary-700 bg-primary-50 dark:border-primary-400 dark:bg-gray-800'
+                  : 'border-gray-300 dark:border-gray-700'
+              }`}
+            >
+              <input
+                type="radio"
+                name="editorFont"
+                value={opt.value}
+                checked={settings.editorFont === opt.value}
+                onChange={() => onChange({ editorFont: opt.value })}
+                className="mt-1 w-5 h-5 accent-primary-700"
+              />
+              <span>
+                <span className={`block font-semibold ${opt.value === 'mono' ? 'font-mono' : ''}`}>{t(opt.label)}</span>
+                <span className="block text-sm text-gray-700 dark:text-gray-300">{t(opt.hint)}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
 
         <div>
           <label htmlFor="rigs" className="label">

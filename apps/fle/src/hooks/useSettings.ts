@@ -3,6 +3,8 @@ import type { LangPref, Translate } from '@/lib/i18n'
 import { parseRigs } from '@/lib/rig'
 
 export type Theme = 'light' | 'dark' | 'system'
+/** 入力欄の文字。等幅(同梱の Roboto Mono)か、ゴシック(本文と同じ)か */
+export type EditorFont = 'gothic' | 'mono'
 
 export interface Settings {
   theme: Theme
@@ -14,8 +16,10 @@ export interface Settings {
   writeRst: boolean
   /** 誤りの文面の言語(auto は端末の言語) */
   language: LangPref
-  /** キーボードの上に、数字の行(0〜9 と /)を出す(ソフトキーボードで、文字と数字の切り替えを減らす) */
+  /** キーボードの上に、数字の行(0〜9 と / と -)を出す(ソフトキーボードで、文字と数字の切り替えを減らす) */
   digitRow: boolean
+  /** 入力欄の文字(どちらも太め。屋外で読めるように) */
+  editorFont: EditorFont
   /** よく使うリグ。`rig` の値(HAMLOG の `Rig=` の右辺)の候補になる */
   rigs: string[]
 }
@@ -39,6 +43,7 @@ const DEFAULTS: Settings = {
   writeRst: true,
   language: 'auto',
   digitRow: false,
+  editorFont: 'mono',
   rigs: [],
 }
 
@@ -57,6 +62,7 @@ function load(): Settings {
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
       language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
+      editorFont: v.editorFont === 'gothic' ? 'gothic' : 'mono',
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
   } catch {

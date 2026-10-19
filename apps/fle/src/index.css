@@ -8,7 +8,24 @@
  * - ボタン・入力欄は高さ48px以上、入力は16px以上(iOSの自動ズーム回避)
  * - 影・グラデーション・半透明は使わない(反射で見えなくなる)
  */
+/*
+ * ログの文字(等幅)は Roboto Mono を同梱する(端末の標準の等幅は、機種によって細い)。
+ * 英数字(latin)だけ。1ファイルに全部の太さが入る。日本語は、等幅でなくゴシックで出す
+ */
+@font-face {
+  font-family: 'Roboto Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 700;
+  src: url('../node_modules/@fontsource-variable/roboto-mono/files/roboto-mono-latin-wght-normal.woff2')
+    format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @theme {
+  --font-mono: 'Roboto Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Hiragino Sans',
+    'Noto Sans JP', monospace;
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
   --color-primary-200: #bfdbfe;
