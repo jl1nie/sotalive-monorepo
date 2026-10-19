@@ -12,6 +12,7 @@ import init, {
   lineInfo as wasmLineInfo,
   stationPlan as wasmStationPlan,
   generateZip as wasmGenerateZip,
+  logFileStem as wasmLogFileStem,
 } from '../wasm/fle/fle'
 
 /** 1QSO分。省略された時刻・バンド・モード・RSTは前の行から補完済み。 */
@@ -264,6 +265,12 @@ export async function gridLocator(lat: number, lon: number): Promise<string | un
 export async function checkOutput(text: string): Promise<OutputWarning[]> {
   await ensureReady()
   return wasmCheckOutput(text) as OutputWarning[]
+}
+
+/** 書き出すファイルの名前の本体(`20261019@JA-ST-012-JP-1151`)。QSO がまだなければ null */
+export async function logFileStem(text: string): Promise<string | null> {
+  await ensureReady()
+  return wasmLogFileStem(text) ?? null
 }
 
 export async function generateFleZip(text: string, now: Date = new Date()): Promise<Uint8Array> {

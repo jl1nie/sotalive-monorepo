@@ -119,6 +119,12 @@ pub fn check_output_of(text: &str) -> Result<JsValue, JsError> {
 /// FLEテキストから各種ログファイルを含むZIPを生成する。
 ///
 /// `now_ms` は `Date.now()` の値。エラーログのファイル名に使う。
+/// 書き出すファイルの名前の本体(`20261019@JA-ST-012-JP-1151`)。QSO がなければ null
+#[wasm_bindgen(js_name = logFileStem)]
+pub fn log_file_stem_of(text: &str) -> Option<String> {
+    fle_core::log_file_stem(&compile_fle(text))
+}
+
 #[wasm_bindgen(js_name = generateZip)]
 pub fn generate_zip(text: &str, now_ms: f64) -> Result<Vec<u8>, JsError> {
     generate_zip_bytes(text, now_ms).map_err(|e| JsError::new(&e))

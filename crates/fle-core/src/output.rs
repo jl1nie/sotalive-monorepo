@@ -42,21 +42,9 @@ pub fn generate_fle_output(
         return Err("No records to output".to_string());
     }
 
-    // ファイル名のプレフィックス: 最初の日付と、ログに現れた運用場所(現れた順)
     let first = &result.records[0];
     let date_str = date_key(first);
-    let mut ref_parts: Vec<String> = Vec::new();
-    for r in &result.records {
-        let refs = std::iter::once(r.mysota.replace('/', "-"))
-            .chain(r.mypota.iter().cloned())
-            .chain(std::iter::once(r.mywwff.clone()));
-        for part in refs.filter(|p| !p.is_empty()) {
-            if !ref_parts.contains(&part) {
-                ref_parts.push(part);
-            }
-        }
-    }
-    let log_name = format!("{}@{}", date_str, ref_parts.join("-"));
+    let log_name = log_file_stem(result).unwrap_or_else(|| date_str.clone());
 
     // HAMLOG CSV
     let hamlog_data = generate_hamlog_csv(result);
@@ -333,6 +321,29 @@ pub fn check_log(text: &str) -> Vec<OutputWarning> {
 }
 
 /// UTCの日付(`YYYYMMDD`)
+/// ファイル名の本体: 最初の QSO の日付と、ログに現れた運用場所(現れた順)。`20261019@JA-ST-012-JP-1151`。
+/// 運用場所がなければ日付だけ。QSO がなければ None
+pub fn log_file_stem(result: &FleCompileResult) -> Option<String> {
+    let first = result.records.first()?;
+    let mut ref_parts: Vec<String> = Vec::new();
+    for r in &result.records {
+        let refs = std::iter::once(r.mysota.replace('/', "-"))
+            .chain(r.mypota.iter().cloned())
+            .chain(std::iter::once(r.mywwff.clone()));
+        for part in refs.filter(|p| !p.is_empty()) {
+            if !ref_parts.contains(&part) {
+                ref_parts.push(part);
+            }
+        }
+    }
+    let date = date_key(first);
+    Some(if ref_parts.is_empty() {
+        date
+    } else {
+        format!("{}@{}", date, ref_parts.join("-"))
+    })
+}
+
 fn date_key(r: &FleQsoRecord) -> String {
     format!("{:04}{:02}{:02}", r.year, r.month, r.day)
 }
@@ -783,6 +794,21 @@ mod tests {
             .unwrap()
             .and_hms_opt(9, 30, 45)
             .unwrap()
+    }
+
+    #[test]
+    fn the_file_stem_has_the_first_date_and_the_places() {
+        let stem = |text: &str| log_file_stem(&crate::compile_fle(text));
+        assert_eq!(
+            stem("mycall JA1ABC\ndate 2026-10-19\nmysota ja/st-012\nmypota jp-1151\n40m cw\n0900 ja1aaa"),
+            Some("20261019@JA-ST-012-JP-1151".to_string())
+        );
+        assert_eq!(
+            stem("mycall JA1ABC\ndate 2026-10-19\n40m cw\n0900 ja1aaa"),
+            Some("20261019".to_string()),
+            "場所がなければ @ を付けない"
+        );
+        assert_eq!(stem("mycall JA1ABC\ndate 2026-10-19"), None);
     }
 
     #[test]

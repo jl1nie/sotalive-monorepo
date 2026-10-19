@@ -18,6 +18,7 @@ import {
   completeAt,
   fillLine,
   generateFleZip,
+  logFileStem,
   lineInfo,
   adifToFle,
   checkOutput,
@@ -49,6 +50,7 @@ import { DigitRow } from '@/components/DigitRow'
 import { rigCompletion } from '@/lib/rig'
 import { CandidateBar, type BarPart } from '@/components/CandidateBar'
 import { nextRst, type RstMark } from '@/lib/rstToggle'
+import { exportName } from '@/lib/fileName'
 import { SuggestStrip } from '@/components/SuggestStrip'
 import { QsoSheet } from '@/components/QsoSheet'
 import { PlaceSheet } from '@/components/PlaceSheet'
@@ -423,7 +425,8 @@ function Editor({
     async (source: string) => {
       try {
         const zip = await generateFleZip(source)
-        download(new Blob([zip as BlobPart], { type: 'application/zip' }), 'fle.zip')
+        const name = exportName(await logFileStem(source), new Date(), 'zip')
+        download(new Blob([zip as BlobPart], { type: 'application/zip' }), name)
         if (view?.status === 'ERR') {
           notify(t('notice.errorsFile'))
         }
@@ -435,10 +438,8 @@ function Editor({
   )
 
   /** FLE のログを、そのままテキストで保存する(あとで「FLEログを開く」で読める) */
-  const saveFle = () => {
-    const d = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const name = `fle-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.txt`
+  const saveFle = async () => {
+    const name = exportName(await logFileStem(text), new Date(), 'txt')
     download(new Blob([text], { type: 'text/plain;charset=utf-8' }), name)
   }
 
@@ -650,7 +651,7 @@ function Editor({
         </MenuGroup>
         <MenuGroup title={t('menu.group.output')}>
           <MenuButton icon={Download} label={t('menu.export')} disabled={!hasText} onClick={fromMenu(() => void handleGenerate())} />
-          <MenuButton icon={Save} label={t('menu.saveFle')} disabled={!hasText} onClick={fromMenu(saveFle)} />
+          <MenuButton icon={Save} label={t('menu.saveFle')} disabled={!hasText} onClick={fromMenu(() => void saveFle())} />
         </MenuGroup>
         <MenuGroup title={t('menu.group.input')}>
           <MenuButton icon={Upload} label={t('menu.openFle')} onClick={fromMenu(() => fleInputRef.current?.click())} />
