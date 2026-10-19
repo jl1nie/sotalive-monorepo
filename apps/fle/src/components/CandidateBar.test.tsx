@@ -161,21 +161,21 @@ describe('CandidateBar: QSO の行と、QSO の数', () => {
     expect(screen.getByRole('button', { name: CONFIRM }).parentElement).toHaveTextContent('PM85rl')
   })
 
-  it('コール・時刻を押すと、その部分を選ぶ。RST は押すたびに受信、送信、受信', () => {
+  it('コール・時刻を押すと、その要素を知らせる。RST は押すたびに受信、送信、受信', () => {
     const picked: string[] = []
     renderAt(sample, lineOf('2302 ja1qsa'), 'day', true, (p) => picked.push(p))
-    act(() => screen.getByRole('button', { name: 'コールを選んで直す' }).click())
-    act(() => screen.getByRole('button', { name: '時刻を選んで直す' }).click())
-    const rst = screen.getByRole('button', { name: /RSTを選んで直す/ })
+    act(() => screen.getByRole('button', { name: 'コールを直す(末尾へ)' }).click())
+    act(() => screen.getByRole('button', { name: '時刻を直す(末尾へ)' }).click())
+    const rst = screen.getByRole('button', { name: /RSTを直す/ })
     for (let i = 0; i < 3; i++) act(() => rst.click())
     expect(picked).toEqual(['call', 'time', 'rstRcvd', 'rstSent', 'rstRcvd'])
   })
 
   it('2段目は RST が先頭で、時刻はその後ろ', () => {
     renderAt(sample, lineOf('2302 ja1qsa'))
-    const rst = screen.getByRole('button', { name: /RSTを選んで直す/ })
+    const rst = screen.getByRole('button', { name: /RSTを直す/ })
     expect(rst).toHaveTextContent('599/599')
-    expect(rst.nextElementSibling).toHaveAccessibleName('時刻を選んで直す')
+    expect(rst.nextElementSibling).toHaveAccessibleName('時刻を直す(末尾へ)')
   })
 
   it('解釈できた QSO の行は、確定できる', () => {

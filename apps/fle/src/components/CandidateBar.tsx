@@ -27,7 +27,7 @@ interface Props {
   onOpenList: () => void
   /** この行を確定して、次の行へ進む */
   onConfirm: () => void
-  /** 緑のバーで押した要素(コール・RST・時刻)を、ログ欄で選ぶ */
+  /** 緑のバーで押した要素(コール・RST・時刻)の末尾に、ログ欄のキャレットを置く */
   onSelectPart?: (part: QsoPart) => void
 }
 
@@ -102,7 +102,7 @@ function resolved(info: LineInfo | null, names: Record<string, string>, t: Trans
 
 /**
  * カーソルのある行を、補完した結果で見せる(IMEの候補のような表示)。
- * 解釈できた行(緑)は、右端の ✓ で確定できる。コール・RST・時刻を押すと、ログ欄のその部分を選ぶ。QSO の行以外では、その行の意味(解決した値)か、
+ * 解釈できた行(緑)は、右端の ✓ で確定できる。コール・RST・時刻を押すと、ログ欄のその末尾へキャレットを置く。QSO の行以外では、その行の意味(解決した値)か、
  * いまの時刻とバンド・モードを見せる。
  */
 export function CandidateBar({
@@ -183,7 +183,7 @@ export function CandidateBar({
       </button>
 
       {qso && !error ? (
-        // コール・RST・時刻は、押すとログ欄のその部分を選ぶ(直す機会の多い順に、的を大きく)。確定は右端の ✓
+        // コール・RST・時刻は、押すとログ欄のその末尾へキャレットを置く(直す機会の多い順に、的を大きく)。確定は右端の ✓
         <div className={`${BAR} ${TONE.ok} flex items-stretch`} {...keepFocus}>
           <span className="flex-1 min-w-0 flex flex-col">
             <span className="flex-1 flex items-center justify-between gap-2 min-h-0">
