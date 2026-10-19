@@ -47,7 +47,8 @@ import { useSettings, type Settings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
 import { DigitRow } from '@/components/DigitRow'
 import { rigCompletion } from '@/lib/rig'
-import { CandidateBar } from '@/components/CandidateBar'
+import { CandidateBar, type BarPart } from '@/components/CandidateBar'
+import { nextRst, type RstMark } from '@/lib/rstToggle'
 import { SuggestStrip } from '@/components/SuggestStrip'
 import { QsoSheet } from '@/components/QsoSheet'
 import { PlaceSheet } from '@/components/PlaceSheet'
@@ -376,9 +377,13 @@ function Editor({
    * 緑の候補バーで押した要素の末尾に、キャレットを置く(⌫ で末尾から直す)。選択はしない(打つと消えてしまう)。
    * 行に書かれていなければ、書き込んでから置く
    */
-  const caretToPart = (part: QsoPart) => {
+  const lastRst = useRef<RstMark | null>(null)
+  const caretToPart = (barPart: BarPart) => {
+    const part: QsoPart = barPart === 'rst' ? nextRst(lastRst.current, text, caret) : barPart
     const sel = selectPart(text, caretLine, part, startedAtFor(caretLine), settings.timezone, noClock)
     if (!sel) return
+    const after = sel.edits.length === 0 ? text : applyEdits(text, sel.edits)
+    lastRst.current = part === 'rstRcvd' || part === 'rstSent' ? { part, text: after, caret: sel.to } : null
     if (sel.edits.length === 0) {
       const ta = taRef.current
       ta?.focus()
@@ -387,7 +392,7 @@ function Editor({
       return
     }
     pendingCaret.current = sel.to
-    setText(applyEdits(text, sel.edits))
+    setText(after)
     setCaret(sel.to)
   }
 
