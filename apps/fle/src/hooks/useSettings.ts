@@ -73,15 +73,24 @@ const DEFAULTS: Settings = {
   rigs: [],
 }
 
+/** この端末で、前に FLEonline を使ったことがあるか(ログ・前回のコールサインなど、fle. で始まる保存がある) */
+function usedBefore(): boolean {
+  for (let i = 0; i < localStorage.length; i++) {
+    if (localStorage.key(i)?.startsWith('fle.')) return true
+  }
+  return false
+}
+
 function load(): Settings {
   try {
-    const v = JSON.parse(localStorage.getItem(KEY) ?? '{}')
+    const stored = localStorage.getItem(KEY)
+    const v = JSON.parse(stored ?? '{}')
     const theme: Theme = v.theme === 'light' || v.theme === 'dark' ? v.theme : 'system'
     const timezone =
       Number.isInteger(v.timezone) && v.timezone >= TIMEZONE_MIN && v.timezone <= TIMEZONE_MAX
         ? v.timezone
         : 0
-    return {
+    const settings: Settings = {
       theme,
       timezone,
       autoTime: typeof v.autoTime === 'boolean' ? v.autoTime : DEFAULTS.autoTime,
@@ -92,9 +101,18 @@ function load(): Settings {
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
       editorFont: v.editorFont === 'gothic' ? 'gothic' : 'mono',
       qsoCount: v.qsoCount === 'total' ? 'total' : 'day',
-      layout: v.layout === 'compact' || v.layout === 'fullkey' ? v.layout : 'classic',
+      // 配置: 初めて使うスマホはフルキー。前から使っている端末は、選んでいなければ従来のまま
+      layout:
+        v.layout === 'compact' || v.layout === 'fullkey' || v.layout === 'classic'
+          ? v.layout
+          : stored === null && touchDevice() && !usedBefore()
+            ? 'fullkey'
+            : 'classic',
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
+    // 初めて読んだときに決めた配置を覚えておく(あとでログができても、配置が変わらないように)
+    if (stored === null) localStorage.setItem(KEY, JSON.stringify(settings))
+    return settings
   } catch {
     return DEFAULTS
   }
