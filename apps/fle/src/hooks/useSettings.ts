@@ -47,8 +47,11 @@ export const TIMEZONE_MIN = -12
 export const TIMEZONE_MAX = 14
 
 const KEY = 'fle.settings'
-/** タッチ端末(ソフトキーボード)なら、数字の行は初期でオン */
-const touchDevice = () => {
+/**
+ * タッチ端末(ソフトキーボード)か。数字の行は初期でオン。フルキーは、タッチ端末でだけ選べる
+ * (PC は物理キーボードがあるので、画面のキーボードは要らない)
+ */
+export const touchDevice = () => {
   try {
     return window.matchMedia('(pointer: coarse)').matches
   } catch {

@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import {
   TIMEZONE_MAX,
   TIMEZONE_MIN,
   timezoneLabel,
+  touchDevice,
   type EditorFont,
   type Layout,
   type QsoCount,
@@ -54,6 +56,9 @@ interface Props {
 
 export function SettingsDialog({ open, onClose, settings, onChange, sync }: Props) {
   const t = useT()
+  const [touch] = useState(touchDevice)
+  // PC でフルキーが選ばれていたら、実際に動いているコンパクトとして見せる
+  const layout = settings.layout === 'fullkey' && !touch ? 'compact' : settings.layout
   return (
     <Sheet open={open} onClose={onClose} title={t('settings.title')}>
       <div className="space-y-5">
@@ -146,29 +151,38 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
 
         <fieldset className="space-y-2">
           <legend className="label">{t('settings.layout')}</legend>
-          {LAYOUT_OPTIONS.map((opt) => (
-            <label
-              key={opt.value}
-              className={`flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 cursor-pointer ${
-                settings.layout === opt.value
-                  ? 'border-primary-700 bg-primary-50 dark:border-primary-400 dark:bg-gray-800'
-                  : 'border-gray-300 dark:border-gray-700'
-              }`}
-            >
-              <input
-                type="radio"
-                name="layout"
-                value={opt.value}
-                checked={settings.layout === opt.value}
-                onChange={() => onChange({ layout: opt.value })}
-                className="mt-1 w-5 h-5 accent-primary-700"
-              />
-              <span>
-                <span className="block font-semibold">{t(opt.label)}</span>
-                <span className="block text-sm text-gray-700 dark:text-gray-300">{t(opt.hint)}</span>
-              </span>
-            </label>
-          ))}
+          {LAYOUT_OPTIONS.map((opt) => {
+            // フルキーは、タッチ端末でだけ選べる(PC では、物理キーボードがあるので要らない)
+            const unavailable = opt.value === 'fullkey' && !touch
+            return (
+              <label
+                key={opt.value}
+                className={`flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 ${
+                  unavailable ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                } ${
+                  layout === opt.value
+                    ? 'border-primary-700 bg-primary-50 dark:border-primary-400 dark:bg-gray-800'
+                    : 'border-gray-300 dark:border-gray-700'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="layout"
+                  value={opt.value}
+                  checked={layout === opt.value}
+                  disabled={unavailable}
+                  onChange={() => onChange({ layout: opt.value })}
+                  className="mt-1 w-5 h-5 accent-primary-700"
+                />
+                <span>
+                  <span className="block font-semibold">{t(opt.label)}</span>
+                  <span className="block text-sm text-gray-700 dark:text-gray-300">
+                    {t(unavailable ? 'settings.layout.fullkey.touchOnly' : opt.hint)}
+                  </span>
+                </span>
+              </label>
+            )
+          })}
         </fieldset>
 
         <fieldset className="space-y-2">
