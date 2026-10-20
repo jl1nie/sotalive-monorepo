@@ -10,7 +10,7 @@ SOTA/POTA アマチュア無線アワード支援サービス「sotalive」の�
 
 | URL | 中身 | Pages プロジェクト | 状態 |
 |---|---|---|---|
-| myact.sotalive.net / mypilgrim.sotalive.net / www.sotalive.net | MyActivation 旧版(jQuery。`apps/myact-org`) | sotalive-myact | 本番 |
+| myact.sotalive.net / www.sotalive.net | MyActivation 旧版(jQuery。`apps/myact-org`) | sotalive-myact | 本番 |
 | myqth.sotalive.net | MyQTH 旧版(`apps/myqth-org`) | sotalive-myqth | 本番 |
 | fleonline.sotalive.net | FLE Online(React。`apps/fle`) | sotalive-fle | 本番 |
 | logconv2.sotalive.net | LogConverter 新版(React。`apps/logconv`) | sotalive | テスト中 |

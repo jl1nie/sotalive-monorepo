@@ -83,7 +83,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 | サブドメイン | アプリ | プロジェクト（CNAME 先） | 備考 |
 |------------|--------|------|------|
-| myact.sotalive.net / mypilgrim / www | MyActivation（旧版。apps/myact-org） | sotalive-myact | www の `/logconv` 以下は logconv.sotalive.net へ転送（`_redirects`） |
+| myact.sotalive.net / www | MyActivation（旧版。apps/myact-org） | sotalive-myact | www の `/logconv` 以下は logconv.sotalive.net へ転送（`_redirects`） |
 | myqth.sotalive.net | MyQTH（旧版。apps/myqth-org） | sotalive-myqth | |
 | logconv.sotalive.net / logconv2 | LogConverter | sotalive | logconv は、新しい logconv のテストが済むまで Vercel の旧画面のまま。移すときは www の転送も外す |
 | fleonline.sotalive.net | FLE Online | sotalive-fle | `/fle/`（`/` は転送）。Functions は `/api` の下だけ（`pages/fle`：設定の同期の KV と、バックエンドへの中継） |

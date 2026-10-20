@@ -35,7 +35,7 @@ sotaapp2 の GitHub --(push)--> Actions --> Docker Hub(イメージ) --(手動�
 
 | ホスト名 | Pages プロジェクト |
 |---|---|
-| myact・mypilgrim・www | `sotalive-myact` |
+| myact・www | `sotalive-myact` |
 | myqth | `sotalive-myqth` |
 | fleonline | `sotalive-fle` |
 | logconv2・myact2 | `sotalive` |
