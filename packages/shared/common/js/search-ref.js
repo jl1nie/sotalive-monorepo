@@ -51,9 +51,11 @@
 		};
 		target.init();
 		target.markup();
+		var debounceTimer = null;
 		window.station_input = function station_input() {
 			text = $('input').val()
-			station_query(text)
+			clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(function() { station_query(text); }, 300);
 		}
 
 		function station_query(text) {
