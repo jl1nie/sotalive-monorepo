@@ -713,7 +713,9 @@ function Editor({
           <StationClock info={info} tz={clockZone(info, view, caretLine, settings.timezone)} />
         )}
         {compact && (
-          // ログ欄の高さを変えるつまみ(上下にドラッグ。上に時刻と運用先が入らなくなるまで引けば、入る限り高く)
+          // ログ欄の高さを変えるつまみ(上下にドラッグ。上に時刻と運用先が入らなくなるまで引けば、入る限り高く)。
+          // 見た目の余白は詰め、つかめる範囲は上へ広げる(上の時刻と運用先は押しても何もしないので、重ねてよい。
+          // ログ欄には広げない: 1行目のタップを奪わない)。上の表示がないときは、ヘッダーとの隙間まで
           <div
             role="separator"
             aria-orientation="horizontal"
@@ -721,8 +723,12 @@ function Editor({
             title={t('editor.resize')}
             {...logHeight.handleProps}
             onMouseDown={(e) => e.preventDefault()}
-            className="flex-none h-6 flex items-center justify-center touch-none cursor-row-resize"
+            className="relative z-10 flex-none h-3 flex items-center justify-center touch-none cursor-row-resize"
           >
+            <span
+              aria-hidden="true"
+              className={`absolute inset-x-0 bottom-0 ${logHeight.lines > 0 ? 'h-12' : 'h-5'}`}
+            />
             <span className="w-14 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600" />
           </div>
         )}
@@ -791,6 +797,8 @@ function Editor({
           onUndo={undo}
           keyScale={settings.keyScale}
           onKeyScale={(keyScale) => updateSettings({ keyScale })}
+          caps={settings.capsLock}
+          onToggleCaps={() => updateSettings({ capsLock: !settings.capsLock })}
         />
       ) : fullkey ? (
         // OS のキーボードを使っている間: フルキーに戻るボタン(数字キーは、OS のキーボードにある)
