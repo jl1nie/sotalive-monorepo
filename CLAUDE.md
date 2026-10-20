@@ -19,7 +19,7 @@ sotalive-monorepoは、SOTA/POTAアマチュア無線アワード支援サービ
 - インラインJS/CSSから外部ファイルに分離済み
 
 ### 移行先（計画中）
-- React 18 + TypeScript
+- React 19 + TypeScript
 - Vite
 - react-leaflet
 - Zustand（状態管理）
@@ -99,7 +99,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 ## 関連リポジトリ
 
-- **sotaapp2**: バックエンドAPI (Rust/Axum) - `/home/minoru/src/sotaapp2`
+- **sotaapp2**: バックエンドAPI (Rust/Axum) - https://github.com/jl1nie/sotaapp2(手元では、このリポジトリと同じ階層の `../sotaapp2`)
 - **sotalive-vercel**: 旧フロントエンド（Vercel） - 移行後停止予定
 
 ## コード規約
