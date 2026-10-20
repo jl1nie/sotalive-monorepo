@@ -1,0 +1,58 @@
+name: Test
+
+# PR のたびに走る。deploy.yml からも呼ぶ(テストが通らなければ、デプロイしない)
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+
+      - name: Test Rust crates
+        run: cargo test --workspace
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 型チェック(tsc -b)と、FLE の wasm(FLE のテストが使う)を作る
+      - name: Build
+        run: pnpm run build:apps
+
+      # myact はまだテストがなく、lint のエラーが残っている(準備中)。fle と logconv だけ
+      - name: Test apps
+        run: pnpm run test
+
+      - name: Lint apps
+        run: pnpm run lint:apps

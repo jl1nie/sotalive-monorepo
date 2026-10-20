@@ -90,6 +90,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 - `main` ブランチ → Production deploy
 - `develop` ブランチ → Preview deploy
 - PRマージで自動デプロイ（GitHub Actions）
+- テスト（`.github/workflows/test.yml`）: PR のたびと、デプロイの前に走る（Rust・型チェック・fle と logconv の Vitest と lint）。通らなければデプロイしない。手元では `pnpm run test` / `pnpm run lint:apps`
 
 ## 関連リポジトリ
 
