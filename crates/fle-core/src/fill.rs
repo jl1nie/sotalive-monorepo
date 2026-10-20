@@ -18,6 +18,7 @@ use chrono::{DateTime, Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 use crate::compiler::compile_fle;
+use crate::ham::is_mhz;
 use crate::syntax::{parse_line, DirValue, LineKind, QsoItem, Rst, Span, Spanned};
 use crate::types::FleQsoRecord;
 
@@ -292,14 +293,6 @@ impl QsoShape {
             rst: [rst_sent.clone(), rst_rcvd.clone()],
         })
     }
-}
-
-/// `7.025` のような、MHzの小数で書かれた周波数か(バンドの既定の周波数 `7MHz` ではない)
-fn is_mhz(freq: &str) -> bool {
-    let mut parts = freq.split('.');
-    matches!((parts.next(), parts.next(), parts.next()),
-        (Some(i), Some(f), None) if !i.is_empty() && !f.is_empty()
-            && i.bytes().all(|b| b.is_ascii_digit()) && f.bytes().all(|b| b.is_ascii_digit()))
 }
 
 /// QSOの時刻(UTC)を、ログのタイムゾーンでの `HHMM` にする

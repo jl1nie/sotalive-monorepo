@@ -13,9 +13,8 @@ export interface FLECompileResponse {
   hamlogtext: string[][]
 }
 
-export interface FLEGenerateResponse {
-  // Binary file download (ZIP)
-}
+// Binary file download (ZIP)
+export type FLEGenerateResponse = Blob
 
 // HAMLOG CSV Check Response
 // サーバー(sotaapp2)の応答は snake_case。空の項目は省かれる
@@ -28,9 +27,8 @@ export interface LogConvCheckResponse {
 }
 
 // HAMLOG Convert Response (binary ZIP download)
-export interface LogConvResponse {
-  // Binary file download (ZIP with ADIF files)
-}
+// Binary file download (ZIP with ADIF files)
+export type LogConvResponse = Blob
 
 // POTA ADIF Conversion Response (JSON)
 export interface POTAConversionResponse {

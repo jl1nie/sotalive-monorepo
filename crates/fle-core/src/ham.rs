@@ -442,6 +442,30 @@ pub fn band_to_freq(band_str: &str, is_sota: bool) -> Option<&'static str> {
     None
 }
 
+/// `7.025` のような、MHzの小数で書かれた周波数か(バンドの既定の周波数 `7MHz` ではない)
+pub fn is_mhz(freq: &str) -> bool {
+    let mut parts = freq.split('.');
+    matches!((parts.next(), parts.next(), parts.next()),
+        (Some(i), Some(f), None) if !i.is_empty() && !f.is_empty()
+            && i.bytes().all(|b| b.is_ascii_digit()) && f.bytes().all(|b| b.is_ascii_digit()))
+}
+
+/// バンドの波長での名前(`40m`)から、HAMLOG の周波数の欄に書く値(MHz の数値。`7`、`430`、`10000` など)を引く
+///
+/// HAMLOG の周波数の欄は MHz の数値(初期設定で7バイトまで)で、バンドは左から何文字かで見分ける
+/// (HAMLOG のヘルプ「周波数・モード」)。`7MHz` や `10.1GHz` のような名前を書くと、logconv が読めず、
+/// HAMLOG も 10GHz 帯を 10MHz 帯と取り違える。そこで、バンドの下端の周波数を書く(どちらでも同じバンドになる)。
+pub fn band_to_hamlog_freq(band_str: &str) -> Option<String> {
+    if band_str.is_empty() {
+        return None;
+    }
+    let band_upper = band_str.to_uppercase();
+    FREQ_TABLE
+        .iter()
+        .find(|band| band.wavelength.to_uppercase() == band_upper)
+        .map(|band| band.lower.to_string())
+}
+
 /// Convert mode to SOTA mode
 pub fn mode_to_sota_mode(mode: &str) -> &'static str {
     let mode_upper = mode.to_uppercase();
@@ -538,8 +562,9 @@ static COORD_RE: Lazy<regex::Regex> =
     Lazy::new(|| regex::Regex::new(r"(-?\d+(\.\d+)?[nsNS]?\s*,\s*-?\d+(\.\d+)?[ewEW]?)").unwrap());
 static WWFF_RE: Lazy<regex::Regex> =
     Lazy::new(|| regex::Regex::new(r"(?i)([A-Z0-9]+FF-\d+)").unwrap());
+/// 公園の番号は4桁か5桁(`US-10995`)。数字が続けば公園でない(5桁を4桁で切って、別の公園と読まないように)
 static POTA_RE: Lazy<regex::Regex> =
-    Lazy::new(|| regex::Regex::new(r"([a-zA-Z0-9]+-\d{4})").unwrap());
+    Lazy::new(|| regex::Regex::new(r"([a-zA-Z0-9]+-\d{4,5})(?:[^0-9]|$)").unwrap());
 static SOTA_RE: Lazy<regex::Regex> =
     Lazy::new(|| regex::Regex::new(r"(([a-zA-Z0-9]+/[a-zA-Z0-9]+)-\d+)").unwrap());
 static GRID_RE: Lazy<regex::Regex> =
@@ -669,6 +694,89 @@ mod tests {
         assert!(freq_to_band("999.999").is_err());
     }
 
+    /// HAMLOG が周波数の欄の左から何文字かで見分けるバンド(HAMLOG のヘルプ「周波数・モード」の表)。
+    /// 表にない周波数は None
+    fn hamlog_band(freq: &str) -> Option<&'static str> {
+        let head = |n: usize| freq.get(..n).unwrap_or("");
+        let num = |n: usize| head(n).parse::<u32>().ok();
+        let second_is_digit = freq.chars().nth(1).is_some_and(|c| c.is_ascii_digit());
+        match () {
+            _ if head(2) == "1." => Some("1.9M"),
+            _ if head(2) == "3." => Some("3.5M"),
+            _ if head(1) == "7" && !second_is_digit => Some("7M"),
+            _ if matches!(num(5), Some(10000..=10499)) => Some("10G"),
+            _ if matches!(num(4), Some(1200 | 1260..=1299)) => Some("1200M"),
+            _ if matches!(num(4), Some(2400..=2449)) => Some("2400M"),
+            _ if matches!(num(4), Some(5600 | 5650..=5849)) => Some("5600M"),
+            _ if matches!(num(3), Some(144 | 145)) => Some("144M"),
+            _ if matches!(num(3), Some(430..=439)) => Some("430M"),
+            _ => match num(2) {
+                Some(10) => Some("10M"),
+                Some(14) => Some("14M"),
+                Some(18) => Some("18M"),
+                Some(21) => Some("21M"),
+                Some(24) => Some("24M"),
+                Some(28 | 29) => Some("28M"),
+                Some(50..=53) => Some("50M"),
+                _ => None,
+            },
+        }
+    }
+
+    #[test]
+    fn the_hamlog_frequency_of_a_band_is_a_number_hamlog_and_logconv_read_as_that_band() {
+        let hamlog = [
+            ("160m", "1.9M"),
+            ("80m", "3.5M"),
+            ("40m", "7M"),
+            ("30m", "10M"),
+            ("20m", "14M"),
+            ("17m", "18M"),
+            ("15m", "21M"),
+            ("12m", "24M"),
+            ("10m", "28M"),
+            ("6m", "50M"),
+            ("2m", "144M"),
+            ("70cm", "430M"),
+            ("23cm", "1200M"),
+            ("13cm", "2400M"),
+            ("6cm", "5600M"),
+            ("3cm", "10G"),
+        ];
+        for band in FREQ_TABLE.iter().filter(|b| !b.wavelength.is_empty()) {
+            let freq = band_to_hamlog_freq(band.wavelength).unwrap();
+            assert!(
+                freq.parse::<f64>().is_ok(),
+                "{}: 数値({freq})",
+                band.wavelength
+            );
+            assert!(freq.len() <= 7, "{}: 7バイトまで({freq})", band.wavelength);
+            // logconv(sotaapp2)と同じ表で、同じバンドに戻る
+            assert_eq!(
+                freq_to_band(&freq).map(|b| b.2),
+                Ok(band.wavelength),
+                "{}: {freq}",
+                band.wavelength
+            );
+            // HAMLOG の表にあるバンドは、HAMLOG でもそのバンド(135kHz・475kHz は、HAMLOG の表にない)
+            let want = hamlog
+                .iter()
+                .find(|(w, _)| *w == band.wavelength)
+                .map(|(_, h)| *h);
+            assert_eq!(hamlog_band(&freq), want, "{}: {freq}", band.wavelength);
+        }
+    }
+
+    #[test]
+    fn band_names_are_not_numbers_hamlog_can_read() {
+        // 以前の HAMLOG の CSV に書いていた名前。10GHz 帯は 10MHz 帯に取り違えられる
+        assert_eq!(hamlog_band("10.1GHz"), Some("10M"));
+        assert!("7MHz".parse::<f64>().is_err());
+        assert_eq!(band_to_hamlog_freq("40M").as_deref(), Some("7"));
+        assert_eq!(band_to_hamlog_freq(""), None);
+        assert_eq!(band_to_hamlog_freq("1m"), None);
+    }
+
     #[test]
     fn test_split_callsign() {
         assert_eq!(
@@ -716,6 +824,18 @@ mod tests {
         assert_eq!(mode_to_airham_mode("SSB", "7.1"), "SSB(LSB)");
         assert_eq!(mode_to_airham_mode("SSB", "14.2"), "SSB(USB)");
         assert_eq!(mode_to_airham_mode("CW", "7.0"), "CW");
+    }
+
+    #[test]
+    fn park_numbers_have_four_or_five_digits() {
+        assert_eq!(get_ref("US-10995").pota, vec!["US-10995"]);
+        assert_eq!(get_ref("JA-0001 K-0123").pota, vec!["JA-0001", "K-0123"]);
+        // 日本語や記号が続いても読む
+        assert_eq!(get_ref("JA-0001表").pota, vec!["JA-0001"]);
+        assert_eq!(get_ref("(JA-0001)").pota, vec!["JA-0001"]);
+        // 6桁以上・3桁以下は公園ではない(5桁や4桁で切って、別の公園と読まない)
+        assert!(get_ref("US-109951").pota.is_empty());
+        assert!(get_ref("JA-001").pota.is_empty());
     }
 
     #[test]

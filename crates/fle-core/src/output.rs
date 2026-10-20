@@ -13,8 +13,8 @@ use zip::ZipWriter;
 
 use super::types::{FleCompileResult, FleQsoRecord};
 use crate::ham::{
-    band_to_freq, get_ref, mode_to_adif_mode, mode_to_airham_mode, mode_to_sota_mode,
-    split_callsign,
+    band_to_freq, band_to_hamlog_freq, get_ref, is_mhz, mode_to_adif_mode, mode_to_airham_mode,
+    mode_to_sota_mode, split_callsign,
 };
 
 /// 出力ファイルマップ
@@ -485,16 +485,15 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
 
     for record in &result.records {
         let (date, time) = hamlog_date_time(record);
-        let freq = if record.freq.is_empty() {
-            band_to_freq(&record.band, false)
-                .unwrap_or_default()
-                .to_string()
-        } else {
+        // 周波数を書かなかった QSO(`freq` はバンドの名前 `7MHz`)は、バンドの下端の周波数。
+        // HAMLOG の周波数の欄は MHz の数値
+        let freq = if is_mhz(&record.freq) {
             record.freq.clone()
+        } else {
+            band_to_hamlog_freq(&record.band).unwrap_or_default()
         };
 
         // QTH/Remarks構築
-        let rmks = get_ref(&record.qsormks);
         let grid = his_grid(record);
         let mut his_refs = Vec::new();
         if !record.hissota.is_empty() {
@@ -507,9 +506,10 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
             his_refs.push(p.clone());
         }
 
-        let qth_str = format!("{} {}", rmks.org, his_refs.join(","))
+        let qth_str = format!("{} {}", remarks_text(&record.qsormks), his_refs.join(","))
             .trim()
             .to_string();
+        let my_refs = my_refs(record);
 
         // QSLメッセージ。`rig` があれば、`%…%` の外側に `Rig=` として付ける(HAMLOG の書式)
         let qsl_msg = if record.rig.is_empty() {
@@ -532,7 +532,7 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
             "", // QSL
             &record.qsomsg,
             &qth_str,
-            "", // Remarks1
+            &my_refs, // Remarks1
             &qsl_msg,
             "0", // QSL
         ];
@@ -547,6 +547,43 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
     }
 
     output
+}
+
+/// 自局の参照(その QSO のときの山・WWFF・公園)。HAMLOG の備考1に書く。空白で区切る
+///
+/// logconv は、「運用先: Remarks1で指定する」で、QSO ごとの運用先を読む(途中で運用先を変えたログも正しく分かれる)。
+fn my_refs(record: &FleQsoRecord) -> String {
+    std::iter::once(&record.mysota)
+        .chain(std::iter::once(&record.mywwff))
+        .chain(&record.mypota)
+        .filter(|r| !r.is_empty())
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// 備考(`{…}`)のうち、参照(SOTA・POTA・WWFF・グリッドなど)でない部分。元の書き方のまま(空白で区切った語を残す)
+///
+/// 語の中の区切り(座標 `35.6N, 139.2E` のカンマなど)を残す。logconv は、カンマで区切った座標を場所の注記にする。
+/// 参照とそれ以外が1語に混ざっていれば(`JA-0001,Tokyo`)、参照でない部分だけ(logconv が相手の参照と読まないように)。
+fn remarks_text(remarks: &str) -> String {
+    remarks
+        .split_whitespace()
+        .filter_map(|word| {
+            let r = get_ref(word);
+            let has_ref = !r.sota.is_empty()
+                || !r.pota.is_empty()
+                || !r.wwff.is_empty()
+                || !r.loc_org.is_empty()
+                || !r.sat_org.is_empty();
+            match (r.org.is_empty(), has_ref) {
+                (true, _) => None,
+                (false, false) => Some(word.to_string()),
+                (false, true) => Some(r.org),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// Shift_JIS(cp932)にする。表せない文字(絵文字など)は、旧実装(Python の `backslashreplace`)と同じく
@@ -1185,6 +1222,51 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             .find(|(k, _)| k.starts_with("hamlog-"))
             .unwrap();
         body.lines().map(str::to_string).collect()
+    }
+
+    #[test]
+    fn the_hamlog_frequency_is_a_number_in_mhz() {
+        let lines = hamlog_lines(&output_of(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1aaa\n7.025 0910 ja1bbb\n\
+             3cm 0920 ja1ccc\n70cm fm 0930 ja1ddd",
+        ));
+        let freqs: Vec<&str> = lines.iter().map(|l| l.split(',').nth(5).unwrap()).collect();
+        // バンドだけなら下端の周波数、周波数を書いたらその値(`7MHz` のようなバンドの名前は書かない)
+        assert_eq!(freqs, ["\"7\"", "\"7.025\"", "\"10000\"", "\"430\""]);
+    }
+
+    /// HAMLOG の CSV の列(どの列も `"` で囲んである。引用符を外す)
+    fn hamlog_column(line: &str, n: usize) -> String {
+        let inner = line
+            .trim_end()
+            .trim_start_matches('"')
+            .trim_end_matches('"');
+        inner.split("\",\"").nth(n).unwrap().replace("\"\"", "\"")
+    }
+
+    #[test]
+    fn the_hamlog_remarks1_has_my_references_of_each_qso() {
+        let lines = hamlog_lines(&output_of(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota ja/tk-001\nmypota ja-0001 ja-0002\n\
+             mywwff jaff-0001\n0900 ja1aaa\nmypota ja-0003\nmysota -\nmywwff -\n0910 ja1bbb\nmypota -\n0920 ja1ccc",
+        ));
+        let rmks1: Vec<String> = lines.iter().map(|l| hamlog_column(l, 12)).collect();
+        // 途中で運用先を変えたら、その QSO のときの運用先(logconv は「Remarks1で指定する」で読む)
+        assert_eq!(
+            rmks1,
+            ["JA/TK-001 JAFF-0001 JA-0001 JA-0002", "JA-0003", ""]
+        );
+    }
+
+    #[test]
+    fn the_hamlog_qth_keeps_the_remarks_as_written() {
+        let lines = hamlog_lines(&output_of(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n\
+             0900 ja1aaa ja/kn-001 {35.6N, 139.2E 箱根}\n0910 ja1bbb {PM85rl JA-0001,Tokyo}",
+        ));
+        let qth: Vec<String> = lines.iter().map(|l| hamlog_column(l, 11)).collect();
+        // 座標のカンマを残す。グリッドと、ほかの語に混ざった参照は書かない(相手の参照と読まれないように)
+        assert_eq!(qth, ["35.6N, 139.2E 箱根 JA/KN-001", "Tokyo"]);
     }
 
     #[test]
