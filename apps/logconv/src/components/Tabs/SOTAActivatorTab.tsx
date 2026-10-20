@@ -10,11 +10,12 @@ const myQthOptions: { value: MyQTHOption; label: string }[] = [
   { value: 'rmks2', label: 'Remarks2で指定する' },
 ]
 
-// Options for His QTH (S2S交信局)
+// Options for His QTH (S2S交信局)。FLE Online の HAMLOG CSV は、相手の山を QTH に書く
 const hisQthOptions: { value: HisQTHOption; label: string }[] = [
   { value: 'none', label: '指定しない' },
   { value: 'rmks1', label: 'Remarks1で指定する' },
   { value: 'rmks2', label: 'Remarks2で指定する' },
+  { value: 'qth', label: 'QTHで指定する' },
 ]
 
 // SOTA reference validation
