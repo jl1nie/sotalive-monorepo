@@ -14,7 +14,7 @@ sotalive は、Cloudflare Pages の4つのプロジェクトと、Fly.io のバ�
 
 | ホスト名 | Pages プロジェクト | 出力ディレクトリ | Functions |
 |---|---|---|---|
-| myact / mypilgrim / www .sotalive.net | sotalive-myact | `dist-myact` | なし |
+| myact / www .sotalive.net | sotalive-myact | `dist-myact` | なし |
 | myqth.sotalive.net | sotalive-myqth | `dist-myqth` | なし |
 | fleonline.sotalive.net | sotalive-fle | `dist-fle` | `/api` の下だけ(`pages/fle/functions`) |
 | myact2 / logconv2 .sotalive.net | sotalive | `dist` | `functions/_middleware.ts` が全パスにかかる |

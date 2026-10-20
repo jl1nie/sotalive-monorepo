@@ -5,7 +5,7 @@ MyActivation (MyACT) は、SOTA・POTA のアワード活動を支える地図�
 
 | 版 | ディレクトリ | 状態 | URL |
 |---|---|---|---|
-| 旧版 | `apps/myact-org` | 本番 | myact.sotalive.net / mypilgrim.sotalive.net / www.sotalive.net |
+| 旧版 | `apps/myact-org` | 本番 | myact.sotalive.net / www.sotalive.net |
 | React 版 | `apps/myact` | **開発中** | myact2.sotalive.net (noindex) |
 
 **React 版は開発中です。** 本番で使われているのは旧版です。React 版は、旧版と同じ機能を React で作り直しているところで、検索エンジンにも載せていません。
@@ -43,7 +43,7 @@ jQuery + Bootstrap 4 + Leaflet で作った、ビルドのない静的なサイ�
 | 項目 | 内容 |
 |---|---|
 | Pages プロジェクト | `sotalive-myact` (Functions なし) |
-| ホスト名 | `myact.sotalive.net`、`mypilgrim.sotalive.net`、`www.sotalive.net` |
+| ホスト名 | `myact.sotalive.net`、`www.sotalive.net` |
 | ビルド | なし。`scripts/build-static-projects.sh` が `dist-myact/` に、共通アセット、ファビコン、`index.html`、webmanifest、`404.html` をコピーする |
 | 転送 | 同じスクリプトが `dist-myact/_redirects` を作り、`/logconv` 以下を `logconv.sotalive.net` へ 302 転送する |
 
