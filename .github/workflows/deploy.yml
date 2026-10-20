@@ -8,7 +8,12 @@ on:
       - 'feat/**' # Preview deploy (動作確認用)
 
 jobs:
+  # テスト(Rust・画面・lint)が通らなければ、デプロイしない
+  test:
+    uses: ./.github/workflows/test.yml
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -39,9 +44,6 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
-
-      - name: Test Rust crates
-        run: cargo test --workspace
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
