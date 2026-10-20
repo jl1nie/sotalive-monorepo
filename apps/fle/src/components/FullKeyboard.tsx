@@ -1,5 +1,5 @@
 import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
-import { Check, CornerDownLeft, Delete, Globe, Undo2 } from 'lucide-react'
+import { ArrowBigUp, Check, CornerDownLeft, Delete, Globe, Undo2 } from 'lucide-react'
 import { useKeyPad } from '@/hooks/useKeyPad'
 import { KEY_SCALE_MAX, KEY_SCALE_MIN } from '@/hooks/useSettings'
 import { useT } from '@/lib/i18n'
@@ -212,7 +212,7 @@ export function FullKeyboard({
         {DIGITS.map((k) => charKey(k))}
         {ROW1.map((k) => charKey(k))}
         {ROW2.map((k) => charKey(k))}
-        {/* Z の左: Caps(英字を大文字で打つ)。いまの状態を A / a で示す */}
+        {/* Z の左: Caps(英字を大文字で打つ)。スマホのキーボードと同じく、オフは中抜きの矢印、オンは塗りつぶし */}
         <button
           type="button"
           aria-label={t('keys.caps')}
@@ -221,8 +221,8 @@ export function FullKeyboard({
           onClick={tap(onToggleCaps)}
           className={`${HIT} col-span-2`}
         >
-          <span className={`${FN} font-mono !text-xl ${caps ? '!bg-gray-700 !text-white dark:!bg-gray-300 dark:!text-gray-900' : ''}`}>
-            {caps ? 'A' : 'a'}
+          <span className={FN}>
+            <ArrowBigUp className="w-6 h-6" fill={caps ? 'currentColor' : 'none'} aria-hidden="true" />
           </span>
         </button>
         {ROW3.map((k) => charKey(k))}
