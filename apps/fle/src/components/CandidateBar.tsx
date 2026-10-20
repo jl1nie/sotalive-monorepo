@@ -203,49 +203,97 @@ export function CandidateBar({
   const bar = qso && !error ? (
     // コール・RST・時刻は、押すとログ欄のその末尾へキャレットを置く(直す機会の多い順に、的を大きく)。確定は右端の ✓
     <div className={`${BAR} ${TONE.ok} flex items-stretch`} {...keepFocus}>
-      <span className="flex-1 min-w-0 flex flex-col">
-        <span className="flex-1 flex items-center justify-between gap-2 min-h-0">
-          <button
-            type="button"
-            {...keepFocus}
-            onClick={() => onSelectPart('call')}
-            aria-label={t('bar.selectCall')}
-            className={`${PART} ${BIG} flex-1 min-w-0 h-full pl-3 break-all line-clamp-1`}
-          >
-            {qso.call}
-          </button>
-          <span className="font-bold whitespace-nowrap pr-2">
-            {qso.band} {qso.mode}
+      {compact ? (
+        // コンパクト・フルキー: 低く。コールと RST(同じくらい直す、同じ重さの情報)を同じ大きな文字で1段目に、
+        // 時刻・バンド・モード・リファレンスは小さく2段目に
+        <span className="flex-1 min-w-0 flex flex-col">
+          <span className="flex-1 flex items-center gap-x-1 min-h-0 font-mono tabular-nums">
+            <button
+              type="button"
+              {...keepFocus}
+              onClick={() => onSelectPart('call')}
+              aria-label={t('bar.selectCall')}
+              className={`${PART} ${BIG} min-w-0 h-full pl-2 pr-1 break-all line-clamp-1`}
+            >
+              {qso.call}
+            </button>
+            <button
+              type="button"
+              {...keepFocus}
+              onClick={() => onSelectPart('rst')}
+              aria-label={t('bar.selectRst')}
+              className={`${PART} ${BIG} flex-none h-full px-1`}
+            >
+              {qso.rstSent}/{qso.rstRcvd}
+            </button>
+          </span>
+          <span className="flex-none flex items-center gap-x-2 h-5 text-xs font-semibold tabular-nums">
+            <button
+              type="button"
+              {...keepFocus}
+              onClick={() => onSelectPart('time')}
+              aria-label={t('bar.selectTime')}
+              className={`${PART} h-full pl-2 pr-1 font-mono`}
+            >
+              {timeLabel(qso)}
+            </button>
+            <span className="whitespace-nowrap font-bold">
+              {qso.band} {qso.mode}
+            </span>
+            <span className="flex-1 min-w-0 flex gap-x-2 line-clamp-1 overflow-hidden font-mono">
+              {qso.refs.map((r) => (
+                <span key={r}>{r}</span>
+              ))}
+              {qso.grid && <span>{qso.grid}</span>}
+              {qso.comment && <span className="font-sans">{qso.comment}</span>}
+            </span>
           </span>
         </span>
-        <span className="flex-1 flex items-center gap-x-1 min-h-0 font-semibold font-mono tabular-nums">
-          <button
-            type="button"
-            {...keepFocus}
-            onClick={() => onSelectPart('rst')}
-            aria-label={t('bar.selectRst')}
-            className={`${PART} h-full pl-3 pr-2 text-base`}
-          >
-            {qso.rstSent}/{qso.rstRcvd}
-          </button>
-          <button
-            type="button"
-            {...keepFocus}
-            onClick={() => onSelectPart('time')}
-            aria-label={t('bar.selectTime')}
-            className={`${PART} h-full px-2 text-sm`}
-          >
-            {timeLabel(qso)}
-          </button>
-          <span className="flex-1 min-w-0 flex gap-x-3 text-sm line-clamp-1 overflow-hidden">
-            {qso.refs.map((r) => (
-              <span key={r}>{r}</span>
-            ))}
-            {qso.grid && <span>{qso.grid}</span>}
-            {qso.comment && <span className="font-sans">{qso.comment}</span>}
+      ) : (
+        <span className="flex-1 min-w-0 flex flex-col">
+          <span className="flex-1 flex items-center justify-between gap-2 min-h-0">
+            <button
+              type="button"
+              {...keepFocus}
+              onClick={() => onSelectPart('call')}
+              aria-label={t('bar.selectCall')}
+              className={`${PART} ${BIG} flex-1 min-w-0 h-full pl-3 break-all line-clamp-1`}
+            >
+              {qso.call}
+            </button>
+            <span className="font-bold whitespace-nowrap pr-2">
+              {qso.band} {qso.mode}
+            </span>
+          </span>
+          <span className="flex-1 flex items-center gap-x-1 min-h-0 font-semibold font-mono tabular-nums">
+            <button
+              type="button"
+              {...keepFocus}
+              onClick={() => onSelectPart('rst')}
+              aria-label={t('bar.selectRst')}
+              className={`${PART} h-full pl-3 pr-2 text-base`}
+            >
+              {qso.rstSent}/{qso.rstRcvd}
+            </button>
+            <button
+              type="button"
+              {...keepFocus}
+              onClick={() => onSelectPart('time')}
+              aria-label={t('bar.selectTime')}
+              className={`${PART} h-full px-2 text-sm`}
+            >
+              {timeLabel(qso)}
+            </button>
+            <span className="flex-1 min-w-0 flex gap-x-3 text-sm line-clamp-1 overflow-hidden">
+              {qso.refs.map((r) => (
+                <span key={r}>{r}</span>
+              ))}
+              {qso.grid && <span>{qso.grid}</span>}
+              {qso.comment && <span className="font-sans">{qso.comment}</span>}
+            </span>
           </span>
         </span>
-      </span>
+      )}
       {/* 従来・コンパクトでは右端の ✓。フルキーでは出さない(キーボードの右下にある) */}
       {(!compact || rightButton) && (
         <button
@@ -265,21 +313,26 @@ export function CandidateBar({
     // 書き忘れ(赤)と入力の途中(橙)は同じ形: 打った文字と、足りないもの。書き忘れは、すぐ知らせる
     <div
       aria-live="polite"
-      className={`${BAR} px-3 py-2 flex flex-col justify-center gap-0.5 ${omissions.length > 0 ? TONE.error : TONE.draft}`}
+      className={`${BAR} px-3 ${compact ? 'py-0.5' : 'py-2'} flex flex-col justify-center gap-0.5 ${omissions.length > 0 ? TONE.error : TONE.draft}`}
     >
       <span className="flex items-baseline justify-between gap-2">
         <span className={`${BIG} break-all line-clamp-1`}>{typed}</span>
         {setting && <span className="font-bold whitespace-nowrap">{setting}</span>}
       </span>
       {omissions.length > 0 ? (
-        <p className="text-sm font-bold line-clamp-1">⚠ {omissions.map((e) => errorText(e, lang)).join(' / ')}</p>
+        <p className={`${compact ? 'text-xs' : 'text-sm'} font-bold line-clamp-1`}>
+          ⚠ {omissions.map((e) => errorText(e, lang)).join(' / ')}
+        </p>
       ) : (
         error &&
-        settled && <p className="text-sm line-clamp-1">{errorText(error, lang)}</p>
+        settled && <p className={`${compact ? 'text-xs' : 'text-sm'} line-clamp-1`}>{errorText(error, lang)}</p>
       )}
     </div>
   ) : (
-    <div aria-live="polite" className={`${BAR} ${TONE.plain} px-3 py-2 flex flex-col justify-center gap-0.5`}>
+    <div
+      aria-live="polite"
+      className={`${BAR} ${TONE.plain} px-3 ${compact ? 'py-0.5' : 'py-2'} flex flex-col justify-center gap-0.5`}
+    >
       {meaning ? (
         meaning.map((m, i) => (
           <span key={i} className={`${meaning.length > 1 ? 'font-bold' : BIG} line-clamp-1 break-all`}>
@@ -299,7 +352,8 @@ export function CandidateBar({
   )
 
   return (
-    <div className={`flex-none flex h-[72px] ${compact ? 'gap-1.5' : 'gap-2'}`}>
+    // コンパクト・フルキーでは、低く(打っている行とキーボードを近づける)
+    <div className={`flex-none flex ${compact ? 'h-[52px] gap-1.5' : 'h-[72px] gap-2'}`}>
       {/* その日(または全体)の QSO の数。コンパクトでは表示だけ(一覧はメニューから)。アクティベーションが成立したら緑、誤りがあれば赤 */}
       {compact ? (
         <span

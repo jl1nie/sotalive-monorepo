@@ -140,6 +140,50 @@ function Editor({
   // 候補の確定後に置くカーソル位置。描画(コミット)の直後、次の入力より先に反映する
   const pendingCaret = useRef<number | null>(null)
 
+  // 取り消し(フルキーの ↶)の履歴。編集のひとまとまり(⌫ を続けた分・続けて打った分)ごとに、
+  // その前の内容とキャレットを積む。キャレットを動かしたり、打つ・消すが入れ替わったり、打つ行が変わったりしたら、
+  // 次のまとまり(打つのは1行ずつ戻る。⌫ を押しすぎて前の行まで消したときは、1回で消す前に戻る)
+  const undoHistory = useRef<{ text: string; caret: number }[]>([])
+  const lastEdit = useRef<{ kind: 'type' | 'delete' | 'other'; caret: number; line: number } | null>(null)
+  const before = useRef({ text, caret })
+  const undoing = useRef(false)
+  useEffect(() => {
+    const prev = before.current
+    before.current = { text, caret }
+    if (prev.text === text) return
+    if (undoing.current) {
+      undoing.current = false
+      lastEdit.current = null
+      return
+    }
+    const kind = text.length < prev.text.length ? 'delete' : text.length > prev.text.length ? 'type' : 'other'
+    const last = lastEdit.current
+    // まとまりの行は、始めた行(確定で次の行へ移っても、次に打つ分は別のまとまり)
+    const line = lineOf(prev.text, prev.caret)
+    const fresh =
+      !last ||
+      last.kind !== kind ||
+      last.caret !== prev.caret ||
+      kind === 'other' ||
+      (kind === 'type' && last.line !== line)
+    if (fresh) {
+      undoHistory.current.push(prev)
+      if (undoHistory.current.length > 100) undoHistory.current.shift()
+    }
+    lastEdit.current = { kind, caret, line: fresh || !last ? line : last.line }
+  }, [text, caret])
+
+  /** 直前の編集のひとまとまりを取り消す(⌫ を押しすぎたとき) */
+  const undo = () => {
+    let snap = undoHistory.current.pop()
+    while (snap && snap.text === text) snap = undoHistory.current.pop()
+    if (!snap) return
+    undoing.current = true
+    pendingCaret.current = snap.caret
+    setText(snap.text)
+    setCaret(snap.caret)
+  }
+
   /** 取り消せる操作のあとは、通知に「元に戻す」を添える(戻す先の内容を持つ) */
   const [undoTo, setUndoTo] = useState<string | null>(null)
   const notify = useCallback((message: string, undo?: string) => {
@@ -655,7 +699,8 @@ function Editor({
           inputMode={onScreenKeys ? 'none' : undefined}
           // 従来の配置では、下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
           // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
-          className={`input flex-1 h-full min-h-0 resize-none font-semibold leading-relaxed ${compact ? '' : 'pb-20'} ${
+          // コンパクト・フルキーでは、緑のバーのコールサインと同じ大きさ(目が読み替えずに済む)
+          className={`input flex-1 h-full min-h-0 resize-none font-semibold leading-relaxed ${compact ? '!text-xl' : 'pb-20'} ${
             settings.editorFont === 'mono' ? 'font-mono' : ''
           }`}
         />
@@ -693,6 +738,7 @@ function Editor({
           onConfirm={confirmLine}
           onNewline={newline}
           onOsKeyboard={() => setOsKeyboard(true)}
+          onUndo={undo}
         />
       ) : fullkey ? (
         // OS のキーボードを使っている間: フルキーに戻るボタン(数字キーは、OS のキーボードにある)

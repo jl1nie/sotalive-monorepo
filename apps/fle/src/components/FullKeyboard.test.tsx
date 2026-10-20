@@ -17,27 +17,33 @@ function renderKeys(props: Partial<Parameters<typeof FullKeyboard>[0]> = {}) {
     onConfirm: vi.fn(),
     onNewline: vi.fn(),
     onOsKeyboard: vi.fn(),
+    onUndo: vi.fn(),
   }
   render(<FullKeyboard confirmable={false} {...handlers} {...props} />)
   return handlers
 }
 
 describe('FullKeyboard', () => {
-  it('数字・QWERTY の3段・/ ⌫・下の段を、この順に出す', () => {
+  it('数字・QWERTY の3段(- は L の右、/ は M の右)・下の段を、この順に出す', () => {
     renderKeys()
     const keys = screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent)
     expect(keys).toEqual([
-      ...'1234567890qwertyuiopasdfghjkl'.split(''),
-      '/',
-      ...'zxcvbnm'.split(''),
+      ...'1234567890qwertyuiopasdfghjkl-zxcvbnm/'.split(''),
       '1文字消す',
       'OS のキーボードに切り替える(日本語など)',
-      '-',
+      '取り消す(直前の編集を元に戻す)',
       'カーソルを左へ',
       '空白',
       'カーソルを右へ',
       NEXT,
     ])
+  })
+
+  it('↶ で、直前の編集を取り消す', () => {
+    const { onUndo, onKey } = renderKeys()
+    fireEvent.click(screen.getByRole('button', { name: '取り消す(直前の編集を元に戻す)' }))
+    expect(onUndo).toHaveBeenCalledTimes(1)
+    expect(onKey).not.toHaveBeenCalled()
   })
 
   it('英字は小文字で、空白は半角で打つ', () => {
