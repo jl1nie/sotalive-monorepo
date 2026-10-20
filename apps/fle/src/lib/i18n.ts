@@ -319,7 +319,7 @@ const en: Record<MessageKey, string> = {
   'menu.undo': 'Undo',
   'menu.install': 'Add to home screen',
   'menu.installIos': 'To add to the home screen, choose "Add to Home Screen" from Safari\'s share button.',
-  'menu.help': 'Manual (Japanese)',
+  'menu.help': 'Manual',
 
   'notice.autosaveFailed': 'Cannot autosave. Check your browser settings',
   'notice.offlineReady': 'Ready to use offline',
