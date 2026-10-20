@@ -58,6 +58,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     });
   }
 
+  // www の /logconv 以下は、旧版の logconv(logconv.sotalive.net。新しい logconv のテストが済むまで Vercel に残す)へ転送する。
+  // logconv を Pages に切り替えるときは、この転送を外す(appPathFor が www の /logconv 以下を logconv にする)
+  if (hostname.startsWith("www.") && url.pathname.startsWith("/logconv")) {
+    const rest = url.pathname.slice("/logconv".length) || "/";
+    return Response.redirect(`https://logconv.sotalive.net${rest}${url.search}`, 302);
+  }
+
   // サブドメインに基づいてアプリを選択
   // WSPRはlogconvのタブ内に含まれるため独立アプリ不要
   const appPath = appPathFor(hostname, url.pathname);

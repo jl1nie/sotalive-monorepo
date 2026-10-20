@@ -86,9 +86,9 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 | サブドメイン | アプリ | 備考 |
 |------------|--------|------|
-| myact.sotalive.net / mypilgrim / www | MyActivation（旧版。apps/myact-org） | Vercel から移す。www の `/logconv` 以下は logconv |
+| myact.sotalive.net / mypilgrim / www | MyActivation（旧版。apps/myact-org） | Vercel から移す。www の `/logconv` 以下は logconv.sotalive.net へ転送 |
 | myqth.sotalive.net | MyQTH（旧版。apps/myqth-org） | Vercel から移す |
-| logconv.sotalive.net / logconv2 | LogConverter | logconv は Vercel の旧画面から移す |
+| logconv.sotalive.net / logconv2 | LogConverter | logconv は、新しい logconv のテストが済むまで Vercel の旧画面のまま。移すときは www の転送も外す |
 | fleonline.sotalive.net | FLE Online | `/fle/` |
 | myact2.sotalive.net | MyActivation（React 版。試験中） | `noindex`。React 版は base が `/` なので、このホスト名でだけ動く |
 
