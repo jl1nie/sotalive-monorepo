@@ -119,6 +119,12 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
                 <span>
                   <span className="block font-semibold">{t(opt.label)}</span>
                   <span className="block text-sm text-gray-700 dark:text-gray-300">{t(opt.hint)}</span>
+                  {opt.key === 'writeRst' && (
+                    // 配置ごとの設定なので、どの配置の設定かを添える(別の配置で変えても、ここには効かない)
+                    <span className="block mt-1 text-sm font-bold text-primary-700 dark:text-primary-300">
+                      {t(settings.layout === 'classic' ? 'settings.confirm.rst.classic' : 'settings.confirm.rst.compact')}
+                    </span>
+                  )}
                 </span>
               </label>
             )

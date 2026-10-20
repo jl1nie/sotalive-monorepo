@@ -100,6 +100,8 @@ const ja = {
   'settings.confirm.intro':
     '緑の候補バーで確定するとき、時刻のほかに書くものを選べます。省略したままでも、意味は同じです(バーには、いつも完全な解釈が出ます)。',
   'settings.confirm.rst': 'RST',
+  'settings.confirm.rst.classic': '「従来」の配置での設定です(コンパクト・フルキーは別に設定します)',
+  'settings.confirm.rst.compact': 'コンパクト・フルキーの配置での設定です(「従来」は別に設定します)',
   'settings.confirm.rst.hint': '省略したときの 599 / 59 も書きます。4 のような省略形は 549 のように直します',
   'menu.plans': '予定',
   'menu.list': 'QSO一覧',
@@ -184,6 +186,7 @@ const ja = {
   'keys.label': 'キーボード',
   'keys.os': 'OS のキーボードに切り替える(日本語など)',
   'keys.back': 'フルキーに戻る',
+  'keys.undo': '取り消す(直前の編集を元に戻す)',
   'keys.swipe': '空白・← → から左右になぞるとカーソルが動きます',
   'settings.qsoCount': 'QSO の数',
   'settings.qsoCount.day': 'その日 / 全体',
@@ -344,6 +347,8 @@ const en: Record<MessageKey, string> = {
   'settings.confirm.intro':
     'Choose what confirming with the green bar writes besides the time. The meaning is the same if you leave them out (the bar always shows the full interpretation).',
   'settings.confirm.rst': 'RST',
+  'settings.confirm.rst.classic': 'This setting is for the classic layout (compact and full keys have their own)',
+  'settings.confirm.rst.compact': 'This setting is for the compact and full keys layouts (classic has its own)',
   'settings.confirm.rst.hint': 'Also writes the default 599 / 59. A short form such as 4 is rewritten like 549',
   'menu.plans': 'Plans',
   'menu.list': 'QSO list',
@@ -428,6 +433,7 @@ const en: Record<MessageKey, string> = {
   'keys.label': 'Keyboard',
   'keys.os': 'Switch to the phone\'s keyboard (for Japanese etc.)',
   'keys.back': 'Back to full keys',
+  'keys.undo': 'Undo the last edit',
   'keys.swipe': 'Swipe left or right from space, ← or → to move the cursor',
   'settings.qsoCount': 'QSO count',
   'settings.qsoCount.day': 'Day / total',
