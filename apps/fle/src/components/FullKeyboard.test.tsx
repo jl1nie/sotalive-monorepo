@@ -91,19 +91,19 @@ describe('FullKeyboard', () => {
     expect(onKey.mock.calls).toEqual([['-'], ['/']])
   })
 
-  it('Z の左の Caps: オフでは a、押すと切り替える', () => {
+  it('Z の左の Caps: オフでは中抜きの矢印、押すと切り替える', () => {
     const { onToggleCaps } = renderKeys()
     const caps = screen.getByRole('button', { name: '英字を大文字で打つ(Caps)' })
-    expect(caps).toHaveTextContent('a')
+    expect(caps.querySelector('svg')).toHaveAttribute('fill', 'none')
     expect(caps).toHaveAttribute('aria-pressed', 'false')
     fireEvent.click(caps)
     expect(onToggleCaps).toHaveBeenCalledTimes(1)
   })
 
-  it('Caps がオンなら、英字を大文字で打ち、A と見せる。数字と記号はそのまま', () => {
+  it('Caps がオンなら、英字を大文字で打ち、矢印を塗りつぶす。数字と記号はそのまま', () => {
     const { onKey } = renderKeys({ caps: true })
     const caps = screen.getByRole('button', { name: '英字を大文字で打つ(Caps)' })
-    expect(caps).toHaveTextContent('A')
+    expect(caps.querySelector('svg')).toHaveAttribute('fill', 'currentColor')
     expect(caps).toHaveAttribute('aria-pressed', 'true')
     for (const k of ['j', 'a', '1', '/', '-']) fireEvent.click(screen.getByRole('button', { name: k }))
     fireEvent.click(screen.getByRole('button', { name: '空白' }))
