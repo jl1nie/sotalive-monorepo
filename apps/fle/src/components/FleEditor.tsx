@@ -714,8 +714,10 @@ function Editor({
         )}
         {compact && (
           // ログ欄の高さを変えるつまみ(上下にドラッグ。上に時刻と運用先が入らなくなるまで引けば、入る限り高く)。
-          // 見た目の余白は詰め、つかめる範囲は上へ広げる(上の時刻と運用先は押しても何もしないので、重ねてよい。
-          // ログ欄には広げない: 1行目のタップを奪わない)。上の表示がないときは、ヘッダーとの隙間まで
+          // 見た目の余白は詰め、つかめる範囲は上下へ広げる(指で確実につかめる 50px 前後)。
+          // 上: 時刻と運用先は押しても何もしないので、横幅いっぱいに重ねる。上の表示がないときはヘッダーに少し重なるので、
+          // 右のメニュー・設定のボタンにかからないよう、真ん中の幅だけにする。
+          // 下: ログ欄の上の余白(内側)まで。1行目のタップは奪わない
           <div
             role="separator"
             aria-orientation="horizontal"
@@ -727,7 +729,9 @@ function Editor({
           >
             <span
               aria-hidden="true"
-              className={`absolute inset-x-0 bottom-0 ${logHeight.lines > 0 ? 'h-12' : 'h-5'}`}
+              className={`absolute -bottom-2.5 ${
+                logHeight.lines > 0 ? 'inset-x-0 -top-9' : 'left-1/2 -translate-x-1/2 w-40 -top-7'
+              }`}
             />
             <span className="w-14 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600" />
           </div>
