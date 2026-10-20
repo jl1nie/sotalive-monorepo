@@ -39,7 +39,6 @@ const ja = {
   'notice.undo': '元に戻す',
   'landscape.title': '縦向きにしてお使いください',
   'landscape.hint': '書いたログは、そのまま残っています。ホーム画面に追加して開くと、縦向きに固定されます(Android)',
-  'editor.resize': 'ログ欄の高さを変える(上下にドラッグ。いちばん上で、入る限り高く)',
   'editor.placeholder': 'mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 JA1XYZ',
 
   // QSO一覧
@@ -191,6 +190,7 @@ const ja = {
   'keys.os': 'OS のキーボードに切り替える(日本語など)',
   'keys.back': 'フルキーに戻る',
   'keys.undo': '取り消す(直前の編集を元に戻す)',
+  'keys.resize': 'キーの高さを変える(上下にドラッグ。いちばん下で正方形)',
   'keys.swipe': '空白・← → から左右になぞるとカーソルが動きます',
   'settings.qsoCount': 'QSO の数',
   'settings.qsoCount.day': 'その日 / 全体',
@@ -294,7 +294,6 @@ const en: Record<MessageKey, string> = {
   'notice.undo': 'Undo',
   'landscape.title': 'Please turn your phone upright',
   'landscape.hint': 'Your log is still here. Open it from the home screen to keep it upright (Android)',
-  'editor.resize': 'Drag up or down to change the height of the log (all the way up for full height)',
   'editor.placeholder': 'mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 JA1XYZ',
 
   'list.errorsTitle': '{qsos} QSO / {errors} errors',
@@ -442,6 +441,7 @@ const en: Record<MessageKey, string> = {
   'keys.os': 'Switch to the phone\'s keyboard (for Japanese etc.)',
   'keys.back': 'Back to full keys',
   'keys.undo': 'Undo the last edit',
+  'keys.resize': 'Drag up or down to change the key height (square at the bottom)',
   'keys.swipe': 'Swipe left or right from space, ← or → to move the cursor',
   'settings.qsoCount': 'QSO count',
   'settings.qsoCount.day': 'Day / total',

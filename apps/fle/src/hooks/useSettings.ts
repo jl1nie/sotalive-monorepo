@@ -40,16 +40,19 @@ export interface Settings {
   /** 入力画面の配置。同期しない(端末ごと) */
   layout: Layout
   /**
-   * コンパクト・フルキーの、ログ欄の高さ(行数)。0 は、入る限り高く。上の縁をドラッグして変える。
+   * フルキーのキーの高さ(幅に対する倍率)。1 は正方形、最大 1.5。キーボードの上の縁をドラッグして変える。
    * 同期しない(端末ごと)
    */
-  logLines: number
+  keyScale: number
   /** よく使うリグ。`rig` の値(HAMLOG の `Rig=` の右辺)の候補になる */
   rigs: string[]
 }
 
 export const TIMEZONE_MIN = -12
 export const TIMEZONE_MAX = 14
+/** フルキーのキーの高さの倍率の範囲(1 は正方形) */
+export const KEY_SCALE_MIN = 1
+export const KEY_SCALE_MAX = 1.5
 
 const KEY = 'fle.settings'
 /**
@@ -75,7 +78,7 @@ const DEFAULTS: Settings = {
   editorFont: 'mono',
   qsoCount: 'day',
   layout: 'classic',
-  logLines: 0,
+  keyScale: 1,
   rigs: [],
 }
 
@@ -114,7 +117,8 @@ function load(): Settings {
           : stored === null && touchDevice() && !usedBefore()
             ? 'fullkey'
             : 'classic',
-      logLines: Number.isInteger(v.logLines) && v.logLines > 0 && v.logLines <= 100 ? v.logLines : 0,
+      keyScale:
+        typeof v.keyScale === 'number' && v.keyScale >= KEY_SCALE_MIN && v.keyScale <= KEY_SCALE_MAX ? v.keyScale : 1,
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
     // 初めて読んだときに決めた配置を覚えておく(あとでログができても、配置が変わらないように)

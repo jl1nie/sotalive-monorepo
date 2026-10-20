@@ -1,6 +1,7 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { Check, CornerDownLeft, Delete, Globe, Undo2 } from 'lucide-react'
 import { useKeyPad } from '@/hooks/useKeyPad'
+import { KEY_SCALE_MAX, KEY_SCALE_MIN } from '@/hooks/useSettings'
 import { useT } from '@/lib/i18n'
 
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
@@ -48,6 +49,10 @@ interface Props {
   onOsKeyboard: () => void
   /** ↶: 直前の編集(⌫ の連打や、続けて打った分)を取り消す */
   onUndo: () => void
+  /** キーの高さ(幅に対する倍率。1 は正方形) */
+  keyScale: number
+  /** 上の縁のつまみで、キーの高さを変えたとき(離したとき) */
+  onKeyScale: (scale: number) => void
 }
 
 /**
@@ -68,8 +73,36 @@ export function FullKeyboard({
   onNewline,
   onOsKeyboard,
   onUndo,
+  keyScale,
+  onKeyScale,
 }: Props) {
   const t = useT()
+  // キーの高さ: 上の縁のつまみを上下にドラッグ(離すまで保存しない)。空いた高さは、ログではなくキーに使う
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [dragScale, setDragScale] = useState<number | null>(null)
+  const scale = dragScale ?? keyScale
+  const sizing = useRef<{ id: number; y: number; scale: number; square: number } | null>(null)
+  const startSize = (e: PointerEvent<HTMLDivElement>) => {
+    const grid = gridRef.current
+    if (!grid) return
+    e.preventDefault()
+    // 指がつまみから外れても、追い続ける
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+    // 正方形のときの、キーボード全体(5段)の高さ
+    sizing.current = { id: e.pointerId, y: e.clientY, scale, square: grid.offsetHeight / scale }
+  }
+  const moveSize = (e: PointerEvent<HTMLDivElement>) => {
+    const s = sizing.current
+    if (!s || s.id !== e.pointerId) return
+    const next = s.scale + (s.y - e.clientY) / s.square
+    setDragScale(Math.round(Math.min(KEY_SCALE_MAX, Math.max(KEY_SCALE_MIN, next)) * 20) / 20)
+  }
+  const endSize = (e: PointerEvent<HTMLDivElement>) => {
+    if (sizing.current?.id !== e.pointerId) return
+    sizing.current = null
+    if (dragScale !== null) onKeyScale(dragScale)
+    setDragScale(null)
+  }
   const { padProps, tap, backspaceProps } = useKeyPad(onMove, onBackspace, true)
   // 押している文字のキー(吹き出しを出す)
   const [pressed, setPressed] = useState<string | null>(null)
@@ -134,9 +167,25 @@ export function FullKeyboard({
   )
 
   return (
-    // 段の高さを、キーボードの幅から決める(正方形のキー)
+    // 段の高さを、キーボードの幅から決める(正方形のキーに、倍率を掛ける)
     <div className="@container flex-none">
+      {/* キーの高さを変えるつまみ(上へ引くと高く。いちばん下で正方形) */}
       <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label={t('keys.resize')}
+        title={t('keys.resize')}
+        onPointerDown={startSize}
+        onPointerMove={moveSize}
+        onPointerUp={endSize}
+        onPointerCancel={endSize}
+        onMouseDown={(e) => e.preventDefault()}
+        className="h-5 flex items-center justify-center touch-none cursor-row-resize"
+      >
+        <span className="w-14 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600" />
+      </div>
+      <div
+        ref={gridRef}
         role="group"
         aria-label={t('keys.label')}
         title={t('keys.swipe')}
@@ -151,7 +200,8 @@ export function FullKeyboard({
         }}
         // なぞる操作を、ページのスクロールに取られない。押し続けで(⌫)、文字の選択やメニューを出さない。
         // 20列: 英字は2列ずつ。下段は半キーずらす。キーの間に隙間を作らない(押せる範囲)
-        className="relative grid grid-cols-20 auto-rows-[min(10cqw,3rem)] touch-none select-none [-webkit-touch-callout:none]"
+        className="relative grid grid-cols-20 auto-rows-[calc(min(10cqw,3rem)*var(--key-scale))] touch-none select-none [-webkit-touch-callout:none]"
+        style={{ '--key-scale': scale } as CSSProperties}
       >
         {DIGITS.map((k) => charKey(k))}
         {ROW1.map((k) => charKey(k))}

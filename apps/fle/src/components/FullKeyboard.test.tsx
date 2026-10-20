@@ -18,8 +18,9 @@ function renderKeys(props: Partial<Parameters<typeof FullKeyboard>[0]> = {}) {
     onNewline: vi.fn(),
     onOsKeyboard: vi.fn(),
     onUndo: vi.fn(),
+    onKeyScale: vi.fn(),
   }
-  render(<FullKeyboard confirmable={false} {...handlers} {...props} />)
+  render(<FullKeyboard confirmable={false} keyScale={1} {...handlers} {...props} />)
   return handlers
 }
 
@@ -149,5 +150,25 @@ describe('FullKeyboard', () => {
     expect(k.querySelectorAll('span')).toHaveLength(2)
     fireEvent.pointerUp(k, { clientX: 100, pointerId: 1 })
     expect(k.querySelectorAll('span')).toHaveLength(1)
+  })
+
+  it('上の縁のつまみを上へ引くと、キーが高くなる(正方形から 1.5 倍まで)。離したときに保存する', () => {
+    const { onKeyScale } = renderKeys()
+    // 正方形のキーボード(5段)の高さを 185px とする
+    Object.defineProperty(screen.getByRole('group'), 'offsetHeight', { configurable: true, value: 185 })
+    const handle = screen.getByRole('separator')
+    fireEvent.pointerDown(handle, { clientY: 500, pointerId: 1 })
+    fireEvent.pointerMove(handle, { clientY: 454, pointerId: 1 })
+    expect(onKeyScale).not.toHaveBeenCalled()
+    fireEvent.pointerUp(handle, { clientY: 454, pointerId: 1 })
+    expect(onKeyScale).toHaveBeenCalledWith(1.25)
+    // 引きすぎても 1.5 倍まで、下げすぎても正方形まで
+    fireEvent.pointerDown(handle, { clientY: 500, pointerId: 1 })
+    fireEvent.pointerMove(handle, { clientY: 0, pointerId: 1 })
+    fireEvent.pointerUp(handle, { clientY: 0, pointerId: 1 })
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 })
+    fireEvent.pointerMove(handle, { clientY: 900, pointerId: 1 })
+    fireEvent.pointerUp(handle, { clientY: 900, pointerId: 1 })
+    expect(onKeyScale.mock.calls.slice(1)).toEqual([[1.5], [1]])
   })
 })
