@@ -148,17 +148,21 @@ fn generate_sota_csv(records: &[&FleQsoRecord]) -> (Vec<u8>, Vec<u8>) {
         let rmks = get_ref(&record.qsormks);
         let notes = format!("{}{}", rmks.loc, rmks.sat);
 
+        // 場所の注記(`%QTH%35.6N, 139.2E%`)はカンマを含むので、引用符で囲む(列がずれないように)
         let row = format!(
-            "V2,{},{},{},{},{},{},{},{},{}\n",
-            record.mycall,
-            record.mysota,
-            date,
-            time,
-            freq,
-            mode_to_sota_mode(&record.mode),
-            record.callsign,
-            record.hissota,
-            notes
+            "{}\n",
+            csv_row(&[
+                "V2",
+                &record.mycall,
+                &record.mysota,
+                &date,
+                &time,
+                &freq,
+                mode_to_sota_mode(&record.mode),
+                &record.callsign,
+                &record.hissota,
+                &notes,
+            ])
         );
 
         output.extend(row.as_bytes());
@@ -170,6 +174,21 @@ fn generate_sota_csv(records: &[&FleQsoRecord]) -> (Vec<u8>, Vec<u8>) {
     }
 
     (output, s2s_output)
+}
+
+/// CSV の1行。カンマ・引用符・改行を含む値だけ、引用符で囲む(`"` は `""` にする)
+fn csv_row(fields: &[&str]) -> String {
+    fields
+        .iter()
+        .map(|f| {
+            if f.contains([',', '"', '\n', '\r']) {
+                format!("\"{}\"", f.replace('"', "\"\""))
+            } else {
+                f.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 /// ADIF形式を生成 (POTA/WWFF)
@@ -666,18 +685,7 @@ fn generate_airham_csv(result: &FleCompileResult) -> Vec<u8> {
             "", // remarks
         ];
 
-        let row = fields
-            .iter()
-            .map(|f| {
-                if f.contains(',') || f.contains('"') || f.contains('\n') {
-                    format!("\"{}\"", f.replace('"', "\"\""))
-                } else {
-                    f.to_string()
-                }
-            })
-            .collect::<Vec<_>>()
-            .join(",");
-        output.extend(format!("{}\n", row).as_bytes());
+        output.extend(format!("{}\n", csv_row(&fields)).as_bytes());
     }
 
     output
@@ -800,6 +808,31 @@ mod tests {
         assert!(csv_str.contains("7.025"));
         assert!(csv_str.contains("JA1XYZ"));
         assert!(s2s.is_empty());
+    }
+
+    #[test]
+    fn the_location_note_in_the_sota_csv_is_quoted() {
+        let files = output_of(
+            "mycall JA1ABC\ndate 2026-10-18\nmysota JA/TK-001\n40m cw\n\
+             0900 ja1aaa ja/kn-001 {35.6N, 139.2E}\n0910 ja1bbb",
+        );
+        let csv = &files["sota20261018.csv"];
+        let lines: Vec<&str> = csv.lines().collect();
+        // 注記はカンマを含むので引用符で囲み、どの行も10列(列がずれない)
+        assert_eq!(
+            lines[0],
+            "V2,JA1ABC,JA/TK-001,18/10/26,09:00,7MHz,CW,JA1AAA,JA/KN-001,\"%QTH%35.6N, 139.2E% \""
+        );
+        assert_eq!(
+            lines[1],
+            "V2,JA1ABC,JA/TK-001,18/10/26,09:10,7MHz,CW,JA1BBB,,"
+        );
+        assert!(files["sota-s2s-20261018.csv"].starts_with(lines[0]));
+    }
+
+    #[test]
+    fn csv_values_are_quoted_only_when_needed() {
+        assert_eq!(csv_row(&["a", "b,c", "d\"e", ""]), "a,\"b,c\",\"d\"\"e\",");
     }
 
     #[test]
