@@ -75,10 +75,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // アプリ自身のファイルを先に探す(旧版 myact の js/api.js・css/myact.css など)。
     // なければ、共通アセット(旧版の myact・myqth が共有する css・js・img など。Vercel 版ではシンボリックリンクだった)
-    const response = await fetchAsset(context.env.ASSETS, assetUrl, context.request);
+    let response = await fetchAsset(context.env.ASSETS, assetUrl, context.request);
     const shared = sharedAssetUrl(assetUrl);
     if (response.status === 404 && shared) {
-      return fetchAsset(context.env.ASSETS, shared, context.request);
+      response = await fetchAsset(context.env.ASSETS, shared, context.request);
+    }
+    // React 版の myact は試験中。検索エンジンに載せない
+    if (appPath === "/myact2") {
+      response = new Response(response.body, response);
+      response.headers.set("x-robots-tag", "noindex");
     }
     return response;
   }
@@ -90,11 +95,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 /**
  * ホスト名から、配信するアプリのパスを決める(なければ空)
  *
- * - myact2・mypilgrim・www(`/logconv` 以下を除く)は、旧版の myact(Vercel 版と同じ)。React 版の myact は、プレビューで試す
+ * - myact2 は React 版の myact(試験中。ビルドの base が `/` なので、このホスト名でだけ動く)
+ * - myact・mypilgrim・www(`/logconv` 以下を除く)は、旧版の myact(Vercel 版と同じ)
  * - www の `/logconv` 以下は logconv(Vercel 版と同じ)
  */
 function appPathFor(hostname: string, pathname: string): string {
   if (hostname.startsWith("www.")) return pathname.startsWith("/logconv") ? "/logconv" : "/myact";
+  if (hostname.startsWith("myact2")) return "/myact2";
   if (hostname.startsWith("myact") || hostname.startsWith("mypilgrim")) return "/myact";
   if (hostname.startsWith("myqth")) return "/myqth";
   if (hostname.startsWith("fle")) return "/fle";
