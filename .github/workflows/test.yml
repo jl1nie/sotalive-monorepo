@@ -50,7 +50,7 @@ jobs:
       - name: Build
         run: pnpm run build:apps
 
-      # myact はまだテストがなく、lint のエラーが残っている(準備中)。fle と logconv だけ
+      # fle・logconv・myact(React 版。まだテストのファイルがないので、なくても通す)
       - name: Test apps
         run: pnpm run test
 

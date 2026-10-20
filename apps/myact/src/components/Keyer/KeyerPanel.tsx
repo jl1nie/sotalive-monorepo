@@ -70,7 +70,7 @@ export function KeyerPanel({ isOpen, onClose }: KeyerPanelProps) {
         setStatus('disconnected');
         wsRef.current = null;
       };
-    } catch (err) {
+    } catch {
       setError('Failed to connect via WebSocket');
       setStatus('disconnected');
     }
@@ -143,7 +143,7 @@ export function KeyerPanel({ isOpen, onClose }: KeyerPanelProps) {
       } else {
         setError('Not connected');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to send message');
     }
   }, [prefs]);

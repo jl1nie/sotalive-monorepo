@@ -176,8 +176,8 @@ export function ActivationZoneLayer() {
 
       // ピーク探索
       const dem = await getDEM({ x: pxl.tx, y: pxl.ty, z: zoom });
-      let px = pxl.px % 256;
-      let py = pxl.py % 256;
+      const px = pxl.px % 256;
+      const py = pxl.py % 256;
       let peak = 0;
       let cx = px;
       let cy = py;

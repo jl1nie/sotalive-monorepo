@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useSearch } from '@/hooks';
 import { useMapStore } from '@/stores';
 import type { SearchCandidate } from '@/types';
@@ -14,7 +14,7 @@ export function SearchInput() {
   const setView = useMapStore((s) => s.setView);
   const setPopupData = useMapStore((s) => s.setPopupData);
 
-  const candidates = searchResult?.candidates || [];
+  const candidates = useMemo(() => searchResult?.candidates ?? [], [searchResult]);
 
   const selectCandidate = useCallback(
     (candidate: SearchCandidate) => {
@@ -54,9 +54,10 @@ export function SearchInput() {
     [setView, setPopupData]
   );
 
-  // 検索結果が1件の場合は自動でジャンプ
+  // 検索結果が1件の場合は自動でジャンプ。サーバーから検索結果が届いたことに合わせて動く(描画中には決められない)
   useEffect(() => {
     if (candidates.length === 1 && query.length >= 2 && showSuggestions) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 非同期に届いた検索結果への応答
       selectCandidate(candidates[0]);
     }
   }, [candidates, query, showSuggestions, selectCandidate]);

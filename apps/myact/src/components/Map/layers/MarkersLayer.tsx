@@ -20,45 +20,53 @@ export function MarkersLayer() {
   const [zoom, setZoom] = useState(map.getZoom());
 
   const sotaRef = usePrefsStore((s) => s.sota_ref);
-  const showPotaLog = usePrefsStore((s) => s.show_potalog);
   const setPopupData = useMapStore((s) => s.setPopupData);
 
-  const fetchMarkers = useCallback(async () => {
+  // 地図の範囲のマーカーを読む(読み込みだけ。状態は、読み終えてから showMarkers で変える)
+  const loadMarkers = useCallback(async (): Promise<SearchResult | null> => {
     const bounds = map.getBounds();
-    const currentZoom = map.getZoom();
-    setZoom(currentZoom);
-
-    const { elev, level } = getElevationThreshold(currentZoom);
-
+    const { elev, level } = getElevationThreshold(map.getZoom());
     try {
-      const result = await api.search({
+      return (await api.search({
         minLat: bounds.getSouth(),
         minLon: bounds.getWest(),
         maxLat: bounds.getNorth(),
         maxLon: bounds.getEast(),
         minElev: elev,
         minArea: level,
-      }) as SearchResult;
-
-      if (sotaRef) {
-        setSummits(result.sota || []);
-      } else {
-        setSummits([]);
-      }
-      setParks(result.pota || []);
+      })) as SearchResult;
     } catch (error) {
       console.error('Failed to fetch markers:', error);
+      return null;
     }
-  }, [map, sotaRef, showPotaLog]);
+  }, [map]);
 
+  const showMarkers = useCallback((result: SearchResult | null) => {
+    if (!result) return;
+    setSummits(sotaRef ? result.sota || [] : []);
+    setParks(result.pota || []);
+  }, [sotaRef]);
+
+  // 地図を動かしたら、ズームを覚えて(山のマーカーの大きさ)、マーカーを読み直す
+  const onMapChange = useCallback(() => {
+    setZoom(map.getZoom());
+    loadMarkers().then(showMarkers);
+  }, [map, loadMarkers, showMarkers]);
   useMapEvents({
-    moveend: fetchMarkers,
-    zoomend: fetchMarkers,
+    moveend: onMapChange,
+    zoomend: onMapChange,
   });
 
+  // 最初と、山の表示の設定を変えたとき。読み終える前に変わったら、古い結果は使わない
   useEffect(() => {
-    fetchMarkers();
-  }, [fetchMarkers]);
+    let current = true;
+    loadMarkers().then((result) => {
+      if (current) showMarkers(result);
+    });
+    return () => {
+      current = false;
+    };
+  }, [loadMarkers, showMarkers]);
 
   const handleSummitClick = useCallback(
     (summit: SotaSummitMarker) => {
