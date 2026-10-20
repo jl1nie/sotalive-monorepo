@@ -30,14 +30,13 @@ sotalive-monorepoは、SOTA/POTAアマチュア無線アワード支援サービ
 ```
 sotalive-monorepo/
 ├── apps/
-│   ├── myact/          # MyActivation（地図ベースSOTA/POTA支援）
-│   │   ├── css/        # 外部CSS
-│   │   ├── js/         # モジュール分割済みJS
-│   │   └── index.html
-│   ├── logconv/        # LogConverter（ログ形式変換）
-│   └── wspr/           # WSPR（電波伝搬解析）- logconvのタブとして統合
+│   ├── myact/          # MyActivation の React 版（移行中。プレビューの /myact2/ で試す）
+│   ├── myact-org/      # MyActivation の旧版（jQuery。外部CSS・JSに分離済み）→ dist/myact
+│   ├── myqth-org/      # MyQTH の旧版（index.html だけ。css・js などは共通アセット）→ dist/myqth
+│   ├── logconv/        # LogConverter（ログ形式変換。WSPR はタブとして統合）
+│   └── fle/            # FLE Online
 ├── packages/
-│   └── shared/         # 共通アセット
+│   └── shared/         # 共通アセット（旧版の myact・myqth が共有。Vercel 版の public/common と同じ）
 ├── functions/
 │   └── _middleware.ts  # Cloudflare Workers（API proxy + routing）
 ├── dist/               # ビルド出力
@@ -79,11 +78,15 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 ## サブドメイン構成
 
+ルーティングは `functions/_middleware.ts`（ホスト名でアプリを選ぶ。アプリ自身のファイルがなければ共通アセット）。
+
 | サブドメイン | アプリ | 備考 |
 |------------|--------|------|
-| myact2.sotalive.net | MyActivation | 新URL |
-| logconv2.sotalive.net | LogConverter | 新URL |
-| *.sotalive.net (旧) | Vercel | 3ヶ月後停止予定 |
+| myact2.sotalive.net | MyActivation（旧版） | Vercel から移した。React 版はプレビューで試す |
+| myqth2.sotalive.net | MyQTH（旧版） | Vercel から移した |
+| logconv2.sotalive.net | LogConverter | |
+| fleonline.sotalive.net | FLE Online | `/fle/` |
+| myact / mypilgrim / myqth / logconv / www.sotalive.net | Vercel | Pages のカスタムドメインに切り替えたら、Vercel を止める（ルーティングは用意済み。www は `/logconv` 以下が logconv、ほかは myact） |
 
 ## Git運用
 

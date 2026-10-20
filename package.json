@@ -7,7 +7,7 @@
     "dev": "turbo dev",
     "build": "pnpm run build:dist",
     "build:apps": "turbo run build --filter=@sotalive/logconv --filter=@sotalive/fle --filter=@sotalive/myact",
-    "build:dist": "pnpm run build:apps && rm -rf dist && mkdir -p dist/myact dist/myact2 dist/logconv dist/fle dist/shared dist/functions && cp -r apps/logconv/dist/* dist/logconv/ && cp -r apps/fle/dist/* dist/fle/ && cp -r apps/myact-org/* dist/myact/ && cp -r apps/myact/dist/* dist/myact2/ && cp -r packages/shared/* dist/shared/ && cp -r functions/* dist/functions/",
+    "build:dist": "pnpm run build:apps && rm -rf dist && mkdir -p dist/myact dist/myact2 dist/myqth dist/logconv dist/fle dist/shared dist/functions && cp -r apps/logconv/dist/* dist/logconv/ && cp -r apps/fle/dist/* dist/fle/ && cp -r apps/myact-org/* dist/myact/ && cp -r apps/myqth-org/* dist/myqth/ && cp -r apps/myact/dist/* dist/myact2/ && cp -r packages/shared/* dist/shared/ && cp -r functions/* dist/functions/",
     "lint": "turbo lint",
     "lint:apps": "pnpm --filter @sotalive/fle --filter @sotalive/logconv run lint",
     "test": "pnpm --filter @sotalive/fle --filter @sotalive/logconv exec vitest run",

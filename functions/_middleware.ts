@@ -31,47 +31,9 @@ async function fetchAsset(
   return response;
 }
 
-// 準備中のページ（myact2 は、公開の準備ができるまでこれを返す）
-const UNDER_CONSTRUCTION = `<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Under Construction</title>
-<style>
-  :root { color-scheme: light dark; }
-  body { margin: 0; min-height: 100dvh; display: grid; place-items: center; text-align: center;
-         font: 16px/1.6 system-ui, sans-serif; padding: 1rem; }
-  h1 { font-size: 1.75rem; margin: 0 0 .5rem; }
-  p { margin: 0; opacity: .8; }
-</style>
-</head>
-<body>
-<main>
-  <h1>Under Construction</h1>
-  <p>現在、準備中です。</p>
-  <p>This site is under construction.</p>
-</main>
-</body>
-</html>`;
-
 export const onRequest: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const hostname = url.hostname;
-
-  // myact2 は準備中
-  if (hostname.startsWith("myact2")) {
-    return new Response(UNDER_CONSTRUCTION, {
-      status: 503,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-        "retry-after": "86400",
-        "cache-control": "no-store",
-        "x-robots-tag": "noindex",
-      },
-    });
-  }
 
   // FLEonline は /fle/ で動く（PWA の範囲が /fle/ のため、ルートは転送する）
   if (hostname.startsWith("fle") && (url.pathname === "/" || url.pathname === "")) {
@@ -98,18 +60,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   // サブドメインに基づいてアプリを選択
   // WSPRはlogconvのタブ内に含まれるため独立アプリ不要
-  let appPath = "";
-  if (hostname.startsWith("myact2")) {
-    appPath = "/myact2";
-  } else if (hostname.startsWith("myact")) {
-    appPath = "/myact";
-  } else if (hostname.startsWith("fle")) {
-    appPath = "/fle";
-  } else if (hostname.startsWith("logconv2")) {
-    appPath = "/logconv";
-  } else if (hostname.startsWith("logconv")) {
-    appPath = "/logconv";
-  }
+  const appPath = appPathFor(hostname, url.pathname);
 
   // パスを書き換えてアセットを取得
   if (appPath) {
@@ -122,19 +73,49 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       assetUrl.pathname = `${appPath}${url.pathname}`;
     }
 
-    // 共通アセットへのフォールバック
-    const sharedPaths = ["/css/", "/js/", "/img/", "/font/", "/svg/", "/favicon"];
-    for (const prefix of sharedPaths) {
-      if (assetUrl.pathname.includes(prefix)) {
-        const idx = assetUrl.pathname.indexOf(prefix);
-        assetUrl.pathname = `/shared/common${assetUrl.pathname.substring(idx)}`;
-        break;
-      }
+    // アプリ自身のファイルを先に探す(旧版 myact の js/api.js・css/myact.css など)。
+    // なければ、共通アセット(旧版の myact・myqth が共有する css・js・img など。Vercel 版ではシンボリックリンクだった)
+    const response = await fetchAsset(context.env.ASSETS, assetUrl, context.request);
+    const shared = sharedAssetUrl(assetUrl);
+    if (response.status === 404 && shared) {
+      return fetchAsset(context.env.ASSETS, shared, context.request);
     }
-
-    return fetchAsset(context.env.ASSETS, assetUrl, context.request);
+    return response;
   }
 
   // サブドメインなし（sotalive.pages.dev など）はそのまま配信
   return fetchAsset(context.env.ASSETS, url, context.request);
 };
+
+/**
+ * ホスト名から、配信するアプリのパスを決める(なければ空)
+ *
+ * - myact2・mypilgrim・www(`/logconv` 以下を除く)は、旧版の myact(Vercel 版と同じ)。React 版の myact は、プレビューで試す
+ * - www の `/logconv` 以下は logconv(Vercel 版と同じ)
+ */
+function appPathFor(hostname: string, pathname: string): string {
+  if (hostname.startsWith("www.")) return pathname.startsWith("/logconv") ? "/logconv" : "/myact";
+  if (hostname.startsWith("myact") || hostname.startsWith("mypilgrim")) return "/myact";
+  if (hostname.startsWith("myqth")) return "/myqth";
+  if (hostname.startsWith("fle")) return "/fle";
+  if (hostname.startsWith("logconv")) return "/logconv";
+  return "";
+}
+
+/**
+ * 共通アセットの場所(`/shared/common/...`)。共通アセットのパスでなければ null。
+ * ファビコン(`/favicon-16x16-qth.png` など)は、共通アセットの `favicon/` の中にある
+ */
+function sharedAssetUrl(url: URL): URL | null {
+  const sharedPaths = ["/css/", "/js/", "/img/", "/font/", "/svg/", "/json/", "/favicon"];
+  // パスのいちばん手前にあるもの(`/font/css/…` は `/font/`)
+  const found = sharedPaths
+    .map((prefix) => ({ prefix, idx: url.pathname.indexOf(prefix) }))
+    .filter(({ idx }) => idx >= 0)
+    .sort((a, b) => a.idx - b.idx)[0];
+  if (!found) return null;
+  const rest = url.pathname.substring(found.idx);
+  const shared = new URL(url);
+  shared.pathname = found.prefix === "/favicon" ? `/shared/common/favicon${rest}` : `/shared/common${rest}`;
+  return shared;
+}
