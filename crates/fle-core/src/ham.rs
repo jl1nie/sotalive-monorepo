@@ -562,8 +562,9 @@ static COORD_RE: Lazy<regex::Regex> =
     Lazy::new(|| regex::Regex::new(r"(-?\d+(\.\d+)?[nsNS]?\s*,\s*-?\d+(\.\d+)?[ewEW]?)").unwrap());
 static WWFF_RE: Lazy<regex::Regex> =
     Lazy::new(|| regex::Regex::new(r"(?i)([A-Z0-9]+FF-\d+)").unwrap());
+/// 公園の番号は4桁か5桁(`US-10995`)。数字が続けば公園でない(5桁を4桁で切って、別の公園と読まないように)
 static POTA_RE: Lazy<regex::Regex> =
-    Lazy::new(|| regex::Regex::new(r"([a-zA-Z0-9]+-\d{4})").unwrap());
+    Lazy::new(|| regex::Regex::new(r"([a-zA-Z0-9]+-\d{4,5})(?:[^0-9]|$)").unwrap());
 static SOTA_RE: Lazy<regex::Regex> =
     Lazy::new(|| regex::Regex::new(r"(([a-zA-Z0-9]+/[a-zA-Z0-9]+)-\d+)").unwrap());
 static GRID_RE: Lazy<regex::Regex> =
@@ -823,6 +824,18 @@ mod tests {
         assert_eq!(mode_to_airham_mode("SSB", "7.1"), "SSB(LSB)");
         assert_eq!(mode_to_airham_mode("SSB", "14.2"), "SSB(USB)");
         assert_eq!(mode_to_airham_mode("CW", "7.0"), "CW");
+    }
+
+    #[test]
+    fn park_numbers_have_four_or_five_digits() {
+        assert_eq!(get_ref("US-10995").pota, vec!["US-10995"]);
+        assert_eq!(get_ref("JA-0001 K-0123").pota, vec!["JA-0001", "K-0123"]);
+        // 日本語や記号が続いても読む
+        assert_eq!(get_ref("JA-0001表").pota, vec!["JA-0001"]);
+        assert_eq!(get_ref("(JA-0001)").pota, vec!["JA-0001"]);
+        // 6桁以上・3桁以下は公園ではない(5桁や4桁で切って、別の公園と読まない)
+        assert!(get_ref("US-109951").pota.is_empty());
+        assert!(get_ref("JA-001").pota.is_empty());
     }
 
     #[test]

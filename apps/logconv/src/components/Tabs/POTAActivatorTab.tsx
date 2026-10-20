@@ -37,7 +37,8 @@ const hisQthOptions: { value: HisQTHOption; label: string }[] = [
 
 // Reference validation regex
 const SOTA_REF = /^\w+\/\w+-\d{3}$/
-const PARK_REF = /^\w+-\d{4}$/
+// 公園の番号は4桁か5桁(US-10995 など)
+const PARK_REF = /^\w+-\d{4,5}$/
 
 function validateRefs(refString: string): boolean {
   if (!refString.trim()) return false

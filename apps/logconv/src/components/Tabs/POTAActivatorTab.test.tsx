@@ -135,6 +135,7 @@ describe('POTA/WWFF/SOTA ADIF', () => {
     ['WWFF と公園', 'JAFF-0005 JP-0014'],
     ['山と公園(同時運用)', 'JA/TK-001 JA-0001'],
     ['カンマ区切り・小文字', 'ja-0001,ja-0002'],
+    ['5桁の公園', 'US-10995 K-0001'],
   ])('運用先の入力: %s(%s)は送る', async (_, park) => {
     const { sent } = mockServer({ [CHECK]: OK })
     setup(park)
@@ -146,6 +147,7 @@ describe('POTA/WWFF/SOTA ADIF', () => {
   it.each([
     ['空', '', '運用先を入力してください'],
     ['書式の誤り', 'JA-01', '運用先リファレンスに誤りがあります'],
+    ['6桁の番号', 'US-109951', '運用先リファレンスに誤りがあります'],
     ['参照でない語', 'JA-0001 TOKYO', '運用先リファレンスに誤りがあります'],
   ])('運用先の入力: %sは送らない', async (_, park, message) => {
     const { sent } = mockServer()
