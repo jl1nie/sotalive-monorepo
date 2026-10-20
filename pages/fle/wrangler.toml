@@ -1,0 +1,12 @@
+# FLEonline の Pages プロジェクト(fleonline.sotalive.net)
+# 静的なファイルは dist-fle(scripts/build-static-projects.sh が作る)。Functions はこのディレクトリの functions/ で、
+# /api の下にだけある(設定の同期と、バックエンドへの中継)。ほかのパスでは Functions が動かない(無料枠を使わない)。
+# デプロイは、このディレクトリで `wrangler pages deploy`(.github/workflows/deploy.yml)
+name = "sotalive-fle"
+compatibility_date = "2024-12-01"
+pages_build_output_dir = "../../dist-fle"
+
+# 設定の同期(functions/api/fle/prefs)。sotalive と同じ KV の名前空間
+[[kv_namespaces]]
+binding = "FLE_PREFS"
+id = "c3b3f308e34d4e16b236fe4b1cd0e1cc"

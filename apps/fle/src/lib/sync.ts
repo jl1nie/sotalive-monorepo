@@ -1,4 +1,4 @@
-// 設定と予定を、端末をまたいで同期する(サーバーは functions/api/fle/prefs。Cloudflare KV)。
+// 設定と予定を、端末をまたいで同期する(サーバーは pages/fle/functions/api/fle/prefs。Cloudflare KV)。
 //
 // アカウントはない。端末が、推測できない同期コードを作り、QR か文字で、ほかの端末に渡す。
 // 端末の中の設定・予定が主で、同期は、つながっているときだけ。サーバーとは、版(updatedAt)で食い違いを見つけ、
