@@ -40,7 +40,7 @@ const ja = {
   'landscape.title': '縦向きにしてお使いください',
   'landscape.hint': '書いたログは、そのまま残っています。ホーム画面に追加して開くと、縦向きに固定されます(Android)',
   'editor.placeholder': 'mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 JA1XYZ',
-  'editor.resize': 'ログ欄の高さを変える(上下にドラッグ。空いた上に、時刻と運用先を出す。いちばん上で、入る限り高く)',
+  'editor.resize': 'ログ欄の高さを変える(上下にドラッグ。空いた上に、時刻と運用先を出す。いちばん上で、入る限り高く。タップで、時刻と運用先を出す・しまう)',
   'clock.label': '時刻と運用先',
 
   // QSO一覧
@@ -298,7 +298,7 @@ const en: Record<MessageKey, string> = {
   'landscape.title': 'Please turn your phone upright',
   'landscape.hint': 'Your log is still here. Open it from the home screen to keep it upright (Android)',
   'editor.placeholder': 'mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 JA1XYZ',
-  'editor.resize': 'Drag up or down to change the height of the log (the time and your location show above it; all the way up for full height)',
+  'editor.resize': 'Drag up or down to change the height of the log (the time and your location show above it; all the way up for full height). Tap to show or hide the time and your location',
   'clock.label': 'Time and location',
 
   'list.errorsTitle': '{qsos} QSO / {errors} errors',
