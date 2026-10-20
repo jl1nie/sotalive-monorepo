@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Check, CornerDownLeft } from 'lucide-react'
-import { timeLabel, zoneLabel, type LineInfo, type LogView, type QsoView } from '@/lib/fle'
+import { clockZone, timeLabel, zoneLabel, type LineInfo, type LogView, type QsoView } from '@/lib/fle'
 import { errorText } from '@/lib/errors'
 import { keepFocus } from '@/lib/keepFocus'
 import { useI18n, type Translate } from '@/lib/i18n'
@@ -163,10 +163,10 @@ export function CandidateBar({
   const omissions = view?.errors.filter((e) => e.line === caretLine && OMISSIONS.has(e.code)) ?? []
   const errorCount = (view?.errors.filter((e) => e.line !== caretLine).length ?? 0) + omissions.length
 
-  // 時計(10秒ごとに進める)。時刻を自動で入れないときは、ログの時刻を出す
+  // 時計(1秒ごとに見る。ログ欄の上の時計と、分の変わり目をそろえる)。時刻を自動で入れないときは、ログの時刻を出す
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 10_000)
+    const id = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(id)
   }, [])
 
@@ -176,9 +176,8 @@ export function CandidateBar({
   // 途中かどうかは、その行に誤りがあるかで見る(書き終えた指令やコメントの行は、誤りがなく、QSO でもない)
   const typed = lineText.trim()
   const draft = !qso && !!error && typed !== '' && omissions.length === 0
-  // 実際にログに入る時刻と同じ時間帯で出す。timezone のないログに、もう QSO があれば、UTC のまま入る
-  const qsoBefore = view?.qsos.some((q) => q.line < caretLine) ?? false
-  const tz = info?.timezone ?? (qsoBefore ? 0 : timezone)
+  // 実際にログに入る時刻と同じ時間帯で出す
+  const tz = clockZone(info, view, caretLine, timezone)
   const clock = autoTime || !info ? new Date(now + tz * 3_600_000).toISOString().slice(11, 16) : info.time
   const setting = [info?.band, info?.mode].filter(Boolean).join(' ')
   const meaning = resolved(info, names, t)

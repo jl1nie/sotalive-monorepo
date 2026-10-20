@@ -31,6 +31,7 @@ import {
   selectPart,
   retimeLog,
   zoneLabel,
+  clockZone,
   type QsoPart,
   type Station,
   type Candidate,
@@ -50,12 +51,14 @@ import { alignToBottom, scrollCaretIntoView } from '@/lib/caretScroll'
 import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useLandscapePhone } from '@/hooks/useLandscapePhone'
+import { useLogHeight } from '@/hooks/useLogHeight'
 import { useAutosave } from '@/hooks/useAutosave'
 import { usePwa } from '@/hooks/usePwa'
 import { touchDevice, useSettings, type Settings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
 import { DigitRow } from '@/components/DigitRow'
 import { FullKeyboard } from '@/components/FullKeyboard'
+import { StationClock } from '@/components/StationClock'
 import { rigCompletion } from '@/lib/rig'
 import { CandidateBar, type BarPart } from '@/components/CandidateBar'
 import { nextRst, type RstMark } from '@/lib/rstToggle'
@@ -254,6 +257,15 @@ function Editor({
   const compact = settings.layout !== 'classic'
   // コンパクト・フルキーは縦向きで使う(横向きでは、キーボードとログが入らない)
   const landscape = useLandscapePhone() && compact
+
+  // コンパクト・フルキー: ログ欄の高さ(上の縁のつまみ)。低くしたら、空いた上に時刻と運用先を出す
+  const logHeight = useLogHeight({
+    enabled: compact,
+    saved: settings.logLines,
+    onSave: (logLines) => updateSettings({ logLines }),
+    taRef,
+    deps: [settings.editorFont],
+  })
 
   // フルキー: OS のキーボードの代わりに、画面のキーボードを出す。🌐 で、OS のキーボード(日本語など)に切り替える
   // PC(タッチでない端末)では、フルキーを選んでいても、コンパクトとして動く(物理キーボードがある)
@@ -696,7 +708,24 @@ function Editor({
         sync={sync}
       />
 
-      <div className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
+      <div ref={logHeight.boxRef} className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
+        {compact && logHeight.lines > 0 && (
+          <StationClock info={info} tz={clockZone(info, view, caretLine, settings.timezone)} />
+        )}
+        {compact && (
+          // ログ欄の高さを変えるつまみ(上下にドラッグ。上に時刻と運用先が入らなくなるまで引けば、入る限り高く)
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label={t('editor.resize')}
+            title={t('editor.resize')}
+            {...logHeight.handleProps}
+            onMouseDown={(e) => e.preventDefault()}
+            className="flex-none h-6 flex items-center justify-center touch-none cursor-row-resize"
+          >
+            <span className="w-14 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600" />
+          </div>
+        )}
         <textarea
           ref={taRef}
           value={text}
@@ -720,9 +749,10 @@ function Editor({
           // 従来の配置では、下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
           // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
           // コンパクト・フルキーでは、緑のバーのコールサインと同じ大きさ(目が読み替えずに済む)。行間は詰める
-          className={`input flex-1 h-full min-h-0 resize-none font-semibold ${
+          className={`input min-h-0 resize-none font-semibold ${logHeight.height === null ? 'flex-1 h-full' : 'flex-none'} ${
             compact ? '!text-xl leading-[1.3]' : 'leading-relaxed pb-20'
           } ${settings.editorFont === 'mono' ? 'font-mono' : ''}`}
+          style={logHeight.height === null ? undefined : { height: logHeight.height }}
         />
         {!compact && <SuggestStrip candidates={completion.candidates} onPick={pick} />}
       </div>

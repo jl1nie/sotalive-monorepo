@@ -151,3 +151,20 @@ describe('useSettings: フルキーのキーの高さ', () => {
     expect(SYNCED_KEYS).not.toContain('keyScale')
   })
 })
+
+describe('useSettings: ログ欄の高さ', () => {
+  it('初めては入る限り高く(0)。行数を保存し、範囲の外の値は 0 として読む', () => {
+    const first = renderHook(() => useSettings())
+    expect(first.result.current.settings.logLines).toBe(0)
+    act(() => first.result.current.update({ logLines: 6 }))
+    expect(renderHook(() => useSettings()).result.current.settings.logLines).toBe(6)
+    for (const bad of [-1, 1, 2.5, 101, '6']) {
+      localStorage.setItem(KEY, JSON.stringify({ logLines: bad }))
+      expect(renderHook(() => useSettings()).result.current.settings.logLines).toBe(0)
+    }
+  })
+
+  it('同期しない(端末ごと)', () => {
+    expect(SYNCED_KEYS).not.toContain('logLines')
+  })
+})

@@ -23,9 +23,10 @@ type Span = keyof typeof SPAN
 
 /**
  * 続けて2回押すと、別の文字になるキー(キーを増やさずに、まれに使う記号を打つ)。
- * `--` は FLE では使わないので、取り違えない
+ * `--` も `//` も FLE では使わないので、取り違えない。`.` は周波数(`7.0295`)を細かく書くときだけ使うので、
+ * キーにせず、いちばんよく打つ空白を広く取る
  */
-const DOUBLE: Record<string, string> = { '-': ',' }
+const DOUBLE: Record<string, string> = { '-': ',', '/': '.' }
 /** 2回目を「続けて」とみなす間隔(ms) */
 const DOUBLE_TAP = 400
 
@@ -57,7 +58,7 @@ interface Props {
 
 /**
  * フルキーの配置の、画面のキーボード(OS のキーボードの代わり)。FLE で打つのは、ほとんどが英数字と記号なので、
- * 数字・英字・/ - . 空白 ⌫ と、確定(次の行)を1枚にまとめる。- を続けて2回で , になる。押してもテキスト入力からフォーカスを奪わない。
+ * 数字・英字・/ - 空白 ⌫ と、確定(次の行)を1枚にまとめる。- を続けて2回で , 、/ を続けて2回で . になる。押してもテキスト入力からフォーカスを奪わない。
  * 英字のキーは大文字で見せ、小文字で入れる(FLE は大文字・小文字を区別しない)。
  * 打ちやすさのために、スマホのキーボードと同じく:
  * - キーの間の隙間を押しても、近いキーが入る
@@ -216,8 +217,7 @@ export function FullKeyboard({
         {fnKey(t('keys.os'), onOsKeyboard, <Globe className="w-5 h-5" aria-hidden="true" />, 2)}
         {fnKey(t('keys.undo'), onUndo, <Undo2 className="w-5 h-5" aria-hidden="true" />, 2)}
         {fnKey(t('digits.left'), () => onMove(-1), '←', 2, true)}
-        {fnKey(t('digits.space'), () => onKey(' '), t('digits.space'), 4, true)}
-        {charKey('.')}
+        {fnKey(t('digits.space'), () => onKey(' '), t('digits.space'), 6, true)}
         {fnKey(t('digits.right'), () => onMove(1), '→', 2, true)}
         {/* 右下(OS のキーボードの Enter の位置)で、次の行へ。確定できる行は、確定して次の行へ */}
         {confirmable ? (
