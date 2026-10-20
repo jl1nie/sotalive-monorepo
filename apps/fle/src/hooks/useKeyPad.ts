@@ -10,11 +10,14 @@ const REPEAT_EVERY = 70
 /**
  * 画面のキー(数字の行・フルキー)の共通の動き。
  * - 押してもテキスト入力からフォーカスを奪わない
- * - 左右になぞると、キーは入らず、カーソルが動く(指先で文字の間を狙わずに、1文字ずつ直せる)
+ * - 左右になぞると、キーは入らず、カーソルが動く(指先で文字の間を狙わずに、1文字ずつ直せる)。
+ *   `swipeOnlyMarked` なら、`data-swipe` を付けたキーから始めたときだけ(フルキーの文字キーは、素早く打つと
+ *   指が横に滑るので、なぞりと取り違えない)
  * - ⌫ は押し続けると、続けて消す
+ * - 指ごとに見る(親指2本で交互に打つとき、別の指の動きを、なぞりと取り違えない)
  */
-export function useKeyPad(onMove: (delta: number) => void, onBackspace: () => void) {
-  const drag = useRef<{ x: number; moved: number; swiping: boolean } | null>(null)
+export function useKeyPad(onMove: (delta: number) => void, onBackspace: () => void, swipeOnlyMarked = false) {
+  const drag = useRef<{ id: number; x: number; moved: number; swiping: boolean } | null>(null)
   // なぞったあとの click は、キーを入れない
   const swiped = useRef(false)
   // ⌫ の押し続け。連続で消したあとの click は、もう1文字は消さない
@@ -37,12 +40,13 @@ export function useKeyPad(onMove: (delta: number) => void, onBackspace: () => vo
   const down = (e: PointerEvent) => {
     // フォーカスを奪わない
     e.preventDefault()
-    drag.current = { x: e.clientX, moved: 0, swiping: false }
     swiped.current = false
+    const swipable = !swipeOnlyMarked || (e.target instanceof Element && e.target.closest('[data-swipe]') !== null)
+    drag.current = swipable ? { id: e.pointerId, x: e.clientX, moved: 0, swiping: false } : null
   }
   const move = (e: PointerEvent) => {
     const d = drag.current
-    if (!d) return
+    if (!d || d.id !== e.pointerId) return
     const dx = e.clientX - d.x
     if (!d.swiping && Math.abs(dx) < SWIPE_START) return
     d.swiping = true
@@ -54,8 +58,8 @@ export function useKeyPad(onMove: (delta: number) => void, onBackspace: () => vo
       d.moved = steps
     }
   }
-  const up = () => {
-    drag.current = null
+  const up = (e: PointerEvent) => {
+    if (drag.current?.id === e.pointerId) drag.current = null
     stopRepeat()
   }
 

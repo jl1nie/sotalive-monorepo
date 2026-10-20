@@ -73,14 +73,46 @@ describe('FullKeyboard', () => {
     expect(onBackspace).toHaveBeenCalledTimes(1)
   })
 
-  it('どこからでも左右になぞると、キーは入らず、カーソルが動く', () => {
+  it('文字のキーは、指が横に滑っても、なぞりにせず、その文字を打つ', () => {
     const { onKey, onMove } = renderKeys()
     const q = screen.getByRole('button', { name: 'q' })
-    fireEvent.pointerDown(q, { clientX: 100 })
-    fireEvent.pointerMove(q, { clientX: 145 })
-    fireEvent.pointerUp(q, { clientX: 145 })
+    fireEvent.pointerDown(q, { clientX: 100, pointerId: 1 })
+    fireEvent.pointerMove(q, { clientX: 145, pointerId: 1 })
+    fireEvent.pointerUp(q, { clientX: 145, pointerId: 1 })
     fireEvent.click(q)
+    expect(onMove).not.toHaveBeenCalled()
+    expect(onKey).toHaveBeenCalledWith('q')
+  })
+
+  it('空白から左右になぞると、空白は入らず、カーソルが動く', () => {
+    const { onKey, onMove } = renderKeys()
+    const space = screen.getByRole('button', { name: '空白' })
+    fireEvent.pointerDown(space, { clientX: 100, pointerId: 1 })
+    fireEvent.pointerMove(space, { clientX: 145, pointerId: 1 })
+    fireEvent.pointerUp(space, { clientX: 145, pointerId: 1 })
+    fireEvent.click(space)
     expect(onMove.mock.calls).toEqual([[2]])
     expect(onKey).not.toHaveBeenCalled()
+  })
+
+  it('別の指の動きは、なぞりにしない(親指2本で交互に打つ)', () => {
+    const { onKey, onMove } = renderKeys()
+    const space = screen.getByRole('button', { name: '空白' })
+    const j = screen.getByRole('button', { name: 'j' })
+    fireEvent.pointerDown(space, { clientX: 100, pointerId: 1 })
+    fireEvent.pointerMove(j, { clientX: 160, pointerId: 2 })
+    fireEvent.pointerUp(space, { clientX: 100, pointerId: 1 })
+    fireEvent.click(space)
+    expect(onMove).not.toHaveBeenCalled()
+    expect(onKey).toHaveBeenCalledWith(' ')
+  })
+
+  it('押している間、文字の吹き出しを出し、離すと消す', () => {
+    renderKeys()
+    const k = screen.getByRole('button', { name: 'k' })
+    fireEvent.pointerDown(k, { clientX: 100, pointerId: 1 })
+    expect(k.querySelectorAll('span')).toHaveLength(2)
+    fireEvent.pointerUp(k, { clientX: 100, pointerId: 1 })
+    expect(k.querySelectorAll('span')).toHaveLength(1)
   })
 })
