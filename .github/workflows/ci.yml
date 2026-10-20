@@ -145,7 +145,13 @@ jobs:
 
   # ---- ビルド(1回。テストと並列) ----
 
+  # デプロイするものか、ビルドに関係するものが変わったときだけ(ドキュメントだけの変更では走らない)
   build:
+    needs: changes
+    if: >-
+      needs.changes.outputs.all == 'true' || needs.changes.outputs.fle == 'true'
+      || needs.changes.outputs.logconv == 'true' || needs.changes.outputs.myact == 'true'
+      || needs.changes.outputs.legacy == 'true' || needs.changes.outputs.sotalive == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
