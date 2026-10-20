@@ -62,7 +62,7 @@ interface Props {
 /**
  * フルキーの配置の、画面のキーボード(OS のキーボードの代わり)。FLE で打つのは、ほとんどが英数字と記号なので、
  * 数字・英字・/ - 空白 ⌫ と、確定(次の行)を1枚にまとめる。- を続けて2回で , 、/ を続けて2回で . になる。押してもテキスト入力からフォーカスを奪わない。
- * 英字のキーは大文字で見せ、小文字で入れる(FLE は大文字・小文字を区別しない)。Caps(Z の左)がオンなら大文字で入れる。
+ * 英字は小文字で入れる(FLE は大文字・小文字を区別しない)。Caps(Z の左)がオンなら大文字で入れる。キーの文字も、入る文字に合わせる。
  * 打ちやすさのために、スマホのキーボードと同じく:
  * - キーの間の隙間を押しても、近いキーが入る
  * - 押している文字を、指の上に吹き出しで見せる(指の下のキーは見えない)
@@ -138,7 +138,7 @@ export function FullKeyboard({
       onClick={(e) => tap(() => typeChar(k, e.timeStamp))()}
       className={`${HIT} ${SPAN[span]}`}
     >
-      <span className={`${CHAR} uppercase relative`}>
+      <span className={`${CHAR} ${caps ? 'uppercase' : ''} relative`}>
         {k}
         {/* 続けて2回押したときの文字を、右上に小さく */}
         {DOUBLE[k] && (
@@ -150,7 +150,7 @@ export function FullKeyboard({
       {pressed === k && (
         <span
           aria-hidden="true"
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-20 min-w-12 h-14 px-2 rounded-xl border-2 border-gray-400 dark:border-gray-500 bg-white dark:bg-gray-700 shadow-lg flex items-center justify-center font-mono text-3xl font-bold uppercase pointer-events-none"
+          className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-20 min-w-12 h-14 px-2 rounded-xl border-2 border-gray-400 dark:border-gray-500 bg-white dark:bg-gray-700 shadow-lg flex items-center justify-center font-mono text-3xl font-bold pointer-events-none ${caps ? 'uppercase' : ''}`}
         >
           {k}
         </span>

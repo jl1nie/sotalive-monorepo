@@ -175,6 +175,7 @@ fn set_date(env: &mut FleEnvironment, year: u16, month: u8, day: u8) {
     env.current.day = day;
     env.current.hour = 0;
     env.current.min = 0;
+    env.time_set = false;
 }
 
 fn apply_directive(env: &mut FleEnvironment, d: &Directive, here: Here) {
@@ -224,7 +225,25 @@ fn apply_directive(env: &mut FleEnvironment, d: &Directive, here: Here) {
             }
             None => here.error(env, "date_out_of_range", &[], arg, "Date out of range."),
         },
-        DirValue::Timezone(tz) => env.timezone = Some(*tz),
+        DirValue::Timezone(tz) => {
+            // 時刻を書いたあとで時間帯を変えたら、いまの日時を、同じ瞬間のまま新しい時間帯で言い直す
+            // (UTC 10/18 23:30 のあとの `timezone jst` は、JST 10/19 08:30。日付をまたぐことがある)
+            if env.time_set {
+                let local = env.to_utc() + Duration::hours(i64::from(*tz));
+                let (hour, min) = (local.hour() as u8, local.minute() as u8);
+                let date = local.date();
+                set_date(
+                    env,
+                    date.year() as u16,
+                    date.month() as u8,
+                    date.day() as u8,
+                );
+                env.current.hour = hour;
+                env.current.min = min;
+                env.time_set = true;
+            }
+            env.timezone = Some(*tz);
+        }
         DirValue::Rig(rig) => {
             env.rig = if rig == "-" {
                 String::new()
@@ -295,6 +314,7 @@ fn process_time(env: &mut FleEnvironment, digits: usize, value: &str) -> Result<
         }
         _ => return Err("Invalid time"),
     }
+    env.time_set = true;
     Ok(())
 }
 
@@ -321,7 +341,9 @@ fn set_default_rst(env: &mut FleEnvironment) {
 /// 書かれた RST の値。省略形は、行のモード(`kind`)のレポートの形に合わせて補う
 fn rst_value(rst: &Rst, kind: RstType) -> RstValue {
     match rst {
-        Rst::Digits { digits, value } => RstValue::parse_rst(value.parse().unwrap_or(59), *digits, kind),
+        Rst::Digits { digits, value } => {
+            RstValue::parse_rst(value.parse().unwrap_or(59), *digits, kind)
+        }
         Rst::Snr(s) => RstValue::Snr(s.clone()),
     }
 }
@@ -594,7 +616,10 @@ mod tests {
     fn rsts(log: &str) -> Vec<(String, String)> {
         let r = compile_fle(log);
         assert!(r.errors.is_empty(), "{:?}", r.errors);
-        r.records.iter().map(|q| (q.rst_sent.clone(), q.rst_rcvd.clone())).collect()
+        r.records
+            .iter()
+            .map(|q| (q.rst_sent.clone(), q.rst_rcvd.clone()))
+            .collect()
     }
 
     #[test]
@@ -966,6 +991,87 @@ date 2024-01-15
         assert_eq!(
             (r.records[1].hour, r.records[1].min, r.records[1].tz),
             (10, 0, 0)
+        );
+    }
+
+    // ---- 時間帯と日付(UTC に直すと日付が変わるとき)----
+
+    /// QSO ごとの UTC の日時
+    fn utc_times(text: &str) -> Vec<String> {
+        let r = compile_fle(text);
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        r.records
+            .iter()
+            .map(|q| {
+                format!(
+                    "{:04}-{:02}-{:02} {:02}{:02}",
+                    q.year, q.month, q.day, q.hour, q.min
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn jst_before_nine_falls_on_the_previous_utc_day() {
+        // JST 10/19 00:30 は UTC 10/18 15:30、09:05 は UTC 10/19 00:05
+        assert_eq!(
+            utc_times(
+                "mycall JA1ABC\ndate 2026-10-19\ntimezone jst\n40m cw\n0030 ja1aaa\n0905 ja1bbb"
+            ),
+            ["2026-10-18 1530", "2026-10-19 0005"]
+        );
+    }
+
+    #[test]
+    fn a_zone_behind_utc_moves_to_the_next_utc_day() {
+        assert_eq!(
+            utc_times("mycall JA1ABC\ndate 2026-10-18\ntimezone -5\n40m cw\n2100 ja1aaa"),
+            ["2026-10-19 0200"]
+        );
+    }
+
+    #[test]
+    fn jst_on_new_year_rolls_back_to_the_last_day_of_the_year() {
+        assert_eq!(
+            utc_times("mycall JA1ABC\ndate 2027-01-01\ntimezone jst\n40m cw\n0100 ja1aaa"),
+            ["2026-12-31 1600"]
+        );
+    }
+
+    #[test]
+    fn a_zone_change_after_a_qso_keeps_the_moment_and_moves_the_date() {
+        // UTC 10/18 23:30 のあとの JST は 10/19 08:30。08:45 も、分だけの 50 も、そこから続く
+        assert_eq!(
+            utc_times("mycall JA1ABC\ndate 2026-10-18\n40m cw\n2330 ja1aaa\ntimezone jst\n0845 ja1bbb\n50 ja1ccc"),
+            ["2026-10-18 2330", "2026-10-18 2345", "2026-10-18 2350"]
+        );
+        // 逆向き: JST 10/19 00:30 のあとの UTC は 10/18 15:30
+        assert_eq!(
+            utc_times("mycall JA1ABC\ndate 2026-10-19\ntimezone jst\n40m cw\n0030 ja1aaa\ntimezone utc\n1600 ja1bbb"),
+            ["2026-10-18 1530", "2026-10-18 1600"]
+        );
+    }
+
+    #[test]
+    fn day_and_date_after_a_zone_change_are_in_the_new_zone() {
+        // 時間帯を変えたあとの日付(JST 10/19)から、day + で JST 10/20
+        assert_eq!(
+            utc_times("mycall JA1ABC\ndate 2026-10-18\n40m cw\n2330 ja1aaa\ntimezone jst\n0845 ja1bbb\nday +\n0900 ja1ccc"),
+            ["2026-10-18 2330", "2026-10-18 2345", "2026-10-20 0000"]
+        );
+        // 時間帯のあとに書いた date は、その時間帯の日付
+        assert_eq!(
+            utc_times("mycall JA1ABC\ndate 2026-10-18\n40m cw\n2330 ja1aaa\ntimezone jst\ndate 2026-10-20\n0030 ja1bbb"),
+            ["2026-10-18 2330", "2026-10-19 1530"]
+        );
+    }
+
+    #[test]
+    fn a_zone_before_any_time_keeps_the_written_date() {
+        // date のあと、時刻を書く前の timezone は、その日付を新しい時間帯の日付として読む
+        assert_eq!(
+            utc_times("mycall JA1ABC\ndate 2026-10-19\ntimezone -5\n40m cw\n2100 ja1aaa"),
+            ["2026-10-20 0200"]
         );
     }
 }

@@ -110,6 +110,15 @@ describe('FullKeyboard', () => {
     expect(onKey.mock.calls.map((c) => c[0])).toEqual(['J', 'A', '1', '/', '-', ' '])
   })
 
+  it('英字のキーの文字は、入る文字に合わせる(Caps オフは小文字、オンは大文字)', () => {
+    const letter = () => screen.getByRole('button', { name: 'q' }).querySelector('span')!
+    renderKeys()
+    expect(letter()).not.toHaveClass('uppercase')
+    cleanup()
+    renderKeys({ caps: true })
+    expect(letter()).toHaveClass('uppercase')
+  })
+
   it('Caps と ⌫ は、どちらもキー1つ分(2列)の幅', () => {
     renderKeys()
     expect(screen.getByRole('button', { name: '英字を大文字で打つ(Caps)' })).toHaveClass('col-span-2')

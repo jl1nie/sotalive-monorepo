@@ -191,9 +191,9 @@ ssb
 [🌐][↶][←][  Space  ][→][✓Confirm]</code></pre>
 <ul>
   <li>Tapping the editor does not bring up the phone's keyboard (the cursor still shows).</li>
-  <li>The keys start square (change the height with the handle below) and show capital letters, but letters go into the log in lowercase (FLE does not care about case). <code>-</code> is right of L and <code>/</code> is right of M, as on a PC keyboard.</li>
+  <li>The keys start square (change the height with the handle below) and letters go into the log in lowercase (FLE does not care about case). <code>-</code> is right of L and <code>/</code> is right of M, as on a PC keyboard.</li>
   <li>Tap <code>/</code> twice quickly for <code>.</code> (for frequencies such as <code>7.0295</code>), and <code>-</code> twice for <code>,</code>. Both are shown small at the top right of the key. Space, the key you type most, is wide.</li>
-  <li><b>The key left of Z is Caps.</b> Tap it to type letters in capitals, and again to go back to lowercase. The key shows <code>A</code> (capitals) or <code>a</code> (lowercase). Handy in the evening, when lowercase m and n are hard to tell apart. FLE does not care about case, so the log reads the same either way (letters in names and remarks are output as typed). Each device remembers it.</li>
+  <li><b>The key left of Z is Caps.</b> Tap it to type letters in capitals, and again to go back to lowercase. While it is on, the letter keys show capitals too. Handy in the evening, when lowercase m and n are hard to tell apart. FLE does not care about case, so the log reads the same either way (letters in names and remarks are output as typed). Each device remembers it.</li>
   <li><b>↶ undoes the last edit.</b> If you deleted too much with ⌫, one tap brings back everything from before you started deleting (even across lines). Typing is undone one line at a time. Each tap goes further back.</li>
   <li><b>The key at the bottom right moves to the next line</b>: "✓ Confirm" on a QSO line (green), "↵ Next" on a line such as <code>40m cw</code>. With full keys, the green bar has no button at its right end (this key is the only one).</li>
   <li>The key you are pressing shows in a balloon above your finger. Tapping the gap between keys still types the nearest key.</li>
@@ -276,7 +276,7 @@ ssb
 <tr><th><code>mygrid PM95uq</code></th><td>Your grid (4, 6 or 8 characters)</td></tr>
 <tr><th><code>date 2026-10-25</code></th><td>The date (<code>10/25</code> also works). Resets the time to 00:00</td></tr>
 <tr><th><code>day +</code> / <code>day ++</code></th><td>Advance the date by 1 / 2 days (when crossing midnight)</td></tr>
-<tr><th><code>timezone jst</code></th><td>Time zone of the times: <code>jst</code>, <code>utc</code>, or a number such as <code>+9</code>. Default UTC. Normally the "Time zone" setting writes it at the top</td></tr>
+<tr><th><code>timezone jst</code></th><td>Time zone of the times: <code>jst</code>, <code>utc</code>, or a number such as <code>+9</code>. Default UTC. Normally the "Time zone" setting writes it at the top. Changed in the middle of a log, the last time carries over as the same moment in the new zone (after UTC 23:30, <code>timezone jst</code> continues from 08:30 the next day)</td></tr>
 <tr><th><code>rig KX2+EFHW</code></th><td>The rig (HAMLOG's <code>Rig=</code>). <code>-</code> clears it</td></tr>
 <tr><th><code>qslmsg …</code></th><td>QSL message. Can use <code>$mysota</code> <code>$mypota</code> <code>$mywwff</code> <code>$rig</code></td></tr>
 </table>
