@@ -44,6 +44,11 @@ export interface Settings {
    * 同期しない(端末ごと)
    */
   keyScale: number
+  /**
+   * コンパクト・フルキーの、ログ欄の高さ(行数)。0 は、入る限り高く。ログ欄の上の縁のつまみをドラッグして変える。
+   * 空いた上の部分に、時刻と運用先を出す。同期しない(端末ごと)
+   */
+  logLines: number
   /** よく使うリグ。`rig` の値(HAMLOG の `Rig=` の右辺)の候補になる */
   rigs: string[]
 }
@@ -79,6 +84,7 @@ const DEFAULTS: Settings = {
   qsoCount: 'day',
   layout: 'classic',
   keyScale: 1,
+  logLines: 0,
   rigs: [],
 }
 
@@ -119,6 +125,8 @@ function load(): Settings {
             : 'classic',
       keyScale:
         typeof v.keyScale === 'number' && v.keyScale >= KEY_SCALE_MIN && v.keyScale <= KEY_SCALE_MAX ? v.keyScale : 1,
+      // 2行から(以前の版の 1 行は、入る限り高くとして読む)
+      logLines: Number.isInteger(v.logLines) && v.logLines >= 2 && v.logLines <= 100 ? v.logLines : 0,
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
     // 初めて読んだときに決めた配置を覚えておく(あとでログができても、配置が変わらないように)

@@ -85,6 +85,15 @@ export function zoneLabel(tz: number): string {
   return `UTC${tz > 0 ? '+' : '-'}${Math.abs(tz)}`
 }
 
+/**
+ * 時計を出す時間帯(UTC からの時間差)。実際にログに入る時刻と同じ: ログの `timezone`。それがなく、その行より前に
+ * QSO があれば UTC のまま入るので 0。どちらでもなければ、設定の時間帯
+ */
+export function clockZone(info: LineInfo | null, view: LogView | null, line: number, fallback: number): number {
+  const qsoBefore = view?.qsos.some((q) => q.line < line) ?? false
+  return info?.timezone ?? (qsoBefore ? 0 : fallback)
+}
+
 /** ログに書かれている形の時刻。UTC以外のときは、時間帯を添える(例: 18:05 (JST)、20:05 (UTC+8)) */
 export function timeLabel(q: Pick<QsoView, 'time' | 'tz' | 'localTime'>): string {
   if (q.tz === 0) return q.time
