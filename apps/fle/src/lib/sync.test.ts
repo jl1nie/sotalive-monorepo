@@ -21,7 +21,7 @@ import {
 
 // サーバーの関数そのものを、偽の KV で動かして、クライアントと組み合わせて確かめる。
 // 関数は Cloudflare の型(workers-types)を使うので、アプリの型の検査には載せず、実行時に読み込む
-const functionPath = fileURLToPath(new URL('../../../../functions/api/fle/prefs/[code].ts', import.meta.url))
+const functionPath = fileURLToPath(new URL('../../../../pages/fle/functions/api/fle/prefs/[code].ts', import.meta.url))
 const { onRequest } = (await import(/* @vite-ignore */ functionPath)) as {
   onRequest: (context: { request: Request; env: unknown; params: { code: string } }) => Promise<Response>
 }

@@ -78,16 +78,15 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 ## サブドメイン構成
 
-プロジェクト sotalive のルーティングは `functions/_middleware.ts`（ホスト名でアプリを選ぶ。アプリ自身のファイルがなければ共通アセット）。
-
-Pages のプロジェクトは3つ。旧版の myact・myqth は、Functions のない別のプロジェクト（ホスト名での振り分けが要らない。Functions の無料枠 1日10万リクエストを使わない）。`scripts/build-legacy.sh` が、ルートにすべて置いた `dist-myact`・`dist-myqth` を作る。
+公開しているアプリは、それぞれ別の Pages プロジェクト（静的なファイルは Functions の無料枠 1日10万リクエストを使わない）。`scripts/build-static-projects.sh` が、ルートに置いた `dist-myact`・`dist-myqth`・`dist-fle` を作る。
+まだ公開していない logconv2・myact2 だけが、プロジェクト sotalive のホスト名での振り分け（`functions/_middleware.ts`。アプリ自身のファイルがなければ共通アセット）を使う。
 
 | サブドメイン | アプリ | プロジェクト（CNAME 先） | 備考 |
 |------------|--------|------|------|
 | myact.sotalive.net / mypilgrim / www | MyActivation（旧版。apps/myact-org） | sotalive-myact | www の `/logconv` 以下は logconv.sotalive.net へ転送（`_redirects`） |
 | myqth.sotalive.net | MyQTH（旧版。apps/myqth-org） | sotalive-myqth | |
 | logconv.sotalive.net / logconv2 | LogConverter | sotalive | logconv は、新しい logconv のテストが済むまで Vercel の旧画面のまま。移すときは www の転送も外す |
-| fleonline.sotalive.net | FLE Online | sotalive | `/fle/` |
+| fleonline.sotalive.net | FLE Online | sotalive-fle | `/fle/`（`/` は転送）。Functions は `/api` の下だけ（`pages/fle`：設定の同期の KV と、バックエンドへの中継） |
 | myact2.sotalive.net | MyActivation（React 版。試験中） | sotalive | `noindex`。React 版は base が `/` なので、このホスト名でだけ動く |
 
 ## Git運用
