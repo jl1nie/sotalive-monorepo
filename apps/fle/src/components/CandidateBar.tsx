@@ -227,7 +227,7 @@ export function CandidateBar({
               {qso.rstSent}/{qso.rstRcvd}
             </button>
           </span>
-          <span className="flex-none flex items-center gap-x-2 h-5 text-xs font-semibold tabular-nums">
+          <span className="flex-none flex items-center gap-x-2 h-6 text-sm font-semibold tabular-nums">
             <button
               type="button"
               {...keepFocus}
@@ -320,12 +320,12 @@ export function CandidateBar({
         {setting && <span className="font-bold whitespace-nowrap">{setting}</span>}
       </span>
       {omissions.length > 0 ? (
-        <p className={`${compact ? 'text-xs' : 'text-sm'} font-bold line-clamp-1`}>
+        <p className="text-sm font-bold line-clamp-1">
           ⚠ {omissions.map((e) => errorText(e, lang)).join(' / ')}
         </p>
       ) : (
         error &&
-        settled && <p className={`${compact ? 'text-xs' : 'text-sm'} line-clamp-1`}>{errorText(error, lang)}</p>
+        settled && <p className="text-sm line-clamp-1">{errorText(error, lang)}</p>
       )}
     </div>
   ) : (
@@ -353,7 +353,7 @@ export function CandidateBar({
 
   return (
     // コンパクト・フルキーでは、低く(打っている行とキーボードを近づける)
-    <div className={`flex-none flex ${compact ? 'h-[52px] gap-1.5' : 'h-[72px] gap-2'}`}>
+    <div className={`flex-none flex ${compact ? 'h-[56px] gap-1.5' : 'h-[72px] gap-2'}`}>
       {/* その日(または全体)の QSO の数。コンパクトでは表示だけ(一覧はメニューから)。アクティベーションが成立したら緑、誤りがあれば赤 */}
       {compact ? (
         <span

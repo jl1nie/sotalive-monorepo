@@ -39,6 +39,11 @@ export interface Settings {
   qsoCount: QsoCount
   /** 入力画面の配置。同期しない(端末ごと) */
   layout: Layout
+  /**
+   * コンパクト・フルキーの、ログ欄の高さ(行数)。0 は、入る限り高く。上の縁をドラッグして変える。
+   * 同期しない(端末ごと)
+   */
+  logLines: number
   /** よく使うリグ。`rig` の値(HAMLOG の `Rig=` の右辺)の候補になる */
   rigs: string[]
 }
@@ -70,6 +75,7 @@ const DEFAULTS: Settings = {
   editorFont: 'mono',
   qsoCount: 'day',
   layout: 'classic',
+  logLines: 0,
   rigs: [],
 }
 
@@ -108,6 +114,7 @@ function load(): Settings {
           : stored === null && touchDevice() && !usedBefore()
             ? 'fullkey'
             : 'classic',
+      logLines: Number.isInteger(v.logLines) && v.logLines > 0 && v.logLines <= 100 ? v.logLines : 0,
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
     // 初めて読んだときに決めた配置を覚えておく(あとでログができても、配置が変わらないように)

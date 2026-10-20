@@ -298,15 +298,18 @@ fn process_time(env: &mut FleEnvironment, digits: usize, value: &str) -> Result<
     Ok(())
 }
 
-/// デフォルトRSTを設定
-fn set_default_rst(env: &mut FleEnvironment) {
+/// いまのモードのレポートの形(RST・RS・SNR)
+fn rst_type(env: &FleEnvironment) -> RstType {
     let mode_lower = env.current.mode.to_lowercase();
-    let rst_type = MODE_TABLE
+    MODE_TABLE
         .get(mode_lower.as_str())
         .copied()
-        .unwrap_or(RstType::Rst);
+        .unwrap_or(RstType::Rst)
+}
 
-    let default = match rst_type {
+/// デフォルトRSTを設定
+fn set_default_rst(env: &mut FleEnvironment) {
+    let default = match rst_type(env) {
         RstType::Rst => RstValue::default(),
         RstType::Rs => RstValue::default_rs(),
         RstType::Snr => RstValue::default_snr(),
@@ -315,9 +318,10 @@ fn set_default_rst(env: &mut FleEnvironment) {
     env.current.rst_rcvd = default;
 }
 
-fn rst_value(rst: &Rst) -> RstValue {
+/// 書かれた RST の値。省略形は、行のモード(`kind`)のレポートの形に合わせて補う
+fn rst_value(rst: &Rst, kind: RstType) -> RstValue {
     match rst {
-        Rst::Digits { digits, value } => RstValue::parse_rst(value.parse().unwrap_or(59), *digits),
+        Rst::Digits { digits, value } => RstValue::parse_rst(value.parse().unwrap_or(59), *digits, kind),
         Rst::Snr(s) => RstValue::Snr(s.clone()),
     }
 }
@@ -338,7 +342,7 @@ fn eval_qso(
     let mut curly: Option<String> = None; // {…}: 備考
     let mut plain: Vec<String> = Vec::new(); // 平文の語(並べた順)
                                              // 書かれたRST。モードがコールサインのあとに来ても既定値が合うよう、行の最後に重ねる
-    let mut written_rst: (Option<RstValue>, Option<RstValue>) = (None, None);
+    let mut written_rst: (Option<Rst>, Option<Rst>) = (None, None);
 
     for it in items {
         if let QsoItem::Comment { kind, content, .. } = &it.node {
@@ -395,9 +399,10 @@ fn eval_qso(
                 env.current.call = call.clone();
                 // RST は、省略したら、モード別の既定値
                 set_default_rst(env);
+                // 省略形の補い方は、行のモードで決まる(コールサインのあとにモードを書いても)ので、値にするのは行の終わり
                 written_rst = (
-                    rst_sent.as_ref().map(|r| rst_value(&r.node)),
-                    rst_rcvd.as_ref().map(|r| rst_value(&r.node)),
+                    rst_sent.as_ref().map(|r| r.node.clone()),
+                    rst_rcvd.as_ref().map(|r| r.node.clone()),
                 );
             }
             QsoItem::Ref { kind, code } => match kind {
@@ -460,11 +465,12 @@ fn eval_qso(
     // RST: 省略した側は、行のモード(コールサインのあとに書いても)の既定値
     if !env.current.call.is_empty() {
         set_default_rst(env);
-        if let Some(v) = written_rst.0 {
-            env.current.rst_sent = v;
+        let kind = rst_type(env);
+        if let Some(r) = &written_rst.0 {
+            env.current.rst_sent = rst_value(r, kind);
         }
-        if let Some(v) = written_rst.1 {
-            env.current.rst_rcvd = v;
+        if let Some(r) = &written_rst.1 {
+            env.current.rst_rcvd = rst_value(r, kind);
         }
     }
 
@@ -583,6 +589,37 @@ fn determine_log_type(has_sota: bool, has_wwff: bool, has_pota: bool) -> String 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// (送信, 受信) の RST
+    fn rsts(log: &str) -> Vec<(String, String)> {
+        let r = compile_fle(log);
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        r.records.iter().map(|q| (q.rst_sent.clone(), q.rst_rcvd.clone())).collect()
+    }
+
+    #[test]
+    fn cw_has_no_two_digit_report_so_a_two_digit_shorthand_gets_a_9() {
+        assert_eq!(
+            rsts("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz 5 44\n0910 ja1abc 57 339"),
+            vec![("559".into(), "449".into()), ("579".into(), "339".into())]
+        );
+    }
+
+    #[test]
+    fn phone_reports_are_two_digits_so_a_one_digit_shorthand_gets_no_9() {
+        assert_eq!(
+            rsts("mycall JA1ABC\ndate 2026-10-18\n40m ssb\n0900 ja1xyz 5 44\n0910 ja1abc 57 559"),
+            vec![("55".into(), "44".into()), ("57".into(), "559".into())]
+        );
+    }
+
+    #[test]
+    fn the_shorthand_follows_a_mode_written_after_the_callsign() {
+        assert_eq!(
+            rsts("mycall JA1ABC\ndate 2026-10-18\n40m ssb\n0900 ja1xyz 44 cw\n0910 ja1abc 4 ssb"),
+            vec![("449".into(), "599".into()), ("54".into(), "59".into())]
+        );
+    }
 
     #[test]
     fn the_default_rst_follows_a_mode_written_after_the_callsign() {

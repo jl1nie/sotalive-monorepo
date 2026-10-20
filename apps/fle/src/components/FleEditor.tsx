@@ -10,6 +10,7 @@ import {
   List,
   MapPin,
   Save,
+  Smartphone,
   Trash2,
   Undo2,
   Upload,
@@ -48,6 +49,7 @@ import { keepFocus } from '@/lib/keepFocus'
 import { alignToBottom, scrollCaretIntoView } from '@/lib/caretScroll'
 import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
+import { useLandscapePhone } from '@/hooks/useLandscapePhone'
 import { useAutosave } from '@/hooks/useAutosave'
 import { usePwa } from '@/hooks/usePwa'
 import { touchDevice, useSettings, type Settings } from '@/hooks/useSettings'
@@ -250,6 +252,42 @@ function Editor({
   // コンパクト(とフルキー)の配置では、打っている行を、欄の下端(候補バーのすぐ上)に寄せる。内容が変わったときと、欄の大きさが変わったとき。
   // キャレットを置き直すより先に(寄せたあとの位置で、見えるところまで動かす)
   const compact = settings.layout !== 'classic'
+  // コンパクト・フルキーは縦向きで使う(横向きでは、キーボードとログが入らない)
+  const landscape = useLandscapePhone() && compact
+
+  // コンパクト・フルキー: ログ欄の高さ(行数。0 は入る限り高く)。ドラッグの間は、離すまで保存しない
+  const logBoxRef = useRef<HTMLDivElement>(null)
+  const [dragLines, setDragLines] = useState<number | null>(null)
+  const logLines = compact ? (dragLines ?? settings.logLines) : 0
+  const resizing = useRef<{ id: number; y: number; h: number } | null>(null)
+  const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ta = taRef.current
+    if (!ta) return
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    resizing.current = { id: e.pointerId, y: e.clientY, h: ta.offsetHeight }
+  }
+  const moveResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    const r = resizing.current
+    const ta = taRef.current
+    const box = logBoxRef.current
+    if (!r || r.id !== e.pointerId || !ta || !box) return
+    const style = getComputedStyle(ta)
+    const lineHeight = parseFloat(style.lineHeight) || 26
+    // 枠と上下の余白(上の余白は、下寄せで増えていることがあるので、下と同じとみなす)
+    const chrome = parseFloat(style.paddingBottom) * 2 + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)
+    const room = box.clientHeight - e.currentTarget.offsetHeight - chrome
+    const max = Math.max(1, Math.floor(room / lineHeight))
+    const want = Math.round((r.h + (r.y - e.clientY) - chrome) / lineHeight)
+    setDragLines(want >= max ? 0 : Math.max(1, want))
+  }
+  const endResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (resizing.current?.id !== e.pointerId) return
+    resizing.current = null
+    if (dragLines !== null) updateSettings({ logLines: dragLines })
+    setDragLines(null)
+  }
+
   // フルキー: OS のキーボードの代わりに、画面のキーボードを出す。🌐 で、OS のキーボード(日本語など)に切り替える
   // PC(タッチでない端末)では、フルキーを選んでいても、コンパクトとして動く(物理キーボードがある)
   const [touch] = useState(touchDevice)
@@ -272,7 +310,11 @@ function Editor({
   useEffect(() => {
     const ta = taRef.current
     if (!compact || !ta || typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(() => alignToBottom(ta))
+    // 欄の高さが変わったら(つまみ・キーボード)、打っている行が見えるところへ
+    const observer = new ResizeObserver(() => {
+      alignToBottom(ta)
+      scrollCaretIntoView(ta, ta.selectionStart, true)
+    })
     observer.observe(ta)
     return () => observer.disconnect()
   }, [compact])
@@ -530,10 +572,12 @@ function Editor({
   }
 
   /** 数字の行のキー。カーソル位置(選択があれば、その範囲)に1文字入れる。打ったときと同じ経路を通す */
-  const typeKey = (key: string) => {
+  const typeKey = (key: string, replacePrev = false) => {
     const ta = taRef.current
-    const from = ta?.selectionStart ?? caret
     const to = ta?.selectionEnd ?? caret
+    let from = ta?.selectionStart ?? caret
+    // フルキーの、続けて2回押したとき: 1回目に打った文字を置き換える(- - → ,)
+    if (replacePrev && from === to && from > 0) from -= 1
     const value = text.slice(0, from) + key + text.slice(to)
     pendingCaret.current = from + key.length
     handleChange(value, from + key.length, new Event('input'))
@@ -685,7 +729,24 @@ function Editor({
         sync={sync}
       />
 
-      <div className="relative flex-1 min-h-0 flex">
+      <div ref={logBoxRef} className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
+        {compact && (
+          // ログ欄の高さを変えるつまみ(上下にドラッグ。いちばん上まで引けば、入る限り高く)
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label={t('editor.resize')}
+            title={t('editor.resize')}
+            onPointerDown={startResize}
+            onPointerMove={moveResize}
+            onPointerUp={endResize}
+            onPointerCancel={endResize}
+            onMouseDown={(e) => e.preventDefault()}
+            className="flex-none h-6 flex items-center justify-center touch-none cursor-row-resize"
+          >
+            <span className="w-14 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600" />
+          </div>
+        )}
         <textarea
           ref={taRef}
           value={text}
@@ -708,10 +769,12 @@ function Editor({
           inputMode={onScreenKeys ? 'none' : undefined}
           // 従来の配置では、下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
           // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
-          // コンパクト・フルキーでは、緑のバーのコールサインと同じ大きさ(目が読み替えずに済む)
-          className={`input flex-1 h-full min-h-0 resize-none font-semibold leading-relaxed ${compact ? '!text-xl' : 'pb-20'} ${
-            settings.editorFont === 'mono' ? 'font-mono' : ''
-          }`}
+          // コンパクト・フルキーでは、緑のバーのコールサインと同じ大きさ(目が読み替えずに済む)。行間は詰める
+          className={`input min-h-0 resize-none font-semibold ${
+            logLines > 0 ? 'flex-none max-h-full' : 'flex-1 h-full'
+          } ${compact ? '!text-xl leading-[1.3]' : 'leading-relaxed pb-20'} ${settings.editorFont === 'mono' ? 'font-mono' : ''}`}
+          // 行数で高さを決める(行の高さ 1.3em、上下の余白 1.5rem、枠 4px)
+          style={logLines > 0 ? { height: `calc(${logLines} * 1.3em + 1.5rem + 4px)` } : undefined}
         />
         {!compact && <SuggestStrip candidates={completion.candidates} onPick={pick} />}
       </div>
@@ -762,6 +825,18 @@ function Editor({
         </button>
       ) : (
         settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} onBackspace={backspace} compact={compact} />
+      )}
+
+      {landscape && (
+        // 横向きのスマホ: 縦にしてもらう(ログはそのまま)
+        <div
+          role="alert"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 p-6 text-center bg-white text-gray-950 dark:bg-gray-950 dark:text-gray-50"
+        >
+          <Smartphone className="w-12 h-12" aria-hidden="true" />
+          <p className="text-lg font-bold">{t('landscape.title')}</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300">{t('landscape.hint')}</p>
+        </div>
       )}
 
       {notice && (

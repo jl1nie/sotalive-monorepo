@@ -156,10 +156,25 @@ impl RstValue {
     }
 
     /// 数値からRSTをパース
-    pub fn parse_rst(value: u32, digits: usize) -> Self {
+    ///
+    /// 省略形は、モードのレポートの形(`kind`)に合わせて補う。
+    /// - RST のモード(CW 等): 1桁 `7` → `579`、2桁 `44` → `449`(CW に2桁のレポートはない)
+    /// - RS のモード(SSB 等): 1桁 `7` → `57`、2桁はそのまま
+    /// - 3桁は、どのモードでもそのまま
+    pub fn parse_rst(value: u32, digits: usize, kind: RstType) -> Self {
+        let rst = kind != RstType::Rs;
         match digits {
-            1 => RstValue::Rst {
+            1 if rst => RstValue::Rst {
                 r: 5,
+                s: (value % 10) as u8,
+                t: 9,
+            },
+            1 => RstValue::Rs {
+                r: 5,
+                s: (value % 10) as u8,
+            },
+            2 if rst => RstValue::Rst {
+                r: ((value / 10) % 10) as u8,
                 s: (value % 10) as u8,
                 t: 9,
             },

@@ -28,15 +28,44 @@ describe('FullKeyboard', () => {
     renderKeys()
     const keys = screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent)
     expect(keys).toEqual([
-      ...'1234567890qwertyuiopasdfghjkl-zxcvbnm/'.split(''),
+      ...'1234567890qwertyuiopasdfghjkl'.split(''),
+      '-,',
+      ...'zxcvbnm/'.split(''),
       '1文字消す',
       'OS のキーボードに切り替える(日本語など)',
       '取り消す(直前の編集を元に戻す)',
       'カーソルを左へ',
       '空白',
+      '.',
       'カーソルを右へ',
       NEXT,
     ])
+  })
+
+  it('- を続けて2回押すと、, になる(1回目の - を , に置き換える)。間が空けば - のまま', () => {
+    vi.useFakeTimers()
+    try {
+      const { onKey, onBackspace } = renderKeys()
+      const dash = screen.getByRole('button', { name: '-' })
+      fireEvent.click(dash)
+      vi.advanceTimersByTime(200)
+      fireEvent.click(dash)
+      expect(onKey.mock.calls).toEqual([['-'], [',', true]])
+      vi.advanceTimersByTime(2000)
+      fireEvent.click(dash)
+      vi.advanceTimersByTime(600)
+      fireEvent.click(dash)
+      expect(onKey.mock.calls.slice(2)).toEqual([['-'], ['-']])
+      expect(onBackspace).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('. は、そのまま打てる(周波数 50.230 など)', () => {
+    const { onKey } = renderKeys()
+    fireEvent.click(screen.getByRole('button', { name: '.' }))
+    expect(onKey).toHaveBeenCalledWith('.')
   })
 
   it('↶ で、直前の編集を取り消す', () => {

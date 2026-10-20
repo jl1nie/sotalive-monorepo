@@ -252,6 +252,8 @@ const CHANGED: &[(&str, &str)] = &[
         "call_missing_letters_only",
         "決定8: コールサインのない行は誤り",
     ),
+    // 決定15: RST の省略形は、モードのレポートの形に合わせて補う(CW の2桁に 9)
+    ("rst_two_digits", "決定15: CW の2桁の RST に 9 を補う"),
 ];
 
 fn golden_path() -> std::path::PathBuf {

@@ -649,11 +649,11 @@ mod tests {
             after.encode_utf16().count() == sel.to,
             "受信の方(後ろ)を選ぶ"
         );
-        // 送信だけ書いてあれば、受信だけ足す
+        // 送信だけ書いてあれば、受信を足す(CW の2桁の省略形は、9 を補った値に)
         let text = format!("{LOG}0905 ja1xyz 57");
         assert_eq!(
             pick(&text, 4, Part::RstRcvd, false).0,
-            format!("{LOG}0905 ja1xyz 57 599")
+            format!("{LOG}0905 ja1xyz 579 599")
         );
     }
 
