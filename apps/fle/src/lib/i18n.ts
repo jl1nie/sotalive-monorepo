@@ -181,6 +181,7 @@ const ja = {
   'settings.layout.compact.hint':
     '打っている行・緑のバー・数字キーを手元にまとめます。数字キーは2段で、← → 空白 ⌫ つき。ログは下に寄せ、補完候補は緑のバーに重ねて出します。QSO の数は表示だけ(一覧はメニューから)で、POTA・SOTA ではアクティベーション成立に必要な数を出します',
   'settings.layout.fullkey': 'フルキー(試験中)',
+  'settings.layout.fullkey.touchOnly': 'スマホなど、タッチ操作の端末で選べます(PC は物理キーボードを使います)',
   'settings.layout.fullkey.hint':
     'コンパクトに加えて、OS のキーボードの代わりに、数字・英字・/ - 空白 ⌫ と確定をまとめた画面のキーボードを出します。日本語は 🌐 で OS のキーボードに切り替えます',
   'keys.label': 'キーボード',
@@ -428,6 +429,7 @@ const en: Record<MessageKey, string> = {
   'settings.layout.compact.hint':
     'Keeps the line you are typing, the green bar and the digit keys together. Two rows of digit keys with ← → space and ⌫. The log sits at the bottom and suggestions appear over the green bar. The QSO count is display only (the list is in the menu) and shows the QSOs needed for a POTA or SOTA activation',
   'settings.layout.fullkey': 'Full keys (trial)',
+  'settings.layout.fullkey.touchOnly': 'Available on touch devices such as phones (on a PC, use the physical keyboard)',
   'settings.layout.fullkey.hint':
     'Like compact, plus an on-screen keyboard instead of the phone\'s: digits, letters, / - space ⌫ and confirm in one place. Switch to the phone\'s keyboard with 🌐 for Japanese text',
   'keys.label': 'Keyboard',

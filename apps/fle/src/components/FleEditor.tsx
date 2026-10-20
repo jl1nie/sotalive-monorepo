@@ -50,7 +50,7 @@ import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/l
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useAutosave } from '@/hooks/useAutosave'
 import { usePwa } from '@/hooks/usePwa'
-import { useSettings, type Settings } from '@/hooks/useSettings'
+import { touchDevice, useSettings, type Settings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
 import { DigitRow } from '@/components/DigitRow'
 import { FullKeyboard } from '@/components/FullKeyboard'
@@ -251,7 +251,9 @@ function Editor({
   // キャレットを置き直すより先に(寄せたあとの位置で、見えるところまで動かす)
   const compact = settings.layout !== 'classic'
   // フルキー: OS のキーボードの代わりに、画面のキーボードを出す。🌐 で、OS のキーボード(日本語など)に切り替える
-  const fullkey = settings.layout === 'fullkey'
+  // PC(タッチでない端末)では、フルキーを選んでいても、コンパクトとして動く(物理キーボードがある)
+  const [touch] = useState(touchDevice)
+  const fullkey = settings.layout === 'fullkey' && touch
   const [osKeyboard, setOsKeyboard] = useState(false)
   const onScreenKeys = fullkey && !osKeyboard
   // inputmode は、フォーカスし直さないと効かない(iOS)。入力中に切り替えたときは、いったん外して戻す
@@ -689,6 +691,13 @@ function Editor({
           value={text}
           onChange={(e) => handleChange(e.target.value, e.target.selectionStart, e.nativeEvent)}
           onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
+          // Ctrl+Z / ⌘Z は、↶ と同じ取り消し(ブラウザの取り消しは、確定や候補で書き換えた分を戻せない)
+          onKeyDown={(e) => {
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z' && !e.nativeEvent.isComposing) {
+              e.preventDefault()
+              undo()
+            }
+          }}
           placeholder={t('editor.placeholder')}
           aria-label={t('editor.label')}
           spellCheck={false}
