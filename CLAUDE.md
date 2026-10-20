@@ -94,7 +94,8 @@ pnpm run pages:deploy:preview # Preview (develop)
 - `main` ブランチ → Production deploy
 - `develop` ブランチ → Preview deploy
 - PRマージで自動デプロイ（GitHub Actions）
-- テスト（`.github/workflows/test.yml`）: PR のたびと、デプロイの前に走る（Rust・型チェック・fle・logconv・myact の Vitest と lint）。通らなければデプロイしない。手元では `pnpm run test` / `pnpm run lint:apps`
+- CI（`.github/workflows/ci.yml`）: PR と push で走る。変わったパスに関係するテストだけを並列に走らせ（Rust・fle・logconv・myact）、ビルドは1回（artifact でプロジェクトごとの出力を渡す）。デプロイは push のときだけで、Pages のプロジェクトごとに並列、関係するテストが通ってから。共通の部分（ワークフロー・lock ファイル・`packages/shared`・`scripts`）が変わったら、すべて走る。手元では `pnpm run test` / `pnpm run lint:apps`
+- ビルド: `pnpm run build`（`build:apps` → `scripts/assemble.sh`）。FLE の wasm は CI でキャッシュする（`.github/actions/fle-wasm`。`crates/` が変わったときだけビルド）
 
 ## 関連リポジトリ
 

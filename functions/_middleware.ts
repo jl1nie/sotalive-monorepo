@@ -35,16 +35,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const hostname = url.hostname;
 
-  // FLEonline は /fle/ で動く（PWA の範囲が /fle/ のため、ルートは転送する）
-  if (hostname.startsWith("fle") && (url.pathname === "/" || url.pathname === "")) {
-    return Response.redirect(new URL("/fle/" + url.search, url).toString(), 302);
-  }
-
-  // FLEonline の設定の同期は、この Functions で処理する(バックエンドには送らない)
-  if (url.pathname.startsWith("/api/fle/prefs/")) {
-    return context.next();
-  }
-
   // APIリクエストはバックエンドにプロキシ
   if (url.pathname.startsWith("/api/")) {
     const backendUrl = new URL(url.pathname + url.search, BACKEND_URL);
@@ -58,16 +48,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     });
   }
 
-  // www の /logconv 以下は、旧版の logconv(logconv.sotalive.net。新しい logconv のテストが済むまで Vercel に残す)へ転送する。
-  // logconv を Pages に切り替えるときは、この転送を外す(appPathFor が www の /logconv 以下を logconv にする)
-  if (hostname.startsWith("www.") && url.pathname.startsWith("/logconv")) {
-    const rest = url.pathname.slice("/logconv".length) || "/";
-    return Response.redirect(`https://logconv.sotalive.net${rest}${url.search}`, 302);
-  }
-
   // サブドメインに基づいてアプリを選択
   // WSPRはlogconvのタブ内に含まれるため独立アプリ不要
-  const appPath = appPathFor(hostname, url.pathname);
+  const appPath = appPathFor(hostname);
 
   // パスを書き換えてアセットを取得
   if (appPath) {
@@ -100,18 +83,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 };
 
 /**
- * ホスト名から、配信するアプリのパスを決める(なければ空)
+ * ホスト名から、配信するアプリのパスを決める(なければ空)。このプロジェクト(sotalive)は、まだ公開していないアプリだけ。
+ * 公開しているアプリ(旧版の myact・myqth、FLEonline)は、別のプロジェクト(scripts/build-static-projects.sh)
  *
  * - myact2 は React 版の myact(試験中。ビルドの base が `/` なので、このホスト名でだけ動く)
- * - myact・mypilgrim・www(`/logconv` 以下を除く)は、旧版の myact(Vercel 版と同じ)
- * - www の `/logconv` 以下は logconv(Vercel 版と同じ)
+ * - logconv2 は新しい logconv
  */
-function appPathFor(hostname: string, pathname: string): string {
-  if (hostname.startsWith("www.")) return pathname.startsWith("/logconv") ? "/logconv" : "/myact";
+function appPathFor(hostname: string): string {
   if (hostname.startsWith("myact2")) return "/myact2";
-  if (hostname.startsWith("myact") || hostname.startsWith("mypilgrim")) return "/myact";
-  if (hostname.startsWith("myqth")) return "/myqth";
-  if (hostname.startsWith("fle")) return "/fle";
   if (hostname.startsWith("logconv")) return "/logconv";
   return "";
 }
