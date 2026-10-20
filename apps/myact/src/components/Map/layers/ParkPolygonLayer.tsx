@@ -40,11 +40,9 @@ export function ParkPolygonLayer() {
   const displayArea = usePrefsStore((s) => s.display_area);
   const setPopupData = useMapStore((s) => s.setPopupData);
 
+  // 公園の区域は、表示するときに一度だけ読む(表示を切り替えても、読み直さない)
   useEffect(() => {
-    if (!displayArea) {
-      setGeoData(null);
-      return;
-    }
+    if (!displayArea || geoData) return;
 
     async function loadTopoJson() {
       try {
@@ -78,9 +76,9 @@ export function ParkPolygonLayer() {
     }
 
     loadTopoJson();
-  }, [displayArea]);
+  }, [displayArea, geoData]);
 
-  if (!geoData) {
+  if (!displayArea || !geoData) {
     return null;
   }
 

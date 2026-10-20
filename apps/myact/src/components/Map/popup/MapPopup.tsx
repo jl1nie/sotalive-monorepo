@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Popup, useMap } from 'react-leaflet';
 import { useMapStore, usePrefsStore } from '@/stores';
+import type { MarkerPopupData } from '@/stores/mapStore';
 import { api } from '@/api/client';
 import { reverseGeocode } from '@/api/revgeocode';
 import type { SotaSummit, PotaPark, ReverseGeocodeResult } from '@/types';
@@ -13,21 +14,25 @@ export function MapPopup() {
   const potaHunterId = usePrefsStore((s) => s.pota_hunter_uuid);
   const potaActivatorId = usePrefsStore((s) => s.pota_activator_uuid);
 
-  const [content, setContent] = useState<string>('読み込み中...');
-  const [summitData, setSummitData] = useState<SotaSummit | null>(null);
-  const [parkData, setParkData] = useState<PotaPark | null>(null);
-  const [geoData, setGeoData] = useState<ReverseGeocodeResult | null>(null);
+  // 読み込んだ詳細。どのポップアップのものかを持つ(別のポップアップを開いたら、前の詳細は使わない)
+  const [details, setDetails] = useState<{
+    popup: MarkerPopupData;
+    summit?: SotaSummit;
+    park?: PotaPark;
+    geo?: ReverseGeocodeResult;
+  } | null>(null);
+  const current = details && details.popup === markerPopup ? details : null;
+  const summitData = current?.summit ?? null;
+  const parkData = current?.park ?? null;
+  const geoData = current?.geo ?? null;
 
   useEffect(() => {
-    if (!markerPopup) {
-      setContent('読み込み中...');
-      setSummitData(null);
-      setParkData(null);
-      setGeoData(null);
-      return;
-    }
+    if (!markerPopup) return;
 
     const popupData = markerPopup;
+    // 読み込めたものから順に出す(山・公園の詳細、逆ジオコーダー)
+    const put = (patch: { summit?: SotaSummit; park?: PotaPark; geo?: ReverseGeocodeResult }) =>
+      setDetails((d) => ({ ...(d && d.popup === popupData ? d : { popup: popupData }), ...patch }));
     const [lat, lon] = popupData.position;
     const data = popupData.data;
 
@@ -40,7 +45,7 @@ export function MapPopup() {
           // SOTAサミット詳細取得
           const summits = await api.getSotaSummit(lat, lon, 200, logId);
           if (summits.length > 0) {
-            setSummitData(summits[0]);
+            put({ summit: summits[0] });
           }
         } else if (popupData.type === 'park') {
           // POTA公園詳細取得
@@ -49,14 +54,14 @@ export function MapPopup() {
           if (potaCode) {
             const parks = await api.getPotaPark(potaCode, logId);
             if (parks.length > 0) {
-              setParkData(parks[0]);
+              put({ park: parks[0] });
             }
           }
         }
 
         // 逆ジオコーダー取得
         const geo = await reverseGeocode(lat, lon, true);
-        setGeoData(geo);
+        put({ geo });
       } catch (error) {
         console.error('Failed to load popup details:', error);
       }
@@ -65,8 +70,9 @@ export function MapPopup() {
     loadDetails();
   }, [markerPopup, showPotaLog, potaHunterId, potaActivatorId]);
 
-  useEffect(() => {
-    if (!markerPopup) return;
+  // ポップアップの中身(読み込んだ詳細から作る)
+  const content = useMemo(() => {
+    if (!markerPopup) return '';
 
     const [lat, lon] = markerPopup.position;
     const data = markerPopup.data;
@@ -153,7 +159,7 @@ export function MapPopup() {
       }
     }
 
-    setContent(lines.join('<br>'));
+    return lines.join('<br>');
   }, [markerPopup, summitData, parkData, geoData, map, showPotaLog]);
 
   if (!markerPopup) return null;
