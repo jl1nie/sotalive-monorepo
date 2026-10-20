@@ -54,12 +54,15 @@ interface Props {
   keyScale: number
   /** 上の縁のつまみで、キーの高さを変えたとき(離したとき) */
   onKeyScale: (scale: number) => void
+  /** 英字を大文字で打つか(Caps。Z の左のキー) */
+  caps: boolean
+  onToggleCaps: () => void
 }
 
 /**
  * フルキーの配置の、画面のキーボード(OS のキーボードの代わり)。FLE で打つのは、ほとんどが英数字と記号なので、
  * 数字・英字・/ - 空白 ⌫ と、確定(次の行)を1枚にまとめる。- を続けて2回で , 、/ を続けて2回で . になる。押してもテキスト入力からフォーカスを奪わない。
- * 英字のキーは大文字で見せ、小文字で入れる(FLE は大文字・小文字を区別しない)。
+ * 英字のキーは大文字で見せ、小文字で入れる(FLE は大文字・小文字を区別しない)。Caps(Z の左)がオンなら大文字で入れる。
  * 打ちやすさのために、スマホのキーボードと同じく:
  * - キーの間の隙間を押しても、近いキーが入る
  * - 押している文字を、指の上に吹き出しで見せる(指の下のキーは見えない)
@@ -76,6 +79,8 @@ export function FullKeyboard({
   onUndo,
   keyScale,
   onKeyScale,
+  caps,
+  onToggleCaps,
 }: Props) {
   const t = useT()
   // キーの高さ: 上の縁のつまみを上下にドラッグ(離すまで保存しない)。空いた高さは、ログではなくキーに使う
@@ -121,7 +126,7 @@ export function FullKeyboard({
       return
     }
     lastTap.current = { k, at: now }
-    onKey(k)
+    onKey(caps ? k.toUpperCase() : k)
   }
 
   /** 文字を打つキー。押している間、吹き出しで文字を見せる */
@@ -207,9 +212,21 @@ export function FullKeyboard({
         {DIGITS.map((k) => charKey(k))}
         {ROW1.map((k) => charKey(k))}
         {ROW2.map((k) => charKey(k))}
-        <span aria-hidden="true" />
+        {/* Z の左: Caps(英字を大文字で打つ)。いまの状態を A / a で示す */}
+        <button
+          type="button"
+          aria-label={t('keys.caps')}
+          aria-pressed={caps}
+          title={t('keys.caps')}
+          onClick={tap(onToggleCaps)}
+          className={`${HIT} col-span-2`}
+        >
+          <span className={`${FN} font-mono !text-xl ${caps ? '!bg-gray-700 !text-white dark:!bg-gray-300 dark:!text-gray-900' : ''}`}>
+            {caps ? 'A' : 'a'}
+          </span>
+        </button>
         {ROW3.map((k) => charKey(k))}
-        <button type="button" aria-label={t('digits.backspace')} {...backspaceProps} className={`${HIT} col-span-3`}>
+        <button type="button" aria-label={t('digits.backspace')} {...backspaceProps} className={`${HIT} col-span-2`}>
           <span className={FN}>
             <Delete className="w-6 h-6" aria-hidden="true" />
           </span>

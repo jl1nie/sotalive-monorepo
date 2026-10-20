@@ -49,6 +49,11 @@ export interface Settings {
    * 空いた上の部分に、時刻と運用先を出す。同期しない(端末ごと)
    */
   logLines: number
+  /**
+   * フルキーの英字を大文字で打つ(Caps。Z の左のキー)。FLE は大文字・小文字を区別しないので、どちらでも同じに読む。
+   * 夕方など、小文字の m と n を見分けにくいとき。同期しない(端末ごと)
+   */
+  capsLock: boolean
   /** よく使うリグ。`rig` の値(HAMLOG の `Rig=` の右辺)の候補になる */
   rigs: string[]
 }
@@ -85,6 +90,7 @@ const DEFAULTS: Settings = {
   layout: 'classic',
   keyScale: 1,
   logLines: 0,
+  capsLock: false,
   rigs: [],
 }
 
@@ -127,6 +133,7 @@ function load(): Settings {
         typeof v.keyScale === 'number' && v.keyScale >= KEY_SCALE_MIN && v.keyScale <= KEY_SCALE_MAX ? v.keyScale : 1,
       // 2行から(以前の版の 1 行は、入る限り高くとして読む)
       logLines: Number.isInteger(v.logLines) && v.logLines >= 2 && v.logLines <= 100 ? v.logLines : 0,
+      capsLock: typeof v.capsLock === 'boolean' ? v.capsLock : DEFAULTS.capsLock,
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }
     // 初めて読んだときに決めた配置を覚えておく(あとでログができても、配置が変わらないように)

@@ -19,8 +19,9 @@ function renderKeys(props: Partial<Parameters<typeof FullKeyboard>[0]> = {}) {
     onOsKeyboard: vi.fn(),
     onUndo: vi.fn(),
     onKeyScale: vi.fn(),
+    onToggleCaps: vi.fn(),
   }
-  render(<FullKeyboard confirmable={false} keyScale={1} {...handlers} {...props} />)
+  render(<FullKeyboard confirmable={false} keyScale={1} caps={false} {...handlers} {...props} />)
   return handlers
 }
 
@@ -31,6 +32,7 @@ describe('FullKeyboard', () => {
     expect(keys).toEqual([
       ...'1234567890qwertyuiopasdfghjkl'.split(''),
       '-,',
+      '英字を大文字で打つ(Caps)',
       ...'zxcvbnm'.split(''),
       '/.',
       '1文字消す',
@@ -87,6 +89,31 @@ describe('FullKeyboard', () => {
     fireEvent.click(screen.getByRole('button', { name: '-' }))
     fireEvent.click(screen.getByRole('button', { name: '/' }))
     expect(onKey.mock.calls).toEqual([['-'], ['/']])
+  })
+
+  it('Z の左の Caps: オフでは a、押すと切り替える', () => {
+    const { onToggleCaps } = renderKeys()
+    const caps = screen.getByRole('button', { name: '英字を大文字で打つ(Caps)' })
+    expect(caps).toHaveTextContent('a')
+    expect(caps).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(caps)
+    expect(onToggleCaps).toHaveBeenCalledTimes(1)
+  })
+
+  it('Caps がオンなら、英字を大文字で打ち、A と見せる。数字と記号はそのまま', () => {
+    const { onKey } = renderKeys({ caps: true })
+    const caps = screen.getByRole('button', { name: '英字を大文字で打つ(Caps)' })
+    expect(caps).toHaveTextContent('A')
+    expect(caps).toHaveAttribute('aria-pressed', 'true')
+    for (const k of ['j', 'a', '1', '/', '-']) fireEvent.click(screen.getByRole('button', { name: k }))
+    fireEvent.click(screen.getByRole('button', { name: '空白' }))
+    expect(onKey.mock.calls.map((c) => c[0])).toEqual(['J', 'A', '1', '/', '-', ' '])
+  })
+
+  it('Caps と ⌫ は、どちらもキー1つ分(2列)の幅', () => {
+    renderKeys()
+    expect(screen.getByRole('button', { name: '英字を大文字で打つ(Caps)' })).toHaveClass('col-span-2')
+    expect(screen.getByRole('button', { name: '1文字消す' })).toHaveClass('col-span-2')
   })
 
   it('空白は、6列(キー3つ分)の幅', () => {

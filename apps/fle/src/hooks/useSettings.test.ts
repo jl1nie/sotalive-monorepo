@@ -168,3 +168,18 @@ describe('useSettings: ログ欄の高さ', () => {
     expect(SYNCED_KEYS).not.toContain('logLines')
   })
 })
+
+describe('useSettings: Caps(フルキー)', () => {
+  it('初めてはオフ。保存し、真偽値でなければオフとして読む', () => {
+    const first = renderHook(() => useSettings())
+    expect(first.result.current.settings.capsLock).toBe(false)
+    act(() => first.result.current.update({ capsLock: true }))
+    expect(renderHook(() => useSettings()).result.current.settings.capsLock).toBe(true)
+    localStorage.setItem(KEY, JSON.stringify({ capsLock: 'yes' }))
+    expect(renderHook(() => useSettings()).result.current.settings.capsLock).toBe(false)
+  })
+
+  it('同期しない(端末ごと)', () => {
+    expect(SYNCED_KEYS).not.toContain('capsLock')
+  })
+})
