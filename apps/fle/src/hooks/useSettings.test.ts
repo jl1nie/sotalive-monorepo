@@ -105,3 +105,34 @@ describe('useSettings: 画面の配置', () => {
     expect(result.current.settings.writeRstCompact).toBe(false)
   })
 })
+
+describe('useSettings: スマホで初めて使うときは、フルキー', () => {
+  const touch = () =>
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(pointer: coarse)', addEventListener() {}, removeEventListener() {} }))
+
+  it('スマホで初めて使うときは、フルキーで始まり、それを覚える', () => {
+    touch()
+    const { result } = renderHook(() => useSettings())
+    expect(result.current.settings.layout).toBe('fullkey')
+    expect(JSON.parse(localStorage.getItem(KEY)!).layout).toBe('fullkey')
+    // あとでログができても、フルキーのまま
+    localStorage.setItem('fle.log', '40m cw')
+    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('fullkey')
+  })
+
+  it('前から使っているスマホ(ログがある)は、設定を変えたことがなくても、従来のまま', () => {
+    touch()
+    localStorage.setItem('fle.log', 'mycall JA1ABC')
+    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
+  })
+
+  it('配置を選ばずに設定を保存していたスマホは、従来のまま', () => {
+    touch()
+    localStorage.setItem(KEY, JSON.stringify({ theme: 'dark' }))
+    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
+  })
+
+  it('PC では、初めてでも従来', () => {
+    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
+  })
+})
