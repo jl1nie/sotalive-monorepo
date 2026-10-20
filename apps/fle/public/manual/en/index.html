@@ -130,7 +130,7 @@ ssb
 <ul>
   <li><code>0230 ja1abc</code>: JA1ABC at 02:30. <b>The time carries over from the previous line</b>, so afterwards you only write the minutes (<code>35</code> → 02:35).</li>
   <li>Band and mode stay until you change them. To change only the mode write <code>ssb</code>; to change the band too, write <code>20m ssb</code> on its own line.</li>
-  <li><code>579</code>: the report you sent. If omitted, the mode's default is used (CW 599 / SSB 59). Write two numbers (<code>5 7</code>) to add the report you received.</li>
+  <li><code>579</code>: the report you sent. If omitted, the mode's default is used (CW 599 / SSB 59). Write two numbers (<code>5 7</code>) to add the report you received. In CW, <code>5 44</code> means 559 449 (the missing digits are filled in).</li>
   <li><code>ja/st-012</code>: the other station is on a summit (S2S). Their park (<code>jp-1234</code>) is written the same way.</li>
   <li><code>pm85rl</code>: the other station's grid, written after the callsign. It goes to GL in HAMLOG and GRIDSQUARE in ADIF.</li>
   <li>Add a message or remark with <code>&lt;Yamada-san&gt;</code> or <code>{QRP}</code>.</li>
@@ -163,6 +163,8 @@ ssb
 [ the phone's keyboard ]</code></pre>
 <ul>
   <li><b>The log sits at the bottom</b> of the editor, so the line you are typing is right above the green bar. The log text is the same size as the callsign in the green bar.</li>
+  <li><b>Drag the handle on the top edge of the log up or down to change its height</b> (from one line). About three lines while operating helps you focus on the line you are typing. Drag all the way up for full height. Each device remembers it.</li>
+  <li>Turning a phone sideways shows "Please turn your phone upright" (your log stays). Opened from the home screen, Android keeps it upright.</li>
   <li><b>The green bar is shorter</b>: the callsign and RST in the same large text on the first row, and the time, band, mode etc. small on the second.</li>
   <li><b>Two rows of digit keys</b>, the second with <code>/</code> <code>-</code> ← → space and ⌫, so you can type a space or delete without reaching for the edge of the phone's keyboard.
     <ul>
@@ -183,10 +185,11 @@ ssb
 [Q][W][E][R][T][Y][U][I][O][P]
 [A][S][D][F][G][H][J][K][L][-]
  [Z][X][C][V][B][N][M][/][ ⌫ ]
-[🌐][↶][←][ Space  ][→][✓Confirm]</code></pre>
+[🌐][↶][←][Space][.][→][✓Confirm]</code></pre>
 <ul>
   <li>Tapping the editor does not bring up the phone's keyboard (the cursor still shows).</li>
   <li>The keys are square and show capital letters, but letters go into the log in lowercase (FLE does not care about case). <code>-</code> is right of L and <code>/</code> is right of M, as on a PC keyboard.</li>
+  <li><code>.</code> is right of space (for frequencies such as <code>50.230</code>). Tap <code>-</code> twice quickly for <code>,</code> (the small <code>,</code> at the top right of the key).</li>
   <li><b>↶ undoes the last edit.</b> If you deleted too much with ⌫, one tap brings back everything from before you started deleting (even across lines). Typing is undone one line at a time. Each tap goes further back.</li>
   <li><b>The key at the bottom right moves to the next line</b>: "✓ Confirm" on a QSO line (green), "↵ Next" on a line such as <code>40m cw</code>. With full keys, the green bar has no button at its right end (this key is the only one).</li>
   <li>The key you are pressing shows in a balloon above your finger. Tapping the gap between keys still types the nearest key.</li>
@@ -272,7 +275,7 @@ ssb
 <tr><th>Frequency</th><td><code>7.030</code> (MHz). Also sets the band</td></tr>
 <tr><th>Mode</th><td><code>cw</code> <code>ssb</code> <code>fm</code> <code>am</code> <code>ft8</code> etc. Stays until the next mode</td></tr>
 <tr><th>Callsign</th><td>One per line. This is what creates the QSO</td></tr>
-<tr><th>Report</th><td>Numbers after the callsign. One = sent, two = sent and received. 1 digit = 5□9, 2 digits = RS, 3 digits = RST. For FT8 etc., an SNR such as <code>-18</code></td></tr>
+<tr><th>Report</th><td>Numbers after the callsign. One = sent, two = sent and received. Short forms are completed to suit the mode. CW etc.: 1 digit = 5□9 (<code>7</code> → 579), 2 digits = □□9 (<code>44</code> → 449). SSB/FM/AM: 1 digit = 5□ (<code>7</code> → 57), 2 digits as written. 3 digits are kept in any mode. For FT8 etc., an SNR such as <code>-18</code></td></tr>
 <tr><th>Their summit/park</th><td><code>ja/st-012</code> (SOTA), <code>jp-1234</code> (POTA), <code>jaff-0001</code> (WWFF)</td></tr>
 <tr><th>Messages</th><td><code>&lt;…&gt;</code> QSO message, <code>[…]</code> QSL message, <code>{…}</code> remark</td></tr>
 </table>

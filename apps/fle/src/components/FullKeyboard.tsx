@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Check, CornerDownLeft, Delete, Globe, Undo2 } from 'lucide-react'
 import { useKeyPad } from '@/hooks/useKeyPad'
 import { useT } from '@/lib/i18n'
@@ -17,8 +17,16 @@ const HIT = 'relative min-w-0 h-full p-[2px] group'
 const FACE =
   'h-full w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 flex items-center justify-center group-active:bg-gray-300 dark:group-active:bg-gray-700'
 /** キーの幅(20列のうち)。Tailwind が見つけられるよう、クラス名はそのまま書く */
-const SPAN = { 2: 'col-span-2', 3: 'col-span-3', 6: 'col-span-6' } as const
+const SPAN = { 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4', 6: 'col-span-6' } as const
 type Span = keyof typeof SPAN
+
+/**
+ * 続けて2回押すと、別の文字になるキー(キーを増やさずに、まれに使う記号を打つ)。
+ * `--` は FLE では使わないので、取り違えない
+ */
+const DOUBLE: Record<string, string> = { '-': ',' }
+/** 2回目を「続けて」とみなす間隔(ms) */
+const DOUBLE_TAP = 400
 
 /** 文字のキー */
 const CHAR = `${FACE} bg-gray-100 dark:bg-gray-900 font-mono text-xl font-bold`
@@ -26,7 +34,8 @@ const CHAR = `${FACE} bg-gray-100 dark:bg-gray-900 font-mono text-xl font-bold`
 const FN = `${FACE} bg-gray-200 dark:bg-gray-800 font-bold text-sm`
 
 interface Props {
-  onKey: (key: string) => void
+  /** キーの文字を打つ。`replacePrev` なら、カーソルの前の1文字を置き換える(続けて2回押したとき) */
+  onKey: (key: string, replacePrev?: boolean) => void
   /** 空白・← → からなぞったとき、← → を押したときに、カーソルを動かす文字数(左が負) */
   onMove: (delta: number) => void
   /** ⌫: カーソルの前の1文字(選択があれば、その範囲)を消す */
@@ -43,7 +52,7 @@ interface Props {
 
 /**
  * フルキーの配置の、画面のキーボード(OS のキーボードの代わり)。FLE で打つのは、ほとんどが英数字と記号なので、
- * 数字・英字・/ - 空白 ⌫ と、確定(次の行)を1枚にまとめる。押してもテキスト入力からフォーカスを奪わない。
+ * 数字・英字・/ - . 空白 ⌫ と、確定(次の行)を1枚にまとめる。- を続けて2回で , になる。押してもテキスト入力からフォーカスを奪わない。
  * 英字のキーは大文字で見せ、小文字で入れる(FLE は大文字・小文字を区別しない)。
  * 打ちやすさのために、スマホのキーボードと同じく:
  * - キーの間の隙間を押しても、近いキーが入る
@@ -65,6 +74,21 @@ export function FullKeyboard({
   // 押している文字のキー(吹き出しを出す)
   const [pressed, setPressed] = useState<string | null>(null)
   const release = () => setPressed(null)
+  // 直前に押した文字のキーと時刻(続けて2回で、別の文字にする)
+  const lastTap = useRef<{ k: string; at: number } | null>(null)
+  /** `at` は押した時刻(イベントの timeStamp、ms) */
+  const typeChar = (k: string, at: number) => {
+    const now = at
+    const prev = lastTap.current
+    const alt = DOUBLE[k]
+    if (alt && prev?.k === k && now - prev.at < DOUBLE_TAP) {
+      lastTap.current = null
+      onKey(alt, true)
+      return
+    }
+    lastTap.current = { k, at: now }
+    onKey(k)
+  }
 
   /** 文字を打つキー。押している間、吹き出しで文字を見せる */
   const charKey = (k: string, span: Span = 2) => (
@@ -72,10 +96,18 @@ export function FullKeyboard({
       key={k}
       type="button"
       onPointerDown={() => setPressed(k)}
-      onClick={tap(() => onKey(k))}
+      onClick={(e) => tap(() => typeChar(k, e.timeStamp))()}
       className={`${HIT} ${SPAN[span]}`}
     >
-      <span className={`${CHAR} uppercase`}>{k}</span>
+      <span className={`${CHAR} uppercase relative`}>
+        {k}
+        {/* 続けて2回押したときの文字を、右上に小さく */}
+        {DOUBLE[k] && (
+          <small aria-hidden="true" className="absolute top-0 right-1 text-xs leading-none">
+            {DOUBLE[k]}
+          </small>
+        )}
+      </span>
       {pressed === k && (
         <span
           aria-hidden="true"
@@ -134,7 +166,8 @@ export function FullKeyboard({
         {fnKey(t('keys.os'), onOsKeyboard, <Globe className="w-5 h-5" aria-hidden="true" />, 2)}
         {fnKey(t('keys.undo'), onUndo, <Undo2 className="w-5 h-5" aria-hidden="true" />, 2)}
         {fnKey(t('digits.left'), () => onMove(-1), '←', 2, true)}
-        {fnKey(t('digits.space'), () => onKey(' '), t('digits.space'), 6, true)}
+        {fnKey(t('digits.space'), () => onKey(' '), t('digits.space'), 4, true)}
+        {charKey('.')}
         {fnKey(t('digits.right'), () => onMove(1), '→', 2, true)}
         {/* 右下(OS のキーボードの Enter の位置)で、次の行へ。確定できる行は、確定して次の行へ */}
         {confirmable ? (

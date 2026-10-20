@@ -136,3 +136,18 @@ describe('useSettings: スマホで初めて使うときは、フルキー', () 
     expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
   })
 })
+
+describe('useSettings: ログ欄の高さ', () => {
+  it('初めては、入る限り高く(0)。行数を保存し、おかしな値は 0 として読む', () => {
+    const first = renderHook(() => useSettings())
+    expect(first.result.current.settings.logLines).toBe(0)
+    act(() => first.result.current.update({ logLines: 3 }))
+    expect(renderHook(() => useSettings()).result.current.settings.logLines).toBe(3)
+    localStorage.setItem(KEY, JSON.stringify({ logLines: -2 }))
+    expect(renderHook(() => useSettings()).result.current.settings.logLines).toBe(0)
+  })
+
+  it('同期しない(端末ごと)', () => {
+    expect(SYNCED_KEYS).not.toContain('logLines')
+  })
+})
