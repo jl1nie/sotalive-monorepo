@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { draggedLines, fitLines, type LogMetrics } from './useLogHeight'
+import { draggedLines, fitLines, openLines, type LogMetrics } from './useLogHeight'
 
 // 使える高さ 500px、つまみ 24px、1行 26px、枠と余白 28px、時刻と運用先 80px
 const M: LogMetrics = { box: 500, handle: 24, line: 26, chrome: 28, clock: 80 }
@@ -37,5 +37,24 @@ describe('draggedLines', () => {
   it('上へ引いて、時刻と運用先が入らなくなったら、入る限り高く', () => {
     expect(draggedLines(full, 30, M)).toBe(0)
     expect(draggedLines(6 * 26 + 28, -1000, M)).toBe(0)
+  })
+})
+
+describe('openLines', () => {
+  it('前に使っていた行数に戻す', () => {
+    expect(openLines(6, M)).toBe(6)
+  })
+
+  it('前の行数がなければ、時刻と運用先が入る限り多く', () => {
+    // (500 - 24 - 28 - 80) / 26 ≒ 14.2
+    expect(openLines(0, M)).toBe(14)
+  })
+
+  it('前の行数が入らなければ(画面が狭くなったなど)、入る限り多く', () => {
+    expect(openLines(20, M)).toBe(14)
+  })
+
+  it('2行も入らなければ、出せない(0)', () => {
+    expect(openLines(6, { ...M, box: 180 })).toBe(0)
   })
 })

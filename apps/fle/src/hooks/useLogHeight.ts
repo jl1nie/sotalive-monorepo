@@ -36,6 +36,19 @@ export function draggedLines(height: number, dy: number, m: LogMetrics): number 
   return fitLines(Math.max(MIN_LINES, want), m)
 }
 
+/** タップとみなす、指の動きの上限(px) */
+const TAP_SLOP = 6
+
+/**
+ * つまみのタップで時刻と運用先を出すときの行数。前に使っていた行数 `last`(なければ、時刻と運用先が入る限り多く)。
+ * 入らなければ、入る限り多く。2行も入らなければ 0(出せない)
+ */
+export function openLines(last: number, m: LogMetrics): number {
+  const most = Math.floor((m.box - m.handle - m.chrome - m.clock) / m.line)
+  if (most < MIN_LINES) return 0
+  return last >= MIN_LINES ? Math.min(last, most) : most
+}
+
 function measure(ta: HTMLTextAreaElement, handle: HTMLElement, box: number): LogMetrics {
   const style = getComputedStyle(ta)
   const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
@@ -73,7 +86,12 @@ export function useLogHeight({
   const [metrics, setMetrics] = useState<LogMetrics | null>(null)
   // ドラッグの間は、離すまで保存しない
   const [dragging, setDragging] = useState<number | null>(null)
-  const drag = useRef<{ id: number; y: number; h: number } | null>(null)
+  const drag = useRef<{ id: number; y: number; h: number; moved: boolean } | null>(null)
+  // タップで閉じる前の行数(開き直すときに戻す)
+  const lastOpen = useRef(saved)
+  useEffect(() => {
+    if (saved > 0) lastOpen.current = saved
+  }, [saved])
 
   const remeasure = () => {
     const ta = taRef.current
@@ -91,15 +109,38 @@ export function useLogHeight({
     return () => observer.disconnect()
   }, [enabled]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const handle = handleRef.current
+    if (!enabled || !handle) return
+    // ブラウザ(Safari など)の「引っ張って更新」を、つまみの上でだけ止める(touch-action では止まらない)。
+    // ほかの場所から引けば、リロードできる
+    const stop = (e: TouchEvent) => e.preventDefault()
+    handle.addEventListener('touchmove', stop, { passive: false })
+    return () => handle.removeEventListener('touchmove', stop)
+  }, [enabled])
+
   const lines = enabled && metrics ? fitLines(dragging ?? saved, metrics) : 0
   /** ログ欄の高さ(px)。入る限り高くするときは null */
   const height = lines > 0 && metrics ? lines * metrics.line + metrics.chrome : null
 
-  const end = (id: number) => {
-    if (drag.current?.id !== id) return
+  const end = (id: number, tap: boolean) => {
+    const d = drag.current
+    if (d?.id !== id) return
     drag.current = null
-    if (dragging !== null) onSave(dragging)
     setDragging(null)
+    if (d.moved) {
+      if (dragging !== null) onSave(dragging)
+      return
+    }
+    // タップ: 時刻と運用先を出す・しまう(しまうと、入る限り高く)
+    if (!tap || !metrics) return
+    if (lines > 0) {
+      lastOpen.current = lines
+      onSave(0)
+    } else {
+      const open = openLines(lastOpen.current, metrics)
+      if (open > 0) onSave(open)
+    }
   }
   const handleProps = {
     ref: handleRef,
@@ -108,17 +149,19 @@ export function useLogHeight({
       if (!ta) return
       e.preventDefault()
       e.currentTarget.setPointerCapture?.(e.pointerId)
-      drag.current = { id: e.pointerId, y: e.clientY, h: ta.offsetHeight }
+      drag.current = { id: e.pointerId, y: e.clientY, h: ta.offsetHeight, moved: false }
     },
     onPointerMove: (e: PointerEvent<HTMLDivElement>) => {
       const d = drag.current
       const ta = taRef.current
       const box = boxRef.current
       if (!d || d.id !== e.pointerId || !ta || !box) return
+      if (!d.moved && Math.abs(e.clientY - d.y) < TAP_SLOP) return
+      d.moved = true
       setDragging(draggedLines(d.h, e.clientY - d.y, measure(ta, e.currentTarget, box.clientHeight)))
     },
-    onPointerUp: (e: PointerEvent<HTMLDivElement>) => end(e.pointerId),
-    onPointerCancel: (e: PointerEvent<HTMLDivElement>) => end(e.pointerId),
+    onPointerUp: (e: PointerEvent<HTMLDivElement>) => end(e.pointerId, true),
+    onPointerCancel: (e: PointerEvent<HTMLDivElement>) => end(e.pointerId, false),
   }
 
   return { boxRef, handleProps, lines, height }
