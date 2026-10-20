@@ -31,13 +31,13 @@ describe('FullKeyboard', () => {
     expect(keys).toEqual([
       ...'1234567890qwertyuiopasdfghjkl'.split(''),
       '-,',
-      ...'zxcvbnm/'.split(''),
+      ...'zxcvbnm'.split(''),
+      '/.',
       '1文字消す',
       'OS のキーボードに切り替える(日本語など)',
       '取り消す(直前の編集を元に戻す)',
       'カーソルを左へ',
       '空白',
-      '.',
       'カーソルを右へ',
       NEXT,
     ])
@@ -63,10 +63,35 @@ describe('FullKeyboard', () => {
     }
   })
 
-  it('. は、そのまま打てる(周波数 50.230 など)', () => {
+  it('/ を続けて2回押すと、. になる(周波数 7.0295 など)。間が空けば / のまま', () => {
+    vi.useFakeTimers()
+    try {
+      const { onKey } = renderKeys()
+      const slash = screen.getByRole('button', { name: '/' })
+      fireEvent.click(slash)
+      vi.advanceTimersByTime(200)
+      fireEvent.click(slash)
+      expect(onKey.mock.calls).toEqual([['/'], ['.', true]])
+      vi.advanceTimersByTime(2000)
+      fireEvent.click(slash)
+      vi.advanceTimersByTime(600)
+      fireEvent.click(slash)
+      expect(onKey.mock.calls.slice(2)).toEqual([['/'], ['/']])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('- のあとに / を押しても、. にはならない(続けて2回は、同じキーだけ)', () => {
     const { onKey } = renderKeys()
-    fireEvent.click(screen.getByRole('button', { name: '.' }))
-    expect(onKey).toHaveBeenCalledWith('.')
+    fireEvent.click(screen.getByRole('button', { name: '-' }))
+    fireEvent.click(screen.getByRole('button', { name: '/' }))
+    expect(onKey.mock.calls).toEqual([['-'], ['/']])
+  })
+
+  it('空白は、6列(キー3つ分)の幅', () => {
+    renderKeys()
+    expect(screen.getByRole('button', { name: '空白' })).toHaveClass('col-span-6')
   })
 
   it('↶ で、直前の編集を取り消す', () => {
