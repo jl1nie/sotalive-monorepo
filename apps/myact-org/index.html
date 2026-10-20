@@ -746,7 +746,7 @@
 
 						res = await fetchAPI(api + `/log/${prefs[k]}`, 'GET');
 
-						if (res) {
+						if (res && res['logId']) {
 							prefs[k] = res['logId'];
 							el = document.getElementById(k);
 							if (k.includes('hunter')) {
@@ -1240,7 +1240,8 @@
 
 			for (var k in prefs) {
 				if (k == 'zoom_threshold' || k == 'spot_period' || k.includes('uuid')) {
-					Cookies.set(k, String(prefs[k]),
+					// 登録していないログ ID は "null"(undefined を文字列にして保存しない)
+					Cookies.set(k, prefs[k] == null ? 'null' : String(prefs[k]),
 						{ expires: 1800, SameSite: 'Lax' });
 				} else if (k.includes('pemu')) {
 					prefs[k] = document.getElementById(k).value;
@@ -1280,7 +1281,8 @@
 					$('#spot-period').slider('setValue', Number(ck))
 				}
 				else if (k.includes('uuid')) {
-					if (ck == "null")
+					// 登録していないときは null(Cookie がない・"null"・以前の版が保存した "undefined")
+					if (ck == undefined || ck == "" || ck == "null" || ck == "undefined")
 						pref[k] = null;
 					else
 						pref[k] = ck;
