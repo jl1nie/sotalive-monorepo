@@ -13,8 +13,8 @@ use zip::ZipWriter;
 
 use super::types::{FleCompileResult, FleQsoRecord};
 use crate::ham::{
-    band_to_freq, get_ref, mode_to_adif_mode, mode_to_airham_mode, mode_to_sota_mode,
-    split_callsign,
+    band_to_freq, band_to_hamlog_freq, get_ref, is_mhz, mode_to_adif_mode, mode_to_airham_mode,
+    mode_to_sota_mode, split_callsign,
 };
 
 /// 出力ファイルマップ
@@ -485,12 +485,12 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
 
     for record in &result.records {
         let (date, time) = hamlog_date_time(record);
-        let freq = if record.freq.is_empty() {
-            band_to_freq(&record.band, false)
-                .unwrap_or_default()
-                .to_string()
-        } else {
+        // 周波数を書かなかった QSO(`freq` はバンドの名前 `7MHz`)は、バンドの下端の周波数。
+        // HAMLOG の周波数の欄は MHz の数値
+        let freq = if is_mhz(&record.freq) {
             record.freq.clone()
+        } else {
+            band_to_hamlog_freq(&record.band).unwrap_or_default()
         };
 
         // QTH/Remarks構築
@@ -1185,6 +1185,17 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             .find(|(k, _)| k.starts_with("hamlog-"))
             .unwrap();
         body.lines().map(str::to_string).collect()
+    }
+
+    #[test]
+    fn the_hamlog_frequency_is_a_number_in_mhz() {
+        let lines = hamlog_lines(&output_of(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1aaa\n7.025 0910 ja1bbb\n\
+             3cm 0920 ja1ccc\n70cm fm 0930 ja1ddd",
+        ));
+        let freqs: Vec<&str> = lines.iter().map(|l| l.split(',').nth(5).unwrap()).collect();
+        // バンドだけなら下端の周波数、周波数を書いたらその値(`7MHz` のようなバンドの名前は書かない)
+        assert_eq!(freqs, ["\"7\"", "\"7.025\"", "\"10000\"", "\"430\""]);
     }
 
     #[test]
