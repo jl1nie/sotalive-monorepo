@@ -118,8 +118,8 @@ describe.each(tabs)('失敗の扱い: $name', (tab) => {
     stubFetch(upTo(tab, { throws: new TypeError('Failed to fetch') }))
     const view = tab.setup()
     fireEvent.click(view.button())
-    // いまは例外のメッセージをそのまま出す(英語)。仕様の確認: 日本語の文言にするか
-    expect(await screen.findByText('Failed to fetch')).toBeInTheDocument()
+    expect(await screen.findByText(/サーバーに接続できませんでした/)).toBeInTheDocument()
+    expect(document.body.textContent).not.toContain('Failed to fetch')
     await waitFor(() => expectUsable(view))
   })
 
@@ -144,7 +144,7 @@ describe.each(tabs)('失敗の扱い: $name', (tab) => {
   })
 
   // 時間切れ: いまの画面には中断(AbortController)も時間切れもなく、応答がなければ永久に待つ
-  it.fails('応答が返らないとき、一定の時間でメッセージを出し、ボタンを使える状態に戻す', async () => {
+  it('応答が返らないとき、一定の時間でメッセージを出し、ボタンを使える状態に戻す', async () => {
     vi.useFakeTimers()
     stubFetch(upTo(tab, { hangs: true }))
     const view = tab.setup()
@@ -166,7 +166,7 @@ describe.each(tabs)('失敗の扱い: $name', (tab) => {
   })
 
   // 参照が1つもないとき、バックエンドは 200 の JSON({status:'OK', error:'No ... found'})を返す(ZIP ではない)
-  it.fails('変換結果がなく 200 の JSON が返ったとき、ZIP として保存せず、理由を出す', async () => {
+  it('変換結果がなく 200 の JSON が返ったとき、ZIP として保存せず、理由を出す', async () => {
     const { names } = mockDownload()
     const body = { status: 'OK', error: 'No SOTA references found' }
     const jsonReply = {
@@ -231,7 +231,7 @@ describe('400 の理由の表示', () => {
   })
 
   // SOTA の 400 は理由(error・error_log)を返すが、画面は固定の文言で捨てている
-  it.fails.each([tabs[1], tabs[2]])('$name: 400 の error_log を、利用者に見せる', async (tab) => {
+  it.each([tabs[1], tabs[2]])('$name: 400 の error_log を、利用者に見せる', async (tab) => {
     stubFetch([{ status: 400, json: { status: 'NG', error: 'The log has errors', error_log: reasons } }])
     const view = tab.setup()
     fireEvent.click(view.button())
@@ -239,7 +239,7 @@ describe('400 の理由の表示', () => {
     expect(document.body.textContent).toContain(reasons[0])
   })
 
-  it.fails.each([tabs[1], tabs[2]])('$name: 400 の error だけでも、その理由を見せる', async (tab) => {
+  it.each([tabs[1], tabs[2]])('$name: 400 の error だけでも、その理由を見せる', async (tab) => {
     stubFetch([{ status: 400, json: { status: 'NG', error: 'Invalid options JSON: x' } }])
     const view = tab.setup()
     fireEvent.click(view.button())
@@ -272,12 +272,7 @@ describe('ダウンロードのファイル名', () => {
     expect(await run(tab, 'dl/ja1zzz/p')).toBe(`DL-JA1ZZZ-P${suf}`)
   })
 
-  // 前後の空白を除かずに送り、ファイル名にも入る。バックエンド側で除くかは仕様の確認
-  it.each(tabs.map((t, i) => [t.name, t, suffix[i]] as const))('%s: 前後の空白は、いまはファイル名に残る', async (_, tab, suf) => {
-    expect(await run(tab, ' ja1zzz ')).toBe(` JA1ZZZ ${suf}`)
-  })
-
-  it.fails.each(tabs.map((t, i) => [t.name, t, suffix[i]] as const))('%s: ファイル名に空白を入れない', async (_, tab, suf) => {
+  it.each(tabs.map((t, i) => [t.name, t, suffix[i]] as const))('%s: ファイル名に空白を入れない', async (_, tab, suf) => {
     expect(await run(tab, ' ja1zzz ')).toBe(`JA1ZZZ${suf}`)
   })
 })

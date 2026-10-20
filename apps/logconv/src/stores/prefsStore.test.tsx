@@ -147,7 +147,7 @@ describe('壊れた保存データ', () => {
   })
 
   // 項目が null だと、画面は出るが、ボタンを押したときに .trim() で例外になり、何も表示されず何も起きない
-  it.fails.each([
+  it.each([
     ['POTA/ADIF', POTAActivatorTab, 'potaActivationCall', /CSV読込/],
     ['SOTA Activator', SOTAActivatorTab, 'sotaActivationCall', /変換/],
     ['SOTA Chaser', SOTAChaserTab, 'chaserCall', /変換/],
@@ -166,16 +166,16 @@ describe('壊れた保存データ', () => {
     }
   })
 
-  it('選択肢が知らない値(旧版の adif など)でも、画面は出る。どの選択肢も選ばれない', async () => {
+  it('選択肢が知らない値(旧版の adif など)でも、画面は出る。既定の選択肢が選ばれる', async () => {
     save({ ...FULL, myQTHPota: 'adif', actQTHPota: 'bogus' })
     await restore()
     const pota = render(<POTAActivatorTab />)
-    expect(pota.container.querySelectorAll('input[name="myQTH"]:checked')).toHaveLength(0)
-    expect(pota.container.querySelectorAll('input[name="hisQTH"]:checked')).toHaveLength(0)
+    expect(pota.container.querySelector<HTMLInputElement>('input[name="myQTH"][value="form"]')).toBeChecked()
+    expect(pota.container.querySelector<HTMLInputElement>('input[name="hisQTH"][value="none"]')).toBeChecked()
   })
 
   // 画面に出ない値は、そのまま API に送られる(バックエンドは未知の myQTH を form、QTH を none とみなす)
-  it.fails('選択肢が知らない値の保存データは、既定の選択に直す', async () => {
+  it('選択肢が知らない値の保存データは、既定の選択に直す', async () => {
     save({ ...FULL, myQTHPota: 'adif', actQTHPota: 'bogus' })
     await restore()
     const s = usePrefsStore.getState()
@@ -205,7 +205,7 @@ describe('壊れた保存データ', () => {
   })
 
   // zustand の persist は、書き込みの例外を握りつぶさない。入力のたびに例外が出る(状態は更新される)
-  it.fails('localStorage に書けなくても、入力で例外を出さない', () => {
+  it('localStorage に書けなくても、入力で例外を出さない', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('quota', 'QuotaExceededError')
     })
