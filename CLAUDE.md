@@ -78,19 +78,17 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 ## サブドメイン構成
 
-ルーティングは `functions/_middleware.ts`（ホスト名でアプリを選ぶ。アプリ自身のファイルがなければ共通アセット）。
+プロジェクト sotalive のルーティングは `functions/_middleware.ts`（ホスト名でアプリを選ぶ。アプリ自身のファイルがなければ共通アセット）。
 
-| サブドメイン | アプリ | 備考 |
-|------------|--------|------|
-どのホスト名も、Pages の本番 `sotalive.pages.dev` へのカスタムドメイン（CNAME）。
+Pages のプロジェクトは3つ。旧版の myact・myqth は、Functions のない別のプロジェクト（ホスト名での振り分けが要らない。Functions の無料枠 1日10万リクエストを使わない）。`scripts/build-legacy.sh` が、ルートにすべて置いた `dist-myact`・`dist-myqth` を作る。
 
-| サブドメイン | アプリ | 備考 |
-|------------|--------|------|
-| myact.sotalive.net / mypilgrim / www | MyActivation（旧版。apps/myact-org） | Vercel から移す。www の `/logconv` 以下は logconv.sotalive.net へ転送 |
-| myqth.sotalive.net | MyQTH（旧版。apps/myqth-org） | Vercel から移す |
-| logconv.sotalive.net / logconv2 | LogConverter | logconv は、新しい logconv のテストが済むまで Vercel の旧画面のまま。移すときは www の転送も外す |
-| fleonline.sotalive.net | FLE Online | `/fle/` |
-| myact2.sotalive.net | MyActivation（React 版。試験中） | `noindex`。React 版は base が `/` なので、このホスト名でだけ動く |
+| サブドメイン | アプリ | プロジェクト（CNAME 先） | 備考 |
+|------------|--------|------|------|
+| myact.sotalive.net / mypilgrim / www | MyActivation（旧版。apps/myact-org） | sotalive-myact | www の `/logconv` 以下は logconv.sotalive.net へ転送（`_redirects`） |
+| myqth.sotalive.net | MyQTH（旧版。apps/myqth-org） | sotalive-myqth | |
+| logconv.sotalive.net / logconv2 | LogConverter | sotalive | logconv は、新しい logconv のテストが済むまで Vercel の旧画面のまま。移すときは www の転送も外す |
+| fleonline.sotalive.net | FLE Online | sotalive | `/fle/` |
+| myact2.sotalive.net | MyActivation（React 版。試験中） | sotalive | `noindex`。React 版は base が `/` なので、このホスト名でだけ動く |
 
 ## Git運用
 

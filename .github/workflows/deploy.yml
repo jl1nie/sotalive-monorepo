@@ -7,6 +7,11 @@ on:
       - develop   # Preview deploy
       - 'feat/**' # Preview deploy (動作確認用)
 
+# デプロイは、同じブランチで1本ずつ(続けてマージしたとき、古い内容が後から上書きしないように)
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   # テスト(Rust・画面・lint)が通らなければ、デプロイしない
   test:
@@ -57,3 +62,15 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=sotalive --branch=${{ github.ref_name }}
+
+      # 旧版の myact・myqth は、Functions のない別のプロジェクト(Functions の無料枠を使わない)。
+      # functions/ と wrangler.toml を拾わないよう、出力の中から静的なファイルだけをデプロイする
+      - name: Deploy legacy myact and myqth (static only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          for app in myact myqth; do
+            (cd "dist-$app" && ../node_modules/.bin/wrangler pages deploy . --project-name="sotalive-$app" --branch="$BRANCH")
+          done
