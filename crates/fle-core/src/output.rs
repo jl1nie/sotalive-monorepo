@@ -1418,4 +1418,26 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         ));
         assert_eq!(t, [("27/01/01".into(), "01:00J".into())]);
     }
+
+    #[test]
+    fn a_zone_change_in_the_middle_crossing_midnight_goes_to_every_output() {
+        // UTC 10/18 23:30 のあと、JST で 08:45(= UTC 10/18 23:45。JST では 10/19)
+        let files = output_of(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n2330 ja1aaa\ntimezone jst\n0845 ja1bbb",
+        );
+        assert_eq!(
+            hamlog_times(&files),
+            [
+                ("26/10/18".into(), "23:30U".into()),
+                ("26/10/19".into(), "08:45J".into())
+            ]
+        );
+        let csv = files
+            .iter()
+            .find(|(k, _)| k.starts_with("sota") && !k.contains("s2s"))
+            .unwrap()
+            .1;
+        let dates: Vec<&str> = csv.lines().map(|l| l.split(',').nth(3).unwrap()).collect();
+        assert_eq!(dates, ["18/10/26", "18/10/26"], "{csv}");
+    }
 }

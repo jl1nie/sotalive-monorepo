@@ -68,6 +68,8 @@ pub struct FleEnvironment {
     pub day: u8,
     /// `date` が指定されたか(されていなければ、上の基準日付は仮の値)
     pub date_set: bool,
+    /// いまの日付(`date` / `day`)のあとに、時刻を書いたか
+    pub time_set: bool,
 
     // 現在のQSO状態
     pub current: CurrentQsoState,
@@ -245,6 +247,7 @@ impl Default for FleEnvironment {
             month: 1,
             day: 1,
             date_set: false,
+            time_set: false,
             current: CurrentQsoState::default(),
             errors: Vec::new(),
             contest_num: None,

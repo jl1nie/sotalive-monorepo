@@ -366,4 +366,23 @@ mod tests {
         assert_eq!(retime(text, 9, true), text);
         assert_eq!(retime("", 0, true), "");
     }
+
+    #[test]
+    fn a_zone_change_in_the_middle_that_crosses_midnight() {
+        // UTC 10/18 23:30 のあと、JST で 08:45(= UTC 10/18 23:45)
+        let text = "date 2026-10-18\n40m cw\n2330 ja1aaa\ntimezone jst\n0845 ja1bbb";
+        for tz in [9, 0, -5] {
+            let after = retime(text, tz, true);
+            assert_eq!(utc_of(&after), utc_of(text), "tz {tz}: {after}");
+            assert!(compile_fle(&after).errors.is_empty(), "tz {tz}: {after}");
+        }
+        assert_eq!(
+            retime(text, 9, true),
+            "timezone +9\ndate 2026-10-19\n40m cw\n0830 ja1aaa\n0845 ja1bbb"
+        );
+        assert_eq!(
+            retime(text, 0, true),
+            "date 2026-10-18\n40m cw\n2330 ja1aaa\n2345 ja1bbb"
+        );
+    }
 }
