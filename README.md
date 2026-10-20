@@ -107,4 +107,6 @@ pnpm --filter @sotalive/myact dev     # Vite の既定のポート
 
 ## ライセンス
 
-MIT ライセンスです。[LICENSE](LICENSE) を見てください。
+Apache License 2.0 です。[LICENSE](LICENSE) を見てください。
+
+Copyright 2025-2026 Minoru Tomobe (JL1NIE)

@@ -1,6 +1,6 @@
 # バックエンド(sotaapp2)の概要
 
-このリポジトリのアプリが呼ぶ API は、別リポジトリ [jl1nie/sotaapp2](https://github.com/jl1nie/sotaapp2)(Rust、MIT ライセンス)にあります。
+このリポジトリのアプリが呼ぶ API は、別リポジトリ [jl1nie/sotaapp2](https://github.com/jl1nie/sotaapp2)(Rust、Apache License 2.0)にあります。
 この文書は、フロントエンド側から見た概要だけを書きます。詳しくは sotaapp2 の `README.md` と `docs/` を読んでください。
 
 ## 構成
