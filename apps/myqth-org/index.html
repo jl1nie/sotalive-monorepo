@@ -222,8 +222,10 @@
         }
 
         var resfun = function (res) {
+            // 日本の外やエラーのときも、accu・pos は空で使う(宣言しないと、読むところで ReferenceError)
+            var mesg = '', accu = '', pos = '';
             if (res['errors'] == 'OUTSIDE_JA') {
-                mesg = 'Pos: ' + lat + ',' + lng + '<br>GL: ' + res['Maidenhead'];
+                mesg = 'Pos: ' + lat + ',' + lng + '<br>GL: ' + res['maidenhead'];
             }
             else if (res['errors'] != 'OK') {
                 mesg = 'Parameter out of range.';
@@ -237,9 +239,9 @@
 
                 if (res['jccCode'] != null) {
                     if (res['wardCode'] != null)
-                        mesg = 'JCC' + res['jccCode'] + ' 区番号:' + res['wardCode'] + '<br>' + res['prefecture'] + res['jccText'] + res['municipality'] + '<br>GL:' + res['maidenhead'] + pos + '<br> 標高:' + res['elevation'] + 'm';
+                        mesg = 'JCC' + res['jccCode'] + ' 区番号:' + res['wardCode'] + '<br>' + res['prefecture'] + res['municipality'] + '<br>GL:' + res['maidenhead'] + pos + '<br> 標高:' + res['elevation'] + 'm';
                     else
-                        mesg = 'JCC' + res['jccCode'] + '<br>' + res['prefecture'] + res['jccText'] + res['municipality'] + '<br>GL:' + res['maidenhead'] + pos + '<br> 標高:' + res['elevation'] + 'm';
+                        mesg = 'JCC' + res['jccCode'] + '<br>' + res['prefecture'] + res['municipality'] + '<br>GL:' + res['maidenhead'] + pos + '<br> 標高:' + res['elevation'] + 'm';
                 }
                 else
                     mesg = 'JCG' + res['jcgCode'] + res['hamlogCode'] + '<br>' + res['prefecture'] + res['jcgText'] + res['municipality'] + '<br>GL:' + res['maidenhead'] + pos + '<br> 標高:' + res['elevation'] + 'm';

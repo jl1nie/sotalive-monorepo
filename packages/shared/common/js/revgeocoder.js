@@ -109,6 +109,20 @@ function mapcode_show_toast(message, anchorRect, duration = 4000) {
 	toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, duration);
 }
 
+// 緯度経度から、グリッドロケーター(8桁。例: PM95uq96)を求める。
+// サーバーが返さないとき(海の上など、自治体のない場所)に使う
+function local_maidenhead(lat, lng) {
+	let x = lng + 180, y = lat + 90;
+	let s = String.fromCharCode(65 + Math.floor(x / 20), 65 + Math.floor(y / 10));
+	x %= 20; y %= 10;
+	s += Math.floor(x / 2) + '' + Math.floor(y);
+	x = (x % 2) / 2; y = y % 1;
+	s += String.fromCharCode(97 + Math.floor(x * 24), 97 + Math.floor(y * 24));
+	x = (x * 24) % 1; y = (y * 24) % 1;
+	s += Math.floor(x * 10) + '' + Math.floor(y * 10);
+	return s;
+}
+
 async function local_reverse_geocoder(lat, lng, elev) {
 	if (use_yahoo_revgeocode)
 		return local_reverse_geocoder_yahoo(lat, lng, elev)
@@ -145,7 +159,7 @@ async function local_reverse_geocoder_gsi(lat, lng, elev) {
 		if (!result.muniCode) {
 			const err = {
 				errors: 'OUTSIDE_JA',
-				maidenhead: result.maidenhead
+				maidenhead: result.maidenhead || local_maidenhead(lat, lng)
 			};
 			cache_rev.set(pos, Promise.resolve(err));
 			return err;
@@ -176,7 +190,7 @@ async function local_reverse_geocoder_gsi(lat, lng, elev) {
 		console.error("Error in local_reverse_geocoder_gsi:", error);
 		const err = {
 			errors: 'ERROR',
-			maidenhead: null
+			maidenhead: local_maidenhead(lat, lng)
 		};
 		cache_rev.set(pos, Promise.resolve(err));
 		return err;
@@ -207,7 +221,7 @@ async function local_reverse_geocoder_yahoo(lat, lng, elev) {
 		if (result.errors !== 'OK') {
 			const err = {
 				errors: 'OUTSIDE_JA',
-				maidenhead: result.maidenhead
+				maidenhead: result.maidenhead || local_maidenhead(lat, lng)
 			};
 			cache_rev.set(pos, Promise.resolve(err));
 			return err;
@@ -237,7 +251,7 @@ async function local_reverse_geocoder_yahoo(lat, lng, elev) {
 		console.error("Error in local_reverse_geocoder_yahoo:", error);
 		const err = {
 			errors: 'ERROR',
-			maidenhead: null
+			maidenhead: local_maidenhead(lat, lng)
 		};
 		cache_rev.set(pos, Promise.resolve(err));
 		return err;
