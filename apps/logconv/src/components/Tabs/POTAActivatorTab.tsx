@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo } from 'react'
 import { Upload, Download, AlertCircle, ExternalLink, FileText, Loader2 } from 'lucide-react'
 import { usePrefsStore } from '@/stores/prefsStore'
+import { ConvertError, fetchWithTimeout, errorMessage, failureReasons, throwFailure, saveZip } from '@/lib/convert'
 import type { MyQTHOption, HisQTHOption } from '@/types/form'
 import type { LogConvCheckResponse } from '@/types/api'
 
@@ -131,18 +132,18 @@ export function POTAActivatorTab() {
           myQTH: myQTHPota,
           QTH: actQTHPota,
           Park: potaPark,
-          POTAActivator: potaActivationCall,
+          POTAActivator: potaActivationCall.trim(),
           POTAOperator: potaOperator,
         })
       )
 
-      const response = await fetch('/api/v2/logconv/pota', {
+      const response = await fetchWithTimeout('/api/v2/logconv/pota', {
         method: 'POST',
         body: formData,
       })
 
       if (!response.ok) {
-        throw new Error('CSVファイルの解析に失敗しました')
+        await throwFailure(response, 'CSVファイルの解析に失敗しました', false)
       }
 
       const data: LogConvCheckResponse = await response.json()
@@ -176,7 +177,7 @@ export function POTAActivatorTab() {
       const errors = await runCheck(file)
       if (errors.length > 0) setError(errorsMessage(errors))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました')
+      setError(errorMessage(err))
       setCheck(null)
     } finally {
       setLoading(false)
@@ -215,35 +216,26 @@ export function POTAActivatorTab() {
           myQTH: myQTHPota,
           QTH: actQTHPota,
           Park: potaPark,
-          POTAActivator: potaActivationCall,
+          POTAActivator: potaActivationCall.trim(),
           POTAOperator: potaOperator,
         })
       )
 
-      const response = await fetch('/api/v2/logconv/hamlog', {
+      const response = await fetchWithTimeout('/api/v2/logconv/hamlog', {
         method: 'POST',
         body: formData,
       })
 
       if (!response.ok) {
         // サーバーも、エラーのあるログは受け付けない(error_log で理由を返す)
-        const body = await response.json().catch(() => null)
-        const reasons: string[] | undefined = body?.error_log
-        throw new Error(reasons?.length ? errorsMessage(reasons) : 'ADIF生成に失敗しました')
+        const reasons = response.status === 413 ? [] : await failureReasons(response, false)
+        if (reasons.length) throw new ConvertError(errorsMessage(reasons))
+        await throwFailure(response, 'ADIF生成に失敗しました', false)
       }
 
-      // Download ZIP file
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${potaActivationCall.replace(/\//g, '-')}_adif.zip`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      await saveZip(response, `${potaActivationCall.trim().replace(/\//g, '-')}_adif.zip`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました')
+      setError(errorMessage(err))
     } finally {
       setConverting(false)
     }

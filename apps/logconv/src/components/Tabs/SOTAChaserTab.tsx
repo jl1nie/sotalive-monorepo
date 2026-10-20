@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { Upload, Download, AlertCircle, ExternalLink, Loader2 } from 'lucide-react'
 import { usePrefsStore } from '@/stores/prefsStore'
+import { fetchWithTimeout, errorMessage, throwFailure, saveZip } from '@/lib/convert'
 import type { HisQTHOption } from '@/types/form'
 
 // Options for His QTH (相手局のSOTA山岳ID)
@@ -38,6 +39,7 @@ export function SOTAChaserTab() {
 
     setLoading(true)
     setError(null)
+    const call = chaserCall.trim()
 
     try {
       const formData = new FormData()
@@ -47,31 +49,22 @@ export function SOTAChaserTab() {
         JSON.stringify({
           format: 'sota_c',
           QTH: hisQTHChaser,
-          callsign: chaserCall,
+          callsign: call,
         })
       )
 
-      const response = await fetch('/api/v2/logconv/hamlog', {
+      const response = await fetchWithTimeout('/api/v2/logconv/hamlog', {
         method: 'POST',
         body: formData,
       })
 
       if (!response.ok) {
-        throw new Error('変換に失敗しました')
+        await throwFailure(response, '変換に失敗しました')
       }
 
-      // Download ZIP file
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${chaserCall.replace(/\//g, '-')}_sota_chaser.zip`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      await saveZip(response, `${call.replace(/\//g, '-')}_sota_chaser.zip`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました')
+      setError(errorMessage(err))
     } finally {
       setLoading(false)
     }

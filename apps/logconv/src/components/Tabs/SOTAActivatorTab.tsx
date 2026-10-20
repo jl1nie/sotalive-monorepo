@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { Upload, Download, AlertCircle, ExternalLink, Loader2 } from 'lucide-react'
 import { usePrefsStore } from '@/stores/prefsStore'
+import { fetchWithTimeout, errorMessage, throwFailure, saveZip } from '@/lib/convert'
 import type { MyQTHOption, HisQTHOption } from '@/types/form'
 
 // Options for My QTH (運用したSOTA山岳ID)
@@ -80,6 +81,7 @@ export function SOTAActivatorTab() {
 
     setLoading(true)
     setError(null)
+    const call = sotaActivationCall.trim()
 
     try {
       const formData = new FormData()
@@ -91,31 +93,22 @@ export function SOTAActivatorTab() {
           myQTH: myQTHSota,
           QTH: actQTHSota,
           Summit: sotaSummit,
-          SOTAActivator: sotaActivationCall,
+          SOTAActivator: call,
         })
       )
 
-      const response = await fetch('/api/v2/logconv/hamlog', {
+      const response = await fetchWithTimeout('/api/v2/logconv/hamlog', {
         method: 'POST',
         body: formData,
       })
 
       if (!response.ok) {
-        throw new Error('変換に失敗しました')
+        await throwFailure(response, '変換に失敗しました')
       }
 
-      // Download ZIP file
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${sotaActivationCall.replace(/\//g, '-')}_sota_activator.zip`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      await saveZip(response, `${call.replace(/\//g, '-')}_sota_activator.zip`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました')
+      setError(errorMessage(err))
     } finally {
       setLoading(false)
     }
