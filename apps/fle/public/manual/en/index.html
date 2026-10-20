@@ -69,8 +69,11 @@
     </ul>
   </li>
   <li><b>Insert the current time</b>: confirming a QSO line without a time inserts the current time (on by default). Turn it off when typing in a paper log; a line without a time then takes the time of the line before. This is set per device and is not synced.</li>
-  <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST. The RST setting is kept per layout; in the compact layout it is off at first (the log stays as you typed it, and the green bar shows the filled-in values).</li>
+  <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST. Band/mode is off at first. RST is kept per layout: on at first in the classic layout, off at first in the compact and full keys layouts (the log stays as you typed it, and the green bar shows the filled-in values). The settings screen shows which layout the RST setting is for.</li>
   <li><b>Screen layout</b>: "Classic", "Compact (trial)" or "Full keys (trial)". Compact keeps the line you are typing, the green bar and the digit keys together (see <a href="#compact">Compact layout</a>). Full keys also shows an on-screen keyboard instead of the phone's (see <a href="#fullkey">Full keys layout</a>; available on touch devices such as phones). A phone starts with full keys the first time, a PC with classic. This is set per device and is not synced.</li>
+  <li><b>Digit key row</b>: in the classic and compact layouts, a row of digit keys above the keyboard (on from the start on touch devices). Not used with full keys (the keyboard has digits).</li>
+  <li><b>QSO count</b>: the number on the left shows "Day / total" or only the "Total".</li>
+  <li><b>Log text</b>: monospace (Roboto Mono) or gothic. <b>Theme</b>: light / dark / follow the device. <b>Language</b>: the language of the screen and error messages (日本語 / English / follow the device).</li>
 </ul>
 
 <h3>Plans (destinations)</h3>
@@ -80,7 +83,7 @@
 <tr><th>Date</th><td>Optional. The day of the activation</td></tr>
 <tr><th>My callsign</th><td>e.g. <code>JL1NIE/1</code></td></tr>
 <tr><th>SOTA / POTA / WWFF</th><td>Type a name or number and suggestions appear (<code>TK-0</code>, ...). Just pick the summit or park</td></tr>
-<tr><th>Grid</th><td>Optional. The locate button fills it in too</td></tr>
+<tr><th>Grid</th><td>Optional. The "Here" button fills it in too</td></tr>
 <tr><th>Rig, QSL message</th><td>Optional. The rig goes to HAMLOG's <code>Rig=</code>. The QSL message can use <code>$mysota</code> and <code>$rig</code></td></tr>
 </table>
 <p>You can register up to 50 plans. On the day, you only pick one.</p>
@@ -140,15 +143,15 @@ ssb
 <p>The candidate bar under the editor shows how the current line is understood.</p>
 <table>
 <tr><th class="draft">Orange</th><td>You are still typing. The callsign etc. is not yet in a form that can be confirmed. Pause, and the bar tells you what is missing.</td></tr>
-<tr><th class="ok">Green</th><td>Understood. The bar shows the line with band, mode, time and report filled in. <b>Tap ✓ at the right end to confirm</b> and move to the next line. <b>Tap the callsign, RST or time to move the cursor to its end</b> in the editor, then fix it with ⌫ (each tap on the RST switches between received and sent; an RST or time that is not written is written first). To reach a character in the middle, swipe the digit row (see <a href="#fix">Fix a QSO</a>).</td></tr>
+<tr><th class="ok">Green</th><td>Understood. The bar shows the line with band, mode, time and report filled in. <b>Tap ✓ at the right end to confirm</b> and move to the next line (with full keys, "✓ Confirm" at the bottom right of the keyboard). <b>Tap the callsign, RST or time to move the cursor to its end</b> in the editor, then fix it with ⌫ (each tap on the RST switches between received and sent; an RST or time that is not written is written first). To reach a character in the middle, swipe to move the cursor (see <a href="#fix">Fix a QSO</a>).</td></tr>
 <tr><th class="err">Red</th><td>Something must be fixed, e.g. a missing band or mode.</td></tr>
 <tr><th>(empty line)</th><td>Shows the current time and the band and mode at that line. The next QSO gets these values.</td></tr>
 <tr><th>(settings line)</th><td>Shows what the line itself does not: the date after <code>day +</code> (with the weekday), the name of the summit or park for <code>mysota</code> etc. (when online), the message of <code>qslmsg</code> with its variables replaced, or the rig for <code>rig</code> ("No rig" for <code>rig -</code>). Lines with nothing to add (<code>mycall</code>, comments, ...) look like an empty line.</td></tr>
 </table>
-<p>The number on the left is the QSOs on the day at the cursor (UTC), with the total (such as <code>/10</code>) under it. Choose "Total" under "QSO count" in the settings to show only the total. Tap it to see the QSO list and errors. Tapping an error jumps to that line.</p>
+<p>The number on the left is the QSOs on the day at the cursor (UTC), with the total (such as <code>/10</code>) under it. Choose "Total" under "QSO count" in the settings to show only the total. In the classic layout, tap it to see the QSO list and errors; tapping an error jumps to that line (for the compact and full keys layouts, see <a href="#compact">Compact layout</a>).</p>
 <ul>
-  <li>Tap a <b>suggestion</b> shown at the bottom of the editor to insert a keyword, band or mode (in the compact layout, suggestions appear over the green bar).</li>
-  <li>Turn on "Digit key row" in the settings for a row of digits above the keyboard (handy for callsigns such as JA1ABC/1). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
+  <li>Tap a <b>suggestion</b> shown at the bottom of the editor to insert a keyword, band or mode (in the compact and full keys layouts, suggestions appear over the green bar).</li>
+  <li>With "Digit key row" on in the settings, a row of digits appears above the keyboard (handy for callsigns such as JA1ABC/1; on from the start on touch devices). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
   <li>If you move, use Menu → "New log" to switch the location for the QSOs from there on.</li>
   <li>The QSO list can also be opened from Menu → "QSO list".</li>
   <li>On a PC, <b>Ctrl+Z (⌘Z on a Mac) undoes the last edit</b>, in any layout, the same way as ↶ in full keys (including changes made by confirming or picking a suggestion).</li>
@@ -171,7 +174,7 @@ ssb
       <li>← → move the cursor one character. Swiping either row also moves the cursor (starting on ⌫ moves it without deleting).</li>
     </ul>
   </li>
-  <li><b>The button at the right end moves to the next line.</b> On a QSO line (green) it is ✓ Confirm; on a line that is not a QSO, such as <code>40m cw</code>, it is "↵ Next". "Next" starts a new line at the end of the current one, the same as Enter.</li>
+  <li><b>The button at the right end moves to the next line.</b> On a QSO line (green) it is ✓ Confirm; on a line that is not a QSO, such as <code>40m cw</code>, it is "↵ Next". On the last line, it starts a new line at the end (the same as Enter). If you were fixing an earlier line, it just moves to the next line without adding one (✓ Confirm does the same, so no empty line appears in the middle of the log).</li>
   <li><b>Suggestions appear over the green bar.</b> They never cover the button at the right end or the QSO count on the left, so you can move on while they are shown.</li>
   <li><b>The QSO count on the left is display only</b> (tapping it does not open the list; use Menu → "QSO list"). When activating POTA or SOTA, the lower number is the QSOs needed for an activation (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once the activation is complete. It turns red when there are errors, with a count such as <code>⚠2</code>.</li>
   <li><b>Confirming keeps the log as you typed it</b> (writing the RST is off at first). Type <code>7</code> and the green bar shows the filled-in value such as <code>579/599</code>. To write it into the log, turn on RST under "What confirming writes" in the settings <b>while the compact or full keys layout is selected</b> (this setting is kept separately from the classic layout, and the settings screen says which layout it is for).</li>
@@ -187,14 +190,14 @@ ssb
 [🌐][↶][←][Space][.][→][✓Confirm]</code></pre>
 <ul>
   <li>Tapping the editor does not bring up the phone's keyboard (the cursor still shows).</li>
-  <li>The keys are square and show capital letters, but letters go into the log in lowercase (FLE does not care about case). <code>-</code> is right of L and <code>/</code> is right of M, as on a PC keyboard.</li>
+  <li>The keys start square (change the height with the handle below) and show capital letters, but letters go into the log in lowercase (FLE does not care about case). <code>-</code> is right of L and <code>/</code> is right of M, as on a PC keyboard.</li>
   <li><code>.</code> is right of space (for frequencies such as <code>50.230</code>). Tap <code>-</code> twice quickly for <code>,</code> (the small <code>,</code> at the top right of the key).</li>
   <li><b>↶ undoes the last edit.</b> If you deleted too much with ⌫, one tap brings back everything from before you started deleting (even across lines). Typing is undone one line at a time. Each tap goes further back.</li>
   <li><b>The key at the bottom right moves to the next line</b>: "✓ Confirm" on a QSO line (green), "↵ Next" on a line such as <code>40m cw</code>. With full keys, the green bar has no button at its right end (this key is the only one).</li>
   <li>The key you are pressing shows in a balloon above your finger. Tapping the gap between keys still types the nearest key.</li>
   <li><b>Drag the handle on the top edge of the keyboard up or down to change the key height</b> (from square up to 1.5 times). Taller keys are easier to hit, for example with gloves. The log uses the rest of the height. Each device remembers it.</li>
   <li>Hold ⌫ to keep deleting. Swipe left or right <b>from space, ← or →</b> to move the cursor one character at a time (see <a href="#swipe">Swipe</a>). Letter keys never turn into a swipe, even if your finger slides while typing fast.</li>
-  <li>For <b>Japanese</b> text (messages such as <code>&lt;Yamada-san&gt;</code>, remarks, <code>qslmsg</code>), tap 🌐 to switch to the phone's keyboard. When done, tap "Back to full keys" at the bottom.</li>
+  <li>For <b>Japanese</b> text (messages such as <code>&lt;Yamada-san&gt;</code>, remarks, <code>qslmsg</code>), tap 🌐 to switch to the phone's keyboard. When done, tap "Back to full keys" at the bottom. While the phone's keyboard is in use, ✓ and "Next" appear at the right end of the green bar.</li>
 </ul>
 
 <h3 id="fix">Fix a QSO</h3>
@@ -210,16 +213,16 @@ ssb
   <li><b>Example: you received 579, not 599</b> → tap the RST → ⌫ ⌫ → <code>79</code>.</li>
   <li><b>Example: it was JA1XYW, not JA1XYZ</b> → tap the callsign → ⌫ → <code>w</code>.</li>
   <li>If the RST or time was left out (the bar shows the filled-in value), tapping it writes that value into the line first, then moves to its end. On the line <code>ja1xyz</code>, tapping the RST gives <code>ja1xyz 599 599|</code>.</li>
-  <li>To fix a character <b>in the middle</b>, tap the part to get to its end, then <b>swipe the digit row left or right</b> to move the cursor (<a href="#swipe">next section</a>).</li>
-  <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line (in the compact layout, use Menu → "QSO list").</li>
-  <li>Only ✓ at the right end of the green bar confirms (moves to the next line). Tapping a part never confirms. (In the compact layout, lines that are not QSOs also get "Next" at the right end.)</li>
+  <li>To fix a character <b>in the middle</b>, tap the part to get to its end, then <b>swipe the digit row left or right</b> to move the cursor (with full keys, swipe from space, ← or →; <a href="#swipe">next section</a>).</li>
+  <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line (in the compact and full keys layouts, use Menu → "QSO list").</li>
+  <li>Only ✓ at the right end of the green bar confirms (moves to the next line; with full keys, "✓ Confirm" at the bottom right of the keyboard). Tapping a part never confirms. (In the compact and full keys layouts, lines that are not QSOs also get "Next".)</li>
 </ul>
 
 <h3 id="swipe">Swipe the digit row to move the cursor</h3>
 <p>You can move the cursor one character at a time without aiming your finger between characters. <b>Lines other than QSOs (<code>date</code>, <code>mysota</code>, <code>qslmsg</code>, comments, ...) have no parts to tap in the green bar, so this is the main way to fix them.</b> On QSO lines, use it to fix a character in the middle of a part.</p>
 <pre><code>[1][2][3][4][5][6][7][8][9][0][/][-]
  ← keep your finger down, slide →</code></pre>
-<p>In the compact layout, you can swipe from anywhere on either row of digit keys. For a single character, you can also tap ← or →.</p>
+<p>In the compact layout, you can swipe from anywhere on either row of digit keys. With full keys, <b>swipe from space, ← or →</b> (letter keys never turn into a swipe). In both, you can also tap ← or → for a single character.</p>
 <ol>
   <li>Put a finger anywhere on the digit row (any key will do).</li>
   <li>Without lifting it, slide left or right. The cursor moves <b>one character per about 20px</b> in that direction, across parts and lines.</li>
@@ -248,6 +251,15 @@ ssb
 <p>Import the sota….csv into the SOTA database, the .adi file into the POTA site, and the hamlog….csv into HAMLOG. If any line has an error, no files are made; only a text file listing the errors is produced (fix them and export again).</p>
 <p>To convert files from other logging software, use <a href="https://logconv2.sotalive.net/">logconv2</a>.</p>
 <p>To keep the FLE log itself, use Menu → "Save FLE log" to save it as a text file. "Open FLE log" reads it back.</p>
+
+<h3 id="menu">Other menu items</h3>
+<table>
+<tr><th>Add ADIF</th><td>Turns an ADIF file from other logging software into FLE lines and adds them to the end of the log</td></tr>
+<tr><th>Undo</th><td>Brings back the log from before it was replaced by "Clear all", "Open FLE log", "Sample" and so on</td></tr>
+<tr><th>Clear all</th><td>Empties the log (right after, "Undo" in the notice or the menu brings it back)</td></tr>
+<tr><th>Sample</th><td>Shows a sample log to learn the format from (your log comes back with "Undo")</td></tr>
+<tr><th>Manual / Add to home screen</th><td>Opens this page / adds the app to the home screen (on devices that offer it)</td></tr>
+</table>
 
 <h2 id="ref">6. FLE syntax (reference)</h2>
 <p>The log is line-based. Blank lines are ignored, and <code>#</code> starts a comment to the end of the line.</p>
