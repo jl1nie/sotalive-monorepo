@@ -255,39 +255,6 @@ function Editor({
   // コンパクト・フルキーは縦向きで使う(横向きでは、キーボードとログが入らない)
   const landscape = useLandscapePhone() && compact
 
-  // コンパクト・フルキー: ログ欄の高さ(行数。0 は入る限り高く)。ドラッグの間は、離すまで保存しない
-  const logBoxRef = useRef<HTMLDivElement>(null)
-  const [dragLines, setDragLines] = useState<number | null>(null)
-  const logLines = compact ? (dragLines ?? settings.logLines) : 0
-  const resizing = useRef<{ id: number; y: number; h: number } | null>(null)
-  const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
-    const ta = taRef.current
-    if (!ta) return
-    e.preventDefault()
-    e.currentTarget.setPointerCapture(e.pointerId)
-    resizing.current = { id: e.pointerId, y: e.clientY, h: ta.offsetHeight }
-  }
-  const moveResize = (e: React.PointerEvent<HTMLDivElement>) => {
-    const r = resizing.current
-    const ta = taRef.current
-    const box = logBoxRef.current
-    if (!r || r.id !== e.pointerId || !ta || !box) return
-    const style = getComputedStyle(ta)
-    const lineHeight = parseFloat(style.lineHeight) || 26
-    // 枠と上下の余白(上の余白は、下寄せで増えていることがあるので、下と同じとみなす)
-    const chrome = parseFloat(style.paddingBottom) * 2 + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)
-    const room = box.clientHeight - e.currentTarget.offsetHeight - chrome
-    const max = Math.max(1, Math.floor(room / lineHeight))
-    const want = Math.round((r.h + (r.y - e.clientY) - chrome) / lineHeight)
-    setDragLines(want >= max ? 0 : Math.max(1, want))
-  }
-  const endResize = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (resizing.current?.id !== e.pointerId) return
-    resizing.current = null
-    if (dragLines !== null) updateSettings({ logLines: dragLines })
-    setDragLines(null)
-  }
-
   // フルキー: OS のキーボードの代わりに、画面のキーボードを出す。🌐 で、OS のキーボード(日本語など)に切り替える
   // PC(タッチでない端末)では、フルキーを選んでいても、コンパクトとして動く(物理キーボードがある)
   const [touch] = useState(touchDevice)
@@ -310,7 +277,7 @@ function Editor({
   useEffect(() => {
     const ta = taRef.current
     if (!compact || !ta || typeof ResizeObserver === 'undefined') return
-    // 欄の高さが変わったら(つまみ・キーボード)、打っている行が見えるところへ
+    // 欄の高さが変わったら(キーボードの高さ・OS のキーボード)、打っている行が見えるところへ
     const observer = new ResizeObserver(() => {
       alignToBottom(ta)
       scrollCaretIntoView(ta, ta.selectionStart, true)
@@ -729,24 +696,7 @@ function Editor({
         sync={sync}
       />
 
-      <div ref={logBoxRef} className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
-        {compact && (
-          // ログ欄の高さを変えるつまみ(上下にドラッグ。いちばん上まで引けば、入る限り高く)
-          <div
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label={t('editor.resize')}
-            title={t('editor.resize')}
-            onPointerDown={startResize}
-            onPointerMove={moveResize}
-            onPointerUp={endResize}
-            onPointerCancel={endResize}
-            onMouseDown={(e) => e.preventDefault()}
-            className="flex-none h-6 flex items-center justify-center touch-none cursor-row-resize"
-          >
-            <span className="w-14 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600" />
-          </div>
-        )}
+      <div className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
         <textarea
           ref={taRef}
           value={text}
@@ -770,11 +720,9 @@ function Editor({
           // 従来の配置では、下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
           // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
           // コンパクト・フルキーでは、緑のバーのコールサインと同じ大きさ(目が読み替えずに済む)。行間は詰める
-          className={`input min-h-0 resize-none font-semibold ${
-            logLines > 0 ? 'flex-none max-h-full' : 'flex-1 h-full'
-          } ${compact ? '!text-xl leading-[1.3]' : 'leading-relaxed pb-20'} ${settings.editorFont === 'mono' ? 'font-mono' : ''}`}
-          // 行数で高さを決める(行の高さ 1.3em、上下の余白 1.5rem、枠 4px)
-          style={logLines > 0 ? { height: `calc(${logLines} * 1.3em + 1.5rem + 4px)` } : undefined}
+          className={`input flex-1 h-full min-h-0 resize-none font-semibold ${
+            compact ? '!text-xl leading-[1.3]' : 'leading-relaxed pb-20'
+          } ${settings.editorFont === 'mono' ? 'font-mono' : ''}`}
         />
         {!compact && <SuggestStrip candidates={completion.candidates} onPick={pick} />}
       </div>
@@ -811,6 +759,8 @@ function Editor({
           onNewline={newline}
           onOsKeyboard={() => setOsKeyboard(true)}
           onUndo={undo}
+          keyScale={settings.keyScale}
+          onKeyScale={(keyScale) => updateSettings({ keyScale })}
         />
       ) : fullkey ? (
         // OS のキーボードを使っている間: フルキーに戻るボタン(数字キーは、OS のキーボードにある)
