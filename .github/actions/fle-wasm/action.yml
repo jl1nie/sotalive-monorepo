@@ -1,0 +1,28 @@
+name: FLE wasm
+description: >-
+  FLEonline の wasm(apps/fle/src/wasm/fle)を用意する。crates/ が変わっていなければキャッシュから戻し、
+  変わっていればビルドする(apps/fle の package.json の wasm と同じ指定)
+runs:
+  using: composite
+  steps:
+    - id: cache
+      uses: actions/cache@v4
+      with:
+        path: apps/fle/src/wasm/fle
+        key: fle-wasm-v1-${{ hashFiles('crates/**', 'Cargo.toml', 'Cargo.lock') }}
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: Swatinem/rust-cache@v2
+      with:
+        key: wasm
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: taiki-e/install-action@v2
+      with:
+        tool: wasm-pack
+    - if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: crates/fle-wasm
+      run: wasm-pack build --target web --release --out-dir ../../apps/fle/src/wasm/fle --out-name fle

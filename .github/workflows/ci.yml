@@ -1,0 +1,275 @@
+name: CI
+
+# テストとデプロイ。テストのジョブは並列に走り、変わったパスに関係するものだけを走らせる。
+# ビルドは1回だけ(build)で、プロジェクトごとの出力を artifact で各デプロイのジョブに渡す。
+# デプロイ(push のときだけ)は、Pages のプロジェクトごとに並列で、そのプロジェクトに関係するテストだけを待つ。
+on:
+  push:
+    branches:
+      - main      # Production deploy
+      - develop   # Preview deploy
+      - 'feat/**' # Preview deploy (動作確認用)
+  pull_request:
+    branches:
+      - main
+      - develop
+
+# 同じブランチで1本ずつ(続けてマージしたとき、古い内容が後から上書きしないように)。PR は新しい push で古い実行を止める
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # デプロイに使う wrangler(ルートの devDependencies と同じ版。デプロイのジョブでは pnpm install しない)
+  WRANGLER: wrangler@4.54.0
+
+jobs:
+  # 変わったパスを判定する。all は、どれにも効く共通の部分(変わったら、すべて走らせる)
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      all: ${{ steps.filter.outputs.all }}
+      rust: ${{ steps.filter.outputs.rust }}
+      fle: ${{ steps.filter.outputs.fle }}
+      logconv: ${{ steps.filter.outputs.logconv }}
+      myact: ${{ steps.filter.outputs.myact }}
+      legacy: ${{ steps.filter.outputs.legacy }}
+      sotalive: ${{ steps.filter.outputs.sotalive }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            all:
+              - '.github/workflows/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'packages/shared/**'
+              - 'scripts/**'
+            rust:
+              - 'crates/**'
+            fle:
+              - 'apps/fle/**'
+              - 'crates/**'
+              - 'pages/fle/**'
+            logconv:
+              - 'apps/logconv/**'
+            myact:
+              - 'apps/myact/**'
+            legacy:
+              - 'apps/myact-org/**'
+              - 'apps/myqth-org/**'
+            sotalive:
+              - 'functions/**'
+              - 'wrangler.toml'
+              - 'apps/logconv/**'
+              - 'apps/myact/**'
+
+  # ---- テスト(並列) ----
+
+  rust:
+    needs: changes
+    if: needs.changes.outputs.all == 'true' || needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace
+
+  fle:
+    needs: changes
+    if: needs.changes.outputs.all == 'true' || needs.changes.outputs.fle == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/fle-wasm
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck, test and lint
+        working-directory: apps/fle
+        run: |
+          pnpm exec tsc -b
+          pnpm exec vitest run
+          pnpm exec eslint .
+
+  logconv:
+    needs: changes
+    if: needs.changes.outputs.all == 'true' || needs.changes.outputs.logconv == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck, test and lint
+        working-directory: apps/logconv
+        run: |
+          pnpm exec tsc -b
+          pnpm exec vitest run
+          pnpm exec eslint .
+
+  myact:
+    needs: changes
+    if: needs.changes.outputs.all == 'true' || needs.changes.outputs.myact == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck, test and lint
+        working-directory: apps/myact
+        run: |
+          pnpm exec tsc -b
+          pnpm exec vitest run --passWithNoTests
+          pnpm exec eslint .
+
+  # ---- ビルド(1回。テストと並列) ----
+
+  # デプロイするものか、ビルドに関係するものが変わったときだけ(ドキュメントだけの変更では走らない)
+  build:
+    needs: changes
+    if: >-
+      needs.changes.outputs.all == 'true' || needs.changes.outputs.fle == 'true'
+      || needs.changes.outputs.logconv == 'true' || needs.changes.outputs.myact == 'true'
+      || needs.changes.outputs.legacy == 'true' || needs.changes.outputs.sotalive == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/fle-wasm
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Build apps
+        run: |
+          pnpm --filter @sotalive/fle run build:web
+          pnpm --filter @sotalive/logconv --filter @sotalive/myact run build
+      - name: Assemble the outputs for each Pages project
+        run: scripts/assemble.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-myact
+          path: dist-myact
+          include-hidden-files: true
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-myqth
+          path: dist-myqth
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-fle
+          path: dist-fle
+          include-hidden-files: true
+          retention-days: 3
+
+  # ---- デプロイ(push のときだけ。プロジェクトごとに並列) ----
+  # 待つジョブのどれかが失敗・中止なら、デプロイしない(変更がなくて飛ばしたテストは、待たずに進む)
+
+  # sotalive: まだ公開していない logconv2・myact2(functions/_middleware.ts)
+  deploy-sotalive:
+    needs: [changes, build, logconv, myact]
+    if: >-
+      always() && github.event_name == 'push'
+      && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+      && (needs.changes.outputs.all == 'true' || needs.changes.outputs.sotalive == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      # functions/ と wrangler.toml を使う
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BRANCH: ${{ github.ref_name }}
+        run: npx --yes "$WRANGLER" pages deploy dist --project-name=sotalive --branch="$BRANCH"
+
+  # 旧版の myact・myqth: Functions なし。出力の中からデプロイする(functions/ と wrangler.toml を拾わない)
+  deploy-legacy:
+    needs: [changes, build]
+    if: >-
+      always() && github.event_name == 'push'
+      && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+      && (needs.changes.outputs.all == 'true' || needs.changes.outputs.legacy == 'true')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [myact, myqth]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ matrix.app }}
+          path: dist-${{ matrix.app }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Deploy
+        working-directory: dist-${{ matrix.app }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BRANCH: ${{ github.ref_name }}
+        run: npx --yes "$WRANGLER" pages deploy . --project-name="sotalive-${{ matrix.app }}" --branch="$BRANCH"
+
+  # FLEonline: Functions は /api の下だけ(pages/fle の wrangler.toml と functions/。KV の束縛もそこ)
+  deploy-fle:
+    needs: [changes, build, rust, fle]
+    if: >-
+      always() && github.event_name == 'push'
+      && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+      && (needs.changes.outputs.all == 'true' || needs.changes.outputs.fle == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-fle
+          path: dist-fle
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Deploy
+        working-directory: pages/fle
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BRANCH: ${{ github.ref_name }}
+        run: npx --yes "$WRANGLER" pages deploy --project-name=sotalive-fle --branch="$BRANCH"

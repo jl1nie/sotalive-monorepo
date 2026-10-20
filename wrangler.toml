@@ -7,15 +7,5 @@ pages_build_output_dir = "./dist"
 [functions]
 directory = "functions"
 
-# 各サブドメインのルーティングはCloudflare側で設定
-# myact2.sotalive.net → /myact
-# logconv2.sotalive.net → /logconv
-# wspr2.sotalive.net → /wspr
-
-# FLEonline の設定の同期(functions/api/fle/prefs)。KV の名前空間を作り、Pages の設定
-# (Workers & Pages → sotalive → Settings → Bindings → KV namespace)で、変数名 FLE_PREFS に束縛する。
-# 束縛がなければ、同期は無効(503)になり、アプリは今までどおり端末の設定だけで動く。
-
-[[kv_namespaces]]
-binding = "FLE_PREFS"
-id = "c3b3f308e34d4e16b236fe4b1cd0e1cc"
+# このプロジェクト(sotalive)は、まだ公開していない logconv2・myact2 だけ(functions/_middleware.ts がホスト名で振り分ける)。
+# 公開しているアプリは、別のプロジェクト(scripts/build-static-projects.sh・pages/fle)
