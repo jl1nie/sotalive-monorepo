@@ -120,7 +120,9 @@ export const api = {
   },
 
   importPotaLog: (shareId: string) => {
-    return fetchAPI<import('@/types').LogShare>(`/pota/log-share/${shareId}`);
+    return fetchAPI<import('@/types').LogShare>(
+      `/pota/log-share/${encodeURIComponent(shareId)}`
+    );
   },
 
   getLogStat: () => {

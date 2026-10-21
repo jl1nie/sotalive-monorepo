@@ -227,6 +227,7 @@ export function PotaLogManager({ isOpen, onClose }: PotaLogManagerProps) {
             <h3>Share Log</h3>
             <p className="potalog-hint">
               Generate a share ID to transfer your log to another device.
+              The ID is valid for 10 minutes and can be used only once.
             </p>
             <button
               className="btn btn-primary"
@@ -258,7 +259,7 @@ export function PotaLogManager({ isOpen, onClose }: PotaLogManagerProps) {
             <div className="potalog-import">
               <input
                 type="text"
-                placeholder="Enter share ID"
+                placeholder="e.g. K7QM-4XRT"
                 value={shareId}
                 onChange={(e) => setShareId(e.target.value)}
                 disabled={loading}
