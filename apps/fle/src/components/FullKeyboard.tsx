@@ -238,7 +238,7 @@ export function FullKeyboard({
           onNewline,
           <>
             <CornerDownLeft className="w-5 h-5" aria-hidden="true" />
-            <span className="ml-1">{t('bar.newline')}</span>
+            <span className="ml-1 whitespace-nowrap">{t('keys.newline')}</span>
           </>,
           4
         )}
