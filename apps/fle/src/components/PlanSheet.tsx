@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Sheet } from '@/components/Sheet'
 import { StationFields } from '@/components/StationFields'
+import { MemoField } from '@/components/MemoField'
+import { useMemoDraft } from '@/hooks/useMemoDraft'
 import { stationPlan, type FieldError } from '@/lib/fle'
 import { MAX_PLANS, emptyPlan, newPlanId, planLabel, sortPlans, type Plan } from '@/lib/plans'
 import { toStation, toValues, type Values } from '@/lib/stationValues'
@@ -107,6 +109,7 @@ function PlanForm({
   const [date, setDate] = useState(plan.date)
   const [rig, setRig] = useState(plan.rig)
   const [qslmsg, setQslmsg] = useState(plan.qslmsg)
+  const memo = useMemoDraft(plan.memo ?? '')
   const [errors, setErrors] = useState<FieldError[]>([])
 
   const save = async () => {
@@ -126,6 +129,7 @@ function PlanForm({
       grid: s.grid.trim().toUpperCase(),
       rig: rig.trim().replace(/%/g, ''),
       qslmsg: qslmsg.trim(),
+      memo: memo.memo.trim(),
     })
   }
 
@@ -157,7 +161,8 @@ function PlanForm({
           <label htmlFor="plan-date" className="label">{t('plans.date')}</label>
           <input id="plan-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input" />
         </div>
-        <StationFields values={values} onChange={setValues} errors={errors} idPrefix="plan" />
+        <StationFields values={values} onChange={setValues} errors={errors} idPrefix="plan" onPlace={memo.lookup} />
+        <MemoField id="plan-memo" memo={memo.memo} looking={memo.looking} onChange={memo.edit} />
         <div>
           <label htmlFor="plan-rig" className="label">{t('plans.rig')}</label>
           <input id="plan-rig" value={rig} onChange={(e) => setRig(e.target.value)} maxLength={60} autoCorrect="off" spellCheck={false} className="input font-mono" />

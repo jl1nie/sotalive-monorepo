@@ -3,6 +3,8 @@ import { useState } from 'react'
 import type { FieldError, Station } from '@/lib/fle'
 import { Sheet } from '@/components/Sheet'
 import { StationFields } from '@/components/StationFields'
+import { MemoField } from '@/components/MemoField'
+import { useMemoDraft } from '@/hooks/useMemoDraft'
 import { toStation, toValues, type Values } from '@/lib/stationValues'
 import { extrasOf, type PlanExtras } from '@/lib/planApply'
 import { planLabel, sortPlans, type Plan } from '@/lib/plans'
@@ -13,13 +15,15 @@ interface Props {
   onClose: () => void
   /** 開いたときの初期値(カーソル位置で有効な自局と場所) */
   initial: Station
+  /** 開いたときのメモ(カーソル位置で有効な `#` の行) */
+  initialMemo?: string
   /** まだQSOがない(新しいログの設定)か、途中での場所の変更か */
   isNewLog: boolean
   /**
    * ログに書き込む。誤りがあれば、項目ごとの誤りを返す(空なら書き込めた)。
-   * `here` は、現在地から求めたグリッドのままなら、その緯度・経度(JCC・JCG のメモを引く)
+   * `memo` は、メモの欄の値。手で触っておらず空なら null(書き込むときに、山・公園から JCC・JCG を引く)
    */
-  onApply: (want: Station, extras?: PlanExtras, here?: { lat: number; lon: number }) => Promise<FieldError[]>
+  onApply: (want: Station, extras: PlanExtras | undefined, memo: string | null) => Promise<FieldError[]>
   /** 登録した予定(選ぶと入力欄に入る) */
   plans?: Plan[]
 }
@@ -34,20 +38,19 @@ export function PlaceSheet(props: Props) {
   return props.open ? <PlaceForm {...props} /> : null
 }
 
-function PlaceForm({ onClose, initial, isNewLog, onApply, plans = [] }: Props) {
+function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, onApply, plans = [] }: Props) {
   const t = useT()
   const [values, setValues] = useState<Values>(() => toValues(initial))
   const [errors, setErrors] = useState<FieldError[]>([])
   const [extras, setExtras] = useState<PlanExtras | null>(null)
-  const [here, setHere] = useState<{ lat: number; lon: number; grid: string } | null>(null)
+  const memo = useMemoDraft(initialMemo)
   // 書き込み中(JCC・JCG を引く間)。2回押しても、2回書かない
   const [busy, setBusy] = useState(false)
 
   const apply = async () => {
     if (busy) return
     setBusy(true)
-    const station = toStation(values)
-    const errs = await onApply(station, extras ?? undefined, here && here.grid === station.grid ? here : undefined)
+    const errs = await onApply(toStation(values), extras ?? undefined, memo.value())
     setBusy(false)
     setErrors(errs)
   }
@@ -85,6 +88,7 @@ function PlaceForm({ onClose, initial, isNewLog, onApply, plans = [] }: Props) {
                   onClick={() => {
                     setValues(toValues({ mycall: p.mycall, sota: p.sota, pota: p.pota, wwff: p.wwff, grid: p.grid }))
                     setExtras(extrasOf(p))
+                    memo.fromPlan(p.memo ?? '')
                     setErrors([])
                   }}
                   className="w-full text-left px-3 py-2 min-h-12 rounded-xl border-2 border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
@@ -98,7 +102,10 @@ function PlaceForm({ onClose, initial, isNewLog, onApply, plans = [] }: Props) {
         </section>
       )}
       {extras && <p className="mb-3 text-sm">{t('plans.usedNote', { name: extras.name })}</p>}
-      <StationFields values={values} onChange={setValues} errors={errors} onLocated={setHere} />
+      <StationFields values={values} onChange={setValues} errors={errors} onPlace={memo.lookup} />
+      <div className="mt-3">
+        <MemoField id="place-memo" memo={memo.memo} looking={memo.looking} onChange={memo.edit} />
+      </div>
     </Sheet>
   )
 }

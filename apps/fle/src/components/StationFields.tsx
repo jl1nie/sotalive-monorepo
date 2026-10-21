@@ -28,14 +28,14 @@ export function StationFields({
   onChange,
   errors,
   idPrefix = 'place',
-  onLocated,
+  onPlace,
 }: {
   values: Values
   onChange: (values: Values) => void
   errors: FieldError[]
   idPrefix?: string
-  /** 現在地が取れたとき(グリッドと一緒に、緯度・経度を知らせる) */
-  onLocated?: (here: { lat: number; lon: number; grid: string }) => void
+  /** 山・公園を候補から選んだとき、現在地が取れたときに、その緯度・経度を知らせる(JCC・JCG のメモを引く) */
+  onPlace?: (pos: { lat: number; lon: number }) => void
 }) {
   const t = useT()
   // いま入力している欄(候補を出す欄)と、現在地の近くの一覧
@@ -57,12 +57,13 @@ export function StationFields({
         : { pota: values.pota.replace(/[^\s,]*$/, '') + c.code + ' ', wwff: values.wwff || c.wwff || '' }),
       grid: values.grid || c.grid,
     })
+    if (Number.isFinite(c.lat) && Number.isFinite(c.lon)) onPlace?.({ lat: c.lat, lon: c.lon })
   }
 
   // 位置情報の取得は画面(端末)の役目。グリッドの計算はコアに任せる。取れたら、近くの山・公園も探す
   const { locate, locating, message: geoMessage } = useGridLocate(async (grid, pos) => {
     onChange({ ...values, grid })
-    onLocated?.({ lat: pos.coords.latitude, lon: pos.coords.longitude, grid })
+    onPlace?.({ lat: pos.coords.latitude, lon: pos.coords.longitude })
     setNearby('loading')
     setNearby(await searchNearby(pos.coords.latitude, pos.coords.longitude))
   })

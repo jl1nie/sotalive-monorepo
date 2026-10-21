@@ -83,6 +83,8 @@ export function sanitizePlan(plan: unknown): Record<string, unknown> | null {
   if ((plan.rig as string).includes("%")) return null;
   if (typeof plan.date !== "string" || (plan.date !== "" && !DATE.test(plan.date))) return null;
   if (!textList(plan.pota, 6, 12)) return null;
+  // メモは、あとから足した項目(前の版の予定にはない)
+  if (plan.memo !== undefined && !text(plan.memo, 200)) return null;
   return {
     id: plan.id,
     updatedAt: plan.updatedAt,
@@ -95,6 +97,7 @@ export function sanitizePlan(plan: unknown): Record<string, unknown> | null {
     grid: plan.grid,
     rig: plan.rig,
     qslmsg: plan.qslmsg,
+    memo: plan.memo ?? "",
   };
 }
 

@@ -193,6 +193,18 @@ describe('サーバーの検査', () => {
     expect((await pull(code, fetchImpl))!.data.settings).toEqual({ rigs: ['a'] })
   })
 
+  it('予定のメモを保存する。メモのない(前の版の)予定は、空のメモにする。長すぎるメモは断る', async () => {
+    const { fetchImpl } = fakeServer()
+    const old = { ...plan('aaaaaaaaaaaa') } as Partial<Plan>
+    delete old.memo
+    const res = await put(fetchImpl, { base: 0, data: { settings: {}, plans: [plan('bbbbbbbbbbbb', { memo: 'JCC 1307 秩父市' }), old] } })
+    expect(res.status).toBe(200)
+    const plans = (await pull(code, fetchImpl))!.data.plans as Plan[]
+    expect(plans.map((p) => p.memo)).toEqual(['JCC 1307 秩父市', ''])
+    const long = await put(fetchImpl, { base: 1, data: { settings: {}, plans: [plan('cccccccccccc', { memo: 'x'.repeat(201) })] } })
+    expect(long.status).toBe(400)
+  })
+
   it('版が違う更新は 409 で、サーバーの内容を返す。DELETE で消える', async () => {
     const { fetchImpl } = fakeServer()
     const d = doc()

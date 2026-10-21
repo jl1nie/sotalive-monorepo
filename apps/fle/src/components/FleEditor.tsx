@@ -133,7 +133,7 @@ function Editor({
   // 生成の前に知らせる、ログの不足(あるときだけ、確認のシートを開く)
   const [check, setCheck] = useState<OutputWarning[] | null>(null)
   // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値
-  const [place, setPlace] = useState<{ line: number; initial: Station; isNewLog: boolean } | null>(null)
+  const [place, setPlace] = useState<{ line: number; initial: Station; memo: string; isNewLog: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   // 時間帯を変えるときの確認(QSO のあるログで、時刻を変換するか)
   const [retime, setRetime] = useState<{ tz: number; from: string; to: string; qsos: number } | null>(null)
@@ -400,24 +400,19 @@ function Editor({
     setPlace({
       line,
       initial: { ...current, mycall: current.mycall || loadLastCall() },
+      memo: memoAt(text, line),
       isNewLog: !view?.qsos.some((q) => q.line < line),
     })
   }
 
   /** 場所をログに書き込む(指令の行の書式はコアが決める)。誤りがあれば返す */
-  const applyPlace = async (
-    want: Station,
-    extras?: PlanExtras,
-    here?: { lat: number; lon: number }
-  ): Promise<FieldError[]> => {
+  const applyPlace = async (want: Station, extras: PlanExtras | undefined, memoValue: string | null): Promise<FieldError[]> => {
     if (!place) return []
     const plan = await stationPlan(text, place.line, want)
     if (plan.errors.length > 0) return plan.errors
-    // JCC・JCG のメモ(日本の、現在地・山・公園。引けなければ書かない)。その位置のメモと同じなら、書かない
-    const pos =
-      here ??
-      (want.sota ? await placePosition('sota', want.sota) : want.pota[0] ? await placePosition('pota', want.pota[0]) : undefined)
-    const memo = pos ? await lookupMemo(pos.lat, pos.lon) : ''
+    // メモ(`#` の行)。欄が空で触っていなければ、山・公園から JCC・JCG を引く(引けなければ書かない)。
+    // その位置で有効なメモと同じなら、書かない
+    const memo = memoValue ?? (await autoMemo(want))
     const lines = [
       ...(extras ? extraLines(extras, text) : []),
       ...(memo && memoAt(text, place.line) !== memo ? [`# ${memo}`] : []),
@@ -432,6 +427,14 @@ function Editor({
     saveLastCall(want.mycall)
     setPlace(null)
     return []
+  }
+
+  /** 山(なければ最初の公園)の JCC・JCG。引けなければ空 */
+  const autoMemo = async (want: Station): Promise<string> => {
+    const code = want.sota.trim() || want.pota.join(' ').split(/[\s,]+/).find(Boolean)
+    if (!code) return ''
+    const pos = await placePosition(want.sota.trim() ? 'sota' : 'pota', code)
+    return pos ? lookupMemo(pos.lat, pos.lon) : ''
   }
 
   const jump = useCallback(
@@ -933,6 +936,7 @@ function Editor({
         open={place !== null}
         onClose={() => setPlace(null)}
         initial={place?.initial ?? { mycall: '', sota: '', pota: [], wwff: '', grid: '' }}
+        initialMemo={place?.memo ?? ''}
         isNewLog={place?.isNewLog ?? true}
         onApply={applyPlace}
         plans={plansStore.plans}
