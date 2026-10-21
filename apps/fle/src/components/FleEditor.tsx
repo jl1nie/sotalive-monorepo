@@ -51,10 +51,10 @@ import { alignToBottom, scrollCaretIntoView } from '@/lib/caretScroll'
 import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useLandscapePhone } from '@/hooks/useLandscapePhone'
-import { useLogHeight } from '@/hooks/useLogHeight'
+import { useClockRoom } from '@/hooks/useClockRoom'
 import { useAutosave } from '@/hooks/useAutosave'
 import { usePwa } from '@/hooks/usePwa'
-import { touchDevice, useSettings, type Settings } from '@/hooks/useSettings'
+import { activeLayout, touchDevice, useSettings, type Settings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
 import { DigitRow } from '@/components/DigitRow'
 import { FullKeyboard } from '@/components/FullKeyboard'
@@ -254,25 +254,18 @@ function Editor({
     }
   }, [text, caret, settings.rigs])
 
-  // コンパクト(とフルキー)の配置では、打っている行を、欄の下端(候補バーのすぐ上)に寄せる。内容が変わったときと、欄の大きさが変わったとき。
-  // キャレットを置き直すより先に(寄せたあとの位置で、見えるところまで動かす)
-  const compact = settings.layout !== 'classic'
-  // コンパクト・フルキーは縦向きで使う(横向きでは、キーボードとログが入らない)
+  // フルキー: OS のキーボードの代わりに、画面のキーボードを出す。🌐 で、OS のキーボード(日本語など)に切り替える
+  // PC(タッチでない端末)では、フルキーを選んでいても、従来として動く(物理キーボードがある)
+  const [touch] = useState(touchDevice)
+  const fullkey = activeLayout(settings.layout, touch) === 'fullkey'
+  // フルキーでは、打っている行を、欄の下端(候補バーのすぐ上)に寄せる。内容が変わったときと、欄の大きさが変わったとき。
+  // キャレットを置き直すより先に(寄せたあとの位置で、見えるところまで動かす)。OS のキーボードにしている間も同じ
+  const compact = fullkey
+  // フルキーは縦向きで使う(横向きでは、キーボードとログが入らない)
   const landscape = useLandscapePhone() && compact
 
-  // コンパクト・フルキー: ログ欄の高さ(上の縁のつまみ)。低くしたら、空いた上に時刻と運用先を出す
-  const logHeight = useLogHeight({
-    enabled: compact,
-    saved: settings.logLines,
-    onSave: (logLines) => updateSettings({ logLines }),
-    taRef,
-    deps: [settings.editorFont],
-  })
-
-  // フルキー: OS のキーボードの代わりに、画面のキーボードを出す。🌐 で、OS のキーボード(日本語など)に切り替える
-  // PC(タッチでない端末)では、フルキーを選んでいても、コンパクトとして動く(物理キーボードがある)
-  const [touch] = useState(touchDevice)
-  const fullkey = settings.layout === 'fullkey' && touch
+  // フルキー: ログ欄の上に、時刻と運用先を出す(設定で出すとき、入る場所があれば)
+  const clockRoom = useClockRoom({ enabled: compact && settings.showClock, taRef, deps: [settings.editorFont] })
   const [osKeyboard, setOsKeyboard] = useState(false)
   const onScreenKeys = fullkey && !osKeyboard
   // inputmode は、フォーカスし直さないと効かない(iOS)。入力中に切り替えたときは、いったん外して戻す
@@ -318,10 +311,11 @@ function Editor({
     f()
   }
 
-  // 確定ボタンで何を書くか(時刻は、自動で入れる設定なら。省略形の時刻も直す)。Enterは時刻の挿入だけ
+  // 確定ボタン(従来)と、フルキーの改行で何を書くか(時刻は、自動で入れる設定なら。省略形の時刻も直す)。
+  // 従来の Enter は時刻の挿入だけ(リリース版のまま)
   const noClock = !settings.autoTime
-  // RST を書くかは、配置ごとに持つ(コンパクトの既定は書かない。従来はリリース版のまま)
-  const writeRst = settings.layout === 'classic' ? settings.writeRst : settings.writeRstCompact
+  // RST を書くかは、配置ごとに持つ(フルキーの既定は書かない。従来はリリース版のまま)
+  const writeRst = compact ? settings.writeRstCompact : settings.writeRst
   const confirmScope = {
     noClock,
     expandTime: true,
@@ -453,21 +447,16 @@ function Editor({
     return lineStartedAt.current?.line === line ? lineStartedAt.current.ms : Date.now()
   }
 
-  /** 緑の候補バーの OK: 時刻・バンド・モード・RSTまで書き足して、次の行へ進む */
-  const confirmLine = () => finishLine(compact)
-
   /**
-   * 行を終える(QSO の行なら、時刻などを書き足す。OK とフルキーの ↵ で同じ)。
-   * `toNext` なら、次の行があればそこへ移るだけ(前の行を直したあとに、空の行を作らない)。
-   * そうでなければ(フルキーの ↵)、行末で改行して、下に行を足す(ログの途中に QSO を足せる)
+   * 緑の候補バーの OK(従来の配置だけ): 時刻・バンド・モード・RSTまで書き足して、行末で改行して、下に行を足す
+   * (ログの途中に QSO を足せる)
    */
-  const finishLine = (toNext: boolean) => {
+  const confirmLine = () => {
     const line = caretLine
     const edits = fillLine(text, line, startedAtFor(line), settings.timezone, confirmScope)
     const filled = applyEdits(text, edits)
     const shift = filled.split('\n').length - text.split('\n').length
     lineStartedAt.current = null
-    if (toNext && toNextLine(filled, line + shift)) return
     const end = lineRange(filled, line + shift)[1]
     pendingCaret.current = end + 1
     setText(filled.slice(0, end) + '\n' + filled.slice(end))
@@ -475,30 +464,8 @@ function Editor({
   }
 
   /**
-   * `value` の `line` 行目に次の行があれば、その行末へキャレットを移して true。最後の行なら何もせず false
-   * (呼ぶ側が改行を足す)。`value` が今の内容と違えば、書き換えてから移る
-   */
-  const toNextLine = (value: string, line: number): boolean => {
-    if (line >= value.split('\n').length - 1) return false
-    const pos = lineRange(value, line + 1)[1]
-    if (value !== text) {
-      pendingCaret.current = pos
-      setText(value)
-      setCaret(pos)
-      return true
-    }
-    const ta = taRef.current
-    if (ta) {
-      ta.focus()
-      ta.setSelectionRange(pos, pos)
-      scrollCaretIntoView(ta, pos, compact)
-    }
-    setCaret(pos)
-    return true
-  }
-
-  /**
-   * 入力の変化を受ける。行末で改行が1つ入ったときは、その行の補完(時刻)をテキストに確定する。
+   * 入力の変化を受ける。行末で改行が1つ入ったときは、その行の補完をテキストに確定する(従来は時刻だけ。
+   * フルキーは、OK と同じく確定の書き方のとおり。画面のキーボードの ↵ も、OS のキーボードの Enter も)。
    * キーの種類(keydown)ではなくテキストの変化で判定するので、ソフトキーボードでも同じに動く。
    */
   const handleChange = (value: string, pos: number, native: Event) => {
@@ -513,7 +480,7 @@ function Editor({
 
     if (newlineAdded) {
       const done = lineOf(value, pos) - 1
-      const edits = fillLine(value, done, startedAtFor(done), settings.timezone, { noClock })
+      const edits = fillLine(value, done, startedAtFor(done), settings.timezone, compact ? confirmScope : { noClock })
       if (edits.length > 0) {
         const at = mapCaret(pos, edits)
         lineStartedAt.current = null
@@ -582,18 +549,6 @@ function Editor({
     const value = text.slice(0, from) + key + text.slice(to)
     pendingCaret.current = from + key.length
     handleChange(value, from + key.length, new Event('input'))
-  }
-
-  /**
-   * コンパクトな配置の「次の行」: QSO でない行(40m cw など)で、次の行へ。最後の行なら、行末で改行する
-   * (Enter と同じ経路。時刻の補完も同じ)
-   */
-  const newline = () => {
-    // 前の行(40m cw など)を直したあとは、次の行へ移るだけ。最後の行なら、行末で改行する
-    if (toNextLine(text, caretLine)) return
-    const [, end] = lineRange(text, caretLine)
-    pendingCaret.current = end + 1
-    handleChange(text.slice(0, end) + '\n' + text.slice(end), end + 1, new Event('input'))
   }
 
   /** 数字の行の ⌫。カーソルの前の1文字(選択があれば、その範囲)を消す。打ったときと同じ経路を通す */
@@ -720,7 +675,7 @@ function Editor({
 
   return (
     <div className={`fixed inset-x-0 top-[var(--vvt,0px)] h-[var(--vvh,100dvh)] max-w-3xl mx-auto px-3 ${
-      // コンパクトな配置では、キーボードが出ている間は、ホームバーの分の余白を取らない(数字キーとキーボードの間が空く)
+      // フルキーでは、キーボードが出ている間は、ホームバーの分の余白を取らない(キーとキーボードの間が空く)
       compact && keyboard ? 'pb-2' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'
     } flex flex-col gap-2`}>
       <Header
@@ -730,33 +685,9 @@ function Editor({
         sync={sync}
       />
 
-      <div ref={logHeight.boxRef} className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
-        {compact && logHeight.lines > 0 && (
+      <div ref={clockRoom.boxRef} className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
+        {clockRoom.fits && (
           <StationClock info={info} tz={clockZone(info, view, caretLine, settings.timezone)} memo={memoAt(text, caretLine)} />
-        )}
-        {compact && (
-          // ログ欄の高さを変えるつまみ(上下にドラッグ。上に時刻と運用先が入らなくなるまで引けば、入る限り高く)。
-          // 見た目の余白は詰め、つかめる範囲は上下へ広げる(指で確実につかめる 50px 前後)。
-          // 上: 時刻と運用先は押しても何もしないので、横幅いっぱいに重ねる。上の表示がないときはヘッダーに少し重なるので、
-          // 右のメニュー・設定のボタンにかからないよう、真ん中の幅だけにする。
-          // 下: ログ欄の上の余白(内側)まで。1行目のタップは奪わない
-          <div
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label={t('editor.resize')}
-            title={t('editor.resize')}
-            {...logHeight.handleProps}
-            onMouseDown={(e) => e.preventDefault()}
-            className="relative z-10 flex-none h-3 flex items-center justify-center touch-none cursor-row-resize"
-          >
-            <span
-              aria-hidden="true"
-              className={`absolute -bottom-2.5 ${
-                logHeight.lines > 0 ? 'inset-x-0 -top-9' : 'left-1/2 -translate-x-1/2 w-40 -top-7'
-              }`}
-            />
-            <span className="w-14 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600" />
-          </div>
         )}
         <textarea
           ref={taRef}
@@ -780,16 +711,15 @@ function Editor({
           inputMode={onScreenKeys ? 'none' : undefined}
           // 従来の配置では、下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
           // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
-          // コンパクト・フルキーでは、緑のバーのコールサインと同じ大きさ(目が読み替えずに済む)。行間は詰める
-          className={`input min-h-0 resize-none font-semibold ${logHeight.height === null ? 'flex-1 h-full' : 'flex-none'} ${
+          // フルキーでは、緑のバーのコールサインと同じ大きさ(目が読み替えずに済む)。行間は詰める
+          className={`input flex-1 h-full min-h-0 resize-none font-semibold ${
             compact ? '!text-xl leading-[1.3]' : 'leading-relaxed pb-20'
           } ${settings.editorFont === 'mono' ? 'font-mono' : ''}`}
-          style={logHeight.height === null ? undefined : { height: logHeight.height }}
         />
         {!compact && <SuggestStrip candidates={completion.candidates} onPick={pick} />}
       </div>
 
-      {/* コンパクトな配置では、補完候補は候補バーに重ねて出す(打っている行のすぐ下。右端のボタンは覆わない) */}
+      {/* フルキーでは、補完候補は候補バーに重ねて出す(打っている行のすぐ下) */}
       <div className="relative flex-none">
         <CandidateBar
           view={view}
@@ -801,9 +731,7 @@ function Editor({
           autoTime={settings.autoTime}
           lineText={text.slice(...lineRange(text, caretLine))}
           compact={compact}
-          newlineButton={!onScreenKeys}
           suggest={compact && <SuggestStrip candidates={completion.candidates} onPick={pick} overBar />}
-          onNewline={newline}
           onOpenList={() => setListOpen(true)}
           onConfirm={confirmLine}
           onSelectPart={caretToPart}
@@ -816,7 +744,8 @@ function Editor({
           onKey={typeKey}
           onMove={moveCaret}
           onBackspace={backspace}
-          onNewline={() => finishLine(false)}
+          // エディタの Enter と同じく、カーソルの位置で改行する(行の途中なら行を割る。行末なら、時刻などを書き足してから)
+          onNewline={() => typeKey('\n')}
           onOsKeyboard={() => setOsKeyboard(true)}
           onUndo={undo}
           keyScale={settings.keyScale}
@@ -836,7 +765,7 @@ function Editor({
           {t('keys.back')}
         </button>
       ) : (
-        settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} onBackspace={backspace} compact={compact} />
+        settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} onBackspace={backspace} />
       )}
 
       {landscape && (
@@ -964,7 +893,7 @@ function Editor({
           <MenuButton icon={MapPin} label={t('menu.place')} onClick={fromMenu(() => void openPlace())} />
           <MenuButton icon={ClipboardList} label={t('menu.plans')} onClick={fromMenu(() => setPlansOpen(true))} />
         </MenuGroup>
-        {/* コンパクトな配置では、QSO の数は表示だけ。一覧はここから */}
+        {/* フルキーでは、QSO の数は表示だけ。一覧はここから */}
         {compact && (
           <MenuGroup title={t('menu.group.log')}>
             <MenuButton icon={List} label={t('menu.list')} onClick={fromMenu(() => setListOpen(true))} />

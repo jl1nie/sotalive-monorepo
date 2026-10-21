@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { ArrowBigUp, CornerDownLeft, Delete, Globe, Undo2 } from 'lucide-react'
 import { useKeyPad } from '@/hooks/useKeyPad'
 import { KEY_SCALE_MAX, KEY_SCALE_MIN } from '@/hooks/useSettings'
@@ -30,6 +30,14 @@ const DOUBLE: Record<string, string> = { '-': ',', '/': '.' }
 /** 2回目を「続けて」とみなす間隔(ms) */
 const DOUBLE_TAP = 400
 
+/**
+ * 長押しで、別の文字になるキー(キーには書かない。押している間の吹き出しで見せる)。`#` はメモ・注釈の行に使う。
+ * 数字は続けて2回押す(599 など)ので、長押しにする
+ */
+const LONG: Record<string, string> = { '3': '#' }
+/** 長押しとみなす長さ(ms)。寒いところや手袋で、ゆっくり押しても数字が入るよう、少し長め */
+const LONG_PRESS = 500
+
 /** 文字のキー */
 const CHAR = `${FACE} bg-gray-100 dark:bg-gray-900 font-mono text-xl font-bold`
 /** 文字でないキー(⌫・空白・🌐 など)は、少し沈んだ色で分ける */
@@ -42,7 +50,7 @@ interface Props {
   onMove: (delta: number) => void
   /** ⌫: カーソルの前の1文字(選択があれば、その範囲)を消す */
   onBackspace: () => void
-  /** 右下のキー ↵: 行末で改行して、下に行を足す(QSO の行なら、OK と同じく書き足してから。次の行へ進むだけなら、緑のバーの OK) */
+  /** 右下のキー ↵: エディタの Enter と同じく、カーソルの位置で改行する(次の行へ進むだけなら、緑のバーの OK) */
   onNewline: () => void
   /** 🌐: OS のキーボードに切り替える(日本語のメッセージ・備考など) */
   onOsKeyboard: () => void
@@ -59,7 +67,7 @@ interface Props {
 
 /**
  * フルキーの配置の、画面のキーボード(OS のキーボードの代わり)。FLE で打つのは、ほとんどが英数字と記号なので、
- * 数字・英字・/ - 空白 ⌫ と、確定(次の行)を1枚にまとめる。- を続けて2回で , 、/ を続けて2回で . になる。押してもテキスト入力からフォーカスを奪わない。
+ * 数字・英字・/ - 空白 ⌫ と、改行を1枚にまとめる。- を続けて2回で , 、/ を続けて2回で . 、3 の長押しで # になる。押してもテキスト入力からフォーカスを奪わない。
  * 英字は小文字で入れる(FLE は大文字・小文字を区別しない)。Caps(Z の左)がオンなら大文字で入れる。キーの文字も、入る文字に合わせる。
  * 打ちやすさのために、スマホのキーボードと同じく:
  * - キーの間の隙間を押しても、近いキーが入る
@@ -108,11 +116,30 @@ export function FullKeyboard({
   const { padProps, tap, backspaceProps } = useKeyPad(onMove, onBackspace, true)
   // 押している文字のキー(吹き出しを出す)
   const [pressed, setPressed] = useState<string | null>(null)
-  const release = () => setPressed(null)
+  // 長押しになったキー(吹き出しを、長押しの文字にする。離したときの click で、その文字を打つ)
+  const [held, setHeld] = useState<string | null>(null)
+  const holdTimer = useRef(0)
+  useEffect(() => () => window.clearTimeout(holdTimer.current), [])
+  const press = (k: string) => {
+    setPressed(k)
+    setHeld(null)
+    window.clearTimeout(holdTimer.current)
+    if (LONG[k]) holdTimer.current = window.setTimeout(() => setHeld(k), LONG_PRESS)
+  }
+  const release = () => {
+    setPressed(null)
+    window.clearTimeout(holdTimer.current)
+  }
   // 直前に押した文字のキーと時刻(続けて2回で、別の文字にする)
   const lastTap = useRef<{ k: string; at: number } | null>(null)
   /** `at` は押した時刻(イベントの timeStamp、ms) */
   const typeChar = (k: string, at: number) => {
+    if (held === k) {
+      setHeld(null)
+      lastTap.current = null
+      onKey(LONG[k])
+      return
+    }
     const now = at
     const prev = lastTap.current
     const alt = DOUBLE[k]
@@ -130,7 +157,7 @@ export function FullKeyboard({
     <button
       key={k}
       type="button"
-      onPointerDown={() => setPressed(k)}
+      onPointerDown={() => press(k)}
       onClick={(e) => tap(() => typeChar(k, e.timeStamp))()}
       className={`${HIT} ${SPAN[span]}`}
     >
@@ -148,7 +175,7 @@ export function FullKeyboard({
           aria-hidden="true"
           className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-20 min-w-12 h-14 px-2 rounded-xl border-2 border-gray-400 dark:border-gray-500 bg-white dark:bg-gray-700 shadow-lg flex items-center justify-center font-mono text-3xl font-bold pointer-events-none ${caps ? 'uppercase' : ''}`}
         >
-          {k}
+          {held === k ? LONG[k] : k}
         </span>
       )}
     </button>
@@ -230,18 +257,11 @@ export function FullKeyboard({
         {fnKey(t('keys.os'), onOsKeyboard, <Globe className="w-5 h-5" aria-hidden="true" />, 2)}
         {fnKey(t('keys.undo'), onUndo, <Undo2 className="w-5 h-5" aria-hidden="true" />, 2)}
         {fnKey(t('digits.left'), () => onMove(-1), '←', 2, true)}
-        {fnKey(t('digits.space'), () => onKey(' '), t('digits.space'), 8, true)}
+        {/* 空白と ↵ は、形と場所でわかるので、文字を書かない(OS のキーボードと同じ) */}
+        {fnKey(t('digits.space'), () => onKey(' '), null, 8, true)}
         {fnKey(t('digits.right'), () => onMove(1), '→', 2, true)}
-        {/* 右下(OS のキーボードの Enter の位置)で、改行して下に行を足す。次の行へ進むのは、ログを見ている緑のバーの右端の OK */}
-        {fnKey(
-          t('keys.newlineLabel'),
-          onNewline,
-          <>
-            <CornerDownLeft className="w-5 h-5" aria-hidden="true" />
-            <span className="ml-1 whitespace-nowrap">{t('keys.newline')}</span>
-          </>,
-          4
-        )}
+        {/* 右下(OS のキーボードの Enter の位置)で、カーソルの位置で改行する。次の行へ進むのは、ログを見ている緑のバーの右端の OK */}
+        {fnKey(t('keys.newlineLabel'), onNewline, <CornerDownLeft className="w-5 h-5" aria-hidden="true" />, 4)}
       </div>
     </div>
   )

@@ -17,7 +17,7 @@ function clockAt(now: number, tz: number): string {
 }
 
 /**
- * ログ欄の上の、空いた所に出す時刻と運用先(CQ を出しながら読む)。
+ * フルキーで、ログ欄の上に出す時刻と運用先(CQ を出しながら読む)。
  * 運用先は、カーソルの行で有効なもの(途中で運用先を変えたログでも、その位置の値)
  */
 export function StationClock({ info, tz, memo = '' }: Props) {
@@ -33,7 +33,8 @@ export function StationClock({ info, tz, memo = '' }: Props) {
     <div
       role="group"
       aria-label={t('clock.label')}
-      className="flex-1 min-h-0 overflow-hidden flex flex-col items-center justify-center gap-1 select-none"
+      // 高さは決まった値(CLOCK_REM。入るかどうかを、この高さで決める)
+      className="flex-none h-[6.5rem] overflow-hidden flex flex-col items-center justify-center gap-1 select-none"
     >
       <div className="flex items-baseline gap-3 font-mono font-bold tabular-nums">
         <span className="text-4xl leading-none">{clockAt(now, tz)}</span>

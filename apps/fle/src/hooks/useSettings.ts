@@ -8,11 +8,11 @@ export type EditorFont = 'gothic' | 'mono'
 /** QSO の数の出し方。その日(カーソルの日、UTC)の数と全体の数か、全体の数だけか */
 export type QsoCount = 'day' | 'total'
 /**
- * 入力画面の配置(比べて選べるように、どれも残す)。classic は従来のもの。compact は、打っている行・候補バー・
- * 数字キー・⌫ を手元にまとめたもの(数字キーは2段、ログは下寄せ、補完候補は候補バーに重ねる)。
- * fullkey は、compact に加えて、OS のキーボードの代わりに画面のキーボード(数字・英字・記号・確定)を出すもの
+ * 入力画面の配置。classic は従来のもの(PC)。fullkey は、打っている行・候補バーを手元にまとめ(ログは下寄せ、
+ * 補完候補は候補バーに重ねる)、OS のキーボードの代わりに画面のキーボード(数字・英字・記号・改行)を出すもの(スマホ)。
+ * 以前の compact(fullkey の 🌐 で OS のキーボードにしたときと同じ)は、読むときにどちらかへ移す
  */
-export type Layout = 'classic' | 'compact' | 'fullkey'
+export type Layout = 'classic' | 'fullkey'
 
 export interface Settings {
   theme: Theme
@@ -25,7 +25,7 @@ export interface Settings {
   /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も) */
   writeRst: boolean
   /**
-   * コンパクト・フルキーの配置での writeRst。既定は書かない(打ったまま。意味はバーに出る)。
+   * フルキーの配置での writeRst(以前のコンパクトから引き継ぐので、名前はそのまま)。既定は書かない(打ったまま。意味はバーに出る)。
    * 従来の配置(リリース版)の動きを変えないよう、別に持つ。同期しない(端末ごと)
    */
   writeRstCompact: boolean
@@ -45,10 +45,10 @@ export interface Settings {
    */
   keyScale: number
   /**
-   * コンパクト・フルキーの、ログ欄の高さ(行数)。0 は、入る限り高く。ログ欄の上の縁のつまみをドラッグして変える。
-   * 空いた上の部分に、時刻と運用先を出す。同期しない(端末ごと)
+   * フルキーで、ログ欄の上に時刻と運用先(とメモ)を出す。入らないとき(OS のキーボードで狭いときなど)は出さない。
+   * 同期しない(端末ごと)
    */
-  logLines: number
+  showClock: boolean
   /**
    * フルキーの英字を大文字で打つ(Caps。Z の左のキー)。FLE は大文字・小文字を区別しないので、どちらでも同じに読む。
    * 夕方など、小文字の m と n を見分けにくいとき。同期しない(端末ごと)
@@ -76,6 +76,11 @@ export const touchDevice = () => {
     return false
   }
 }
+/** 実際に動く配置。フルキーは、タッチ端末でだけ(PC では、フルキーを選んでいても従来として動く) */
+export function activeLayout(layout: Layout, touch: boolean): Layout {
+  return layout === 'fullkey' && touch ? 'fullkey' : 'classic'
+}
+
 const DEFAULTS: Settings = {
   theme: 'system',
   timezone: 0,
@@ -89,7 +94,7 @@ const DEFAULTS: Settings = {
   qsoCount: 'day',
   layout: 'classic',
   keyScale: 1,
-  logLines: 0,
+  showClock: true,
   capsLock: false,
   rigs: [],
 }
@@ -122,17 +127,21 @@ function load(): Settings {
       digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
       editorFont: v.editorFont === 'gothic' ? 'gothic' : 'mono',
       qsoCount: v.qsoCount === 'total' ? 'total' : 'day',
-      // 配置: 初めて使うスマホはフルキー。前から使っている端末は、選んでいなければ従来のまま
+      // 配置: 初めて使うスマホはフルキー。前から使っている端末は、選んでいなければ従来のまま。
+      // 以前のコンパクトは、スマホならフルキー(🌐 で同じ画面になる)、PC なら従来へ
       layout:
-        v.layout === 'compact' || v.layout === 'fullkey' || v.layout === 'classic'
+        v.layout === 'fullkey' || v.layout === 'classic'
           ? v.layout
-          : stored === null && touchDevice() && !usedBefore()
-            ? 'fullkey'
-            : 'classic',
+          : v.layout === 'compact'
+            ? touchDevice()
+              ? 'fullkey'
+              : 'classic'
+            : stored === null && touchDevice() && !usedBefore()
+              ? 'fullkey'
+              : 'classic',
       keyScale:
         typeof v.keyScale === 'number' && v.keyScale >= KEY_SCALE_MIN && v.keyScale <= KEY_SCALE_MAX ? v.keyScale : 1,
-      // 2行から(以前の版の 1 行は、入る限り高くとして読む)
-      logLines: Number.isInteger(v.logLines) && v.logLines >= 2 && v.logLines <= 100 ? v.logLines : 0,
+      showClock: typeof v.showClock === 'boolean' ? v.showClock : DEFAULTS.showClock,
       capsLock: typeof v.capsLock === 'boolean' ? v.capsLock : DEFAULTS.capsLock,
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
     }

@@ -18,7 +18,7 @@ interface Props {
 }
 
 /**
- * 補完候補。入力欄の下端か(従来の配置)、候補バー(`overBar`、コンパクトな配置。打っている行のすぐ下、目の行く所)に重ねる。
+ * 補完候補。入力欄の下端か(従来の配置)、候補バー(`overBar`、フルキー。打っている行のすぐ下、目の行く所)に重ねる。
  * 出入りしても、入力欄の高さも、打っている行の位置も変わらない。
  */
 export function SuggestStrip({ candidates, onPick, overBar = false }: Props) {

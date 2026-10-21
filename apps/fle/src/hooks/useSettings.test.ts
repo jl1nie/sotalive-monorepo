@@ -80,11 +80,13 @@ describe('useSettings: 画面の配置', () => {
     expect(result.current.settings.layout).toBe('classic')
   })
 
-  it('コンパクトを選ぶと保存され、開き直してもコンパクト。知らない値は従来として読む', () => {
-    const first = renderHook(() => useSettings())
-    act(() => first.result.current.update({ layout: 'compact' }))
-    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('compact')
+  it('知らない値は従来として読む', () => {
     localStorage.setItem(KEY, JSON.stringify({ layout: 'grid' }))
+    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
+  })
+
+  it('以前のコンパクトは、PC では従来として読む', () => {
+    localStorage.setItem(KEY, JSON.stringify({ layout: 'compact' }))
     expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
   })
 
@@ -99,7 +101,7 @@ describe('useSettings: 画面の配置', () => {
     expect(SYNCED_KEYS).not.toContain('writeRstCompact')
   })
 
-  it('確定で RST を書くかは、従来はリリース版のまま書き、コンパクトは書かない', () => {
+  it('確定で RST を書くかは、従来はリリース版のまま書き、フルキーは書かない', () => {
     const { result } = renderHook(() => useSettings())
     expect(result.current.settings.writeRst).toBe(true)
     expect(result.current.settings.writeRstCompact).toBe(false)
@@ -132,6 +134,12 @@ describe('useSettings: スマホで初めて使うときは、フルキー', () 
     expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
   })
 
+  it('以前のコンパクトは、スマホではフルキーとして読む(🌐 で同じ画面になる)', () => {
+    touch()
+    localStorage.setItem(KEY, JSON.stringify({ layout: 'compact' }))
+    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('fullkey')
+  })
+
   it('PC では、初めてでも従来', () => {
     expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
   })
@@ -152,20 +160,18 @@ describe('useSettings: フルキーのキーの高さ', () => {
   })
 })
 
-describe('useSettings: ログ欄の高さ', () => {
-  it('初めては入る限り高く(0)。行数を保存し、範囲の外の値は 0 として読む', () => {
+describe('useSettings: 時刻と運用先(フルキー)', () => {
+  it('初めては出す。保存し、真偽値でなければ出すとして読む', () => {
     const first = renderHook(() => useSettings())
-    expect(first.result.current.settings.logLines).toBe(0)
-    act(() => first.result.current.update({ logLines: 6 }))
-    expect(renderHook(() => useSettings()).result.current.settings.logLines).toBe(6)
-    for (const bad of [-1, 1, 2.5, 101, '6']) {
-      localStorage.setItem(KEY, JSON.stringify({ logLines: bad }))
-      expect(renderHook(() => useSettings()).result.current.settings.logLines).toBe(0)
-    }
+    expect(first.result.current.settings.showClock).toBe(true)
+    act(() => first.result.current.update({ showClock: false }))
+    expect(renderHook(() => useSettings()).result.current.settings.showClock).toBe(false)
+    localStorage.setItem(KEY, JSON.stringify({ showClock: 'no' }))
+    expect(renderHook(() => useSettings()).result.current.settings.showClock).toBe(true)
   })
 
   it('同期しない(端末ごと)', () => {
-    expect(SYNCED_KEYS).not.toContain('logLines')
+    expect(SYNCED_KEYS).not.toContain('showClock')
   })
 })
 
