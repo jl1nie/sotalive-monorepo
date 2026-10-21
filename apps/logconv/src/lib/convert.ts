@@ -6,7 +6,7 @@ export class ConvertError extends Error {}
 export const TIMEOUT_MS = 120_000
 const TIMEOUT_MESSAGE = '時間がかかりすぎています。ファイルを分けて試してください'
 const NETWORK_MESSAGE = 'サーバーに接続できませんでした。通信を確かめてください'
-const TOO_LARGE_MESSAGE = 'ファイルが大きすぎます(上限 8MB)'
+const TOO_LARGE_MESSAGE = 'ファイルが大きすぎます(上限 2MB)'
 
 /** fetch に時間切れをつける。応答が返らなければ中断して ConvertError にする */
 export async function fetchWithTimeout(url: string, init: RequestInit, ms = TIMEOUT_MS): Promise<Response> {
