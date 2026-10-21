@@ -16,6 +16,8 @@ export interface Plan {
   rig: string
   /** QSLメッセージ(任意。`$rig` などを含められる) */
   qslmsg: string
+  /** メモ(任意。JCC・JCG など。ログに `#` の行で書く)。前の版で作った予定にはない */
+  memo?: string
   /** 最後に変えた時刻(ms) */
   updatedAt: number
 }
@@ -43,7 +45,7 @@ export function newPlanId(random: (n: number) => Uint8Array = (n) => crypto.getR
 }
 
 export function emptyPlan(id: string, now: number, mycall = ''): Plan {
-  return { id, title: '', date: '', mycall, sota: '', pota: [], wwff: '', grid: '', rig: '', qslmsg: '', updatedAt: now }
+  return { id, title: '', date: '', mycall, sota: '', pota: [], wwff: '', grid: '', rig: '', qslmsg: '', memo: '', updatedAt: now }
 }
 
 /** 同じ番号は、更新時刻の新しいほう(同じなら、サーバーのほう)を残す。古い消した印は捨てる */

@@ -120,7 +120,8 @@ rig KX2+EFHW
 qslmsg $mysota $rig
 # JCC 1307 秩父市</code></pre>
 <p>You can also skip plans and type your callsign and summit on the spot (suggestions appear as you type a name).</p>
-<p><b>The last <code>#</code> line is a JCC/JCG memo.</b> For a summit or park in Japan (or your current position, when you found the grid with 📍), the city or county is looked up while online and written (from the Geospatial Information Authority of Japan and the backend). <code>#</code> lines are comments and are not output. Fix it by hand if needed, for example when the summit is on a border. Any <code>#</code> line you write yourself works the same way as a memo.</p>
+<p><b>The last <code>#</code> line is the memo field (JCC/JCG etc.).</b> The location screen and plans have a "Memo" field. Choose a summit or park from the suggestions, or find your position with 📍, and JCC/JCG is looked up while online (Japan only; from the Geospatial Information Authority of Japan and the backend). You can check and fix it before writing (for example when the summit is on a border). If you write with the field empty, it is looked up from the summit or park. Plans keep a memo too, so look it up at home and it works without signal on the summit.</p>
+<p>The memo is written as a <code>#</code> line (a comment), so it is not output. When the screen opens, the field shows the memo in effect at that point. Change it and write, and a new <code>#</code> line is added (the old memo stays). A <code>#</code> line you write yourself is a memo too.</p>
 
 <h3>Write QSOs</h3>
 <p>Write one QSO per line. First write the band and mode on one line.</p>
