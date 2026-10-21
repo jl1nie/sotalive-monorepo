@@ -55,6 +55,8 @@ const OMISSIONS = new Set(['missing_band', 'missing_mode'])
 
 const BAR = 'flex-1 min-w-0 rounded-xl border-2 overflow-hidden'
 const BIG = 'font-mono text-xl font-bold leading-tight'
+/** フルキーの大きな文字(右端の ✓ がなく、バーが高いので、一段大きく。屋外で読めるように) */
+const BIGGER = 'font-mono text-2xl font-bold leading-tight'
 /** 緑のバーの、押すと選べる要素 */
 const PART = 'text-left rounded-lg active:bg-emerald-200 dark:active:bg-emerald-800'
 
@@ -173,6 +175,14 @@ export function CandidateBar({
   const clock = autoTime || !info ? new Date(now + tz * 3_600_000).toISOString().slice(11, 16) : info.time
   const setting = [info?.band, info?.mode].filter(Boolean).join(' ')
   const meaning = resolved(info, names, t)
+  const big = compact ? BIGGER : BIG
+  // 2段目の、リファレンス・グリッド(と備考)。1行に収め、入らなければ末尾を … で省く(要素ごとに折り返さない)
+  const extras = qso && (
+    <>
+      {[...qso.refs, qso.grid].filter(Boolean).join(' ')}
+      {qso.comment && <span className="ml-2 font-sans">{qso.comment}</span>}
+    </>
+  )
 
   // その日(カーソルの日、UTC)のQSOの数を大きく、全体の数(フルキーで POTA・SOTA なら、アクティベーション成立に必要な数)を小さく。設定で、全体の数だけにもできる
   const total = view?.qsos.length ?? 0
@@ -196,13 +206,14 @@ export function CandidateBar({
         // フルキー: 低く。コールと RST(同じくらい直す、同じ重さの情報)を同じ大きな文字で1段目に、
         // 時刻・バンド・モード・リファレンスは小さく2段目に
         <span className="flex-1 min-w-0 flex flex-col">
-          <span className="flex-1 flex items-center gap-x-1 min-h-0 font-mono tabular-nums">
+          {/* コールは左、RST は右端に寄せて、空いた幅を、押す的にする */}
+          <span className="flex-1 flex items-center justify-between gap-x-2 min-h-0 font-mono tabular-nums">
             <button
               type="button"
               {...keepFocus}
               onClick={() => onSelectPart('call')}
               aria-label={t('bar.selectCall')}
-              className={`${PART} ${BIG} min-w-0 h-full pl-2 pr-1 break-all line-clamp-1`}
+              className={`${PART} ${BIGGER} flex-1 min-w-0 h-full pl-2 pr-1 break-all line-clamp-1`}
             >
               {qso.call}
             </button>
@@ -211,7 +222,7 @@ export function CandidateBar({
               {...keepFocus}
               onClick={() => onSelectPart('rst')}
               aria-label={t('bar.selectRst')}
-              className={`${PART} ${BIG} flex-none h-full px-1`}
+              className={`${PART} ${BIGGER} flex-none h-full px-2`}
             >
               {qso.rstSent}/{qso.rstRcvd}
             </button>
@@ -229,13 +240,7 @@ export function CandidateBar({
             <span className="whitespace-nowrap font-bold">
               {qso.band} {qso.mode}
             </span>
-            <span className="flex-1 min-w-0 flex gap-x-2 line-clamp-1 overflow-hidden font-mono">
-              {qso.refs.map((r) => (
-                <span key={r}>{r}</span>
-              ))}
-              {qso.grid && <span>{qso.grid}</span>}
-              {qso.comment && <span className="font-sans">{qso.comment}</span>}
-            </span>
+            <span className="flex-1 min-w-0 pr-2 truncate font-mono">{extras}</span>
           </span>
         </span>
       ) : (
@@ -273,13 +278,7 @@ export function CandidateBar({
             >
               {timeLabel(qso)}
             </button>
-            <span className="flex-1 min-w-0 flex gap-x-3 text-sm line-clamp-1 overflow-hidden">
-              {qso.refs.map((r) => (
-                <span key={r}>{r}</span>
-              ))}
-              {qso.grid && <span>{qso.grid}</span>}
-              {qso.comment && <span className="font-sans">{qso.comment}</span>}
-            </span>
+            <span className="flex-1 min-w-0 pr-2 truncate text-sm">{extras}</span>
           </span>
         </span>
       )}
@@ -305,7 +304,7 @@ export function CandidateBar({
       className={`${BAR} px-3 ${compact ? 'py-0.5' : 'py-2'} flex flex-col justify-center gap-0.5 ${omissions.length > 0 ? TONE.error : TONE.draft}`}
     >
       <span className="flex items-baseline justify-between gap-2">
-        <span className={`${BIG} break-all line-clamp-1`}>{typed}</span>
+        <span className={`${big} break-all line-clamp-1`}>{typed}</span>
         {setting && <span className="font-bold whitespace-nowrap">{setting}</span>}
       </span>
       {omissions.length > 0 ? (
@@ -324,17 +323,17 @@ export function CandidateBar({
     >
       {meaning ? (
         meaning.map((m, i) => (
-          <span key={i} className={`${meaning.length > 1 ? 'font-bold' : BIG} line-clamp-1 break-all`}>
+          <span key={i} className={`${meaning.length > 1 ? 'font-bold' : big} line-clamp-1 break-all`}>
             {m}
           </span>
         ))
       ) : (
         <span className="flex items-baseline justify-between gap-2">
-          <span className={`${BIG} tabular-nums`}>
+          <span className={`${big} tabular-nums`}>
             {clock}
             <small className="ml-1 text-sm">{tz === 0 ? 'UTC' : zoneLabel(tz)}</small>
           </span>
-          {setting && <span className={BIG}>{setting}</span>}
+          {setting && <span className={big}>{setting}</span>}
         </span>
       )}
     </div>

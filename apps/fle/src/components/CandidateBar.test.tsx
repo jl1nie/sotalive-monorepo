@@ -285,6 +285,26 @@ describe('CandidateBar: コンパクトな配置の QSO の数', () => {
   })
 })
 
+describe('CandidateBar: フルキーの緑のバー', () => {
+  const log = 'mycall JA1ABC\ndate 2026-10-19\n40m cw\n1011 7m1abc/1 jaff-0001 pm95 {山田さん}'
+
+  it('2段目のリファレンス・グリッド・備考は、1つの要素で1行に収め、入らなければ … で省く(要素ごとに折り返さない)', () => {
+    renderAt(log, 3, 'day', true, () => {}, 0, true)
+    const extras = screen.getByText(/JAFF-0001 PM95/)
+    expect(extras).toHaveClass('truncate')
+    expect(extras).toHaveTextContent('JAFF-0001 PM95山田さん')
+  })
+
+  it('コールは左、RST は右端に寄せ、どちらも大きな文字', () => {
+    renderAt(log, 3, 'day', true, () => {}, 0, true)
+    const call = screen.getByRole('button', { name: /コールを直す/ })
+    const rst = screen.getByRole('button', { name: /RSTを直す/ })
+    expect(call.parentElement).toHaveClass('justify-between')
+    expect(call).toHaveClass('text-2xl')
+    expect(rst).toHaveClass('text-2xl')
+  })
+})
+
 describe('CandidateBar: 右端の ✓', () => {
   const log = 'mycall JA1ABC\ndate 2026-10-19\n40m cw\n0900 ja1aaa'
   const suggest = <button type="button">ssb</button>
