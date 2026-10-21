@@ -30,9 +30,10 @@ interface Props {
    */
   compact?: boolean
   /**
-   * コンパクトな配置: 右端のボタン(✓ 確定・次の行)を出すか。フルキーでは出さない(キーボードの右下に同じキーがある)
+   * コンパクトな配置: QSO でない行で、右端に「次の行」を出すか。フルキーでは出さない(キーボードの右下にある)。
+   * 確定(✓)は、どの配置でも緑のバーの右端(確定の前に見るログのすぐ横)
    */
-  rightButton?: boolean
+  newlineButton?: boolean
   /** コンパクトな配置: 補完候補(右端の ✓・次の行のボタンは覆わない) */
   suggest?: ReactNode
   /** コンパクトな配置: QSO でない行(40m cw など)で、行末で改行して次の行へ(右端のボタン) */
@@ -142,7 +143,7 @@ export function CandidateBar({
   count = 'day',
   autoTime = true,
   compact = false,
-  rightButton = true,
+  newlineButton = true,
   suggest = null,
   onNewline = () => {},
   onOpenList = () => {},
@@ -293,20 +294,18 @@ export function CandidateBar({
           </span>
         </span>
       )}
-      {/* 従来・コンパクトでは右端の ✓。フルキーでは出さない(キーボードの右下にある) */}
-      {(!compact || rightButton) && (
-        <button
-          type="button"
-          onClick={onConfirm}
-          // 押してもテキスト入力からフォーカスを奪わない(キーボードを閉じない)
-          {...keepFocus}
-          aria-label={t('bar.confirmLabel')}
-          className="flex-none w-16 flex flex-col items-center justify-center gap-0.5 border-l-2 border-emerald-700/40 dark:border-emerald-400/40 font-bold text-sm active:bg-emerald-200 dark:active:bg-emerald-800"
-        >
-          <Check className="w-6 h-6" aria-hidden="true" />
-          {t('bar.confirm')}
-        </button>
-      )}
+      {/* 右端の ✓(どの配置でも) */}
+      <button
+        type="button"
+        onClick={onConfirm}
+        // 押してもテキスト入力からフォーカスを奪わない(キーボードを閉じない)
+        {...keepFocus}
+        aria-label={t('bar.confirmLabel')}
+        className="flex-none w-16 flex flex-col items-center justify-center gap-0.5 border-l-2 border-emerald-700/40 dark:border-emerald-400/40 font-bold text-sm active:bg-emerald-200 dark:active:bg-emerald-800"
+      >
+        <Check className="w-6 h-6" aria-hidden="true" />
+        {t('bar.confirm')}
+      </button>
     </div>
   ) : omissions.length > 0 || draft ? (
     // 書き忘れ(赤)と入力の途中(橙)は同じ形: 打った文字と、足りないもの。書き忘れは、すぐ知らせる
@@ -397,12 +396,12 @@ export function CandidateBar({
           <div className="relative flex-1 min-w-0 flex">
             {bar}
             <div
-              className={`absolute inset-y-0 left-0 z-10 pointer-events-none ${confirmable && rightButton ? 'right-[4.25rem]' : 'right-0'}`}
+              className={`absolute inset-y-0 left-0 z-10 pointer-events-none ${confirmable ? 'right-[4.25rem]' : 'right-0'}`}
             >
               {suggest}
             </div>
           </div>
-          {!confirmable && rightButton && (
+          {!confirmable && newlineButton && (
             <button
               type="button"
               onClick={onNewline}

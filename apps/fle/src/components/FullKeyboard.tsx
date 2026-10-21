@@ -1,5 +1,5 @@
 import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
-import { ArrowBigUp, Check, CornerDownLeft, Delete, Globe, Undo2 } from 'lucide-react'
+import { ArrowBigUp, CornerDownLeft, Delete, Globe, Undo2 } from 'lucide-react'
 import { useKeyPad } from '@/hooks/useKeyPad'
 import { KEY_SCALE_MAX, KEY_SCALE_MIN } from '@/hooks/useSettings'
 import { useT } from '@/lib/i18n'
@@ -18,7 +18,7 @@ const HIT = 'relative min-w-0 h-full p-[2px] group'
 const FACE =
   'h-full w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 flex items-center justify-center group-active:bg-gray-300 dark:group-active:bg-gray-700'
 /** キーの幅(20列のうち)。Tailwind が見つけられるよう、クラス名はそのまま書く */
-const SPAN = { 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4', 6: 'col-span-6' } as const
+const SPAN = { 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4', 6: 'col-span-6', 8: 'col-span-8' } as const
 type Span = keyof typeof SPAN
 
 /**
@@ -42,9 +42,7 @@ interface Props {
   onMove: (delta: number) => void
   /** ⌫: カーソルの前の1文字(選択があれば、その範囲)を消す */
   onBackspace: () => void
-  /** 右下のキー: 確定できる行(緑)なら確定、ほかは行末で改行して次の行へ */
-  confirmable: boolean
-  onConfirm: () => void
+  /** 右下のキー: 行末で改行して次の行へ(確定は、緑のバーの右端の ✓) */
   onNewline: () => void
   /** 🌐: OS のキーボードに切り替える(日本語のメッセージ・備考など) */
   onOsKeyboard: () => void
@@ -72,8 +70,6 @@ export function FullKeyboard({
   onKey,
   onMove,
   onBackspace,
-  confirmable,
-  onConfirm,
   onNewline,
   onOsKeyboard,
   onUndo,
@@ -140,9 +136,9 @@ export function FullKeyboard({
     >
       <span className={`${CHAR} ${caps ? 'uppercase' : ''} relative`}>
         {k}
-        {/* 続けて2回押したときの文字を、右上に小さく */}
+        {/* 続けて2回押したときの文字を、右下に小さく(右上の , は ' に見える) */}
         {DOUBLE[k] && (
-          <small aria-hidden="true" className="absolute top-0 right-1 text-xs leading-none">
+          <small aria-hidden="true" className="absolute bottom-0.5 right-1 text-xs leading-none">
             {DOUBLE[k]}
           </small>
         )}
@@ -234,28 +230,17 @@ export function FullKeyboard({
         {fnKey(t('keys.os'), onOsKeyboard, <Globe className="w-5 h-5" aria-hidden="true" />, 2)}
         {fnKey(t('keys.undo'), onUndo, <Undo2 className="w-5 h-5" aria-hidden="true" />, 2)}
         {fnKey(t('digits.left'), () => onMove(-1), '←', 2, true)}
-        {fnKey(t('digits.space'), () => onKey(' '), t('digits.space'), 6, true)}
+        {fnKey(t('digits.space'), () => onKey(' '), t('digits.space'), 8, true)}
         {fnKey(t('digits.right'), () => onMove(1), '→', 2, true)}
-        {/* 右下(OS のキーボードの Enter の位置)で、次の行へ。確定できる行は、確定して次の行へ */}
-        {confirmable ? (
-          <button type="button" aria-label={t('bar.confirmLabel')} onClick={tap(onConfirm)} className={`${HIT} col-span-6`}>
-            <span
-              className={`${FN} gap-1 !bg-emerald-700 !text-white !border-emerald-700 dark:!bg-emerald-600 dark:!border-emerald-600`}
-            >
-              <Check className="w-5 h-5" aria-hidden="true" />
-              {t('bar.confirm')}
-            </span>
-          </button>
-        ) : (
-          fnKey(
-            t('bar.newlineLabel'),
-            onNewline,
-            <>
-              <CornerDownLeft className="w-5 h-5" aria-hidden="true" />
-              <span className="ml-1">{t('bar.newline')}</span>
-            </>,
-            6
-          )
+        {/* 右下(OS のキーボードの Enter の位置)で、改行して次の行へ。確定は、ログを見ている緑のバーの右端 */}
+        {fnKey(
+          t('bar.newlineLabel'),
+          onNewline,
+          <>
+            <CornerDownLeft className="w-5 h-5" aria-hidden="true" />
+            <span className="ml-1 whitespace-nowrap">{t('keys.newline')}</span>
+          </>,
+          4
         )}
       </div>
     </div>

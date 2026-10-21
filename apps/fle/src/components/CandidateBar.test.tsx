@@ -48,7 +48,7 @@ function renderAt(
   onSelectPart: (part: string) => void = () => {},
   timezone = 0,
   compact = false,
-  extra: { suggest?: ReactNode; onNewline?: () => void; rightButton?: boolean } = {}
+  extra: { suggest?: ReactNode; onNewline?: () => void; newlineButton?: boolean } = {}
 ) {
   const view = compile(text) as LogView
   const info = lineInfo(text, line) as LineInfo
@@ -64,7 +64,7 @@ function renderAt(
       autoTime={autoTime}
       compact={compact}
       suggest={extra.suggest}
-      rightButton={extra.rightButton}
+      newlineButton={extra.newlineButton}
       onNewline={extra.onNewline}
       onOpenList={() => {}}
       onConfirm={() => {}}
@@ -316,14 +316,15 @@ describe('CandidateBar: コンパクトな配置の右端のボタン', () => {
     expect(layer.contains(confirm)).toBe(false)
   })
 
-  it('フルキー(右端のボタンなし)では、✓ も「次の行」も出さず、補完候補はバーの幅いっぱいに重ねる', () => {
-    renderAt(log, 3, 'day', true, () => {}, 0, true, { suggest, rightButton: false })
-    expect(screen.queryByRole('button', { name: CONFIRM })).not.toBeInTheDocument()
+  it('フルキー(次の行のボタンなし)でも、緑の行では右端に ✓ を出し、補完候補は ✓ を避ける。QSO でない行では右端に何も出さない', () => {
+    renderAt(log, 3, 'day', true, () => {}, 0, true, { suggest, newlineButton: false })
+    expect(screen.getByRole('button', { name: CONFIRM })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: NEXT })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'ssb' }).parentElement).toHaveClass('right-0')
+    expect(screen.getByRole('button', { name: 'ssb' }).parentElement).toHaveClass('right-[4.25rem]')
     cleanup()
-    renderAt(log, 2, 'day', true, () => {}, 0, true, { rightButton: false })
+    renderAt(log, 2, 'day', true, () => {}, 0, true, { suggest, newlineButton: false })
     expect(screen.queryByRole('button', { name: NEXT })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: CONFIRM })).not.toBeInTheDocument()
   })
 
   it('従来の配置には「次の行」はない', () => {

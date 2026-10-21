@@ -309,8 +309,6 @@ function Editor({
   }, [text, compact])
 
   const caretLine = lineOf(text, caret)
-  // カーソル行が、確定できる QSO の行(緑のバー)か。フルキーの右下のキーが、確定か次の行かを決める
-  const confirmable = !!view?.qsos.some((q) => q.line === caretLine) && !view?.errors.some((e) => e.line === caretLine)
   const hasText = text.trim().length > 0
   /** メニューの項目: メニューを閉じてから行う */
   const fromMenu = (f: () => void) => () => {
@@ -779,7 +777,7 @@ function Editor({
           autoTime={settings.autoTime}
           lineText={text.slice(...lineRange(text, caretLine))}
           compact={compact}
-          rightButton={!onScreenKeys}
+          newlineButton={!onScreenKeys}
           suggest={compact && <SuggestStrip candidates={completion.candidates} onPick={pick} overBar />}
           onNewline={newline}
           onOpenList={() => setListOpen(true)}
@@ -794,8 +792,6 @@ function Editor({
           onKey={typeKey}
           onMove={moveCaret}
           onBackspace={backspace}
-          confirmable={confirmable}
-          onConfirm={confirmLine}
           onNewline={newline}
           onOsKeyboard={() => setOsKeyboard(true)}
           onUndo={undo}
