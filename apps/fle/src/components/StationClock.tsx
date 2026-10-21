@@ -7,6 +7,8 @@ interface Props {
   info: LineInfo | null
   /** 時計の時間帯(UTC からの時間差)。緑のバーの時計と同じ */
   tz: number
+  /** カーソルの位置で有効なメモ(行の先頭が `#` の行。JCC・JCG など) */
+  memo?: string
 }
 
 /** 時刻(`HH:MM:SS`)。`tz` は UTC からの時間差 */
@@ -18,7 +20,7 @@ function clockAt(now: number, tz: number): string {
  * ログ欄の上の、空いた所に出す時刻と運用先(CQ を出しながら読む)。
  * 運用先は、カーソルの行で有効なもの(途中で運用先を変えたログでも、その位置の値)
  */
-export function StationClock({ info, tz }: Props) {
+export function StationClock({ info, tz, memo = '' }: Props) {
   const t = useT()
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
@@ -47,6 +49,8 @@ export function StationClock({ info, tz }: Props) {
           ))}
         </div>
       )}
+      {/* メモは1行。長ければ末尾を省く */}
+      {memo && <div className="max-w-full px-3 truncate text-base font-bold">{memo}</div>}
     </div>
   )
 }

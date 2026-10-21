@@ -50,4 +50,9 @@ describe('StationClock', () => {
     render(<StationClock info={info({})} tz={0} />)
     expect(screen.getByRole('group').textContent).toBe('23:50:05UTC')
   })
+
+  it('メモ(JCC・JCG など)があれば、運用先の下に出す', () => {
+    render(<StationClock info={info({ mycall: 'JA1ABC', sota: 'JA/YN-001' })} tz={0} memo="JCG 17008 南都留郡 富士河口湖町" />)
+    expect(screen.getByRole('group')).toHaveTextContent('JA/YN-001JCG 17008 南都留郡 富士河口湖町')
+  })
 })

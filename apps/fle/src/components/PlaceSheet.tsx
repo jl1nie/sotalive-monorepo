@@ -15,8 +15,11 @@ interface Props {
   initial: Station
   /** まだQSOがない(新しいログの設定)か、途中での場所の変更か */
   isNewLog: boolean
-  /** ログに書き込む。誤りがあれば、項目ごとの誤りを返す(空なら書き込めた) */
-  onApply: (want: Station, extras?: PlanExtras) => Promise<FieldError[]>
+  /**
+   * ログに書き込む。誤りがあれば、項目ごとの誤りを返す(空なら書き込めた)。
+   * `here` は、現在地から求めたグリッドのままなら、その緯度・経度(JCC・JCG のメモを引く)
+   */
+  onApply: (want: Station, extras?: PlanExtras, here?: { lat: number; lon: number }) => Promise<FieldError[]>
   /** 登録した予定(選ぶと入力欄に入る) */
   plans?: Plan[]
 }
@@ -36,9 +39,16 @@ function PlaceForm({ onClose, initial, isNewLog, onApply, plans = [] }: Props) {
   const [values, setValues] = useState<Values>(() => toValues(initial))
   const [errors, setErrors] = useState<FieldError[]>([])
   const [extras, setExtras] = useState<PlanExtras | null>(null)
+  const [here, setHere] = useState<{ lat: number; lon: number; grid: string } | null>(null)
+  // 書き込み中(JCC・JCG を引く間)。2回押しても、2回書かない
+  const [busy, setBusy] = useState(false)
 
   const apply = async () => {
-    const errs = await onApply(toStation(values), extras ?? undefined)
+    if (busy) return
+    setBusy(true)
+    const station = toStation(values)
+    const errs = await onApply(station, extras ?? undefined, here && here.grid === station.grid ? here : undefined)
+    setBusy(false)
     setErrors(errs)
   }
 
@@ -51,6 +61,8 @@ function PlaceForm({ onClose, initial, isNewLog, onApply, plans = [] }: Props) {
         <button
           type="button"
           onClick={apply}
+          disabled={busy}
+          aria-busy={busy}
           // 入力欄のフォーカスを外さない(外れると候補の一覧が閉じてボタンが動き、最初のタップが外れる)
           {...keepFocus}
           className="btn-success w-full"
@@ -86,7 +98,7 @@ function PlaceForm({ onClose, initial, isNewLog, onApply, plans = [] }: Props) {
         </section>
       )}
       {extras && <p className="mb-3 text-sm">{t('plans.usedNote', { name: extras.name })}</p>}
-      <StationFields values={values} onChange={setValues} errors={errors} />
+      <StationFields values={values} onChange={setValues} errors={errors} onLocated={setHere} />
     </Sheet>
   )
 }
