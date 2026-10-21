@@ -42,7 +42,7 @@ interface Props {
   onMove: (delta: number) => void
   /** ⌫: カーソルの前の1文字(選択があれば、その範囲)を消す */
   onBackspace: () => void
-  /** 右下のキー: 行末で改行して次の行へ(確定は、緑のバーの右端の ✓) */
+  /** 右下のキー ↵: 行末で改行して、下に行を足す(QSO の行なら、OK と同じく書き足してから。次の行へ進むだけなら、緑のバーの OK) */
   onNewline: () => void
   /** 🌐: OS のキーボードに切り替える(日本語のメッセージ・備考など) */
   onOsKeyboard: () => void
@@ -232,9 +232,9 @@ export function FullKeyboard({
         {fnKey(t('digits.left'), () => onMove(-1), '←', 2, true)}
         {fnKey(t('digits.space'), () => onKey(' '), t('digits.space'), 8, true)}
         {fnKey(t('digits.right'), () => onMove(1), '→', 2, true)}
-        {/* 右下(OS のキーボードの Enter の位置)で、改行して次の行へ。確定は、ログを見ている緑のバーの右端 */}
+        {/* 右下(OS のキーボードの Enter の位置)で、改行して下に行を足す。次の行へ進むのは、ログを見ている緑のバーの右端の OK */}
         {fnKey(
-          t('bar.newlineLabel'),
+          t('keys.newlineLabel'),
           onNewline,
           <>
             <CornerDownLeft className="w-5 h-5" aria-hidden="true" />

@@ -71,6 +71,8 @@ import { JoinSheet } from '@/components/JoinSheet'
 import { usePlans } from '@/hooks/usePlans'
 import { useSync } from '@/hooks/useSync'
 import { extraLines, withExtras, type PlanExtras } from '@/lib/planApply'
+import { lookupMemo, memoAt } from '@/lib/memo'
+import { placePosition } from '@/lib/reference'
 import { codeFromText } from '@/lib/sync'
 import { GenerateCheckSheet } from '@/components/GenerateCheckSheet'
 import { Sheet } from '@/components/Sheet'
@@ -403,11 +405,24 @@ function Editor({
   }
 
   /** 場所をログに書き込む(指令の行の書式はコアが決める)。誤りがあれば返す */
-  const applyPlace = async (want: Station, extras?: PlanExtras): Promise<FieldError[]> => {
+  const applyPlace = async (
+    want: Station,
+    extras?: PlanExtras,
+    here?: { lat: number; lon: number }
+  ): Promise<FieldError[]> => {
     if (!place) return []
     const plan = await stationPlan(text, place.line, want)
     if (plan.errors.length > 0) return plan.errors
-    const edits = extras ? withExtras(text, place.line, plan.edits, extraLines(extras, text)) : plan.edits
+    // JCC・JCG のメモ(日本の、現在地・山・公園。引けなければ書かない)。その位置のメモと同じなら、書かない
+    const pos =
+      here ??
+      (want.sota ? await placePosition('sota', want.sota) : want.pota[0] ? await placePosition('pota', want.pota[0]) : undefined)
+    const memo = pos ? await lookupMemo(pos.lat, pos.lon) : ''
+    const lines = [
+      ...(extras ? extraLines(extras, text) : []),
+      ...(memo && memoAt(text, place.line) !== memo ? [`# ${memo}`] : []),
+    ]
+    const edits = withExtras(text, place.line, plan.edits, lines)
     if (edits.length > 0) {
       const at = mapCaret(caret, edits)
       pendingCaret.current = at
@@ -435,15 +450,21 @@ function Editor({
     return lineStartedAt.current?.line === line ? lineStartedAt.current.ms : Date.now()
   }
 
-  /** 緑の候補バー: 時刻・バンド・モード・RSTまで確定して、次の行へ進む */
-  const confirmLine = () => {
+  /** 緑の候補バーの OK: 時刻・バンド・モード・RSTまで書き足して、次の行へ進む */
+  const confirmLine = () => finishLine(compact)
+
+  /**
+   * 行を終える(QSO の行なら、時刻などを書き足す。OK とフルキーの ↵ で同じ)。
+   * `toNext` なら、次の行があればそこへ移るだけ(前の行を直したあとに、空の行を作らない)。
+   * そうでなければ(フルキーの ↵)、行末で改行して、下に行を足す(ログの途中に QSO を足せる)
+   */
+  const finishLine = (toNext: boolean) => {
     const line = caretLine
     const edits = fillLine(text, line, startedAtFor(line), settings.timezone, confirmScope)
     const filled = applyEdits(text, edits)
     const shift = filled.split('\n').length - text.split('\n').length
     lineStartedAt.current = null
-    // コンパクト(とフルキー)では、前の行を直したあとは、次の行へ移るだけ(改行を足すと、空の行ができる)
-    if (compact && toNextLine(filled, line + shift)) return
+    if (toNext && toNextLine(filled, line + shift)) return
     const end = lineRange(filled, line + shift)[1]
     pendingCaret.current = end + 1
     setText(filled.slice(0, end) + '\n' + filled.slice(end))
@@ -708,7 +729,7 @@ function Editor({
 
       <div ref={logHeight.boxRef} className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
         {compact && logHeight.lines > 0 && (
-          <StationClock info={info} tz={clockZone(info, view, caretLine, settings.timezone)} />
+          <StationClock info={info} tz={clockZone(info, view, caretLine, settings.timezone)} memo={memoAt(text, caretLine)} />
         )}
         {compact && (
           // ログ欄の高さを変えるつまみ(上下にドラッグ。上に時刻と運用先が入らなくなるまで引けば、入る限り高く)。
@@ -792,7 +813,7 @@ function Editor({
           onKey={typeKey}
           onMove={moveCaret}
           onBackspace={backspace}
-          onNewline={newline}
+          onNewline={() => finishLine(false)}
           onOsKeyboard={() => setOsKeyboard(true)}
           onUndo={undo}
           keyScale={settings.keyScale}

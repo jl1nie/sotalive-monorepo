@@ -6,6 +6,7 @@ import {
   parsePota,
   parseSota,
   placeName,
+  placePosition,
   searchByName,
   searchNearby,
 } from './reference'
@@ -227,5 +228,13 @@ describe('placeName', () => {
     expect(await placeName('sota', 'JA/TK-999')).toBeUndefined()
     vi.unstubAllGlobals()
     expect(await placeName('sota', 'JA/TK-999', { fetchImpl: fakeFetch(() => [{ ...SOTA_ROW, summitCode: 'JA/TK-999' }]) })).toBe('雲取山')
+  })
+})
+
+describe('placePosition', () => {
+  it('番号が一致する山・公園の緯度・経度。見つからなければ undefined', async () => {
+    const fetchImpl = fakeFetch(() => [SOTA_ROW])
+    expect(await placePosition('sota', 'ja/tk-001', { fetchImpl })).toEqual({ lat: 35.8555, lon: 138.9438 })
+    expect(await placePosition('sota', 'JA/TK-002', { fetchImpl })).toBeUndefined()
   })
 })

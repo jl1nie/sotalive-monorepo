@@ -28,11 +28,14 @@ export function StationFields({
   onChange,
   errors,
   idPrefix = 'place',
+  onLocated,
 }: {
   values: Values
   onChange: (values: Values) => void
   errors: FieldError[]
   idPrefix?: string
+  /** 現在地が取れたとき(グリッドと一緒に、緯度・経度を知らせる) */
+  onLocated?: (here: { lat: number; lon: number; grid: string }) => void
 }) {
   const t = useT()
   // いま入力している欄(候補を出す欄)と、現在地の近くの一覧
@@ -59,6 +62,7 @@ export function StationFields({
   // 位置情報の取得は画面(端末)の役目。グリッドの計算はコアに任せる。取れたら、近くの山・公園も探す
   const { locate, locating, message: geoMessage } = useGridLocate(async (grid, pos) => {
     onChange({ ...values, grid })
+    onLocated?.({ lat: pos.coords.latitude, lon: pos.coords.longitude, grid })
     setNearby('loading')
     setNearby(await searchNearby(pos.coords.latitude, pos.coords.longitude))
   })

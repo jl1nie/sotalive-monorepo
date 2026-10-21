@@ -37,7 +37,7 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-const CONFIRM = 'この行を確定して次の行へ'
+const CONFIRM = 'この行を終えて次の行へ(OK)'
 
 /** `text` を解釈し、`line` 行目にカーソルがあるときの候補バーを出す */
 function renderAt(

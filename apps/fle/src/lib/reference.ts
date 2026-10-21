@@ -161,6 +161,18 @@ export async function placeName(kind: PlaceKind, code: string, o: Options = {}):
   return name
 }
 
+/** 番号(JA/YN-001、JP-0117)から、山・公園の緯度・経度を引く。見つからない、オフライン、通信の誤りなら undefined */
+export async function placePosition(
+  kind: RefKind,
+  code: string,
+  o: Options = {}
+): Promise<{ lat: number; lon: number } | undefined> {
+  const result = await searchByName(kind, code, { ...o, limit: 10 })
+  if (result.status !== 'ok') return undefined
+  const hit = result.items.find((c) => c.code.toUpperCase() === code.toUpperCase())
+  return hit && Number.isFinite(hit.lat) && Number.isFinite(hit.lon) ? { lat: hit.lat, lon: hit.lon } : undefined
+}
+
 /** 緯度・経度を中心に、半径 km を覆う範囲 */
 export function bboxAround(lat: number, lon: number, km: number) {
   const dLat = km / 111.32

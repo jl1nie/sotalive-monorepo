@@ -6,7 +6,7 @@ import { FullKeyboard } from './FullKeyboard'
 
 afterEach(cleanup)
 
-const NEXT = '改行して次の行へ'
+const NEXT = '改行して、下に行を足す'
 
 function renderKeys(props: Partial<Parameters<typeof FullKeyboard>[0]> = {}) {
   const handlers = {
@@ -154,9 +154,9 @@ describe('FullKeyboard', () => {
     expect(onKey.mock.calls).toEqual([['j'], [' '], ['7']])
   })
 
-  it('右下は、いつも改行して次の行へ(確定は、緑のバーの右端の ✓)', () => {
+  it('右下は、いつも改行して下に行を足す(次の行へ進むのは、緑のバーの右端の OK)', () => {
     const { onNewline } = renderKeys()
-    expect(screen.queryByRole('button', { name: 'この行を確定して次の行へ' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'この行を終えて次の行へ(OK)' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: NEXT }))
     expect(onNewline).toHaveBeenCalledTimes(1)
   })
