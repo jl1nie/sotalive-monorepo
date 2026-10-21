@@ -1,10 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Popup, useMap } from 'react-leaflet';
 import { useMapStore, usePrefsStore } from '@/stores';
 import type { MarkerPopupData } from '@/stores/mapStore';
 import { api } from '@/api/client';
 import { reverseGeocode } from '@/api/revgeocode';
 import type { SotaSummit, PotaPark, ReverseGeocodeResult } from '@/types';
+
+/** 位置の Google マップへのリンク */
+function googleMapsUrl(lat: number | string, lon: number | string): string {
+  return `https://maps.google.com/?q=${encodeURIComponent(`${lat},${lon}`)}`;
+}
+
+/** 別のタブで開く外部リンク */
+function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  );
+}
 
 export function MapPopup() {
   const map = useMap();
@@ -70,13 +84,14 @@ export function MapPopup() {
     loadDetails();
   }, [markerPopup, showPotaLog, potaHunterId, potaActivatorId]);
 
-  // ポップアップの中身(読み込んだ詳細から作る)
-  const content = useMemo(() => {
-    if (!markerPopup) return '';
+  // ポップアップの中身(読み込んだ詳細から作る)。山名・公園名・逆ジオコーダーの結果などは外から来るので、
+  // HTML の文字列にせず、JSX で描く(React がエスケープする)
+  const lines = useMemo(() => {
+    if (!markerPopup) return [];
 
     const [lat, lon] = markerPopup.position;
     const data = markerPopup.data;
-    const lines: string[] = [];
+    const lines: ReactNode[] = [];
     const zoom = map.getZoom() > 11 ? 11 : map.getZoom();
     const windyUrl = `https://www.windy.com/${lat}/${lon}/meteogram?rain,${lat},${lon},${zoom}`;
 
@@ -84,12 +99,19 @@ export function MapPopup() {
     if (markerPopup.type === 'summit') {
       if (summitData) {
         // タイトル: コード + 山名
-        lines.push(`<b>${summitData.summitCode} ${summitData.summitNameJ || summitData.summitName}</b>`);
+        lines.push(<b>{summitData.summitCode} {summitData.summitNameJ || summitData.summitName}</b>);
         // 都市名
         if (summitData.cityJ) lines.push(summitData.cityJ);
         // GL + 位置リンク
-        const posLink = `<a href="https://maps.google.com/?q=${summitData.latitude},${summitData.longitude}" target="_blank">${summitData.latitude},${summitData.longitude}</a>`;
-        lines.push(`GL:${summitData.maidenhead}<br>位置:${posLink}`);
+        lines.push(`GL:${summitData.maidenhead}`);
+        lines.push(
+          <>
+            位置:
+            <ExternalLink href={googleMapsUrl(summitData.latitude, summitData.longitude)}>
+              {summitData.latitude},{summitData.longitude}
+            </ExternalLink>
+          </>
+        );
         // 標高 + ポイント（1行）
         lines.push(`標高:${summitData.altM}m,${summitData.points}pts (+${summitData.bonusPoints})`);
         // Activations
@@ -99,7 +121,7 @@ export function MapPopup() {
           lines.push(`Last Activation: ${summitData.activationDate}(${summitData.activationCall})`);
         }
       } else {
-        lines.push('<b>SOTA Summit</b>');
+        lines.push(<b>SOTA Summit</b>);
         lines.push('読み込み中...');
       }
     } else {
@@ -110,7 +132,7 @@ export function MapPopup() {
       if (p.wwff) refs.push(p.wwff);
       // タイトル: リファレンス
       if (refs.length > 0) {
-        lines.push(`<b>${refs.join(' / ')}</b>`);
+        lines.push(<b>{refs.join(' / ')}</b>);
       }
       // 公園名
       if (p.nameJ) lines.push(p.nameJ);
@@ -132,8 +154,15 @@ export function MapPopup() {
       }
       // GL + 位置（POTA用）
       if (markerPopup.type === 'park') {
-        const posLink = `<a href="https://maps.google.com/?q=${lat},${lon}" target="_blank">${lat.toFixed(6)},${lon.toFixed(6)}</a>`;
-        lines.push(`GL:${geoData.maidenhead}<br>位置:${posLink}`);
+        lines.push(`GL:${geoData.maidenhead}`);
+        lines.push(
+          <>
+            位置:
+            <ExternalLink href={googleMapsUrl(lat, lon)}>
+              {lat.toFixed(6)},{lon.toFixed(6)}
+            </ExternalLink>
+          </>
+        );
       }
       // 標高
       if (geoData.elevation !== undefined) {
@@ -145,7 +174,12 @@ export function MapPopup() {
     }
 
     // 天気リンク
-    lines.push(`&nbsp;&nbsp;<a href="${windyUrl}" target="_blank">☀️🌥️🌧️</a>`);
+    lines.push(
+      <>
+        {'\u00a0\u00a0'}
+        <ExternalLink href={windyUrl}>☀️🌥️🌧️</ExternalLink>
+      </>
+    );
 
     // POTA Activations/QSOs（show_potalog有効時）
     if (markerPopup.type === 'park' && parkData && showPotaLog) {
@@ -159,7 +193,7 @@ export function MapPopup() {
       }
     }
 
-    return lines.join('<br>');
+    return lines;
   }, [markerPopup, summitData, parkData, geoData, map, showPotaLog]);
 
   if (!markerPopup) return null;
@@ -175,10 +209,14 @@ export function MapPopup() {
         remove: handleClose,
       }}
     >
-      <div
-        className="map-popup-content"
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
+      <div className="map-popup-content">
+        {lines.map((line, i) => (
+          <Fragment key={i}>
+            {i > 0 && <br />}
+            {line}
+          </Fragment>
+        ))}
+      </div>
     </Popup>
   );
 }

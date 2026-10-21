@@ -3,23 +3,7 @@ import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { usePrefsStore } from '@/stores';
 import { api } from '@/api/client';
-import type { AprsProperties } from '@/types';
-
-function formatDate(dateStr: string, format: 'full' | 'time'): string {
-  const date = new Date(dateStr);
-  if (format === 'full') {
-    return date.toLocaleString('en-us', {
-      month: 'numeric',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-    });
-  }
-  return date.toLocaleString('en-us', {
-    hour: 'numeric',
-    minute: 'numeric',
-  });
-}
+import { buildPopupContent } from './aprsPopup';
 
 function createAprsMarker(ssid: string): L.DivIcon {
   let iconChar: string;
@@ -39,18 +23,6 @@ function createAprsMarker(ssid: string): L.DivIcon {
     iconSize: [32, 32],
     iconAnchor: [16, 16],
   });
-}
-
-function buildPopupContent(prop: AprsProperties): string {
-  const lastseen = formatDate(prop.lastseen, 'full');
-  let message = `<b>${lastseen} ${prop.callsign} (${prop.distance}m from ${prop.summit})</b>`;
-
-  if (prop.spot_time && parseInt(String(prop.distance)) < 500) {
-    const spotTime = formatDate(prop.spot_time, 'time');
-    message += `<br><center>${spotTime} ${prop.spot_freq || ''} ${prop.spot_mode || ''} ${prop.spot_summit || ''}<br>${prop.spot_comment || ''}</center>`;
-  }
-
-  return message;
 }
 
 export function AprsTrackLayer() {
