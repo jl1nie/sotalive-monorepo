@@ -849,7 +849,7 @@
 
 					if (res) {
 						el = document.getElementById('pota_export_key');
-						el.innerHTML = '<b>' + res['share_id'] + '</b>';
+						el.innerHTML = '<b>' + escapeHTML(res['share_id']) + '</b>';
 					} else {
 						window.alert("Exportに失敗しました")
 					}
@@ -889,12 +889,12 @@
 				return prefs['pota_hunter_uuid']
 		}
 
+		// ボタンを押したときの対象(onclick の文字列に値を埋め込まない)
+		var keyer_area = null;
+
 		function keyerButton(area) {
-			let arg = '{';
-			for (var k in area)
-				arg += k + ':' + "'" + area[k] + "',";
-			arg += '}'
-			let bstr = '<center><button type="button" class="btn-outline-primary btn-sm" data-toggle="modal" data-target="#pemuact" onclick="clickPemuAct(' + arg + ')"><img src="svg/clipboard.svg"></button></center>';
+			keyer_area = area;
+			let bstr = '<center><button type="button" class="btn-outline-primary btn-sm" data-toggle="modal" data-target="#pemuact" onclick="clickPemuAct(keyer_area)"><img src="svg/clipboard.svg"></button></center>';
 			return bstr;
 		}
 
@@ -1108,12 +1108,12 @@
 
 							l = { 'lat': s['latitude'], 'lng': s['longitude'] }
 							displayActivationZone(l, -0.8);
-							pos = '<br>位置:<a href="' + locURI(s['latitude'], s['longitude'], z) +
-								'" target="_blank">' + s['latitude'] + ',' + s['longitude'] + '</a>';
-							sotamesg = escapeStr(s['cityJ']) + '<br>GL:' + s['maidenhead'] + pos + '<br>標高:' + s['altM'] + 'm,' + s['points'] + 'pts (+' + s['bonusPoints'] + ')';
-							qsomesg += '<br>Activations: ' + s['activationCount']
+							pos = '<br>位置:<a href="' + escapeHTML(locURI(s['latitude'], s['longitude'], z)) +
+								'" target="_blank" rel="noopener">' + escapeHTML(s['latitude']) + ',' + escapeHTML(s['longitude']) + '</a>';
+							sotamesg = escapeStr(s['cityJ']) + '<br>GL:' + escapeHTML(s['maidenhead']) + pos + '<br>標高:' + escapeHTML(s['altM']) + 'm,' + escapeHTML(s['points']) + 'pts (+' + escapeHTML(s['bonusPoints']) + ')';
+							qsomesg += '<br>Activations: ' + escapeHTML(s['activationCount'])
 							if (s['activationCount'] != 0)
-								qsomesg += '<br>Last Activation: ' + s['activationDate'] + '(' + s['activationCall'] + ')';
+								qsomesg += '<br>Last Activation: ' + escapeHTML(s['activationDate']) + '(' + escapeHTML(s['activationCall']) + ')';
 						} else {
 							p = res[0];
 							if (!('pota' in area))
@@ -1124,10 +1124,10 @@
 								area['name'] = p['parkNameJ'];
 							if (prefs['show_potalog']) {
 								if (p['attempts'] != null) {
-									qsomesg = "<br>Activations/Attempts: " + p['activations'] + "/" + p['attempts']
-									qsomesg += "<br>QSOs: " + p['qsos'] + "<br>";
+									qsomesg = "<br>Activations/Attempts: " + escapeHTML(p['activations']) + "/" + escapeHTML(p['attempts'])
+									qsomesg += "<br>QSOs: " + escapeHTML(p['qsos']) + "<br>";
 								} else if (p['qsos'] != null)
-									qsomesg = "<br>QSOs: " + p['qsos'] + "<br>";
+									qsomesg = "<br>QSOs: " + escapeHTML(p['qsos']) + "<br>";
 							}
 						}
 					}
@@ -1135,20 +1135,20 @@
 						.then(res => {
 							if ('elevation' in res) {
 								if ('alt' in latlng) {
-									altitude = res['elevation'] + 'm (GPS測位値:' + latlng.alt + 'm)';
+									altitude = escapeHTML(res['elevation']) + 'm (GPS測位値:' + escapeHTML(latlng.alt) + 'm)';
 								} else {
-									altitude = res['elevation'] + 'm';
+									altitude = escapeHTML(res['elevation']) + 'm';
 								}
 							} else
 								altitude = '---';
 
 							if (res['errors'] == 'OUTSIDE_JA') {
-								mesg = 'Pos: ' + lat + ',' + lng + '<br>GL: ' + res['maidenhead'];
+								mesg = 'Pos: ' + escapeHTML(lat) + ',' + escapeHTML(lng) + '<br>GL: ' + escapeHTML(res['maidenhead']);
 							}
 							else if (res['errors'] != 'OK') {
 								mesg = 'Parameter out of range.';
 							} else {
-								accu = '<small>[' + res['hsrc'].replace('（', '').replace('）', '') + ']</small>'
+								accu = '<small>[' + escapeHTML(res['hsrc'].replace('（', '').replace('）', '')) + ']</small>'
 
 								if (isGPS)
 									pos = '<br>位置:<a href="' + locURI(lat, lng, z) +
@@ -1161,20 +1161,20 @@
 
 									if (res['wardCode'] != null) {
 										area['century'] = 'JCC ' + res['wardCode'];
-										mesg = 'JCC' + res['jccCode'] + ' 区番号:' + res['wardCode'] + '<br>' +
-											res['prefecture'] + res['municipality'] + '<br>GL:' + res['maidenhead'] +
+										mesg = 'JCC' + escapeHTML(res['jccCode']) + ' 区番号:' + escapeHTML(res['wardCode']) + '<br>' +
+											escapeHTML(res['prefecture']) + escapeHTML(res['municipality']) + '<br>GL:' + escapeHTML(res['maidenhead']) +
 											pos + '<br> 標高:' + altitude;
 									}
 									else {
 										area['century'] = 'JCC ' + res['jccCode']
-										mesg = 'JCC' + res['jccCode'] + '<br>' + res['prefecture'] + res['municipality'] +
-											'<br>GL:' + res['maidenhead'] + pos + '<br> 標高:' + altitude;
+										mesg = 'JCC' + escapeHTML(res['jccCode']) + '<br>' + escapeHTML(res['prefecture']) + escapeHTML(res['municipality']) +
+											'<br>GL:' + escapeHTML(res['maidenhead']) + pos + '<br> 標高:' + altitude;
 									}
 								}
 								else {
 									area['century'] = 'JCG ' + res['jcgCode'] + res['hamlogCode'];
-									mesg = 'JCG' + res['jcgCode'] + res['hamlogCode'] + '<br>' + res['prefecture'] + res['jcgText'] +
-										res['municipality'] + '<br>GL:' + res['maidenhead'] + pos + '<br> 標高:' + altitude;
+									mesg = 'JCG' + escapeHTML(res['jcgCode']) + escapeHTML(res['hamlogCode']) + '<br>' + escapeHTML(res['prefecture']) + escapeHTML(res['jcgText']) +
+										escapeHTML(res['municipality']) + '<br>GL:' + escapeHTML(res['maidenhead']) + pos + '<br> 標高:' + altitude;
 								}
 							}
 
@@ -1335,27 +1335,27 @@
 			if (area['pota'] != undefined && area['jaff'] != undefined) {
 				if (area['pota'] != '' && prefs['pota_ref']) {
 					if (addhref && area['pota'].includes('-'))
-						pname = '<a target="_blank" href="https://pota.app/#/park/' + area['pota'] + '">' + area['pota'] + '</a> '
+						pname = '<a target="_blank" rel="noopener" href="https://pota.app/#/park/' + encodeURIComponent(area['pota']) + '">' + escapeHTML(area['pota']) + '</a> '
 					else
-						pname = area['pota'];
+						pname = escapeHTML(area['pota']);
 					if (area['jaff'] != '' && prefs['jaff_ref']) {
 						if (addhref && area['jaff'].includes('-'))
-							pname += '/' + '<a target="_blank" href="https://wwff.co/directory/?showRef=' + area['jaff'] + '">' + area['jaff'] + '</a> '
+							pname += '/' + '<a target="_blank" rel="noopener" href="https://wwff.co/directory/?showRef=' + encodeURIComponent(area['jaff']) + '">' + escapeHTML(area['jaff']) + '</a> '
 						else
-							pname += '/' + area['jaff'];
+							pname += '/' + escapeHTML(area['jaff']);
 					}
 				} else if (prefs['jaff_ref']) {
 					if (addhref)
-						pname = '<a target="_blank" href="https://wwff.co/directory/?showRef=' + area['jaff'] + '">' + area['jaff'] + '</a> '
+						pname = '<a target="_blank" rel="noopener" href="https://wwff.co/directory/?showRef=' + encodeURIComponent(area['jaff']) + '">' + escapeHTML(area['jaff']) + '</a> '
 					else
-						pname = area['jaff']
+						pname = escapeHTML(area['jaff'])
 				}
 			} else if (area['temple'] != undefined && prefs['pilgrim']) {
-				pname = area['temple']
+				pname = escapeHTML(area['temple'])
 			};
 
 			if (area['sota']) {
-				sname = '<a target="_blank" href="https://summits.sota.org.uk/summit/' + area['sota_code'] + '">' + area['sota'] + '</a>'
+				sname = '<a target="_blank" rel="noopener" href="https://summits.sota.org.uk/summit/' + encodeURIComponent(area['sota_code']) + '">' + escapeHTML(area['sota']) + '</a>'
 
 				if (pname == '')
 					pname = sname;
@@ -1365,7 +1365,7 @@
 
 			if (pname != '' && area['name'] != '') {
 				pname += '<br>'
-				pname += area['name'];
+				pname += escapeHTML(area['name']);
 			}
 
 			if (pname != '')
@@ -1475,6 +1475,14 @@
 
 			document.getElementById("clock_time").innerHTML = '&nbsp' + tm2 + '&nbsp' + geomagindex;
 			document.getElementById("clock_time2").innerHTML = '&nbsp' + tm3;
+		}
+
+		// 外から来た値(山・公園の名前、逆ジオコーダーの結果、スポットのコメントなど)を HTML に入れるときに使う。
+		// 文字列の連結と同じく null・undefined はそのまま文字にする(表示を変えない)
+		function escapeHTML(v) {
+			return String(v).replace(/[&<>"']/g, function (c) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+			});
 		}
 
 		function escapeStr(str) {
@@ -2090,10 +2098,11 @@
 
 			let marker = L.marker(coords[coords.length - 1],
 				{ icon: L.ExtraMarkers.icon(options) });
-			let message = '<b>' + lastseen + ' ' + callsign + ' (' + distance + 'm from ' + summit + ')</b>';
+			// スポットのコメントなどは誰でも書ける(SOTAwatch・APRS)ので、すべてエスケープする
+			let message = '<b>' + escapeHTML(lastseen) + ' ' + escapeHTML(callsign) + ' (' + escapeHTML(distance) + 'm from ' + escapeHTML(summit) + ')</b>';
 
 			if (spot_time && parseInt(distance) < 500)
-				message += '<br><center>' + spot_time + ' ' + spot_freq + ' ' + spot_mode + ' ' + spot_summit + '<br>' + spot_comment + '</center>'
+				message += '<br><center>' + escapeHTML(spot_time) + ' ' + escapeHTML(spot_freq) + ' ' + escapeHTML(spot_mode) + ' ' + escapeHTML(spot_summit) + '<br>' + escapeHTML(spot_comment) + '</center>'
 
 			marker.bindPopup(message).openPopup();
 			marker.addTo(aprs_layer);
