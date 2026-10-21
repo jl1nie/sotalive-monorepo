@@ -201,6 +201,25 @@ describe('FullKeyboard', () => {
     }
   })
 
+  it('⌫ を押し続けると、続けて消す(離したあとの click では、もう消さない)', () => {
+    vi.useFakeTimers()
+    try {
+      const { onBackspace } = renderKeys()
+      const bs = screen.getByRole('button', { name: '1文字消す' })
+      fireEvent.pointerDown(bs, { clientX: 100 })
+      vi.advanceTimersByTime(399)
+      expect(onBackspace).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(1 + 70 * 2)
+      expect(onBackspace).toHaveBeenCalledTimes(3)
+      fireEvent.pointerUp(bs, { clientX: 100 })
+      fireEvent.click(bs)
+      vi.advanceTimersByTime(1000)
+      expect(onBackspace).toHaveBeenCalledTimes(3)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('🌐 で OS のキーボードへ。← → と ⌫ も打てる', () => {
     const { onOsKeyboard, onMove, onBackspace } = renderKeys()
     fireEvent.click(screen.getByRole('button', { name: 'OS のキーボードに切り替える(日本語など)' }))
