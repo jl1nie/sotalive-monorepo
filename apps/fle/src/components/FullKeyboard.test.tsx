@@ -6,7 +6,6 @@ import { FullKeyboard } from './FullKeyboard'
 
 afterEach(cleanup)
 
-const CONFIRM = 'この行を確定して次の行へ'
 const NEXT = '改行して次の行へ'
 
 function renderKeys(props: Partial<Parameters<typeof FullKeyboard>[0]> = {}) {
@@ -14,14 +13,13 @@ function renderKeys(props: Partial<Parameters<typeof FullKeyboard>[0]> = {}) {
     onKey: vi.fn(),
     onMove: vi.fn(),
     onBackspace: vi.fn(),
-    onConfirm: vi.fn(),
     onNewline: vi.fn(),
     onOsKeyboard: vi.fn(),
     onUndo: vi.fn(),
     onKeyScale: vi.fn(),
     onToggleCaps: vi.fn(),
   }
-  render(<FullKeyboard confirmable={false} keyScale={1} caps={false} {...handlers} {...props} />)
+  render(<FullKeyboard keyScale={1} caps={false} {...handlers} {...props} />)
   return handlers
 }
 
@@ -125,9 +123,20 @@ describe('FullKeyboard', () => {
     expect(screen.getByRole('button', { name: '1文字消す' })).toHaveClass('col-span-2')
   })
 
-  it('空白は、6列(キー3つ分)の幅', () => {
+  it('空白は8列(キー4つ分)、右下の次の行は4列(キー2つ分)の幅', () => {
     renderKeys()
-    expect(screen.getByRole('button', { name: '空白' })).toHaveClass('col-span-6')
+    expect(screen.getByRole('button', { name: '空白' })).toHaveClass('col-span-8')
+    expect(screen.getByRole('button', { name: NEXT })).toHaveClass('col-span-4')
+  })
+
+  it('続けて2回押したときの , と . は、キーの右下に小さく出す(右上の , は \' に見える)', () => {
+    renderKeys()
+    for (const [k, alt] of [['-', ','], ['/', '.']]) {
+      const hint = screen.getByRole('button', { name: k }).querySelector('small')!
+      expect(hint).toHaveTextContent(alt)
+      expect(hint).toHaveClass('bottom-0.5')
+      expect(hint).not.toHaveClass('top-0')
+    }
   })
 
   it('↶ で、直前の編集を取り消す', () => {
@@ -145,16 +154,11 @@ describe('FullKeyboard', () => {
     expect(onKey.mock.calls).toEqual([['j'], [' '], ['7']])
   })
 
-  it('右下は、確定できる行なら確定、ほかは次の行', () => {
-    const first = renderKeys({ confirmable: true })
-    expect(screen.queryByRole('button', { name: NEXT })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: CONFIRM }))
-    expect(first.onConfirm).toHaveBeenCalledTimes(1)
-    cleanup()
-    const second = renderKeys({ confirmable: false })
+  it('右下は、いつも改行して次の行へ(確定は、緑のバーの右端の ✓)', () => {
+    const { onNewline } = renderKeys()
+    expect(screen.queryByRole('button', { name: 'この行を確定して次の行へ' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: NEXT }))
-    expect(second.onNewline).toHaveBeenCalledTimes(1)
-    expect(second.onConfirm).not.toHaveBeenCalled()
+    expect(onNewline).toHaveBeenCalledTimes(1)
   })
 
   it('🌐 で OS のキーボードへ。← → と ⌫ も打てる', () => {
