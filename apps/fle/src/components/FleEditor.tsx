@@ -765,7 +765,7 @@ function Editor({
           {t('keys.back')}
         </button>
       ) : (
-        settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} onBackspace={backspace} />
+        settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} />
       )}
 
       {landscape && (

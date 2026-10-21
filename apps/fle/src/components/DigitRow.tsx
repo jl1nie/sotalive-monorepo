@@ -1,33 +1,27 @@
-import { Delete } from 'lucide-react'
 import { useKeyPad } from '@/hooks/useKeyPad'
 import { useT } from '@/lib/i18n'
 
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
 
-/** 従来の配置(リリース版と同じ見た目) */
-const CLASSIC_KEY =
-  'flex-1 min-w-0 h-11 rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 font-mono text-lg font-bold'
+/** リリース版と同じ見た目 */
 const KEY =
-  'min-w-0 h-11 rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 font-mono text-lg font-bold flex items-center justify-center active:bg-gray-300 dark:active:bg-gray-700'
+  'flex-1 min-w-0 h-11 rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 font-mono text-lg font-bold'
 
 interface Props {
   onKey: (key: string) => void
   /** 左右になぞったとき、カーソルを動かす文字数(左が負) */
   onMove?: (delta: number) => void
-  /** ⌫: カーソルの前の1文字(選択があれば、その範囲)を消す */
-  onBackspace?: () => void
-  /** コンパクトな配置: 2段にし、2段目に ← → 空白 ⌫ を足す。従来の配置は、0〜9 と / - の1段 */
-  compact?: boolean
 }
 
 /**
- * ソフトキーボードの上に出す、数字の行(コンパクトでは、よく使うキーとの2段)。押してもテキスト入力からフォーカスを奪わない
- * (キーボードを切り替えずに数字が打てる)。⌫ と空白も、ここで打てる(OSのキーボードの端まで指と目を動かさない)。
+ * 従来の配置で、ソフトキーボードの上に出す、数字の行(0〜9 と / -)。押してもテキスト入力からフォーカスを奪わない
+ * (キーボードを切り替えずに数字が打てる)。
  * 左右になぞると、数字は入らず、カーソルが動く(指先で文字の間を狙わずに、1文字ずつ直せる)。
  */
-export function DigitRow({ onKey, onMove = () => {}, onBackspace = () => {}, compact = false }: Props) {
+export function DigitRow({ onKey, onMove = () => {} }: Props) {
   const t = useT()
-  const { padProps, tap, backspaceProps } = useKeyPad(onMove, onBackspace)
+  // ⌫ はないので、消す操作は渡さない
+  const { padProps, tap } = useKeyPad(onMove, () => {})
 
   return (
     <div
@@ -35,50 +29,20 @@ export function DigitRow({ onKey, onMove = () => {}, onBackspace = () => {}, com
       aria-label={t('digits.label')}
       title={t('digits.swipe')}
       {...padProps}
-      // なぞる操作を、ページのスクロールに取られない。押し続けで(⌫)、文字の選択やメニューを出さない
-      className={
-        compact
-          ? 'flex-none grid grid-cols-10 gap-1 touch-none select-none [-webkit-touch-callout:none]'
-          : 'flex-none flex gap-1 touch-none'
-      }
+      // なぞる操作を、ページのスクロールに取られない
+      className="flex-none flex gap-1 touch-none"
     >
       {DIGITS.map((k) => (
-        <button key={k} type="button" onClick={tap(() => onKey(k))} className={compact ? KEY : CLASSIC_KEY}>
+        <button key={k} type="button" onClick={tap(() => onKey(k))} className={KEY}>
           {k}
         </button>
       ))}
-      <button type="button" onClick={tap(() => onKey('/'))} className={compact ? KEY : CLASSIC_KEY}>
+      <button type="button" onClick={tap(() => onKey('/'))} className={KEY}>
         /
       </button>
-      <button type="button" onClick={tap(() => onKey('-'))} className={compact ? KEY : CLASSIC_KEY}>
+      <button type="button" onClick={tap(() => onKey('-'))} className={KEY}>
         -
       </button>
-      {compact && (
-        <>
-          <button type="button" aria-label={t('digits.left')} onClick={tap(() => onMove(-1))} className={KEY}>
-            ←
-          </button>
-          <button type="button" aria-label={t('digits.right')} onClick={tap(() => onMove(1))} className={KEY}>
-            →
-          </button>
-          <button
-            type="button"
-            aria-label={t('digits.space')}
-            onClick={tap(() => onKey(' '))}
-            className={`${KEY} col-span-4 font-sans text-sm`}
-          >
-            {t('digits.space')}
-          </button>
-          <button
-            type="button"
-            aria-label={t('digits.backspace')}
-            {...backspaceProps}
-            className={`${KEY} col-span-2`}
-          >
-            <Delete className="w-6 h-6" aria-hidden="true" />
-          </button>
-        </>
-      )}
     </div>
   )
 }
