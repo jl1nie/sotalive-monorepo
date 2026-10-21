@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { FullKeyboard } from './FullKeyboard'
 
 afterEach(cleanup)
 
-const NEXT = '改行して、下に行を足す'
+const NEXT = '改行'
 
 function renderKeys(props: Partial<Parameters<typeof FullKeyboard>[0]> = {}) {
   const handlers = {
@@ -154,11 +154,51 @@ describe('FullKeyboard', () => {
     expect(onKey.mock.calls).toEqual([['j'], [' '], ['7']])
   })
 
-  it('右下は、いつも改行して下に行を足す(次の行へ進むのは、緑のバーの右端の OK)', () => {
+  it('空白と ↵ のキーには、文字を書かない(形と場所でわかる)', () => {
+    renderKeys()
+    expect(screen.getByRole('button', { name: '空白' })).toHaveTextContent(/^$/)
+    expect(screen.getByRole('button', { name: NEXT })).toHaveTextContent(/^$/)
+  })
+
+  it('右下は改行(次の行へ進むのは、緑のバーの右端の OK)', () => {
     const { onNewline } = renderKeys()
     expect(screen.queryByRole('button', { name: 'この行を終えて次の行へ(OK)' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: NEXT }))
     expect(onNewline).toHaveBeenCalledTimes(1)
+  })
+
+  it('3 を長押し(0.5 秒)すると #。吹き出しも # になる。キーには書かない', () => {
+    vi.useFakeTimers()
+    try {
+      const { onKey } = renderKeys()
+      const three = screen.getByRole('button', { name: '3' })
+      expect(three).toHaveTextContent(/^3$/)
+      fireEvent.pointerDown(three, { clientX: 100, pointerId: 1 })
+      act(() => vi.advanceTimersByTime(500))
+      expect(screen.getByRole('button', { name: '3' })).toHaveTextContent(/#$/)
+      fireEvent.pointerUp(three, { clientX: 100, pointerId: 1 })
+      fireEvent.click(three)
+      expect(onKey).toHaveBeenLastCalledWith('#')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('3 をすぐ離せば 3。続けて押しても 33', () => {
+    vi.useFakeTimers()
+    try {
+      const { onKey } = renderKeys()
+      const three = screen.getByRole('button', { name: '3' })
+      for (let i = 0; i < 2; i++) {
+        fireEvent.pointerDown(three, { clientX: 100, pointerId: 1 })
+        act(() => vi.advanceTimersByTime(300))
+        fireEvent.pointerUp(three, { clientX: 100, pointerId: 1 })
+        fireEvent.click(three)
+      }
+      expect(onKey.mock.calls).toEqual([['3'], ['3']])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('🌐 で OS のキーボードへ。← → と ⌫ も打てる', () => {

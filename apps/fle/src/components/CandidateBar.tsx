@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Check, CornerDownLeft } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { clockZone, timeLabel, zoneLabel, type LineInfo, type LogView, type QsoView } from '@/lib/fle'
 import { errorText } from '@/lib/errors'
 import { keepFocus } from '@/lib/keepFocus'
@@ -25,21 +25,14 @@ interface Props {
   /** 時刻を自動で入れるか。入れないときは、時計ではなく、次の QSO が引き継ぐログの時刻を出す */
   autoTime?: boolean
   /**
-   * コンパクトな配置。QSO の数は小さな表示だけ(押せない。一覧はメニューから)にし、POTA・SOTA ではアクティベーション成立に必要な数を出す。
-   * 従来の配置では、QSO の数は押すと一覧が開くボタン
+   * フルキーの配置。QSO の数は小さな表示だけ(押せない。一覧はメニューから)にし、POTA・SOTA ではアクティベーション成立に必要な数を出す。
+   * 確定(✓)は出さない(改行で同じことをする)。従来の配置では、QSO の数は押すと一覧が開くボタンで、右端に ✓
    */
   compact?: boolean
-  /**
-   * コンパクトな配置: QSO でない行で、右端に「次の行」を出すか。フルキーでは出さない(キーボードの右下にある)。
-   * 確定(✓)は、どの配置でも緑のバーの右端(確定の前に見るログのすぐ横)
-   */
-  newlineButton?: boolean
-  /** コンパクトな配置: 補完候補(右端の ✓・次の行のボタンは覆わない) */
+  /** フルキー: 補完候補(バーに重ねる) */
   suggest?: ReactNode
-  /** コンパクトな配置: QSO でない行(40m cw など)で、行末で改行して次の行へ(右端のボタン) */
-  onNewline?: () => void
   onOpenList?: () => void
-  /** この行を確定して、次の行へ進む */
+  /** 従来の配置: この行を確定して、下に行を足す */
   onConfirm: () => void
   /** 緑のバーで押した要素(コール・RST・時刻)の末尾に、ログ欄のキャレットを置く。RST の受信・送信は、呼ぶ側が決める */
   onSelectPart?: (part: BarPart) => void
@@ -143,9 +136,7 @@ export function CandidateBar({
   count = 'day',
   autoTime = true,
   compact = false,
-  newlineButton = true,
   suggest = null,
-  onNewline = () => {},
   onOpenList = () => {},
   onConfirm,
   onSelectPart = () => {},
@@ -183,7 +174,7 @@ export function CandidateBar({
   const setting = [info?.band, info?.mode].filter(Boolean).join(' ')
   const meaning = resolved(info, names, t)
 
-  // その日(カーソルの日、UTC)のQSOの数を大きく、全体の数(コンパクトで POTA・SOTA なら、アクティベーション成立に必要な数)を小さく。設定で、全体の数だけにもできる
+  // その日(カーソルの日、UTC)のQSOの数を大きく、全体の数(フルキーで POTA・SOTA なら、アクティベーション成立に必要な数)を小さく。設定で、全体の数だけにもできる
   const total = view?.qsos.length ?? 0
   const today = info?.qsoDate ? (view?.qsos.filter((q) => q.date === info.qsoDate).length ?? 0) : total
   const byDay = count === 'day'
@@ -198,13 +189,11 @@ export function CandidateBar({
     .filter(Boolean)
     .join(' / ')
 
-  // 確定できる行(緑)。コンパクトな配置では、右端は、いつも押せるボタン(✓ か、次の行)
-  const confirmable = !!qso && !error
   const bar = qso && !error ? (
-    // コール・RST・時刻は、押すとログ欄のその末尾へキャレットを置く(直す機会の多い順に、的を大きく)。確定は右端の ✓
+    // コール・RST・時刻は、押すとログ欄のその末尾へキャレットを置く(直す機会の多い順に、的を大きく)。従来の配置では、確定は右端の ✓
     <div className={`${BAR} ${TONE.ok} flex items-stretch`} {...keepFocus}>
       {compact ? (
-        // コンパクト・フルキー: 低く。コールと RST(同じくらい直す、同じ重さの情報)を同じ大きな文字で1段目に、
+        // フルキー: 低く。コールと RST(同じくらい直す、同じ重さの情報)を同じ大きな文字で1段目に、
         // 時刻・バンド・モード・リファレンスは小さく2段目に
         <span className="flex-1 min-w-0 flex flex-col">
           <span className="flex-1 flex items-center gap-x-1 min-h-0 font-mono tabular-nums">
@@ -294,18 +283,20 @@ export function CandidateBar({
           </span>
         </span>
       )}
-      {/* 右端の ✓(どの配置でも) */}
-      <button
-        type="button"
-        onClick={onConfirm}
-        // 押してもテキスト入力からフォーカスを奪わない(キーボードを閉じない)
-        {...keepFocus}
-        aria-label={t('bar.confirmLabel')}
-        className="flex-none w-16 flex flex-col items-center justify-center gap-0.5 border-l-2 border-emerald-700/40 dark:border-emerald-400/40 font-bold text-sm active:bg-emerald-200 dark:active:bg-emerald-800"
-      >
-        <Check className="w-6 h-6" aria-hidden="true" />
-        {t('bar.confirm')}
-      </button>
+      {/* 右端の ✓(従来の配置だけ。フルキーは、改行で確定する) */}
+      {!compact && (
+        <button
+          type="button"
+          onClick={onConfirm}
+          // 押してもテキスト入力からフォーカスを奪わない(キーボードを閉じない)
+          {...keepFocus}
+          aria-label={t('bar.confirmLabel')}
+          className="flex-none w-16 flex flex-col items-center justify-center gap-0.5 border-l-2 border-emerald-700/40 dark:border-emerald-400/40 font-bold text-sm active:bg-emerald-200 dark:active:bg-emerald-800"
+        >
+          <Check className="w-6 h-6" aria-hidden="true" />
+          {t('bar.confirm')}
+        </button>
+      )}
     </div>
   ) : omissions.length > 0 || draft ? (
     // 書き忘れ(赤)と入力の途中(橙)は同じ形: 打った文字と、足りないもの。書き忘れは、すぐ知らせる
@@ -350,9 +341,9 @@ export function CandidateBar({
   )
 
   return (
-    // コンパクト・フルキーでは、低く(打っている行とキーボードを近づける)
-    <div className={`flex-none flex ${compact ? 'h-[56px] gap-1.5' : 'h-[72px] gap-2'}`}>
-      {/* その日(または全体)の QSO の数。コンパクトでは表示だけ(一覧はメニューから)。アクティベーションが成立したら緑、誤りがあれば赤 */}
+    // フルキーでは、従来より低く(打っている行とキーボードを近づける)。ログ欄のつまみをやめて空いた分(12px)は、バーに回す
+    <div className={`flex-none flex ${compact ? 'h-[68px] gap-1.5' : 'h-[72px] gap-2'}`}>
+      {/* その日(または全体)の QSO の数。フルキーでは表示だけ(一覧はメニューから)。アクティベーションが成立したら緑、誤りがあれば赤 */}
       {compact ? (
         <span
           // ただの span の aria-label は読まれないことがあるので、1つの絵として名前を持たせる
@@ -391,29 +382,11 @@ export function CandidateBar({
       )}
 
       {compact ? (
-        <>
-          {/* 補完候補は、真ん中のバーに重ねる(右端のボタンは覆わない) */}
-          <div className="relative flex-1 min-w-0 flex">
-            {bar}
-            <div
-              className={`absolute inset-y-0 left-0 z-10 pointer-events-none ${confirmable ? 'right-[4.25rem]' : 'right-0'}`}
-            >
-              {suggest}
-            </div>
-          </div>
-          {!confirmable && newlineButton && (
-            <button
-              type="button"
-              onClick={onNewline}
-              {...keepFocus}
-              aria-label={t('bar.newlineLabel')}
-              className="flex-none w-16 rounded-xl border-2 border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center gap-0.5 font-bold text-sm active:bg-gray-300 dark:active:bg-gray-700"
-            >
-              <CornerDownLeft className="w-6 h-6" aria-hidden="true" />
-              {t('bar.newline')}
-            </button>
-          )}
-        </>
+        // 補完候補は、バーに重ねる
+        <div className="relative flex-1 min-w-0 flex">
+          {bar}
+          <div className="absolute inset-0 z-10 pointer-events-none">{suggest}</div>
+        </div>
       ) : (
         bar
       )}

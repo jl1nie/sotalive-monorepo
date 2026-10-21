@@ -48,7 +48,7 @@ function renderAt(
   onSelectPart: (part: string) => void = () => {},
   timezone = 0,
   compact = false,
-  extra: { suggest?: ReactNode; onNewline?: () => void; newlineButton?: boolean } = {}
+  extra: { suggest?: ReactNode } = {}
 ) {
   const view = compile(text) as LogView
   const info = lineInfo(text, line) as LineInfo
@@ -64,8 +64,6 @@ function renderAt(
       autoTime={autoTime}
       compact={compact}
       suggest={extra.suggest}
-      newlineButton={extra.newlineButton}
-      onNewline={extra.onNewline}
       onOpenList={() => {}}
       onConfirm={() => {}}
       onSelectPart={onSelectPart}
@@ -287,48 +285,25 @@ describe('CandidateBar: コンパクトな配置の QSO の数', () => {
   })
 })
 
-describe('CandidateBar: コンパクトな配置の右端のボタン', () => {
+describe('CandidateBar: 右端の ✓', () => {
   const log = 'mycall JA1ABC\ndate 2026-10-19\n40m cw\n0900 ja1aaa'
-  const NEXT = '改行して次の行へ'
   const suggest = <button type="button">ssb</button>
 
-  it('QSO でない行(40m cw)では、確定の代わりに「次の行」を出し、押すと改行する', () => {
-    const onNewline = vi.fn()
-    renderAt(log, 2, 'day', true, () => {}, 0, true, { onNewline })
-    expect(screen.queryByRole('button', { name: CONFIRM })).not.toBeInTheDocument()
-    act(() => screen.getByRole('button', { name: NEXT }).click())
-    expect(onNewline).toHaveBeenCalledTimes(1)
-  })
-
-  it('補完候補が出ていても、「次の行」は覆わない', () => {
-    renderAt(log, 2, 'day', true, () => {}, 0, true, { suggest })
-    const next = screen.getByRole('button', { name: NEXT })
-    expect(next.contains(screen.getByRole('button', { name: 'ssb' }))).toBe(false)
-    expect(screen.getByRole('button', { name: 'ssb' }).closest('div')?.contains(next)).toBe(false)
-  })
-
-  it('確定できる行では ✓ を出し(次の行は出さない)、補完候補は ✓ を避けて重ねる', () => {
+  it('フルキーでは、緑の行でも ✓ を出さない(改行で確定する)。補完候補はバーいっぱいに重ねる', () => {
     renderAt(log, 3, 'day', true, () => {}, 0, true, { suggest })
-    expect(screen.queryByRole('button', { name: NEXT })).not.toBeInTheDocument()
-    const confirm = screen.getByRole('button', { name: CONFIRM })
-    const layer = screen.getByRole('button', { name: 'ssb' }).parentElement!
-    expect(layer).toHaveClass('right-[4.25rem]')
-    expect(layer.contains(confirm)).toBe(false)
-  })
-
-  it('フルキー(次の行のボタンなし)でも、緑の行では右端に ✓ を出し、補完候補は ✓ を避ける。QSO でない行では右端に何も出さない', () => {
-    renderAt(log, 3, 'day', true, () => {}, 0, true, { suggest, newlineButton: false })
-    expect(screen.getByRole('button', { name: CONFIRM })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: NEXT })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'ssb' }).parentElement).toHaveClass('right-[4.25rem]')
-    cleanup()
-    renderAt(log, 2, 'day', true, () => {}, 0, true, { suggest, newlineButton: false })
-    expect(screen.queryByRole('button', { name: NEXT })).not.toBeInTheDocument()
+    expect(screen.getByText('JA1AAA')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: CONFIRM })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'ssb' }).parentElement).toHaveClass('inset-0')
   })
 
-  it('従来の配置には「次の行」はない', () => {
-    renderAt(log, 2)
-    expect(screen.queryByRole('button', { name: NEXT })).not.toBeInTheDocument()
+  it('フルキーでは、QSO でない行(40m cw)の右端にも、何も出さない', () => {
+    renderAt(log, 2, 'day', true, () => {}, 0, true, { suggest })
+    expect(screen.queryByRole('button', { name: CONFIRM })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['ssb'])
+  })
+
+  it('従来の配置では、緑の行の右端に ✓ を出す', () => {
+    renderAt(log, 3)
+    expect(screen.getByRole('button', { name: CONFIRM })).toBeInTheDocument()
   })
 })

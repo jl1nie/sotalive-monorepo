@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  activeLayout,
   TIMEZONE_MAX,
   TIMEZONE_MIN,
   timezoneLabel,
@@ -34,7 +35,6 @@ const COUNT_OPTIONS: { value: QsoCount; label: MessageKey; hint: MessageKey }[] 
 
 const LAYOUT_OPTIONS: { value: Layout; label: MessageKey; hint: MessageKey }[] = [
   { value: 'classic', label: 'settings.layout.classic', hint: 'settings.layout.classic.hint' },
-  { value: 'compact', label: 'settings.layout.compact', hint: 'settings.layout.compact.hint' },
   { value: 'fullkey', label: 'settings.layout.fullkey', hint: 'settings.layout.fullkey.hint' },
 ]
 
@@ -57,8 +57,8 @@ interface Props {
 export function SettingsDialog({ open, onClose, settings, onChange, sync }: Props) {
   const t = useT()
   const [touch] = useState(touchDevice)
-  // PC でフルキーが選ばれていたら、実際に動いているコンパクトとして見せる
-  const layout = settings.layout === 'fullkey' && !touch ? 'compact' : settings.layout
+  // PC でフルキーが選ばれていたら、実際に動いている従来として見せる
+  const layout = activeLayout(settings.layout, touch)
   return (
     <Sheet open={open} onClose={onClose} title={t('settings.title')}>
       <div className="space-y-5">
@@ -109,7 +109,7 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
           </p>
           {CONFIRM_OPTIONS.map((opt) => {
             // RST は配置ごとに持つ(従来の配置は、リリース版の設定のまま)
-            const key = opt.key === 'writeRst' && settings.layout !== 'classic' ? 'writeRstCompact' : opt.key
+            const key = opt.key === 'writeRst' && layout === 'fullkey' ? 'writeRstCompact' : opt.key
             return (
               <label
                 key={opt.key}
@@ -127,7 +127,7 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
                   {opt.key === 'writeRst' && (
                     // 配置ごとの設定なので、どの配置の設定かを添える(別の配置で変えても、ここには効かない)
                     <span className="block mt-1 text-sm font-bold text-primary-700 dark:text-primary-300">
-                      {t(settings.layout === 'classic' ? 'settings.confirm.rst.classic' : 'settings.confirm.rst.compact')}
+                      {t(layout === 'classic' ? 'settings.confirm.rst.classic' : 'settings.confirm.rst.compact')}
                     </span>
                   )}
                 </span>
@@ -184,6 +184,21 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
             )
           })}
         </fieldset>
+
+        {layout === 'fullkey' && (
+          <label className="flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 border-gray-300 dark:border-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.showClock}
+              onChange={(e) => onChange({ showClock: e.target.checked })}
+              className="mt-1 w-5 h-5 accent-primary-700"
+            />
+            <span>
+              <span className="block font-semibold">{t('settings.showClock')}</span>
+              <span className="block text-sm text-gray-700 dark:text-gray-300">{t('settings.showClock.hint')}</span>
+            </span>
+          </label>
+        )}
 
         <fieldset className="space-y-2">
           <legend className="label">{t('settings.editorFont')}</legend>

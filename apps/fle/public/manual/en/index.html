@@ -69,9 +69,10 @@
     </ul>
   </li>
   <li><b>Insert the current time</b>: confirming a QSO line without a time inserts the current time (on by default). Turn it off when typing in a paper log; a line without a time then takes the time of the line before. This is set per device and is not synced.</li>
-  <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST. Band/mode is off at first. RST is kept per layout: on at first in the classic layout, off at first in the compact and full keys layouts (the log stays as you typed it, and the green bar shows the filled-in values). The settings screen shows which layout the RST setting is for.</li>
-  <li><b>Screen layout</b>: "Classic", "Compact (trial)" or "Full keys (trial)". Compact keeps the line you are typing, the green bar and the digit keys together (see <a href="#compact">Compact layout</a>). Full keys also shows an on-screen keyboard instead of the phone's (see <a href="#fullkey">Full keys layout</a>; available on touch devices such as phones). A phone starts with full keys the first time, a PC with classic. This is set per device and is not synced.</li>
-  <li><b>Digit key row</b>: in the classic and compact layouts, a row of digit keys above the keyboard (on from the start on touch devices). Not used with full keys (the keyboard has digits).</li>
+  <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST. Band/mode is off at first. RST is kept per layout: on at first in the classic layout, off at first in the full keys layout (the log stays as you typed it, and the green bar shows the filled-in values). The settings screen shows which layout the RST setting is for.</li>
+  <li><b>Screen layout</b>: "Classic" or "Full keys (trial)". Full keys keeps the line you are typing and the green bar together, and shows an on-screen keyboard instead of the phone's (see <a href="#fullkey">Full keys layout</a>; available on touch devices such as phones). A device that used the former "Compact" layout moves to full keys on a phone and to classic on a PC. A phone starts with full keys the first time, a PC with classic. This is set per device and is not synced.</li>
+  <li><b>Show the time and location</b>: with full keys, shows the time and your location (and memo) in large type above the log (on by default). It appears only while full keys is selected. This is set per device and is not synced.</li>
+  <li><b>Digit key row</b>: in the classic layout, a row of digit keys above the keyboard (on from the start on touch devices). Not used with full keys (the keyboard has digits).</li>
   <li><b>QSO count</b>: the number on the left shows "Day / total" or only the "Total".</li>
   <li><b>Log text</b>: monospace (Roboto Mono) or gothic. <b>Theme</b>: light / dark / follow the device. <b>Language</b>: the language of the screen and error messages (日本語 / English / follow the device).</li>
 </ul>
@@ -151,60 +152,52 @@ ssb
 <tr><th>(empty line)</th><td>Shows the current time and the band and mode at that line. The next QSO gets these values.</td></tr>
 <tr><th>(settings line)</th><td>Shows what the line itself does not: the date after <code>day +</code> (with the weekday), the name of the summit or park for <code>mysota</code> etc. (when online), the message of <code>qslmsg</code> with its variables replaced, or the rig for <code>rig</code> ("No rig" for <code>rig -</code>). Lines with nothing to add (<code>mycall</code>, comments, ...) look like an empty line.</td></tr>
 </table>
-<p>The number on the left is the QSOs on the day at the cursor (UTC), with the total (such as <code>/10</code>) under it. Choose "Total" under "QSO count" in the settings to show only the total. In the classic layout, tap it to see the QSO list and errors; tapping an error jumps to that line (for the compact and full keys layouts, see <a href="#compact">Compact layout</a>).</p>
+<p>The number on the left is the QSOs on the day at the cursor (UTC), with the total (such as <code>/10</code>) under it. Choose "Total" under "QSO count" in the settings to show only the total. In the classic layout, tap it to see the QSO list and errors; tapping an error jumps to that line (for the full keys layout, see <a href="#fullkey">Full keys layout</a>).</p>
 <ul>
-  <li>Tap a <b>suggestion</b> shown at the bottom of the editor to insert a keyword, band or mode (in the compact and full keys layouts, suggestions appear over the green bar).</li>
+  <li>Tap a <b>suggestion</b> shown at the bottom of the editor to insert a keyword, band or mode (with full keys, suggestions appear over the green bar).</li>
   <li>With "Digit key row" on in the settings, a row of digits appears above the keyboard (handy for callsigns such as JA1ABC/1; on from the start on touch devices). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
   <li>If you move, use Menu → "New log" to switch the location for the QSOs from there on.</li>
   <li>The QSO list can also be opened from Menu → "QSO list".</li>
   <li>On a PC, <b>Ctrl+Z (⌘Z on a Mac) undoes the last edit</b>, in any layout, the same way as ↶ in full keys (including changes made by confirming or picking a suggestion).</li>
 </ul>
-<h3 id="compact">Compact layout (trial)</h3>
-<p>Choose "Compact" under "Screen layout" in the settings to keep the line you are typing, the green bar, the digit keys and ⌫ together, so your eyes and fingers move less. You can switch back to the classic layout in the settings at any time (the log stays as it is).</p>
-<pre><code>│ 1111 jj0pic         │
-│ 2107 ja1xyz 7▌      │ (typing)
-[3/10][JA1XYZ 579/599][✓OK]
-[1][2][3][4][5][6][7][8][9][0]
-[/][-][←][→][  Space ][ ⌫ ]
-[ the phone's keyboard ]</code></pre>
-<ul>
-  <li><b>The log sits at the bottom</b> of the editor, so the line you are typing is right above the green bar. The log text is the same size as the callsign in the green bar.</li>
-  <li><b>Drag the handle on the top edge of the log up or down to change its height</b> (two lines or more). When the log is lower, <b>the time and your location</b> (your callsign and the summit, WWFF and parks in effect at the cursor) show large above it, easy to read while calling CQ. Below them, the <b>memo</b> in effect at the cursor (the last line starting with <code>#</code> before it, such as JCC/JCG) shows on one line. The time is in the same time zone as the times that go into the log, with UTC added when that is not UTC. Drag it up until they no longer fit (or when the phone's keyboard makes the screen short) and only the log shows. Each device remembers it. You can also grab the handle around the bar (about a finger width above or below it). <b>Tap the handle</b> to show or hide the time and your location (showing them goes back to the previous height). In a browser, pulling the handle does not reload the page (pull from anywhere else to reload).</li>
-  <li>Turning a phone sideways shows "Please turn your phone upright" (your log stays). Opened from the home screen, Android keeps it upright.</li>
-  <li><b>The green bar is shorter</b>: the callsign and RST in the same large text on the first row, and the time, band, mode etc. small on the second.</li>
-  <li><b>Two rows of digit keys</b>, the second with <code>/</code> <code>-</code> ← → space and ⌫, so you can type a space or delete without reaching for the edge of the phone's keyboard.
-    <ul>
-      <li>Hold ⌫ to keep deleting.</li>
-      <li>← → move the cursor one character. Swiping either row also moves the cursor (starting on ⌫ moves it without deleting).</li>
-    </ul>
-  </li>
-  <li><b>The button at the right end moves to the next line.</b> On a QSO line (green) it is ✓ OK; on a line that is not a QSO, such as <code>40m cw</code>, it is "↵ Next". On the last line, it starts a new line at the end (the same as Enter). If you were fixing an earlier line, it just moves to the next line without adding one (✓ OK does the same, so no empty line appears in the middle of the log).</li>
-  <li><b>Suggestions appear over the green bar.</b> They never cover the button at the right end or the QSO count on the left, so you can move on while they are shown.</li>
-  <li><b>The QSO count on the left is display only</b> (tapping it does not open the list; use Menu → "QSO list"). When activating POTA or SOTA, the lower number is the QSOs needed for an activation (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once the activation is complete. It turns red when there are errors, with a count such as <code>⚠2</code>.</li>
-  <li><b>Confirming keeps the log as you typed it</b> (writing the RST is off at first). Type <code>7</code> and the green bar shows the filled-in value such as <code>579/599</code>. To write it into the log, turn on RST under "What confirming writes" in the settings <b>while the compact or full keys layout is selected</b> (this setting is kept separately from the classic layout, and the settings screen says which layout it is for).</li>
-  <li>While the keyboard is shown, there is no gap between the digit keys and the keyboard.</li>
-</ul>
-
 <h3 id="fullkey">Full keys layout (trial)</h3>
-<p>Choose "Full keys" under "Screen layout" in the settings to get an on-screen keyboard, with just the keys needed to write FLE, instead of the phone's keyboard. No more switching the phone's keyboard between input modes. Everything else is the same as the <a href="#compact">compact layout</a> (the log at the bottom, suggestions, the QSO count, and confirming keeps the log as you typed it).</p>
-<pre><code>[1][2][3][4][5][6][7][8][9][0]
+<p>Choose "Full keys" under "Screen layout" in the settings to keep the line you are typing and the green bar together, with an on-screen keyboard that has just the keys needed to write FLE, instead of the phone's keyboard. No more switching the phone's keyboard between input modes. It is available on touch devices such as phones (a PC uses the classic layout). You can switch back to the classic layout in the settings at any time (the log stays as it is).</p>
+<pre><code>      10:05:12 JST  UTC 01:05
+       JA1ABC  JA/TK-001
+│ 1111 jj0pic         │
+│ 2107 ja1xyz 7▌      │ (typing)
+[3/10][JA1XYZ 579/599   ]
+[1][2][3][4][5][6][7][8][9][0]
 [Q][W][E][R][T][Y][U][I][O][P]
 [A][S][D][F][G][H][J][K][L][-]
 [a][Z][X][C][V][B][N][M][/][⌫]
-[🌐][↶][←][    Space    ][→][↵Enter]</code></pre>
+[🌐][↶][←][             ][→][ ↵ ]</code></pre>
+<h4>The log and the green bar</h4>
+<ul>
+  <li><b>The log sits at the bottom</b> of the editor, so the line you are typing is right above the green bar. The log text is the same size as the callsign in the green bar.</li>
+  <li><b>The time and your location</b> (your callsign and the summit, WWFF and parks in effect at the cursor) show large above the log, easy to read while calling CQ. Below them, the <b>memo</b> in effect at the cursor (the last line starting with <code>#</code> before it, such as JCC/JCG) shows on one line. The time is in the same time zone as the times that go into the log, with UTC added when that is not UTC. When there is no room (for example, with the phone's keyboard open), only the log shows. To hide them, turn off "Show the time and location" in the settings (set per device).</li>
+  <li>Turning a phone sideways shows "Please turn your phone upright" (your log stays). Opened from the home screen, Android keeps it upright.</li>
+  <li><b>The green bar is shorter</b>: the callsign and RST in the same large text on the first row, and the time, band, mode etc. small on the second. There is no ✓ OK at the right end (↵ confirms).</li>
+  <li><b>Suggestions appear over the green bar.</b> They never cover the QSO count on the left.</li>
+  <li><b>The QSO count on the left is display only</b> (tapping it does not open the list; use Menu → "QSO list"). When activating POTA or SOTA, the lower number is the QSOs needed for an activation (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once the activation is complete. It turns red when there are errors, with a count such as <code>⚠2</code>.</li>
+  <li><b>Confirming keeps the log as you typed it</b> (writing the RST is off at first). Type <code>7</code> and the green bar shows the filled-in value such as <code>579/599</code>. To write it into the log, turn on RST under "What confirming writes" in the settings <b>while the full keys layout is selected</b> (this setting is kept separately from the classic layout, and the settings screen says which layout it is for).</li>
+  <li>While the keyboard is shown, there is no gap between the keys and the keyboard.</li>
+</ul>
+<h4>The keyboard</h4>
 <ul>
   <li>Tapping the editor does not bring up the phone's keyboard (the cursor still shows).</li>
   <li>The keys start square (change the height with the handle below) and letters go into the log in lowercase (FLE does not care about case). <code>-</code> is right of L and <code>/</code> is right of M, as on a PC keyboard.</li>
-  <li>Tap <code>/</code> twice quickly for <code>.</code> (for frequencies such as <code>7.0295</code>), and <code>-</code> twice for <code>,</code>. Both are shown small at the bottom right of the key. Space, the key you type most, is wide.</li>
+  <li>Tap <code>/</code> twice quickly for <code>.</code> (for frequencies such as <code>7.0295</code>), and <code>-</code> twice for <code>,</code>. Both are shown small at the bottom right of the key.</li>
+  <li><b>Hold <code>3</code> (about half a second) for <code>#</code></b> (for memo and comment lines). It is not shown on the key, but the balloon changes to <code>#</code> while you hold it; let go to type it. A quick tap types <code>3</code> as usual.</li>
+  <li>The space and ↵ keys have no text on them (space is the widest key in the bottom row, ↵ is at the bottom right). Space, the key you type most, is wide.</li>
   <li><b>The key left of Z is Caps.</b> It shows an up arrow: tap it and the arrow turns solid and letters are typed in capitals; tap again and it goes back to an outline arrow and lowercase. While it is on, the letter keys show capitals too. Handy in the evening, when lowercase m and n are hard to tell apart. FLE does not care about case, so the log reads the same either way (letters in names and remarks are output as typed). Each device remembers it.</li>
   <li><b>↶ undoes the last edit.</b> If you deleted too much with ⌫, one tap brings back everything from before you started deleting (even across lines). Typing is undone one line at a time. Each tap goes further back.</li>
-  <li><b>Move to the next line with ✓ OK at the right end of the green bar</b>, as in the other layouts (right next to the log you are looking at). If you were fixing an earlier line, it just moves to the next line without adding one.</li>
-  <li><b>"↵ Enter" at the bottom right starts a new line below the current one</b>, at the end of the line (the line is never split, even with the cursor in the middle). Press it in the middle of the log to add a QSO there.</li>
-  <li><b>On a QSO line, ↵ and OK fill in the same things</b> (the time, and the RST etc. under "What confirming writes"). The only difference is where the cursor goes: to the new line below, or to the next line. Either way the QSO is recorded. The time that is filled in is the time of the QSO, so do not delete it (without it, the QSO takes the time of the line before).</li>
+  <li><b>↵ at the bottom right breaks the line at the cursor, like Enter in an editor</b>. In the middle of a line, it splits the line there (you can add line breaks to a log you have already typed). At the end of a line, it adds a new line below. Press it in the middle of the log to add a QSO there.</li>
+  <li><b>↵ at the end of a QSO line confirms it</b>: it fills in the time and what is set under "What confirming writes" (the RST etc.), then starts a new line. The time that is filled in is the time of the QSO, so do not delete it (without it, the QSO takes the time of the line before). To just move to the next line, tap it in the editor.</li>
   <li>The key you are pressing shows in a balloon above your finger. Tapping the gap between keys still types the nearest key.</li>
   <li><b>Drag the handle on the top edge of the keyboard up or down to change the key height</b> (from square up to 1.5 times). Taller keys are easier to hit, for example with gloves. The log and the display above it use the rest of the height. Each device remembers it.</li>
   <li>Hold ⌫ to keep deleting. Swipe left or right <b>from space, ← or →</b> to move the cursor one character at a time (see <a href="#swipe">Swipe</a>). Letter keys never turn into a swipe, even if your finger slides while typing fast.</li>
-  <li>For <b>Japanese</b> text (messages such as <code>&lt;Yamada-san&gt;</code>, remarks, <code>qslmsg</code>), tap 🌐 to switch to the phone's keyboard. When done, tap "Back to full keys" at the bottom. While the phone's keyboard is in use, "Next" also appears at the right end of the bar on lines that are not QSOs.</li>
+  <li>For <b>Japanese</b> text (messages such as <code>&lt;Yamada-san&gt;</code>, remarks, <code>qslmsg</code>), tap 🌐 to switch to the phone's keyboard. When done, tap "Back to full keys" at the bottom. Enter on the phone's keyboard works the same as ↵.</li>
 </ul>
 
 <h3 id="fix">Fix a QSO</h3>
@@ -221,15 +214,15 @@ ssb
   <li><b>Example: it was JA1XYW, not JA1XYZ</b> → tap the callsign → ⌫ → <code>w</code>.</li>
   <li>If the RST or time was left out (the bar shows the filled-in value), tapping it writes that value into the line first, then moves to its end. On the line <code>ja1xyz</code>, tapping the RST gives <code>ja1xyz 599 599|</code>.</li>
   <li>To fix a character <b>in the middle</b>, tap the part to get to its end, then <b>swipe the digit row left or right</b> to move the cursor (with full keys, swipe from space, ← or →; <a href="#swipe">next section</a>).</li>
-  <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line (in the compact and full keys layouts, use Menu → "QSO list").</li>
-  <li>Only ✓ OK at the right end of the green bar moves to the next line. Tapping a part never does. (In the compact and full keys layouts, lines that are not QSOs also get "Next".)</li>
+  <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line (with full keys, use Menu → "QSO list").</li>
+  <li>Only ✓ OK at the right end of the green bar confirms and moves to the next line (with full keys, ↵ at the end of the line). Tapping a part never does.</li>
 </ul>
 
 <h3 id="swipe">Swipe the digit row to move the cursor</h3>
 <p>You can move the cursor one character at a time without aiming your finger between characters. <b>Lines other than QSOs (<code>date</code>, <code>mysota</code>, <code>qslmsg</code>, comments, ...) have no parts to tap in the green bar, so this is the main way to fix them.</b> On QSO lines, use it to fix a character in the middle of a part.</p>
 <pre><code>[1][2][3][4][5][6][7][8][9][0][/][-]
  ← keep your finger down, slide →</code></pre>
-<p>In the compact layout, you can swipe from anywhere on either row of digit keys. With full keys, <b>swipe from space, ← or →</b> (letter keys never turn into a swipe). In both, you can also tap ← or → for a single character.</p>
+<p>With full keys, <b>swipe from space, ← or →</b> (letter keys never turn into a swipe). You can also tap ← or → for a single character.</p>
 <ol>
   <li>Put a finger anywhere on the digit row (any key will do).</li>
   <li>Without lifting it, slide left or right. The cursor moves <b>one character per about 20px</b> in that direction, across parts and lines.</li>
