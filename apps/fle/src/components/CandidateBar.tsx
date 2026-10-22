@@ -167,9 +167,10 @@ export function CandidateBar({
   const names = usePlaceNames(PLACE[info?.directive ?? ''] ?? 'sota', placeCodes(info))
 
   // 入力の途中(まだ確定できない行)は、打った文字を、橙で見せる。確定できれば緑になる。
-  // 途中かどうかは、その行に誤りがあるかで見る(書き終えた指令やコメントの行は、誤りがなく、QSO でもない)
+  // 途中かどうかは、その行に誤りがあるかで見る(書き終えた指令やコメントの行は、誤りがなく、QSO でもない)。
+  // QSO として読めても誤りのある行(コールが2つ・時刻が正しくないなど)も同じ(緑にしないので、誤りをここで出す)
   const typed = lineText.trim()
-  const draft = !qso && !!error && typed !== '' && omissions.length === 0
+  const draft = !!error && typed !== '' && omissions.length === 0
   // 実際にログに入る時刻と同じ時間帯で出す
   const tz = clockZone(info, view, caretLine, timezone)
   const clock = autoTime || !info ? new Date(now + tz * 3_600_000).toISOString().slice(11, 16) : info.time

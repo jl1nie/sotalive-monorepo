@@ -15,6 +15,7 @@ const ja = {
   'header.menu': 'メニュー',
   'header.settings': '設定',
   'sheet.close': '閉じる',
+  'sheet.cancel': 'キャンセル',
 
   // 入力欄・候補
   'editor.label': 'FLEログ',
@@ -50,6 +51,7 @@ const ja = {
   // メニュー
   'menu.title': 'ログ',
   'menu.place': '新しいログ',
+  'menu.change': '場所の変更',
   'menu.openFle': 'FLEログを開く',
   'menu.saveFle': 'FLEログを保存',
   'menu.export': '書き出し (ADIF等)',
@@ -76,6 +78,7 @@ const ja = {
   'notice.loaded': 'ログを読み込みました',
   'notice.sampleInserted': 'サンプルを入れました',
   'notice.cleared': '消しました',
+  'notice.newLog': '新しいログを始めました',
   'notice.retimed': 'ログの時刻を {zone} に変換しました',
   'notice.relabeled': 'ログの時間帯を {zone} にしました(時刻はそのまま)',
 
@@ -224,8 +227,11 @@ const ja = {
   'place.example': '例: {value}',
   'place.newLog': '新しいログ',
   'place.change': '場所の変更',
+  'place.setup': '自局・場所の設定',
   'place.write': 'ログに書き込む',
   'place.hintNew': 'ログの先頭に書き込みます。すべて任意です。',
+  'place.hintFresh':
+    '今のログを閉じて、新しいログを始めます(今のログは、メニューの「元に戻す」で戻せます)。すべて任意です。',
   'place.hintChange': 'カーソルの行から先のQSOに有効です。空にした項目は解除します。',
   'place.offline': 'オフラインです。リファレンスは手入力してください(候補は出ません)。',
   'place.locate': '現在地',
@@ -276,6 +282,7 @@ const en: Record<MessageKey, string> = {
   'header.menu': 'Menu',
   'header.settings': 'Settings',
   'sheet.close': 'Close',
+  'sheet.cancel': 'Cancel',
 
   'editor.label': 'FLE log',
   'suggest.label': 'Suggestions',
@@ -307,6 +314,7 @@ const en: Record<MessageKey, string> = {
 
   'menu.title': 'Log',
   'menu.place': 'New log',
+  'menu.change': 'Change location',
   'menu.openFle': 'Open FLE log',
   'menu.saveFle': 'Save FLE log',
   'menu.export': 'Export (ADIF etc.)',
@@ -332,6 +340,7 @@ const en: Record<MessageKey, string> = {
   'notice.loaded': 'Log loaded',
   'notice.sampleInserted': 'Sample inserted',
   'notice.cleared': 'Cleared',
+  'notice.newLog': 'Started a new log',
   'notice.retimed': 'Converted the log times to {zone}',
   'notice.relabeled': 'Set the log time zone to {zone} (times kept)',
 
@@ -478,8 +487,11 @@ const en: Record<MessageKey, string> = {
   'place.example': 'e.g. {value}',
   'place.newLog': 'New log',
   'place.change': 'Change location',
+  'place.setup': 'Station and location',
   'place.write': 'Write to log',
   'place.hintNew': 'Written at the top of the log. All fields are optional.',
+  'place.hintFresh':
+    'Closes the current log and starts a new one (Undo in the menu brings the current log back). All fields are optional.',
   'place.hintChange': 'Applies to QSOs from the cursor line onward. Empty fields are cleared.',
   'place.offline': 'You are offline. Enter references by hand (no suggestions).',
   'place.locate': 'Here',

@@ -3,6 +3,7 @@ import { Crosshair } from 'lucide-react'
 import type { FieldError, OutputWarning } from '@/lib/fle'
 import { useGridLocate } from '@/hooks/useGridLocate'
 import { Sheet } from '@/components/Sheet'
+import { useFieldKeyProps } from '@/hooks/useFieldKeys'
 import { useT } from '@/lib/i18n'
 
 interface Props {
@@ -25,6 +26,7 @@ export function GenerateCheckSheet(props: Props) {
 
 function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGenerateAnyway, onOpenPlace }: Props) {
   const t = useT()
+  const fieldKeys = useFieldKeyProps()
   const [mycall, setMycall] = useState(initialCall)
   const [grid, setGrid] = useState('')
   const [errors, setErrors] = useState<FieldError[]>([])
@@ -43,6 +45,7 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
       open
       onClose={onClose}
       title={t('check.title')}
+      closeLabel={t('sheet.cancel')}
       actions={
         <>
           <button type="button" onClick={writeAndGenerate} className="btn-success w-full">
@@ -83,6 +86,7 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
               autoCorrect="off"
               autoComplete="off"
               spellCheck={false}
+              {...fieldKeys}
               aria-invalid={error('mycall') ? true : undefined}
               className="input font-mono"
             />
@@ -109,6 +113,7 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
                 autoCorrect="off"
                 autoComplete="off"
                 spellCheck={false}
+                {...fieldKeys}
                 aria-invalid={error('grid') ? true : undefined}
                 className="input font-mono"
               />

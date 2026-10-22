@@ -138,6 +138,7 @@ function PlanForm({
       open
       onClose={onClose}
       title={t('plans.edit')}
+      closeLabel={t('sheet.cancel')}
       actions={
         <>
           <button type="button" onClick={save} className="btn-success w-full">

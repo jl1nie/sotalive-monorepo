@@ -80,7 +80,7 @@ export function loadLastCall(kv: KV | null = defaultKv()): string {
 }
 
 export function saveLastCall(call: string, kv: KV | null = defaultKv()): void {
-  const value = call.trim()
+  const value = call.trim().toUpperCase()
   if (!kv || !value) return
   try {
     kv.setItem(CALL_KEY, value)

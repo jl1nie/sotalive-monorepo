@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   BookOpen,
   ClipboardList,
   Download,
+  FilePlus,
   FileText,
   HelpCircle,
   Home,
@@ -66,6 +67,7 @@ import { exportName } from '@/lib/fileName'
 import { SuggestStrip } from '@/components/SuggestStrip'
 import { QsoSheet } from '@/components/QsoSheet'
 import { PlaceSheet } from '@/components/PlaceSheet'
+import { FieldKeysContext } from '@/hooks/useFieldKeys'
 import { PlanSheet } from '@/components/PlanSheet'
 import { JoinSheet } from '@/components/JoinSheet'
 import { usePlans } from '@/hooks/usePlans'
@@ -132,8 +134,8 @@ function Editor({
   const [menuOpen, setMenuOpen] = useState(false)
   // 生成の前に知らせる、ログの不足(あるときだけ、確認のシートを開く)
   const [check, setCheck] = useState<OutputWarning[] | null>(null)
-  // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値
-  const [place, setPlace] = useState<{ line: number; initial: Station; memo: string; isNewLog: boolean } | null>(null)
+  // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値。`fresh` なら、新しいログ(空のログに書く)
+  const [place, setPlace] = useState<{ line: number; initial: Station; memo: string; isNewLog: boolean; fresh: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   // 時間帯を変えるときの確認(QSO のあるログで、時刻を変換するか)
   const [retime, setRetime] = useState<{ tz: number; from: string; to: string; qsos: number } | null>(null)
@@ -206,7 +208,9 @@ function Editor({
   )
   const pwa = usePwa(useCallback(() => notify(t('notice.offlineReady')), [notify, t]))
 
-  // 内容を置き換える前に、今の内容を取っておく(メニューから戻せる)
+  // 内容を置き換える前に、今の内容を取っておく(メニューから戻せる)。
+  // カーソルは末尾に置く(前の内容での位置のままだと、場所のシートなどが別の行を基準にしてしまう)。
+  // フォーカスはしない(メニューの操作で、キーボードを出さない)
   const replaceText = useCallback(
     (next: string, message?: string) => {
       if (text.trim()) {
@@ -215,6 +219,7 @@ function Editor({
         if (message) notify(message, text)
       }
       setText(next)
+      setCaret(next.length)
     },
     [text, notify]
   )
@@ -268,6 +273,18 @@ function Editor({
   const clockRoom = useClockRoom({ enabled: compact && settings.showClock, taRef, deps: [settings.editorFont] })
   const [osKeyboard, setOsKeyboard] = useState(false)
   const onScreenKeys = fullkey && !osKeyboard
+  // シートの入力欄(自局・リファレンスなど)の画面のキーボード。🌐 での切り替えは、ログ欄とは別に持つ
+  const [fieldOs, setFieldOs] = useState(false)
+  const fieldKeys = useMemo(
+    () => ({
+      enabled: fullkey,
+      os: fieldOs,
+      setOs: setFieldOs,
+      keyScale: settings.keyScale,
+      onKeyScale: (keyScale: number) => updateSettings({ keyScale }),
+    }),
+    [fullkey, fieldOs, settings.keyScale, updateSettings]
+  )
   // inputmode は、フォーカスし直さないと効かない(iOS)。入力中に切り替えたときは、いったん外して戻す
   useEffect(() => {
     const ta = taRef.current
@@ -382,11 +399,19 @@ function Editor({
     [text, caret, completion.from]
   )
 
-  // ログに自局のコールサインが現れたら、次の新しいログの初期値として覚える
-  const logCall = view?.mycall
-  useEffect(() => {
-    if (logCall) saveLastCall(logCall)
-  }, [logCall])
+  // 自局のコールサインは、場所のシートなどで自分で入れたものだけを覚える
+  // (ログから覚えると、サンプルや人のログを開いたときに、そのコールサインになる)
+
+  /** 新しいログのシートを開く。自局は前回のもの、場所は空 */
+  const openNewLog = () => {
+    setPlace({
+      line: 0,
+      initial: { mycall: loadLastCall(), sota: '', pota: [], wwff: '', grid: '' },
+      memo: '',
+      isNewLog: true,
+      fresh: true,
+    })
+  }
 
   /** 場所のシートを開く。初期値は、カーソル位置で有効な自局と場所(自局が空なら前回のもの) */
   const openPlace = async (line = caretLine) => {
@@ -396,23 +421,33 @@ function Editor({
       initial: { ...current, mycall: current.mycall || loadLastCall() },
       memo: memoAt(text, line),
       isNewLog: !view?.qsos.some((q) => q.line < line),
+      fresh: false,
     })
   }
 
-  /** 場所をログに書き込む(指令の行の書式はコアが決める)。誤りがあれば返す */
+  /** 場所をログに書き込む(指令の行の書式はコアが決める)。誤りがあれば返す。新しいログなら、空のログに書いて置き換える */
   const applyPlace = async (want: Station, extras: PlanExtras | undefined, memoValue: string | null): Promise<FieldError[]> => {
     if (!place) return []
-    const plan = await stationPlan(text, place.line, want)
+    const base = place.fresh ? '' : text
+    const plan = await stationPlan(base, place.line, want)
     if (plan.errors.length > 0) return plan.errors
     // メモ(`#` の行)。欄が空で触っていなければ、山・公園から JCC・JCG を引く(引けなければ書かない)。
     // その位置で有効なメモと同じなら、書かない
     const memo = memoValue ?? (await autoMemo(want))
     const lines = [
-      ...(extras ? extraLines(extras, text) : []),
-      ...(memo && memoAt(text, place.line) !== memo ? [`# ${memo}`] : []),
+      ...(extras ? extraLines(extras, base) : []),
+      ...(memo && memoAt(base, place.line) !== memo ? [`# ${memo}`] : []),
     ]
-    const edits = withExtras(text, place.line, plan.edits, lines)
-    if (edits.length > 0) {
+    const edits = withExtras(base, place.line, plan.edits, lines)
+    if (place.fresh) {
+      // 今のログは、メニューの「元に戻す」と通知から戻せる
+      // 書き込んだあとは、続けて打てるよう末尾にフォーカスする(場所の変更と同じ)
+      const next = applyEdits(base, edits)
+      if (next !== text) {
+        replaceText(next, t('notice.newLog'))
+        pendingCaret.current = next.length
+      }
+    } else if (edits.length > 0) {
       const at = mapCaret(caret, edits)
       pendingCaret.current = at
       setText(applyEdits(text, edits))
@@ -674,271 +709,276 @@ function Editor({
   }
 
   return (
-    <div className={`fixed inset-x-0 top-[var(--vvt,0px)] h-[var(--vvh,100dvh)] max-w-3xl mx-auto px-3 ${
-      // フルキーでは、キーボードが出ている間は、ホームバーの分の余白を取らない(キーとキーボードの間が空く)
-      compact && keyboard ? 'pb-2' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'
-    } flex flex-col gap-2`}>
-      <Header
-        onMenu={() => setMenuOpen(true)}
-        settings={settings}
-        onSettingsChange={changeSettings}
-        sync={sync}
-      />
-
-      <div ref={clockRoom.boxRef} className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
-        {clockRoom.fits && (
-          <StationClock info={info} tz={clockZone(info, view, caretLine, settings.timezone)} memo={memoAt(text, caretLine)} />
-        )}
-        <textarea
-          ref={taRef}
-          value={text}
-          onChange={(e) => handleChange(e.target.value, e.target.selectionStart, e.nativeEvent)}
-          onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
-          // Ctrl+Z / ⌘Z は、↶ と同じ取り消し(ブラウザの取り消しは、確定や候補で書き換えた分を戻せない)
-          onKeyDown={(e) => {
-            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z' && !e.nativeEvent.isComposing) {
-              e.preventDefault()
-              undo()
-            }
-          }}
-          placeholder={t('editor.placeholder')}
-          aria-label={t('editor.label')}
-          spellCheck={false}
-          autoCapitalize="none"
-          autoCorrect="off"
-          autoComplete="off"
-          // フルキー: OS のキーボードを出さない(キャレットは出る)
-          inputMode={onScreenKeys ? 'none' : undefined}
-          // 従来の配置では、下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
-          // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
-          // フルキーでは、緑のバーのコールサインと同じ大きさ(目が読み替えずに済む)。行間は詰める
-          className={`input flex-1 h-full min-h-0 resize-none font-semibold ${
-            compact ? '!text-xl leading-[1.3]' : 'leading-relaxed pb-20'
-          } ${settings.editorFont === 'mono' ? 'font-mono' : ''}`}
+    <FieldKeysContext.Provider value={fieldKeys}>
+      <div className={`fixed inset-x-0 top-[var(--vvt,0px)] h-[var(--vvh,100dvh)] max-w-3xl mx-auto px-3 ${
+        // フルキーでは、キーボードが出ている間は、ホームバーの分の余白を取らない(キーとキーボードの間が空く)
+        compact && keyboard ? 'pb-2' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+      } flex flex-col gap-2`}>
+        <Header
+          onMenu={() => setMenuOpen(true)}
+          settings={settings}
+          onSettingsChange={changeSettings}
+          sync={sync}
         />
-        {!compact && <SuggestStrip candidates={completion.candidates} onPick={pick} />}
-      </div>
 
-      {/* フルキーでは、補完候補は候補バーに重ねて出す(打っている行のすぐ下) */}
-      <div className="relative flex-none">
-        <CandidateBar
-          view={view}
-          preview={preview}
-          info={info}
-          caretLine={caretLine}
-          timezone={settings.timezone}
-          count={settings.qsoCount}
-          autoTime={settings.autoTime}
-          lineText={text.slice(...lineRange(text, caretLine))}
-          compact={compact}
-          suggest={compact && <SuggestStrip candidates={completion.candidates} onPick={pick} overBar />}
-          onOpenList={() => setListOpen(true)}
-          onConfirm={confirmLine}
-          onSelectPart={caretToPart}
-        />
-      </div>
-
-      {/* 数字の行は一番下。ソフトキーボードのすぐ上で、指が近い */}
-      {onScreenKeys ? (
-        <FullKeyboard
-          onKey={typeKey}
-          onMove={moveCaret}
-          onBackspace={backspace}
-          // エディタの Enter と同じく、カーソルの位置で改行する(行の途中なら行を割る。行末なら、時刻などを書き足してから)
-          onNewline={() => typeKey('\n')}
-          onOsKeyboard={() => setOsKeyboard(true)}
-          onUndo={undo}
-          keyScale={settings.keyScale}
-          onKeyScale={(keyScale) => updateSettings({ keyScale })}
-          caps={settings.capsLock}
-          onToggleCaps={() => updateSettings({ capsLock: !settings.capsLock })}
-        />
-      ) : fullkey ? (
-        // OS のキーボードを使っている間: フルキーに戻るボタン(数字キーは、OS のキーボードにある)
-        <button
-          type="button"
-          {...keepFocus}
-          onClick={() => setOsKeyboard(false)}
-          className="flex-none h-11 rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-800 font-bold text-sm flex items-center justify-center gap-2 active:bg-gray-300 dark:active:bg-gray-700"
-        >
-          <Keyboard className="w-5 h-5" aria-hidden="true" />
-          {t('keys.back')}
-        </button>
-      ) : (
-        settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} />
-      )}
-
-      {landscape && (
-        // 横向きのスマホ: 縦にしてもらう(ログはそのまま)
-        <div
-          role="alert"
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 p-6 text-center bg-white text-gray-950 dark:bg-gray-950 dark:text-gray-50"
-        >
-          <Smartphone className="w-12 h-12" aria-hidden="true" />
-          <p className="text-lg font-bold">{t('landscape.title')}</p>
-          <p className="text-sm text-gray-700 dark:text-gray-300">{t('landscape.hint')}</p>
-        </div>
-      )}
-
-      {notice && (
-        <div
-          role="status"
-          className="absolute left-1/2 -translate-x-1/2 bottom-28 w-max max-w-[calc(100%-1.5rem)] px-4 py-2.5 rounded-xl font-semibold text-center bg-gray-950 text-white dark:bg-white dark:text-gray-950"
-        >
-          {notice}
-          {undoTo !== null && (
-            <button
-              type="button"
-              className="ml-3 underline font-bold"
-              onClick={() => {
-                setText(undoTo)
-                setNotice(null)
-              }}
-            >
-              {t('notice.undo')}
-            </button>
+        <div ref={clockRoom.boxRef} className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
+          {clockRoom.fits && (
+            <StationClock info={info} tz={clockZone(info, view, caretLine, settings.timezone)} memo={memoAt(text, caretLine)} />
           )}
-        </div>
-      )}
-
-      <input
-        ref={fleInputRef}
-        type="file"
-        accept=".txt,.fle"
-        className="hidden"
-        onChange={(e) =>
-          readFile(e, (content) =>
-            replaceText(content, t('notice.loaded'))
-          )
-        }
-      />
-      <input
-        ref={adifInputRef}
-        type="file"
-        accept=".adi,.adif"
-        className="hidden"
-        onChange={(e) =>
-          readFile(e, async (content) => {
-            // ADIFの読み方(FLEの書式への変換)はコアが知っている
-            const fle = await adifToFle(content)
-            setText((prev) => (prev && !prev.endsWith('\n') ? prev + '\n' : prev) + fle)
-          })
-        }
-      />
-
-      <QsoSheet
-        open={listOpen}
-        onClose={() => setListOpen(false)}
-        view={view}
-        text={text}
-        onJump={jump}
-      />
-
-      <RetimeSheet
-        open={retime !== null}
-        onClose={() => setRetime(null)}
-        zone={retime ? zoneLabel(retime.tz) || 'UTC' : ''}
-        from={retime?.from ?? ''}
-        to={retime?.to ?? ''}
-        qsos={retime?.qsos ?? 0}
-        onConvert={() => void applyRetime(true)}
-        onKeep={() => void applyRetime(false)}
-      />
-
-      <GenerateCheckSheet
-        open={check !== null}
-        onClose={() => setCheck(null)}
-        warnings={check ?? []}
-        initialCall={loadLastCall()}
-        onWriteAndGenerate={writeAndGenerate}
-        onGenerateAnyway={() => {
-          setCheck(null)
-          void generateNow(text)
-        }}
-        onOpenPlace={() => {
-          setCheck(null)
-          void openPlace(0)
-        }}
-      />
-
-      <PlaceSheet
-        open={place !== null}
-        onClose={() => setPlace(null)}
-        initial={place?.initial ?? { mycall: '', sota: '', pota: [], wwff: '', grid: '' }}
-        initialMemo={place?.memo ?? ''}
-        isNewLog={place?.isNewLog ?? true}
-        onApply={applyPlace}
-        plans={plansStore.plans}
-      />
-
-      <PlanSheet
-        open={plansOpen}
-        onClose={() => setPlansOpen(false)}
-        plans={plansStore.plans}
-        onSave={plansStore.save}
-        onRemove={plansStore.remove}
-      />
-
-      <JoinSheet
-        code={joinCode}
-        onJoin={sync.joinWith}
-        onClose={() => {
-          setJoinCode(null)
-          history.replaceState(null, '', window.location.pathname + window.location.search)
-        }}
-      />
-
-      <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title={t('menu.title')}>
-        <MenuGroup title={t('menu.group.before')}>
-          <MenuButton icon={MapPin} label={t('menu.place')} onClick={fromMenu(() => void openPlace())} />
-          <MenuButton icon={ClipboardList} label={t('menu.plans')} onClick={fromMenu(() => setPlansOpen(true))} />
-        </MenuGroup>
-        {/* フルキーでは、QSO の数は表示だけ。一覧はここから */}
-        {compact && (
-          <MenuGroup title={t('menu.group.log')}>
-            <MenuButton icon={List} label={t('menu.list')} onClick={fromMenu(() => setListOpen(true))} />
-          </MenuGroup>
-        )}
-        <MenuGroup title={t('menu.group.output')}>
-          <MenuButton icon={Download} label={t('menu.export')} disabled={!hasText} onClick={fromMenu(() => void handleGenerate())} />
-          <MenuButton icon={Save} label={t('menu.saveFle')} disabled={!hasText} onClick={fromMenu(() => void saveFle())} />
-        </MenuGroup>
-        <MenuGroup title={t('menu.group.input')}>
-          <MenuButton icon={Upload} label={t('menu.openFle')} onClick={fromMenu(() => fleInputRef.current?.click())} />
-          <MenuButton icon={FileText} label={t('menu.addAdif')} onClick={fromMenu(() => adifInputRef.current?.click())} />
-        </MenuGroup>
-        <MenuGroup title={t('menu.group.edit')}>
-          {prev && prev !== text && <MenuButton icon={Undo2} label={t('menu.undo')} onClick={fromMenu(() => replaceText(prev))} />}
-          <MenuButton icon={Trash2} label={t('menu.clear')} onClick={fromMenu(() => replaceText('', t('notice.cleared')))} />
-        </MenuGroup>
-        <MenuGroup title={t('menu.group.help')}>
-          <li>
-            <a href={lang === 'en' ? MANUAL_URL_EN : MANUAL_URL} target="_blank" rel="noopener noreferrer" className={MENU_ITEM}>
-              <HelpCircle className="w-5 h-5" />
-              {t('menu.help')}
-            </a>
-          </li>
-          <MenuButton
-            icon={BookOpen}
-            label={t('menu.sample')}
-            onClick={fromMenu(() =>
-              // 見本のログはコアが持つ。日付(いま)だけ、画面が渡す
-              void sampleLog(new Date().toISOString().slice(0, 10)).then((sample) =>
-                replaceText(sample, t('notice.sampleInserted'))
-              )
-            )}
+          <textarea
+            ref={taRef}
+            value={text}
+            onChange={(e) => handleChange(e.target.value, e.target.selectionStart, e.nativeEvent)}
+            onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
+            // Ctrl+Z / ⌘Z は、↶ と同じ取り消し(ブラウザの取り消しは、確定や候補で書き換えた分を戻せない)
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z' && !e.nativeEvent.isComposing) {
+                e.preventDefault()
+                undo()
+              }
+            }}
+            placeholder={t('editor.placeholder')}
+            aria-label={t('editor.label')}
+            spellCheck={false}
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="off"
+            // フルキー: OS のキーボードを出さない(キャレットは出る)
+            inputMode={onScreenKeys ? 'none' : undefined}
+            // 従来の配置では、下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
+            // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
+            // フルキーでは、緑のバーのコールサインと同じ大きさ(目が読み替えずに済む)。行間は詰める
+            className={`input flex-1 h-full min-h-0 resize-none font-semibold ${
+              compact ? '!text-xl leading-[1.3]' : 'leading-relaxed pb-20'
+            } ${settings.editorFont === 'mono' ? 'font-mono' : ''}`}
           />
-          {pwa.canInstall && <MenuButton icon={Home} label={t('menu.install')} onClick={fromMenu(() => pwa.install())} />}
-          {pwa.showIosHint && (
-            <li className="p-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 text-sm">
-              <Home className="inline w-4 h-4 mr-1 align-text-bottom" />
-              {t('menu.installIos')}
-            </li>
+          {!compact && <SuggestStrip candidates={completion.candidates} onPick={pick} />}
+        </div>
+
+        {/* フルキーでは、補完候補は候補バーに重ねて出す(打っている行のすぐ下) */}
+        <div className="relative flex-none">
+          <CandidateBar
+            view={view}
+            preview={preview}
+            info={info}
+            caretLine={caretLine}
+            timezone={settings.timezone}
+            count={settings.qsoCount}
+            autoTime={settings.autoTime}
+            lineText={text.slice(...lineRange(text, caretLine))}
+            compact={compact}
+            suggest={compact && <SuggestStrip candidates={completion.candidates} onPick={pick} overBar />}
+            onOpenList={() => setListOpen(true)}
+            onConfirm={confirmLine}
+            onSelectPart={caretToPart}
+          />
+        </div>
+
+        {/* 数字の行は一番下。ソフトキーボードのすぐ上で、指が近い */}
+        {onScreenKeys ? (
+          <FullKeyboard
+            onKey={typeKey}
+            onMove={moveCaret}
+            onBackspace={backspace}
+            // エディタの Enter と同じく、カーソルの位置で改行する(行の途中なら行を割る。行末なら、時刻などを書き足してから)
+            onNewline={() => typeKey('\n')}
+            onOsKeyboard={() => setOsKeyboard(true)}
+            onUndo={undo}
+            keyScale={settings.keyScale}
+            onKeyScale={(keyScale) => updateSettings({ keyScale })}
+            caps={settings.capsLock}
+            onToggleCaps={() => updateSettings({ capsLock: !settings.capsLock })}
+          />
+        ) : fullkey ? (
+          // OS のキーボードを使っている間: フルキーに戻るボタン(数字キーは、OS のキーボードにある)
+          <button
+            type="button"
+            {...keepFocus}
+            onClick={() => setOsKeyboard(false)}
+            className="flex-none h-11 rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-800 font-bold text-sm flex items-center justify-center gap-2 active:bg-gray-300 dark:active:bg-gray-700"
+          >
+            <Keyboard className="w-5 h-5" aria-hidden="true" />
+            {t('keys.back')}
+          </button>
+        ) : (
+          settings.digitRow && <DigitRow onKey={typeKey} onMove={moveCaret} />
+        )}
+
+        {landscape && (
+          // 横向きのスマホ: 縦にしてもらう(ログはそのまま)
+          <div
+            role="alert"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 p-6 text-center bg-white text-gray-950 dark:bg-gray-950 dark:text-gray-50"
+          >
+            <Smartphone className="w-12 h-12" aria-hidden="true" />
+            <p className="text-lg font-bold">{t('landscape.title')}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{t('landscape.hint')}</p>
+          </div>
+        )}
+
+        {notice && (
+          <div
+            role="status"
+            className="absolute left-1/2 -translate-x-1/2 bottom-28 w-max max-w-[calc(100%-1.5rem)] px-4 py-2.5 rounded-xl font-semibold text-center bg-gray-950 text-white dark:bg-white dark:text-gray-950"
+          >
+            {notice}
+            {undoTo !== null && (
+              <button
+                type="button"
+                className="ml-3 underline font-bold"
+                onClick={() => {
+                  setText(undoTo)
+                  setNotice(null)
+                }}
+              >
+                {t('notice.undo')}
+              </button>
+            )}
+          </div>
+        )}
+
+        <input
+          ref={fleInputRef}
+          type="file"
+          accept=".txt,.fle"
+          className="hidden"
+          onChange={(e) =>
+            readFile(e, (content) =>
+              replaceText(content, t('notice.loaded'))
+            )
+          }
+        />
+        <input
+          ref={adifInputRef}
+          type="file"
+          accept=".adi,.adif"
+          className="hidden"
+          onChange={(e) =>
+            readFile(e, async (content) => {
+              // ADIFの読み方(FLEの書式への変換)はコアが知っている
+              const fle = await adifToFle(content)
+              setText((prev) => (prev && !prev.endsWith('\n') ? prev + '\n' : prev) + fle)
+            })
+          }
+        />
+
+        <QsoSheet
+          open={listOpen}
+          onClose={() => setListOpen(false)}
+          view={view}
+          text={text}
+          onJump={jump}
+        />
+
+        <RetimeSheet
+          open={retime !== null}
+          onClose={() => setRetime(null)}
+          zone={retime ? zoneLabel(retime.tz) || 'UTC' : ''}
+          from={retime?.from ?? ''}
+          to={retime?.to ?? ''}
+          qsos={retime?.qsos ?? 0}
+          onConvert={() => void applyRetime(true)}
+          onKeep={() => void applyRetime(false)}
+        />
+
+        <GenerateCheckSheet
+          open={check !== null}
+          onClose={() => setCheck(null)}
+          warnings={check ?? []}
+          initialCall={loadLastCall()}
+          onWriteAndGenerate={writeAndGenerate}
+          onGenerateAnyway={() => {
+            setCheck(null)
+            void generateNow(text)
+          }}
+          onOpenPlace={() => {
+            setCheck(null)
+            void openPlace(0)
+          }}
+        />
+
+        <PlaceSheet
+          open={place !== null}
+          onClose={() => setPlace(null)}
+          initial={place?.initial ?? { mycall: '', sota: '', pota: [], wwff: '', grid: '' }}
+          initialMemo={place?.memo ?? ''}
+          isNewLog={place?.isNewLog ?? true}
+          fresh={place?.fresh}
+          replacing={place?.fresh && text.trim() !== ''}
+          onApply={applyPlace}
+          plans={plansStore.plans}
+        />
+
+        <PlanSheet
+          open={plansOpen}
+          onClose={() => setPlansOpen(false)}
+          plans={plansStore.plans}
+          onSave={plansStore.save}
+          onRemove={plansStore.remove}
+        />
+
+        <JoinSheet
+          code={joinCode}
+          onJoin={sync.joinWith}
+          onClose={() => {
+            setJoinCode(null)
+            history.replaceState(null, '', window.location.pathname + window.location.search)
+          }}
+        />
+
+        <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title={t('menu.title')}>
+          <MenuGroup title={t('menu.group.before')}>
+            <MenuButton icon={FilePlus} label={t('menu.place')} onClick={fromMenu(openNewLog)} />
+            {hasText && <MenuButton icon={MapPin} label={t('menu.change')} onClick={fromMenu(() => void openPlace())} />}
+            <MenuButton icon={ClipboardList} label={t('menu.plans')} onClick={fromMenu(() => setPlansOpen(true))} />
+          </MenuGroup>
+          {/* フルキーでは、QSO の数は表示だけ。一覧はここから */}
+          {compact && (
+            <MenuGroup title={t('menu.group.log')}>
+              <MenuButton icon={List} label={t('menu.list')} onClick={fromMenu(() => setListOpen(true))} />
+            </MenuGroup>
           )}
-        </MenuGroup>
-        <p className="mt-3 text-center text-xs text-gray-700 dark:text-gray-300 font-mono">{__APP_VERSION__}</p>
-      </Sheet>
-    </div>
+          <MenuGroup title={t('menu.group.output')}>
+            <MenuButton icon={Download} label={t('menu.export')} disabled={!hasText} onClick={fromMenu(() => void handleGenerate())} />
+            <MenuButton icon={Save} label={t('menu.saveFle')} disabled={!hasText} onClick={fromMenu(() => void saveFle())} />
+          </MenuGroup>
+          <MenuGroup title={t('menu.group.input')}>
+            <MenuButton icon={Upload} label={t('menu.openFle')} onClick={fromMenu(() => fleInputRef.current?.click())} />
+            <MenuButton icon={FileText} label={t('menu.addAdif')} onClick={fromMenu(() => adifInputRef.current?.click())} />
+          </MenuGroup>
+          <MenuGroup title={t('menu.group.edit')}>
+            {prev && prev !== text && <MenuButton icon={Undo2} label={t('menu.undo')} onClick={fromMenu(() => replaceText(prev))} />}
+            <MenuButton icon={Trash2} label={t('menu.clear')} onClick={fromMenu(() => replaceText('', t('notice.cleared')))} />
+          </MenuGroup>
+          <MenuGroup title={t('menu.group.help')}>
+            <li>
+              <a href={lang === 'en' ? MANUAL_URL_EN : MANUAL_URL} target="_blank" rel="noopener noreferrer" className={MENU_ITEM}>
+                <HelpCircle className="w-5 h-5" />
+                {t('menu.help')}
+              </a>
+            </li>
+            <MenuButton
+              icon={BookOpen}
+              label={t('menu.sample')}
+              onClick={fromMenu(() =>
+                // 見本のログはコアが持つ。日付(いま)だけ、画面が渡す
+                void sampleLog(new Date().toISOString().slice(0, 10)).then((sample) =>
+                  replaceText(sample, t('notice.sampleInserted'))
+                )
+              )}
+            />
+            {pwa.canInstall && <MenuButton icon={Home} label={t('menu.install')} onClick={fromMenu(() => pwa.install())} />}
+            {pwa.showIosHint && (
+              <li className="p-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 text-sm">
+                <Home className="inline w-4 h-4 mr-1 align-text-bottom" />
+                {t('menu.installIos')}
+              </li>
+            )}
+          </MenuGroup>
+          <p className="mt-3 text-center text-xs text-gray-700 dark:text-gray-300 font-mono">{__APP_VERSION__}</p>
+        </Sheet>
+      </div>
+    </FieldKeysContext.Provider>
   )
 }
 

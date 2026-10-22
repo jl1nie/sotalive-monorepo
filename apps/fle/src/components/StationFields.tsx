@@ -7,6 +7,7 @@ import { useGridLocate } from '@/hooks/useGridLocate'
 import { useOnline } from '@/hooks/useOnline'
 import { useRefSearch } from '@/hooks/useRefSearch'
 import { RefList } from '@/components/RefList'
+import { useFieldKeyProps } from '@/hooks/useFieldKeys'
 import { useT, type MessageKey } from '@/lib/i18n'
 
 type Key = FieldError['field']
@@ -42,6 +43,7 @@ export function StationFields({
   const [focused, setFocused] = useState<Key | null>(null)
   const [nearby, setNearby] = useState<SearchResult | 'loading' | null>(null)
   const online = useOnline()
+  const fieldKeys = useFieldKeyProps()
   const sotaSearch = useRefSearch('sota', values.sota, focused === 'sota')
   const potaSearch = useRefSearch('pota', lastToken(values.pota), focused === 'pota')
 
@@ -101,6 +103,7 @@ export function StationFields({
                   autoCorrect="off"
                   autoComplete="off"
                   spellCheck={false}
+                  {...fieldKeys}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={error ? `${idPrefix}-${f.key}-error` : undefined}
                   className="input font-mono"

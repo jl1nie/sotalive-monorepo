@@ -19,6 +19,9 @@ interface Props {
   initialMemo?: string
   /** まだQSOがない(新しいログの設定)か、途中での場所の変更か */
   isNewLog: boolean
+  /** 今のログとは別に、新しいログを始める(`replacing` なら、今のログを置き換える) */
+  fresh?: boolean
+  replacing?: boolean
   /**
    * ログに書き込む。誤りがあれば、項目ごとの誤りを返す(空なら書き込めた)。
    * `memo` は、メモの欄の値。手で触っておらず空なら null(書き込むときに、山・公園から JCC・JCG を引く)
@@ -29,16 +32,16 @@ interface Props {
 }
 
 /**
- * 自局のコールサインと運用場所を、ログの指令として書き込む(NewLog)。
- * 開いたときの値は、カーソル位置で有効なもの。書き込んだ行以降のQSOに有効なので、
- * 1つのログに複数の場所を書ける。
+ * 自局のコールサインと運用場所を、ログの指令として書き込む。
+ * 新しいログ(`fresh`)なら、空のログの先頭に書く。そうでなければ、開いたときの値はカーソル位置で有効なもの。
+ * 書き込んだ行以降のQSOに有効なので、1つのログに複数の場所を書ける。
  */
 export function PlaceSheet(props: Props) {
   // 開くたびに入力欄を初期値から作り直す
   return props.open ? <PlaceForm {...props} /> : null
 }
 
-function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, onApply, plans = [] }: Props) {
+function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, fresh = false, replacing = false, onApply, plans = [] }: Props) {
   const t = useT()
   const [values, setValues] = useState<Values>(() => toValues(initial))
   const [errors, setErrors] = useState<FieldError[]>([])
@@ -59,7 +62,9 @@ function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, onApply, plan
     <Sheet
       open
       onClose={onClose}
-      title={isNewLog ? t('place.newLog') : t('place.change')}
+      title={fresh ? t('place.newLog') : isNewLog ? t('place.setup') : t('place.change')}
+      // 閉じると、入力は捨てる
+      closeLabel={t('sheet.cancel')}
       actions={
         <button
           type="button"
@@ -75,7 +80,7 @@ function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, onApply, plan
       }
     >
       <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-        {isNewLog ? t('place.hintNew') : t('place.hintChange')}
+        {replacing ? t('place.hintFresh') : fresh || isNewLog ? t('place.hintNew') : t('place.hintChange')}
       </p>
       {plans.length > 0 && (
         <section className="mb-3" aria-label={t('plans.use')}>
