@@ -331,58 +331,61 @@ export function POTAActivatorTab() {
 
         {/* Right column - CSV preview table */}
         <div className="lg:col-span-2">
-          <div className="card h-full">
-            <div className="p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-sm font-medium">
+          <div className="card h-full flex flex-col">
+            <div className="flex-none p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-sm font-medium">
               CSV プレビュー
             </div>
-            <div className="overflow-auto" style={{ height: 'calc(60vh - 2rem)', minHeight: '300px' }}>
-              <table className="w-full text-xs">
-                <thead className="bg-gray-100 dark:bg-gray-800 sticky top-0">
-                  <tr>
-                    {TABLE_HEADERS.map((header) => (
-                      <th
-                        key={header}
-                        className="px-2 py-1 text-left font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap"
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {csvData.length === 0 ? (
+            {/* 2列のときは、左の列と同じ高さまで使う(スクロールの領域は絶対配置にして、行の高さを押し広げない)。1列のときは固定の高さ */}
+            <div className="relative min-h-0 flex-none h-[max(300px,calc(60vh-2rem))] lg:flex-1 lg:h-auto lg:min-h-[max(300px,calc(60vh-2rem))]">
+              <div className="absolute inset-0 overflow-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-100 dark:bg-gray-800 sticky top-0">
                     <tr>
-                      <td colSpan={TABLE_HEADERS.length} className="px-4 py-8 text-center text-gray-500">
-                        <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        CSVファイルを読み込んでプレビュー
-                      </td>
-                    </tr>
-                  ) : (
-                    csvData.map((row, idx) => {
-                      const hasError = row.length > 11
-                      return (
-                        <tr
-                          key={idx}
-                          className={hasError ? 'bg-red-50 dark:bg-red-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}
+                      {TABLE_HEADERS.map((header) => (
+                        <th
+                          key={header}
+                          className="px-2 py-1 text-left font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap"
                         >
-                          <td className={`px-2 py-1 whitespace-nowrap ${hasError ? 'text-red-600 dark:text-red-400 font-bold' : ''}`}>
-                            {hasError ? (
-                              <span title={row[11]}>{idx + 1}</span>
-                            ) : (
-                              idx + 1
-                            )}
-                          </td>
-                          {row.slice(0, 11).map((cell, cellIdx) => (
-                            <td key={cellIdx} className="px-2 py-1 whitespace-nowrap">
-                              {cell}
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {csvData.length === 0 ? (
+                      <tr>
+                        <td colSpan={TABLE_HEADERS.length} className="px-4 py-8 text-center text-gray-500">
+                          <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          CSVファイルを読み込んでプレビュー
+                        </td>
+                      </tr>
+                    ) : (
+                      csvData.map((row, idx) => {
+                        const hasError = row.length > 11
+                        return (
+                          <tr
+                            key={idx}
+                            className={hasError ? 'bg-red-50 dark:bg-red-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}
+                          >
+                            <td className={`px-2 py-1 whitespace-nowrap ${hasError ? 'text-red-600 dark:text-red-400 font-bold' : ''}`}>
+                              {hasError ? (
+                                <span title={row[11]}>{idx + 1}</span>
+                              ) : (
+                                idx + 1
+                              )}
                             </td>
-                          ))}
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
+                            {row.slice(0, 11).map((cell, cellIdx) => (
+                              <td key={cellIdx} className="px-2 py-1 whitespace-nowrap">
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
