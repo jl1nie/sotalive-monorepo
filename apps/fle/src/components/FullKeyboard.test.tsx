@@ -178,7 +178,23 @@ describe('FullKeyboard', () => {
       expect(screen.getByRole('button', { name: '3' })).toHaveTextContent(/#$/)
       fireEvent.pointerUp(three, { clientX: 100, pointerId: 1 })
       fireEvent.click(three)
-      expect(onKey).toHaveBeenLastCalledWith('#')
+      expect(onKey.mock.calls).toEqual([['#']])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('長押しの # は、指を離したときに入る(Android の Chrome は、長押しのあと click を出さないことがある)', () => {
+    vi.useFakeTimers()
+    try {
+      const { onKey } = renderKeys()
+      const three = screen.getByRole('button', { name: '3' })
+      fireEvent.pointerDown(three, { clientX: 100, pointerId: 1 })
+      act(() => vi.advanceTimersByTime(500))
+      // 長押しでコンテキストメニューを出さない
+      expect(fireEvent.contextMenu(three)).toBe(false)
+      fireEvent.pointerUp(three, { clientX: 100, pointerId: 1 })
+      expect(onKey.mock.calls).toEqual([['#']])
     } finally {
       vi.useRealTimers()
     }

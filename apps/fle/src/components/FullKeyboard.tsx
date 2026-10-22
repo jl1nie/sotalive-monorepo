@@ -116,8 +116,11 @@ export function FullKeyboard({
   const { padProps, tap, backspaceProps } = useKeyPad(onMove, onBackspace, true)
   // 押している文字のキー(吹き出しを出す)
   const [pressed, setPressed] = useState<string | null>(null)
-  // 長押しになったキー(吹き出しを、長押しの文字にする。離したときの click で、その文字を打つ)
+  // 長押しになったキー(吹き出しを、長押しの文字にする。指を離したとき(pointerup)に、その文字を打つ。
+  // Android の Chrome は、長押しのあと click を出さないことがあるので、click には頼らない)
   const [held, setHeld] = useState<string | null>(null)
+  // 長押しで打ったキー。そのあとに click が来ても、もう打たない
+  const heldTyped = useRef<string | null>(null)
   const holdTimer = useRef(0)
   useEffect(() => () => window.clearTimeout(holdTimer.current), [])
   const press = (k: string) => {
@@ -134,10 +137,8 @@ export function FullKeyboard({
   const lastTap = useRef<{ k: string; at: number } | null>(null)
   /** `at` は押した時刻(イベントの timeStamp、ms) */
   const typeChar = (k: string, at: number) => {
-    if (held === k) {
-      setHeld(null)
-      lastTap.current = null
-      onKey(LONG[k])
+    if (heldTyped.current === k) {
+      heldTyped.current = null
       return
     }
     const now = at
@@ -157,7 +158,17 @@ export function FullKeyboard({
     <button
       key={k}
       type="button"
-      onPointerDown={() => press(k)}
+      onPointerDown={() => {
+        heldTyped.current = null
+        press(k)
+      }}
+      onPointerUp={() => {
+        if (held !== k) return
+        setHeld(null)
+        lastTap.current = null
+        heldTyped.current = k
+        onKey(LONG[k])
+      }}
       onClick={(e) => tap(() => typeChar(k, e.timeStamp))()}
       className={`${HIT} ${SPAN[span]}`}
     >
@@ -227,6 +238,8 @@ export function FullKeyboard({
           release()
           padProps.onPointerCancel(e)
         }}
+        // 長押しで、コンテキストメニュー(文字の選択など)を出さない
+        onContextMenu={(e) => e.preventDefault()}
         // なぞる操作を、ページのスクロールに取られない。押し続けで(⌫)、文字の選択やメニューを出さない。
         // 20列: 英字は2列ずつ。下段は半キーずらす。キーの間に隙間を作らない(押せる範囲)
         className="relative grid grid-cols-20 auto-rows-[calc(min(10cqw,3rem)*var(--key-scale))] touch-none select-none [-webkit-touch-callout:none]"
