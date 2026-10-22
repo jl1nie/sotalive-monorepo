@@ -160,10 +160,19 @@ describe('FullKeyboard', () => {
     expect(screen.getByRole('button', { name: NEXT })).toHaveTextContent(/^$/)
   })
 
-  it('右下は改行(次の行へ進むのは、緑のバーの右端の OK)', () => {
+  it('右下は改行', () => {
     const { onNewline } = renderKeys()
     expect(screen.queryByRole('button', { name: 'この行を終えて次の行へ(OK)' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: NEXT }))
+    expect(onNewline).toHaveBeenCalledTimes(1)
+  })
+
+  it('確定できる行の末尾では、右下が緑の OK になる(押すと、改行と同じく確定して次の行へ)', () => {
+    const { onNewline } = renderKeys({ confirmable: true })
+    expect(screen.queryByRole('button', { name: NEXT })).not.toBeInTheDocument()
+    const ok = screen.getByRole('button', { name: 'この行を終えて次の行へ(OK)' })
+    expect(ok).toHaveTextContent('OK')
+    fireEvent.click(ok)
     expect(onNewline).toHaveBeenCalledTimes(1)
   })
 
