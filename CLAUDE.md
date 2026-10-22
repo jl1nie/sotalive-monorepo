@@ -65,7 +65,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 ## API構成
 
-全APIリクエスト（`/api/*`）は `functions/_middleware.ts` で sotaapp2.fly.dev にプロキシされます。
+全APIリクエスト（`/api/*`）は `functions/_middleware.ts` でバックエンドにプロキシされます（中継先は Pages の環境変数 `BACKEND_URL`。なければ公開ドメイン `sotaapp2.sotalive.net`。Fly.io のアプリの URL はリポジトリに書かない）。
 
 主要エンドポイント:
 - `/api/v2/search` - リファレンス検索

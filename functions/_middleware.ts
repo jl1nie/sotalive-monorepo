@@ -1,10 +1,13 @@
 // Cloudflare Pages Middleware
 // サブドメインに基づいてルーティング + API プロキシ
 
-const BACKEND_URL = "https://sotaapp2.fly.dev";
+// バックエンドの URL は、Pages のプロジェクトの環境変数 BACKEND_URL で決める(リポジトリには書かない)。
+// なければ、公開しているバックエンドのドメイン
+const PUBLIC_BACKEND_URL = "https://sotaapp2.sotalive.net";
 
 interface Env {
   ASSETS: Fetcher;
+  BACKEND_URL?: string;
 }
 
 // アセットを取得するヘルパー関数（リダイレクトを自動追跡）
@@ -37,7 +40,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   // APIリクエストはバックエンドにプロキシ
   if (url.pathname.startsWith("/api/")) {
-    const backendUrl = new URL(url.pathname + url.search, BACKEND_URL);
+    const backendUrl = new URL(url.pathname + url.search, context.env.BACKEND_URL || PUBLIC_BACKEND_URL);
     const headers = new Headers(context.request.headers);
     headers.set("X-Forwarded-Host", hostname);
 

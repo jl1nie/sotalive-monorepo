@@ -42,14 +42,14 @@ Functions を全体にかけているのは、まだ公開していない logcon
 ### FLE Online
 
 - `/fle/` の下に静的ファイルがあります。`/` は `_redirects` で `/fle/` へ 302 で転送します。
-- `/api/v2/*` は `pages/fle/functions/api/v2/[[path]].ts` が `https://sotaapp2.fly.dev` へ中継します。
+- `/api/v2/*` は `pages/fle/functions/api/v2/[[path]].ts` がバックエンドへ中継します(中継先は、プロジェクトの環境変数 `BACKEND_URL`。なければ公開ドメイン `https://sotaapp2.sotalive.net`)。
 - 設定の同期は `pages/fle/functions/api/fle/prefs/[code].ts` が受け、KV(束縛名 `FLE_PREFS`)に保存します。KV の束縛は `pages/fle/wrangler.toml` に書いてあります。
 
 ### logconv2・myact2(プロジェクト sotalive)
 
 `functions/_middleware.ts` が、すべてのリクエストを次の順で処理します。
 
-1. パスが `/api/` で始まれば、`https://sotaapp2.fly.dev` へ中継します(`X-Forwarded-Host` に元のホスト名を入れます)。
+1. パスが `/api/` で始まれば、バックエンド(環境変数 `BACKEND_URL`。なければ `https://sotaapp2.sotalive.net`)へ中継します(`X-Forwarded-Host` に元のホスト名を入れます)。
 2. ホスト名が `myact2` で始まれば `/myact2`、`logconv` で始まれば `/logconv` を、パスの前に付けます。
 3. そのファイルがなければ(404)、共通アセット(`/shared/common/...`)を探します。
 4. myact2 には `x-robots-tag: noindex` を付けて、検索エンジンに載せません。

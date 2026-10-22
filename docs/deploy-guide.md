@@ -149,7 +149,7 @@ fly certs show api.<自分のドメイン> -a <APP_NAME>
 
 `certs show` が示す DNS レコードを、Cloudflare の DNS に作ります。このとき、プロキシは切り(「DNS のみ」の灰色の雲)にしておくと、証明書の発行が確実です。
 旧版の MyActivation・MyQTH は、ソースの中で API のホスト名を `sotaapp2.sotalive.net` と書いています。自分のドメインを使うなら、`apps/myact-org`、`apps/myqth-org`、`packages/shared` の中を検索して、置き換えてください。
-同じように、`functions/_middleware.ts` と `pages/fle/functions/api/v2/[[path]].ts` の `BACKEND_URL`(`https://sotaapp2.fly.dev`)も、自分のアプリに直します。
+Functions(`functions/_middleware.ts` と `pages/fle/functions/api/v2/[[path]].ts`)の中継先は、Pages のプロジェクト(`sotalive` と `sotalive-fle`)の環境変数 `BACKEND_URL` で決めます(例: `https://<APP_NAME>.fly.dev`)。Cloudflare のダッシュボードで、プロジェクトの「設定」→「変数とシークレット」に、本番用として登録します。設定しなければ、ソースの中の公開ドメイン(`PUBLIC_BACKEND_URL`)を使います。Fly.io のアプリの URL は、リポジトリに書かないでください。
 
 ## 4. Cloudflare Pages のプロジェクトを作る
 

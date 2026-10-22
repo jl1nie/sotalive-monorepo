@@ -63,7 +63,7 @@
 呼び方は2通りあります。
 
 - 旧版の MyActivation・MyQTH は、`sotaapp2.sotalive.net`(Fly.io の独自ドメイン)を直接呼びます。
-- FLE Online は、自分の `/api/v2/*` を `pages/fle/functions/api/v2/[[path]].ts` が `sotaapp2.fly.dev` へ中継します。
+- FLE Online は、自分の `/api/v2/*` を `pages/fle/functions/api/v2/[[path]].ts` がバックエンドへ中継します(中継先は環境変数 `BACKEND_URL`。なければ `sotaapp2.sotalive.net`)。
 - プロジェクト `sotalive` の `functions/_middleware.ts` も `/api/*` を中継します。
 
 ## CI とデプロイ(sotaapp2 側)

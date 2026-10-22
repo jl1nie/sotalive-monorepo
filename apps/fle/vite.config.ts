@@ -87,9 +87,9 @@ export default defineConfig({
   },
   server: {
     port: 3003,
-    // 本番は Cloudflare Pages の中継(functions/_middleware.ts)が同じ役目をする
+    // 本番は Cloudflare Pages の中継(pages/fle/functions)が同じ役目をする。中継先は環境変数 BACKEND_URL で変えられる
     proxy: {
-      '/api': { target: 'https://sotaapp2.fly.dev', changeOrigin: true },
+      '/api': { target: process.env.BACKEND_URL || 'https://sotaapp2.sotalive.net', changeOrigin: true },
     },
   },
 })

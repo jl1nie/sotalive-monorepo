@@ -51,7 +51,7 @@ WSPR は、微弱な電波で届く範囲を調べる通信方式です。この
 
 ### 使うバックエンド API
 
-画面は、すべて同じオリジンの `/api/v2/...` を呼びます。本番では Cloudflare の Functions が `sotaapp2.fly.dev` に中継します。
+画面は、すべて同じオリジンの `/api/v2/...` を呼びます。本番では Cloudflare の Functions がバックエンドに中継します(中継先は環境変数 `BACKEND_URL`。なければ `sotaapp2.sotalive.net`)。
 
 | API | 使うタブ | 送るもの |
 |---|---|---|
@@ -66,7 +66,7 @@ WSPR は、微弱な電波で届く範囲を調べる通信方式です。この
 ```
 apps/logconv/
   index.html
-  vite.config.ts          base は /logconv/、開発ポート 3002、/api を sotaapp2.fly.dev へ中継
+  vite.config.ts          base は /logconv/、開発ポート 3002、/api をバックエンドへ中継(BACKEND_URL、なければ sotaapp2.sotalive.net)
   src/App.tsx
   src/components/Tabs/    4 つのタブ(と、そのテスト)
   src/components/Forms/   ファイル選択・ラジオなどの部品

@@ -20,7 +20,7 @@
 		var initiated = false
 		var target = {
 			init: function () {
-				query = 'https://sotaapp2.fly.dev/api/v2/search/brief?'
+				query = 'https://sotaapp2.sotalive.net/api/v2/search/brief?'
 				list_param = 'name='
 				done = options['done']
 				initiated = false
