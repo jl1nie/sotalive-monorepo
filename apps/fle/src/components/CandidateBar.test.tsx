@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { compile, initSync, lineInfo, sampleLog } from '@/wasm/fle/fle'
 import type { LineInfo, LogView } from '@/lib/fle'
@@ -48,7 +48,7 @@ function renderAt(
   onSelectPart: (part: string) => void = () => {},
   timezone = 0,
   compact = false,
-  extra: { suggest?: ReactNode } = {}
+  extra: { suggest?: ReactNode; onConfirm?: () => void } = {}
 ) {
   const view = compile(text) as LogView
   const info = lineInfo(text, line) as LineInfo
@@ -65,7 +65,7 @@ function renderAt(
       compact={compact}
       suggest={extra.suggest}
       onOpenList={() => {}}
-      onConfirm={() => {}}
+      onConfirm={extra.onConfirm ?? (() => {})}
       onSelectPart={onSelectPart}
     />
   )
@@ -323,17 +323,25 @@ describe('CandidateBar: 右端の ✓', () => {
   const log = 'mycall JA1ABC\ndate 2026-10-19\n40m cw\n0900 ja1aaa'
   const suggest = <button type="button">ssb</button>
 
-  it('フルキーでは、緑の行でも ✓ を出さない(改行で確定する)。補完候補はバーいっぱいに重ねる', () => {
-    renderAt(log, 3, 'day', true, () => {}, 0, true, { suggest })
+  it('フルキーでは、緑の行の右端に ✓ OK。補完候補が出ていても押せる(候補はバーに重ね、✓ OK には重ねない)', () => {
+    const onConfirm = vi.fn()
+    renderAt(log, 3, 'day', true, () => {}, 0, true, { suggest, onConfirm })
     expect(screen.getByText('JA1AAA')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: CONFIRM })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'ssb' }).parentElement).toHaveClass('inset-0')
+    const ok = screen.getByRole('button', { name: CONFIRM })
+    expect(ok).toBeEnabled()
+    const overlay = screen.getByRole('button', { name: 'ssb' }).parentElement
+    expect(overlay).toHaveClass('inset-0')
+    expect(overlay?.parentElement).not.toContainElement(ok)
+    fireEvent.click(ok)
+    expect(onConfirm).toHaveBeenCalledTimes(1)
   })
 
-  it('フルキーでは、QSO でない行(40m cw)の右端にも、何も出さない', () => {
-    renderAt(log, 2, 'day', true, () => {}, 0, true, { suggest })
-    expect(screen.queryByRole('button', { name: CONFIRM })).not.toBeInTheDocument()
-    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['ssb'])
+  it.each([
+    ['QSO でない行(40m cw)', 2],
+    ['入力の途中の行', 4],
+  ])('フルキーでは、%sでも ✓ OK を同じ場所に出し、押せなくする', (_, line) => {
+    renderAt(log + '\n0910 ja', line, 'day', true, () => {}, 0, true, { suggest })
+    expect(screen.getByRole('button', { name: CONFIRM })).toBeDisabled()
   })
 
   it('従来の配置では、緑の行の右端に ✓ を出す', () => {

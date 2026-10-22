@@ -321,11 +321,6 @@ function Editor({
   }, [text, compact])
 
   const caretLine = lineOf(text, caret)
-  // カーソルが、確定できる行(QSO として読めて、誤りがない)の末尾にある。↵ で確定するので、フルキーの ↵ を緑の OK にする
-  const confirmable =
-    (caret === text.length || text[caret] === '\n') &&
-    !!view?.qsos.some((q) => q.line === caretLine) &&
-    !view.errors.some((e) => e.line === caretLine)
   const hasText = text.trim().length > 0
   /** メニューの項目: メニューを閉じてから行う */
   const fromMenu = (f: () => void) => () => {
@@ -793,7 +788,6 @@ function Editor({
             onKeyScale={(keyScale) => updateSettings({ keyScale })}
             caps={settings.capsLock}
             onToggleCaps={() => updateSettings({ capsLock: !settings.capsLock })}
-            confirmable={confirmable}
           />
         ) : fullkey ? (
           // OS のキーボードを使っている間: フルキーに戻るボタン(数字キーは、OS のキーボードにある)
