@@ -34,8 +34,8 @@ wasm-pack build --target web --release --out-dir ../../apps/fle/src/wasm/fle --o
 
 | アプリ | コマンド | URL | `/api` の転送先 |
 |---|---|---|---|
-| logconv | `pnpm --filter @sotalive/logconv dev` | http://localhost:3002/logconv/ | sotaapp2.fly.dev |
-| fle | `pnpm --filter @sotalive/fle dev` | http://localhost:3003/fle/ | sotaapp2.fly.dev |
+| logconv | `pnpm --filter @sotalive/logconv dev` | http://localhost:3002/logconv/ | `BACKEND_URL`(なければ sotaapp2.sotalive.net) |
+| fle | `pnpm --filter @sotalive/fle dev` | http://localhost:3003/fle/ | `BACKEND_URL`(なければ sotaapp2.sotalive.net) |
 | myact(React 版) | `pnpm --filter @sotalive/myact dev` | Vite の既定(http://localhost:5173/) | sotaapp2.sotalive.net |
 | myact-org(旧版) | `pnpm run build` のあと `npx serve dist-myact` | serve が表示する URL | (旧版は API を直接呼ぶ) |
 

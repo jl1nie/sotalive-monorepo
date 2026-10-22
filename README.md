@@ -45,7 +45,7 @@ flowchart LR
 ```
 
 - 静的ファイルは Cloudflare Pages が配信します。
-- `/api/*` は Functions がバックエンド(`sotaapp2.fly.dev`)へ中継します。旧版の MyActivation・MyQTH は `sotaapp2.sotalive.net` を直接呼びます。
+- `/api/*` は Functions がバックエンドへ中継します(中継先は Pages の環境変数 `BACKEND_URL`。なければ `sotaapp2.sotalive.net`)。旧版の MyActivation・MyQTH は `sotaapp2.sotalive.net` を直接呼びます。
 - プロジェクトを4つに分けた理由は [docs/architecture.md](docs/architecture.md) にあります。
 
 ## ディレクトリの構成

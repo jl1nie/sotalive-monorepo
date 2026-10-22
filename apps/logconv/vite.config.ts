@@ -16,7 +16,8 @@ export default defineConfig({
     port: 3002,
     proxy: {
       '/api': {
-        target: 'https://sotaapp2.fly.dev',
+        // 中継先は環境変数 BACKEND_URL で変えられる
+        target: process.env.BACKEND_URL || 'https://sotaapp2.sotalive.net',
         changeOrigin: true,
       },
     },

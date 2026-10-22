@@ -100,7 +100,7 @@ PWA は、ホーム画面に追加でき、オフラインでも動く Web ア�
 ### バックエンドへの中継
 
 FLE は、山・公園の候補検索で `/api/v2` を呼びます(`apps/fle/src/lib/reference.ts`)。
-`pages/fle/functions/api/v2/[[path]].ts` が、これをバックエンド(`https://sotaapp2.fly.dev`)へそのまま中継します。
+`pages/fle/functions/api/v2/[[path]].ts` が、これをバックエンド(環境変数 `BACKEND_URL`。なければ `https://sotaapp2.sotalive.net`)へそのまま中継します。
 Functions は `/api` の下だけに置いてあるので、画面などの静的ファイルの配信は Functions の無料枠を使いません。
 
 ## ディレクトリとおもなファイル
@@ -151,7 +151,7 @@ WASM のビルドには `wasm-pack` と Rust が要ります。CI では `.githu
 ## 開発とテストのコマンド
 
 ```bash
-# 開発サーバー(WASM をビルドしてから Vite を起動。ポート 3003、/api は sotaapp2.fly.dev へ中継)
+# 開発サーバー(WASM をビルドしてから Vite を起動。ポート 3003、/api はバックエンドへ中継。中継先は環境変数 BACKEND_URL、なければ sotaapp2.sotalive.net)
 pnpm --filter @sotalive/fle run dev
 
 # 画面のテスト・型検査・lint
