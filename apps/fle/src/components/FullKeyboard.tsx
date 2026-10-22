@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
-import { ArrowBigUp, Check, CornerDownLeft, Delete, Globe, Undo2 } from 'lucide-react'
+import { ArrowBigUp, CornerDownLeft, Delete, Globe, Undo2 } from 'lucide-react'
 import { useKeyPad } from '@/hooks/useKeyPad'
 import { KEY_SCALE_MAX, KEY_SCALE_MIN } from '@/hooks/useSettings'
 import { useT } from '@/lib/i18n'
@@ -42,9 +42,6 @@ const LONG_PRESS = 500
 const CHAR = `${FACE} bg-gray-100 dark:bg-gray-900 font-mono text-xl font-bold`
 /** 文字でないキー(⌫・空白・🌐 など)は、少し沈んだ色で分ける */
 const FN = `${FACE} bg-gray-200 dark:bg-gray-800 font-bold text-sm`
-/** 確定できるときの ↵(緑の OK)。緑のバーと同じ色 */
-const OK =
-  'h-full w-full rounded-lg border-2 flex items-center justify-center gap-1 font-bold text-base border-emerald-800 bg-emerald-700 text-white group-active:bg-emerald-800 dark:border-emerald-400'
 
 interface Props {
   /** キーの文字を打つ。`replacePrev` なら、カーソルの前の1文字を置き換える(続けて2回押したとき) */
@@ -66,8 +63,6 @@ interface Props {
   /** 英字を大文字で打つか(Caps。Z の左のキー) */
   caps: boolean
   onToggleCaps: () => void
-  /** カーソルが、確定できる行(緑)の末尾にある。右下の ↵ を、緑の OK にする(押すと確定して次の行へ) */
-  confirmable?: boolean
 }
 
 /**
@@ -90,7 +85,6 @@ export function FullKeyboard({
   onKeyScale,
   caps,
   onToggleCaps,
-  confirmable = false,
 }: Props) {
   const t = useT()
   // キーの高さ: 上の縁のつまみを上下にドラッグ(離すまで保存しない)。空いた高さは、ログではなくキーに使う
@@ -266,18 +260,8 @@ export function FullKeyboard({
         {/* 空白と ↵ は、形と場所でわかるので、文字を書かない(OS のキーボードと同じ) */}
         {fnKey(t('digits.space'), () => onKey(' '), null, 8, true)}
         {fnKey(t('digits.right'), () => onMove(1), '→', 2, true)}
-        {/* 右下(OS のキーボードの Enter の位置)で、カーソルの位置で改行する。緑の行の末尾では、緑の OK になる
-            (改行と同じく、時刻などを書き足してから次の行へ。押せば記録されることを、色で見せる) */}
-        {confirmable ? (
-          <button type="button" aria-label={t('bar.confirmLabel')} onClick={tap(onNewline)} className={`${HIT} ${SPAN[4]}`}>
-            <span className={OK}>
-              <Check className="w-5 h-5" aria-hidden="true" />
-              {t('bar.confirm')}
-            </span>
-          </button>
-        ) : (
-          fnKey(t('keys.newlineLabel'), onNewline, <CornerDownLeft className="w-5 h-5" aria-hidden="true" />, 4)
-        )}
+        {/* 右下(OS のキーボードの Enter の位置)で、カーソルの位置で改行する。次の行へ進むのは、ログを見ている緑のバーの右端の OK */}
+        {fnKey(t('keys.newlineLabel'), onNewline, <CornerDownLeft className="w-5 h-5" aria-hidden="true" />, 4)}
       </div>
     </div>
   )

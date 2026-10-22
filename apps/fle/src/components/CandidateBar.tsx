@@ -200,8 +200,10 @@ export function CandidateBar({
     .filter(Boolean)
     .join(' / ')
 
-  const bar = qso && !error ? (
-    // コール・RST・時刻は、押すとログ欄のその末尾へキャレットを置く(直す機会の多い順に、的を大きく)。従来の配置では、確定は右端の ✓
+  // 確定できる行(QSO として読めて、誤りがない)。緑のバーと、右端の ✓ OK
+  const confirmable = !!qso && !error
+  const bar = confirmable ? (
+    // コール・RST・時刻は、押すとログ欄のその末尾へキャレットを置く(直す機会の多い順に、的を大きく)。確定は右端の ✓
     <div className={`${BAR} ${TONE.ok} flex items-stretch`} {...keepFocus}>
       {compact ? (
         // フルキー: 低く。コールと RST(同じくらい直す、同じ重さの情報)を同じ大きな文字で1段目に、
@@ -283,7 +285,7 @@ export function CandidateBar({
           </span>
         </span>
       )}
-      {/* 右端の ✓(従来の配置だけ。フルキーは、改行で確定する) */}
+      {/* 右端の ✓(従来の配置。フルキーでは、バーの外に、いつも置く) */}
       {!compact && (
         <button
           type="button"
@@ -382,11 +384,30 @@ export function CandidateBar({
       )}
 
       {compact ? (
-        // 補完候補は、バーに重ねる
-        <div className="relative flex-1 min-w-0 flex">
-          {bar}
-          <div className="absolute inset-0 z-10 pointer-events-none">{suggest}</div>
-        </div>
+        <>
+          {/* 補完候補は、バーに重ねる */}
+          <div className="relative flex-1 min-w-0 flex">
+            {bar}
+            <div className="absolute inset-0 z-10 pointer-events-none">{suggest}</div>
+          </div>
+          {/* 確定の ✓ OK。どの行でも同じ場所に置き(探さずに押せる)、確定できる(緑の)行のときだけ押せる。
+              候補が出ていても押せるよう、バーの外に置く */}
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={!confirmable}
+            {...keepFocus}
+            aria-label={t('bar.confirmLabel')}
+            className={`flex-none w-16 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 font-bold text-sm ${
+              confirmable
+                ? 'border-emerald-800 bg-emerald-700 text-white active:bg-emerald-800 dark:border-emerald-400'
+                : 'border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-600'
+            }`}
+          >
+            <Check className="w-6 h-6" aria-hidden="true" />
+            {t('bar.confirm')}
+          </button>
+        </>
       ) : (
         bar
       )}
