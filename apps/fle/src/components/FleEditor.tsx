@@ -3,6 +3,7 @@ import {
   BookOpen,
   ClipboardList,
   Download,
+  FilePlus,
   FileText,
   HelpCircle,
   Home,
@@ -132,8 +133,8 @@ function Editor({
   const [menuOpen, setMenuOpen] = useState(false)
   // 生成の前に知らせる、ログの不足(あるときだけ、確認のシートを開く)
   const [check, setCheck] = useState<OutputWarning[] | null>(null)
-  // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値
-  const [place, setPlace] = useState<{ line: number; initial: Station; memo: string; isNewLog: boolean } | null>(null)
+  // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値。`fresh` なら、新しいログ(空のログに書く)
+  const [place, setPlace] = useState<{ line: number; initial: Station; memo: string; isNewLog: boolean; fresh: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   // 時間帯を変えるときの確認(QSO のあるログで、時刻を変換するか)
   const [retime, setRetime] = useState<{ tz: number; from: string; to: string; qsos: number } | null>(null)
@@ -206,7 +207,9 @@ function Editor({
   )
   const pwa = usePwa(useCallback(() => notify(t('notice.offlineReady')), [notify, t]))
 
-  // 内容を置き換える前に、今の内容を取っておく(メニューから戻せる)
+  // 内容を置き換える前に、今の内容を取っておく(メニューから戻せる)。
+  // カーソルは末尾に置く(前の内容での位置のままだと、場所のシートなどが別の行を基準にしてしまう)。
+  // フォーカスはしない(メニューの操作で、キーボードを出さない)
   const replaceText = useCallback(
     (next: string, message?: string) => {
       if (text.trim()) {
@@ -215,6 +218,7 @@ function Editor({
         if (message) notify(message, text)
       }
       setText(next)
+      setCaret(next.length)
     },
     [text, notify]
   )
@@ -382,11 +386,19 @@ function Editor({
     [text, caret, completion.from]
   )
 
-  // ログに自局のコールサインが現れたら、次の新しいログの初期値として覚える
-  const logCall = view?.mycall
-  useEffect(() => {
-    if (logCall) saveLastCall(logCall)
-  }, [logCall])
+  // 自局のコールサインは、場所のシートなどで自分で入れたものだけを覚える
+  // (ログから覚えると、サンプルや人のログを開いたときに、そのコールサインになる)
+
+  /** 新しいログのシートを開く。自局は前回のもの、場所は空 */
+  const openNewLog = () => {
+    setPlace({
+      line: 0,
+      initial: { mycall: loadLastCall(), sota: '', pota: [], wwff: '', grid: '' },
+      memo: '',
+      isNewLog: true,
+      fresh: true,
+    })
+  }
 
   /** 場所のシートを開く。初期値は、カーソル位置で有効な自局と場所(自局が空なら前回のもの) */
   const openPlace = async (line = caretLine) => {
@@ -396,23 +408,33 @@ function Editor({
       initial: { ...current, mycall: current.mycall || loadLastCall() },
       memo: memoAt(text, line),
       isNewLog: !view?.qsos.some((q) => q.line < line),
+      fresh: false,
     })
   }
 
-  /** 場所をログに書き込む(指令の行の書式はコアが決める)。誤りがあれば返す */
+  /** 場所をログに書き込む(指令の行の書式はコアが決める)。誤りがあれば返す。新しいログなら、空のログに書いて置き換える */
   const applyPlace = async (want: Station, extras: PlanExtras | undefined, memoValue: string | null): Promise<FieldError[]> => {
     if (!place) return []
-    const plan = await stationPlan(text, place.line, want)
+    const base = place.fresh ? '' : text
+    const plan = await stationPlan(base, place.line, want)
     if (plan.errors.length > 0) return plan.errors
     // メモ(`#` の行)。欄が空で触っていなければ、山・公園から JCC・JCG を引く(引けなければ書かない)。
     // その位置で有効なメモと同じなら、書かない
     const memo = memoValue ?? (await autoMemo(want))
     const lines = [
-      ...(extras ? extraLines(extras, text) : []),
-      ...(memo && memoAt(text, place.line) !== memo ? [`# ${memo}`] : []),
+      ...(extras ? extraLines(extras, base) : []),
+      ...(memo && memoAt(base, place.line) !== memo ? [`# ${memo}`] : []),
     ]
-    const edits = withExtras(text, place.line, plan.edits, lines)
-    if (edits.length > 0) {
+    const edits = withExtras(base, place.line, plan.edits, lines)
+    if (place.fresh) {
+      // 今のログは、メニューの「元に戻す」と通知から戻せる
+      // 書き込んだあとは、続けて打てるよう末尾にフォーカスする(場所の変更と同じ)
+      const next = applyEdits(base, edits)
+      if (next !== text) {
+        replaceText(next, t('notice.newLog'))
+        pendingCaret.current = next.length
+      }
+    } else if (edits.length > 0) {
       const at = mapCaret(caret, edits)
       pendingCaret.current = at
       setText(applyEdits(text, edits))
@@ -867,6 +889,8 @@ function Editor({
         initial={place?.initial ?? { mycall: '', sota: '', pota: [], wwff: '', grid: '' }}
         initialMemo={place?.memo ?? ''}
         isNewLog={place?.isNewLog ?? true}
+        fresh={place?.fresh}
+        replacing={place?.fresh && text.trim() !== ''}
         onApply={applyPlace}
         plans={plansStore.plans}
       />
@@ -890,7 +914,8 @@ function Editor({
 
       <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title={t('menu.title')}>
         <MenuGroup title={t('menu.group.before')}>
-          <MenuButton icon={MapPin} label={t('menu.place')} onClick={fromMenu(() => void openPlace())} />
+          <MenuButton icon={FilePlus} label={t('menu.place')} onClick={fromMenu(openNewLog)} />
+          {hasText && <MenuButton icon={MapPin} label={t('menu.change')} onClick={fromMenu(() => void openPlace())} />}
           <MenuButton icon={ClipboardList} label={t('menu.plans')} onClick={fromMenu(() => setPlansOpen(true))} />
         </MenuGroup>
         {/* フルキーでは、QSO の数は表示だけ。一覧はここから */}

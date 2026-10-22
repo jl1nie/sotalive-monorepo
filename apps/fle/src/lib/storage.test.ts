@@ -104,6 +104,12 @@ describe('loadLastCall / saveLastCall', () => {
     expect(loadLastCall(kv)).toBe('JA1ABC/1')
   })
 
+  it('小文字で入れても、大文字で覚える', () => {
+    const kv = memoryKv()
+    saveLastCall(' ja1abc/1 ', kv)
+    expect(loadLastCall(kv)).toBe('JA1ABC/1')
+  })
+
   it('空のコールサインでは、覚えているものを消さない', () => {
     const kv = memoryKv()
     saveLastCall('JA1ABC', kv)

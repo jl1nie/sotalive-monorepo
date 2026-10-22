@@ -43,6 +43,7 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
       open
       onClose={onClose}
       title={t('check.title')}
+      closeLabel={t('sheet.cancel')}
       actions={
         <>
           <button type="button" onClick={writeAndGenerate} className="btn-success w-full">
