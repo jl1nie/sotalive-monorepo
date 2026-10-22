@@ -196,6 +196,20 @@ describe('CandidateBar: 入力の途中(橙)と書き忘れ(赤)', () => {
     expect(barText()).toContain('0910 ja1xyz')
     expect(barText()).toContain('⚠ バンドか周波数を書いてください')
   })
+
+  // QSO として読めても、誤りのある行(コールが2つ・時刻が正しくない)は、緑にせず、止まったら誤りを出す
+  it.each([
+    ['10 ja1abc ja1xyz', '1行に書けるコールサインは1つです'],
+    ['2500 ja1abc', '時刻が正しくありません'],
+  ])('%s は、QSO として読めても、誤りを出す', (l, message) => {
+    vi.useFakeTimers()
+    const text = 'mycall JA1ABC\ndate 2026-10-19\n40m cw\n0900 ja1qso\n' + l
+    expect((compile(text) as LogView).qsos.some((q) => q.line === 4)).toBe(true)
+    renderAt(text, 4)
+    expect(barText().startsWith(l)).toBe(true)
+    act(() => vi.advanceTimersByTime(1600))
+    expect(barText()).toContain(message)
+  })
 })
 
 describe('CandidateBar: QSO の行と、QSO の数', () => {
