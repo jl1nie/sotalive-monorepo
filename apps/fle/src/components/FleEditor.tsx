@@ -328,8 +328,7 @@ function Editor({
     f()
   }
 
-  // 確定ボタン(従来)と、フルキーの改行で何を書くか(時刻は、自動で入れる設定なら。省略形の時刻も直す)。
-  // 従来の Enter は時刻の挿入だけ(リリース版のまま)
+  // OK(確定)で何を書くか(時刻は、自動で入れる設定なら。省略形の時刻も直す)。改行では何も書かない
   const noClock = !settings.autoTime
   // RST を書くかは、配置ごとに持つ(フルキーの既定は書かない。従来はリリース版のまま)
   const writeRst = compact ? settings.writeRstCompact : settings.writeRst
@@ -519,33 +518,11 @@ function Editor({
   }
 
   /**
-   * 入力の変化を受ける。行末で改行が1つ入ったときは、その行の補完をテキストに確定する(従来は時刻だけ。
-   * フルキーは、OK と同じく確定の書き方のとおり。画面のキーボードの ↵ も、OS のキーボードの Enter も)。
-   * キーの種類(keydown)ではなくテキストの変化で判定するので、ソフトキーボードでも同じに動く。
+   * 入力の変化を受ける。改行(画面のキーボードの ↵・OS のキーボードや PC の Enter)は、エディタと同じく
+   * 改行を入れるだけ(時刻などは書かない。書くのは OK)。いま打っている行の、最初の1文字を打った時刻を覚える
+   * (OK で確定するときの、その行の時刻にする)
    */
-  const handleChange = (value: string, pos: number, native: Event) => {
-    const composing = (native as InputEvent).isComposing === true
-    const newlineAdded =
-      !composing &&
-      value.length === text.length + 1 &&
-      value[pos - 1] === '\n' &&
-      value.slice(0, pos - 1) + value.slice(pos) === text &&
-      // 行末での改行だけ。行の途中で分けるだけのときは確定しない
-      (pos === value.length || value[pos] === '\n')
-
-    if (newlineAdded) {
-      const done = lineOf(value, pos) - 1
-      const edits = fillLine(value, done, startedAtFor(done), settings.timezone, compact ? confirmScope : { noClock })
-      if (edits.length > 0) {
-        const at = mapCaret(pos, edits)
-        lineStartedAt.current = null
-        pendingCaret.current = at
-        setText(applyEdits(value, edits))
-        setCaret(at)
-        return
-      }
-    }
-    // 確定しなかったとき: いま打っている行の、最初の1文字を打った時刻を覚える
+  const handleChange = (value: string, pos: number) => {
     const line = lineOf(value, pos)
     const [start, end] = lineRange(value, line)
     if (value.slice(start, end).trim() === '') lineStartedAt.current = null
@@ -603,7 +580,7 @@ function Editor({
     if (replacePrev && from === to && from > 0) from -= 1
     const value = text.slice(0, from) + key + text.slice(to)
     pendingCaret.current = from + key.length
-    handleChange(value, from + key.length, new Event('input'))
+    handleChange(value, from + key.length)
   }
 
   /** 数字の行の ⌫。カーソルの前の1文字(選択があれば、その範囲)を消す。打ったときと同じ経路を通す */
@@ -618,7 +595,7 @@ function Editor({
       from -= low >= 0xdc00 && low <= 0xdfff && from >= 2 ? 2 : 1
     }
     pendingCaret.current = from
-    handleChange(text.slice(0, from) + text.slice(to), from, new Event('input'))
+    handleChange(text.slice(0, from) + text.slice(to), from)
   }
 
   /** `source` のログから、ファイルを生成してダウンロードする */
@@ -748,7 +725,7 @@ function Editor({
           <textarea
             ref={taRef}
             value={text}
-            onChange={(e) => handleChange(e.target.value, e.target.selectionStart, e.nativeEvent)}
+            onChange={(e) => handleChange(e.target.value, e.target.selectionStart)}
             onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
             // Ctrl+Z / ⌘Z は、↶ と同じ取り消し(ブラウザの取り消しは、確定や候補で書き換えた分を戻せない)
             onKeyDown={(e) => {
@@ -800,7 +777,7 @@ function Editor({
             onKey={typeKey}
             onMove={moveCaret}
             onBackspace={backspace}
-            // エディタの Enter と同じく、カーソルの位置で改行する(行の途中なら行を割る。行末なら、時刻などを書き足してから)
+            // エディタの Enter と同じく、カーソルの位置で改行する(行の途中なら行を割る。時刻などは書かない。書くのは OK)
             onNewline={() => typeKey('\n')}
             onOsKeyboard={() => setOsKeyboard(true)}
             onUndo={undo}
