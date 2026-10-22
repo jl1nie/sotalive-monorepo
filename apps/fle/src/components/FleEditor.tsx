@@ -483,16 +483,36 @@ function Editor({
   }
 
   /**
-   * 緑の候補バーの OK(従来の配置だけ): 時刻・バンド・モード・RSTまで書き足して、行末で改行して、下に行を足す
-   * (ログの途中に QSO を足せる)
+   * 緑の候補バーの OK: カーソルの行を確定して(時刻・バンド・モード・RST を書き足して)、次へ進む。
+   * 進み方は、カーソルの位置で変わる。最後の行なら、改行して新しい行へ。次の行があれば、その行末へ移るだけ
+   * (改行は足さない。ログの途中で押しても、空の行が割り込まない)。ログの途中に行を足すのは、↵(エディタの改行)
    */
   const confirmLine = () => {
     const line = caretLine
     const edits = fillLine(text, line, startedAtFor(line), settings.timezone, confirmScope)
     const filled = applyEdits(text, edits)
-    const shift = filled.split('\n').length - text.split('\n').length
+    const shift = filled.split('\n').length - text.split('\n').length // timezone行が先頭に増える分
+    const done = line + shift
     lineStartedAt.current = null
-    const end = lineRange(filled, line + shift)[1]
+    const lines = filled.split('\n')
+    if (done < lines.length - 1) {
+      const pos = lineRange(filled, done + 1)[1]
+      if (filled !== text) {
+        pendingCaret.current = pos
+        setText(filled)
+      } else {
+        // 内容が変わらないと、描画の後のキャレットの置き直しが走らないので、ここで置く
+        const ta = taRef.current
+        if (ta) {
+          ta.focus()
+          ta.setSelectionRange(pos, pos)
+          scrollCaretIntoView(ta, pos, compact)
+        }
+      }
+      setCaret(pos)
+      return
+    }
+    const end = lineRange(filled, done)[1]
     pendingCaret.current = end + 1
     setText(filled.slice(0, end) + '\n' + filled.slice(end))
     setCaret(end + 1)
