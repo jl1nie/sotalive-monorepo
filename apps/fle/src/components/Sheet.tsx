@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { useT } from '@/lib/i18n'
+import { FieldKeyboard } from '@/components/FieldKeys'
 
 interface Props {
   open: boolean
@@ -49,6 +50,8 @@ export function Sheet({ open, onClose, title, children, actions, closeLabel }: P
         >
           {closeLabel ?? t('sheet.close')}
         </button>
+        {/* フルキーの配置で、自局・リファレンスなどの欄を打つ間だけ、下端に画面のキーボード */}
+        <FieldKeyboard within={ref} />
       </div>
     </dialog>
   )
