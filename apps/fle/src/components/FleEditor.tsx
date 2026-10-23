@@ -734,7 +734,6 @@ function Editor({
                 undo()
               }
             }}
-            placeholder={t('editor.placeholder')}
             aria-label={t('editor.label')}
             spellCheck={false}
             autoCapitalize="none"

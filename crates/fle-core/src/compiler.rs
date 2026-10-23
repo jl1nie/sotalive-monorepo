@@ -8,8 +8,8 @@ use chrono::{Datelike, Duration, NaiveDate, Timelike};
 use crate::callsign::parse_callsign;
 use crate::ham::freq_to_band;
 use crate::syntax::{
-    parse_line, CommentKind, DateValue, DirValue, Directive, LineKind, QsoItem, RefKind, Rst, Span,
-    Spanned, SyntaxError,
+    full_sota, parse_line, CommentKind, DateValue, DirValue, Directive, LineKind, QsoItem, RefKind,
+    Rst, Span, Spanned, SyntaxError,
 };
 use crate::types::{
     FleCompileResult, FleEnvironment, FleError, FleQsoRecord, RstType, RstValue, MODE_TABLE,
@@ -190,7 +190,12 @@ fn apply_directive(env: &mut FleEnvironment, d: &Directive, here: Here) {
             }
         }
         DirValue::Operator(call) => env.operator = call.clone(),
-        DirValue::Sota(v) => env.mysota = v.clone().unwrap_or_default(),
+        DirValue::Sota(v) => {
+            env.mysota = v
+                .as_deref()
+                .map(|c| full_sota(c, &env.mysota))
+                .unwrap_or_default()
+        }
         DirValue::Wwff(v) => env.mywwff = v.clone().unwrap_or_default(),
         DirValue::Pota(v) => env.mypota = v.clone().unwrap_or_default(),
         DirValue::Grid(v) => env.mygrid = v.clone().unwrap_or_default(),
@@ -428,7 +433,8 @@ fn eval_qso(
                 );
             }
             QsoItem::Ref { kind, code } => match kind {
-                RefKind::Sota => env.current.his_sota = code.clone(),
+                // 協会を省いた番号(`nn-123`)は、自局の山と同じ協会(なければ JA)
+                RefKind::Sota => env.current.his_sota = full_sota(code, &env.mysota),
                 RefKind::Wwff => env.current.his_wwff = code.clone(),
                 RefKind::Pota => env.current.his_pota.push(code.clone()),
             },

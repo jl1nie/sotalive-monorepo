@@ -448,6 +448,23 @@ fn is_sota(s: &str) -> bool {
     })
 }
 
+/// 協会を省いた山の番号(`NN-123`。英字2文字・数字3桁)。公園の番号は数字が4桁以上なので、取り違えない
+fn is_sota_region(s: &str) -> bool {
+    s.split_once('-').is_some_and(|(l, r)| {
+        l.len() == 2 && l.bytes().all(|b| b.is_ascii_alphabetic()) && r.len() == 3 && is_digits(r)
+    })
+}
+
+/// 山の番号に協会を補う(`NN-123` → `JA/NN-123`)。協会は `mysota`(自局の山)と同じ。なければ `JA`。
+/// 協会のある番号は、そのまま
+pub fn full_sota(code: &str, mysota: &str) -> String {
+    if code.contains('/') {
+        return code.to_string();
+    }
+    let assoc = mysota.split_once('/').map_or("JA", |(a, _)| a);
+    format!("{assoc}/{code}")
+}
+
 /// `\w+-\d+`
 fn is_pota(s: &str) -> bool {
     s.rsplit_once('-')
@@ -481,7 +498,7 @@ pub fn classify(raw: &str) -> Class {
     if is_wwff(&upper) {
         return Class::Wwff(upper);
     }
-    if is_sota(&upper) {
+    if is_sota(&upper) || is_sota_region(&upper) {
         return Class::Sota(upper);
     }
     if is_pota(&upper) {
@@ -1269,6 +1286,14 @@ mod tests {
         // WWFF は、POTA より先(どちらの形にも合う)
         assert!(matches!(classify("JAFF-0001"), Class::Wwff(_)));
         assert!(matches!(classify("JP-0001"), Class::Pota(_)));
+        // 協会を省いた山の番号(英字2文字・数字3桁)は山。公園(数字4桁以上)とは取り違えない
+        assert!(matches!(classify("nn-123"), Class::Sota(c) if c == "NN-123"));
+        assert!(matches!(classify("JA-1234"), Class::Pota(_)));
+        assert!(matches!(classify("K-0001"), Class::Pota(_)));
+        assert_eq!(full_sota("NN-123", "JA/NN-108"), "JA/NN-123");
+        assert_eq!(full_sota("LD-001", "G/LD-002"), "G/LD-001");
+        assert_eq!(full_sota("NN-123", ""), "JA/NN-123");
+        assert_eq!(full_sota("JA/TK-001", "G/LD-002"), "JA/TK-001");
         // キーワード・モードは、コールサインより先
         assert!(matches!(classify("date"), Class::Keyword("date")));
         assert!(matches!(classify("ssb"), Class::Mode(_)));

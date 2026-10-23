@@ -138,7 +138,7 @@ ssb
   <li><code>0230 ja1abc</code>: JA1ABC at 02:30. <b>The time carries over from the previous line</b>, so afterwards you only write the minutes (<code>35</code> → 02:35).</li>
   <li>Band and mode stay until you change them. To change only the mode write <code>ssb</code>; to change the band too, write <code>20m ssb</code> on its own line.</li>
   <li><code>579</code>: the report you sent. If omitted, the mode's default is used (CW 599 / SSB 59). Write two numbers (<code>5 7</code>) to add the report you received. In CW, <code>5 44</code> means 559 449 (the missing digits are filled in).</li>
-  <li><code>ja/st-012</code>: the other station is on a summit (S2S). Their park (<code>jp-1234</code>) is written the same way.</li>
+  <li><code>ja/st-012</code>: the other station is on a summit (S2S). <b>You can leave out the association</b> (<code>st-012</code>; it is taken to be the same as your summit's, or JA if you are not on a summit). Their park (<code>jp-1234</code>) is written the same way.</li>
   <li><code>pm85rl</code>: the other station's grid, written after the callsign. It goes to GL in HAMLOG and GRIDSQUARE in ADIF.</li>
   <li>Add a message or remark with <code>&lt;Yamada-san&gt;</code> or <code>{QRP}</code>.</li>
 </ul>
@@ -246,7 +246,7 @@ ssb
 </ol>
 <table>
 <tr><th>sotaYYYYMMDD.csv</th><td>SOTA log (QSOs from a summit, per day). <code>sota-s2s-….csv</code> too if there are S2S contacts</td></tr>
-<tr><th>CALLSIGN@PARK-DATE.adi</th><td>POTA ADIF (per park and day). WWFF is the same</td></tr>
+<tr><th>CALLSIGN@PARK-DATE.adi</th><td>POTA ADIF (per park and day). WWFF is the same. FREQ is included when you wrote a frequency, and MY_SOTA_REF (yours) and SOTA_REF (theirs) when there is a summit</td></tr>
 <tr><th>hamlog-….csv</th><td>CSV for importing into HAMLOG (with QSL message and rig)</td></tr>
 </table>
 <p>Import the sota….csv into the SOTA database, the .adi file into the POTA site, and the hamlog….csv into HAMLOG. If any line has an error, no files are made; only a text file listing the errors is produced (fix them and export again).</p>
@@ -289,7 +289,7 @@ ssb
 <tr><th>Mode</th><td><code>cw</code> <code>ssb</code> <code>fm</code> <code>am</code> <code>ft8</code> etc. Stays until the next mode</td></tr>
 <tr><th>Callsign</th><td>One per line. This is what creates the QSO</td></tr>
 <tr><th>Report</th><td>Numbers after the callsign. One = sent, two = sent and received. Short forms are completed to suit the mode. CW etc.: 1 digit = 5□9 (<code>7</code> → 579), 2 digits = □□9 (<code>44</code> → 449). SSB/FM/AM: 1 digit = 5□ (<code>7</code> → 57), 2 digits as written. 3 digits are kept in any mode. For FT8 etc., an SNR such as <code>-18</code></td></tr>
-<tr><th>Their summit/park</th><td><code>ja/st-012</code> (SOTA), <code>jp-1234</code> (POTA), <code>jaff-0001</code> (WWFF)</td></tr>
+<tr><th>Their summit/park</th><td><code>ja/st-012</code> or <code>st-012</code> (SOTA), <code>jp-1234</code> (POTA), <code>jaff-0001</code> (WWFF)</td></tr>
 <tr><th>Messages</th><td><code>&lt;…&gt;</code> QSO message, <code>[…]</code> QSL message, <code>{…}</code> remark</td></tr>
 </table>
 
