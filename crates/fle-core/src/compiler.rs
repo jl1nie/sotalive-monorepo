@@ -156,7 +156,7 @@ impl Here {
     }
 }
 
-/// 協会を省いた山の番号を、補えなかった(自局の山がない)
+/// アソシエーションを省いた山の番号を、補えなかった(自局の山がない)
 fn missing_association(env: &mut FleEnvironment, here: Here, code: &str, span: Span) {
     here.error(
         env,
@@ -202,7 +202,7 @@ fn apply_directive(env: &mut FleEnvironment, d: &Directive, here: Here) {
         }
         DirValue::Operator(call) => env.operator = call.clone(),
         DirValue::Sota(None) => env.mysota.clear(),
-        // 協会を省いた番号は、それまでの自局の山と同じ協会。なければ誤り
+        // アソシエーションを省いた番号は、それまでの自局の山と同じアソシエーション。なければ誤り
         DirValue::Sota(Some(code)) => match full_sota(code, &env.mysota) {
             Some(full) => env.mysota = full,
             None => missing_association(env, here, code, arg),
@@ -444,7 +444,7 @@ fn eval_qso(
                 );
             }
             QsoItem::Ref { kind, code } => match kind {
-                // 協会を省いた番号(`nn-123`)は、自局の山と同じ協会。自局の山がなければ誤り
+                // アソシエーションを省いた番号(`nn-123`)は、自局の山と同じアソシエーション。自局の山がなければ誤り
                 RefKind::Sota => match full_sota(code, &env.mysota) {
                     Some(full) => env.current.his_sota = full,
                     None => missing_association(env, here, code, it.span),
@@ -770,18 +770,18 @@ mypota JA-0001 JA-0002
 
     #[test]
     fn a_summit_without_its_association_takes_the_association_of_my_summit() {
-        // 協会を省いた相手の山(英字2文字・数字3桁)は、自局の山と同じ協会。公園としては読まない
+        // アソシエーションを省いた相手の山(英字2文字・数字3桁)は、自局の山と同じアソシエーション。公園としては読まない
         let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\nmysota G/LD-002\n40m cw\n0900 g4abc nn-123\nmysota ld-003\n0910 g4abd");
         assert!(r.errors.is_empty(), "{:?}", r.errors);
         assert_eq!(r.records[0].hissota, "G/NN-123");
         assert!(r.records[0].hispota.is_empty());
-        // 自局の山も、それまでの山と同じ協会なら省ける
+        // 自局の山も、それまでの山と同じアソシエーションなら省ける
         assert_eq!(r.records[1].mysota, "G/LD-003");
     }
 
     #[test]
     fn a_summit_without_its_association_is_an_error_without_my_summit() {
-        // 自局の山がなければ、協会を補えない(国ごとに決め打ちしない)
+        // 自局の山がなければ、アソシエーションを補えない(国ごとに決め打ちしない)
         let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz nn-123");
         assert_eq!(r.errors.len(), 1);
         assert_eq!(r.errors[0].code, "missing_association");

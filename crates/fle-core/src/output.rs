@@ -970,7 +970,7 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
 
     #[test]
     fn adif_carries_the_frequency_and_the_summits() {
-        // 周波数を書いたときは FREQ。自局と相手の山は MY_SOTA_REF・SOTA_REF(相手の協会は省ける)
+        // 周波数を書いたときは FREQ。自局と相手の山は MY_SOTA_REF・SOTA_REF(相手のアソシエーションは省ける)
         let files = output_of(
             "mycall JA1ABC\ndate 2026-10-18\nmysota JA/NN-108\nmypota JA-0001\n7.029 cw\n0900 jm1mmm/1 449 339 nn-123\n40m\n0910 ja1bbb",
         );
@@ -979,7 +979,7 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         assert!(records[0].contains("<FREQ:5>7.029"));
         assert!(records[0].contains("<MY_SOTA_REF:9>JA/NN-108"));
         assert!(records[0].contains("<SOTA_REF:9>JA/NN-123"));
-        // 協会を省いた山を、公園として書かない
+        // アソシエーションを省いた山を、公園として書かない
         assert!(!records[0].contains("<SIG_INFO:6>NN-123"));
         // バンドだけのときは FREQ を書かない。相手が山でなければ SOTA_REF もない
         assert!(!records[1].contains("FREQ"));
