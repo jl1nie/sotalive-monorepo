@@ -37,6 +37,7 @@ jobs:
       logconv: ${{ steps.filter.outputs.logconv }}
       myact: ${{ steps.filter.outputs.myact }}
       legacy: ${{ steps.filter.outputs.legacy }}
+      parks: ${{ steps.filter.outputs.parks }}
       sotalive: ${{ steps.filter.outputs.sotalive }}
     steps:
       - uses: actions/checkout@v4
@@ -67,6 +68,9 @@ jobs:
             legacy:
               - 'apps/myact-org/**'
               - 'apps/myqth-org/**'
+            parks:
+              - 'tools/jaffpota/**'
+              - 'apps/myact-org/index.html'
             sotalive:
               - 'functions/**'
               - 'wrangler.toml'
@@ -142,6 +146,18 @@ jobs:
           pnpm exec tsc -b
           pnpm exec vitest run --passWithNoTests
           pnpm exec eslint .
+
+  # 公園区域 TopoJSON の検証と生成ツールのテスト(固定版の入力からの再生成も含む。1 分ほど)
+  parks:
+    needs: changes
+    if: needs.changes.outputs.all == 'true' || needs.changes.outputs.parks == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Test
+        working-directory: tools/jaffpota
+        run: uv run --frozen python -m unittest discover -s tests -t . -v
 
   # ---- ビルド(1回。テストと並列) ----
 
@@ -224,7 +240,7 @@ jobs:
 
   # 旧版の myact・myqth: Functions なし。出力の中からデプロイする(functions/ と wrangler.toml を拾わない)
   deploy-legacy:
-    needs: [changes, build]
+    needs: [changes, build, parks]
     if: >-
       always() && github.event_name == 'push'
       && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')

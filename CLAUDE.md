@@ -37,6 +37,8 @@ sotalive-monorepo/
 │   └── fle/            # FLE Online
 ├── packages/
 │   └── shared/         # 共通アセット（旧版の myact・myqth が共有。Vercel 版の public/common と同じ）
+├── tools/
+│   └── jaffpota/       # 公園区域 TopoJSON の生成・版管理・検証（Python、uv。docs/park-areas.md）
 ├── functions/
 │   └── _middleware.ts  # Cloudflare Workers（API proxy + routing）
 ├── dist/               # ビルド出力
@@ -94,7 +96,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 - `main` ブランチ → Production deploy
 - `develop` ブランチ → Preview deploy
 - PRマージで自動デプロイ（GitHub Actions）
-- CI（`.github/workflows/ci.yml`）: PR と push で走る。変わったパスに関係するテストだけを並列に走らせ（Rust・fle・logconv・myact）、ビルドは1回（artifact でプロジェクトごとの出力を渡す）。デプロイは push のときだけで、Pages のプロジェクトごとに並列、関係するテストが通ってから。共通の部分（ワークフロー・lock ファイル・`packages/shared`・`scripts`）が変わったら、すべて走る。手元では `pnpm run test` / `pnpm run lint:apps`
+- CI（`.github/workflows/ci.yml`）: PR と push で走る。変わったパスに関係するテストだけを並列に走らせ（Rust・fle・logconv・myact・parks）、ビルドは1回（artifact でプロジェクトごとの出力を渡す）。デプロイは push のときだけで、Pages のプロジェクトごとに並列、関係するテストが通ってから。共通の部分（ワークフロー・lock ファイル・`packages/shared`・`scripts`）が変わったら、すべて走る。手元では `pnpm run test` / `pnpm run lint:apps`
 - ビルド: `pnpm run build`（`build:apps` → `scripts/assemble.sh`）。FLE の wasm は CI でキャッシュする（`.github/actions/fle-wasm`。`crates/` が変わったときだけビルド）
 
 ## 関連リポジトリ

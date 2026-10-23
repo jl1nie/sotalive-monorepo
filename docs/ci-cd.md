@@ -17,18 +17,18 @@ push は止めません。続けてマージしたとき、古い内容が後か
 ```
                     changes  (変わったパスを判定)
                        |
-     +---------+-------+--------+---------+
-     |         |       |        |         |
-   rust       fle   logconv   myact     build  (1回だけ。artifact を作る)
+     +---------+-------+--------+---------+---------+
+     |         |       |        |         |         |
+   rust       fle   logconv   myact     build     parks  (build は1回だけ。artifact を作る)
      |         |       |        |         |
      |         |       +---+----+---------+--> deploy-sotalive  (logconv, myact, build)
      |         |           |
      +----+----+-----------+--------------> deploy-fle   (rust, fle, build)
           |
-          +------------------------------> deploy-legacy (build のみ。myact・myqth を matrix で)
+          +------------------------------> deploy-legacy (build, parks。myact・myqth を matrix で)
 ```
 
-- テストの4つ(`rust`、`fle`、`logconv`、`myact`)と `build` は並列です。
+- テストの5つ(`rust`、`fle`、`logconv`、`myact`、`parks`)と `build` は並列です。
 - デプロイは push のときだけです。Pages のプロジェクトごとに並列で、関係するテストだけを待ちます。
 - 待つジョブに失敗か中止があれば出しません。変更がなくて飛ばしたジョブは待たずに進みます。
 
@@ -39,9 +39,10 @@ push は止めません。続けてマージしたとき、古い内容が後か
 | `fle` | wasm を用意し、`tsc -b`、`vitest run`、`eslint` |
 | `logconv` | `tsc -b`、`vitest run`、`eslint` |
 | `myact` | `tsc -b`、`vitest run --passWithNoTests`、`eslint` |
+| `parks` | 公園区域 TopoJSON の検証と生成ツールのテスト(`tools/jaffpota`。[park-areas.md](park-areas.md)) |
 | `build` | アプリをビルドし、`scripts/assemble.sh` で出力を作り、artifact に上げる |
 | `deploy-sotalive` | プロジェクト `sotalive` へ(`dist`) |
-| `deploy-legacy` | `sotalive-myact`、`sotalive-myqth` へ(matrix) |
+| `deploy-legacy` | `sotalive-myact`、`sotalive-myqth` へ(matrix)。`parks` を待つ |
 | `deploy-fle` | `sotalive-fle` へ(`pages/fle` で実行) |
 
 ## パスの判定
@@ -56,6 +57,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
 | `logconv` | `apps/logconv/**` | logconv |
 | `myact` | `apps/myact/**` | myact |
 | `legacy` | `apps/myact-org/**`、`apps/myqth-org/**` | deploy-legacy |
+| `parks` | `tools/jaffpota/**`、`apps/myact-org/index.html` | parks |
 | `sotalive` | `functions/**`、`wrangler.toml`、`apps/logconv/**`、`apps/myact/**` | deploy-sotalive |
 
 `build` は、`all` か、`rust` 以外のどれかが真のときに走ります。ドキュメントだけの変更では、ビルドもデプロイも走りません。

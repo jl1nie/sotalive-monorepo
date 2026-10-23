@@ -1,0 +1,48 @@
+{
+  "version": 24,
+  "base": {
+    "file": "jaffpota-annotated-v23.json",
+    "sha256": "2a7ce58acef978ebd25cb31c04d6a8051788b3d8e917026c12e68c0621fb65c6",
+    "fallback_url": "https://myact.sotalive.net/json/jaffpota-annotated-v23.json",
+    "expect": {"null_geometries": 0, "pota": 395, "national_pota": 35, "other_pota": 360}
+  },
+  "nps": {
+    "source": "国立公園区域 GIS データ(環境省生物多様性センター)。http://gis.biodic.go.jp/BiodicWebGIS/Questionnaires?kind=nps&filename=nps.zip(2026-10-17 ダウンロード。2026-10 時点でホストは消滅)",
+    "published": "2025-04-28",
+    "path": "inputs/nps-2025-04-28/nps.zip",
+    "sha256": "2e8589185046e0dcca24dfafe0b6155f872d2909ed9e9cb451a4abee7ca4abc3",
+    "encoding": "utf-8",
+    "crs": "EPSG:4612",
+    "expect": {"records": 15293, "parks": 35}
+  },
+  "others": {
+    "source": "a10",
+    "source_note": "国土数値情報(自然公園地域データ 平成22年度 A10-10)(国土交通省)https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-A10-v3_1.html。都道府県別のファイルを QGIS で 1 つの GeoJSON にまとめたもの(MyQTH/A10-10.geojson、2025-02-11)",
+    "license": "非商用。複製物の再配布は不可(国土数値情報ダウンロードサイト 利用約款 agreement_02)。repo には置かない",
+    "sha256": "dd5c9e2b828bc1d1d8dd7aa0157b6349385259c0b1e9f5e1edeb48c9489c29da",
+    "crs": "EPSG:4612",
+    "subtract_buffer_m": 0.1,
+    "expect": {"records": 1949}
+  },
+  "national_suffix": "国立公園",
+  "national_from_base": true,
+  "drop_parts_below_m2": 1,
+  "new_parks": {},
+  "subtract": [],
+  "estimate": {"tie_buffer_m": 10, "distance_decimals": 6, "min_area_m2": 1},
+  "expect": {
+    "pota": 395,
+    "national_pota": 35,
+    "geometries": 416,
+    "polygons": 167,
+    "multipolygons": 249,
+    "estimated_parks": 0,
+    "dropped_holes": 151
+  },
+  "expect_final": {"pota": 395, "national_pota": 35, "geometries": 416, "polygons": 167, "multipolygons": 249},
+  "reference_sha256": {
+    "generated": "26b53ba95f3e6c410b9368d5432f2077b4804ce7cb17ac31234eba9034a5dccd",
+    "final": "26b53ba95f3e6c410b9368d5432f2077b4804ce7cb17ac31234eba9034a5dccd",
+    "note": "2026-10-24 の生成の値(shapely 2.0.7)"
+  }
+}
