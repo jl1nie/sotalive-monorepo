@@ -1879,7 +1879,27 @@
 			}
 		});
 
-		clickQTHButton();
+		// URL で地点を指定して開く: ?lat=35.2018&lon=137.1724(&z=ズーム。既定 15)
+		// その地点をクリックしたときと同じポップアップ(JCC/JCG・サミット・標高)を出す。指定がなければ現在地
+		function urlPosition() {
+			var q = new URLSearchParams(window.location.search),
+				lat = parseFloat(q.get('lat')),
+				lng = parseFloat(q.get('lon')),
+				z = parseInt(q.get('z'), 10);
+
+			if (!(Math.abs(lat) <= 90 && Math.abs(lng) <= 180))
+				return null;
+			if (!(z >= 5 && z <= 18))
+				z = 15;
+			return { latlng: L.latLng(lat, lng), zoom: z };
+		}
+
+		var urlpos = urlPosition();
+		if (urlpos) {
+			map.setView(urlpos.latlng, urlpos.zoom);
+			displayPopup({}, urlpos.latlng, false, false);
+		} else
+			clickQTHButton();
 
 		//Latest Spot Chart
 		const plugin = {

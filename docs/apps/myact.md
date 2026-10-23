@@ -36,6 +36,7 @@ jQuery + Bootstrap 4 + Leaflet で作った、ビルドのない静的なサイ�
 - 自前の JS・CSS・画像・フォント・JSON は、共通アセット `packages/shared/common` を使います。MyQTH と共有しています。仕組みは [myqth.md](myqth.md) を参照してください。
 - API は `https://sotaapp2.sotalive.net/api/v2` を直接呼びます。このため Functions は要りません。
 - `apps/myact-org/site-act.webmanifest.json` は、ホーム画面に追加したときの設定です。
+- URL で地点を指定して開けます: `https://myact.sotalive.net/?lat=35.2018&lon=137.1724`(`&z=` でズーム。既定 15)。その地点をクリックしたときと同じポップアップ(クリック位置の JCC/JCG、近くのサミット、標高)が出ます。指定がない・範囲外のときは、これまでどおり現在地で開きます。
 - 共通アセットのうち、myact には `css js img font svg json` を配ります(MyQTH は `json` なし)。
 
 ### ビルドと配置先(旧版)
