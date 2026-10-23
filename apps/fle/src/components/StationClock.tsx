@@ -50,8 +50,8 @@ export function StationClock({ info, tz, memo = '' }: Props) {
           ))}
         </div>
       )}
-      {/* メモは1行。長ければ末尾を省く */}
-      {memo && <div className="max-w-full px-3 truncate text-base font-bold">{memo}</div>}
+      {/* メモは1行。長ければ末尾を省く。運用先と同じく読み上げるので、同じ文字(等幅・大きさ・太さ) */}
+      {memo && <div className="max-w-full px-3 truncate font-mono text-xl font-bold leading-snug">{memo}</div>}
     </div>
   )
 }
