@@ -1,20 +1,19 @@
 //! FLE出力フォーマッタ
 //!
-//! SOTA CSV, POTA ADIF, HAMLOG CSV, AirHam CSV, ZLOG形式への変換
+//! SOTA CSV, POTA ADIF, HAMLOG CSV, ZLOG形式への変換
 
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 
-use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Timelike};
+use chrono::{Datelike, NaiveDate, Timelike};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
 use super::types::{FleCompileResult, FleQsoRecord};
 use crate::ham::{
-    band_to_freq, band_to_hamlog_freq, get_ref, is_mhz, mode_to_adif_mode, mode_to_airham_mode,
-    mode_to_sota_mode, split_callsign,
+    band_to_freq, band_to_hamlog_freq, get_ref, is_mhz, mode_to_adif_mode, mode_to_sota_mode,
 };
 
 /// 出力ファイルマップ
@@ -49,10 +48,6 @@ pub fn generate_fle_output(
     // HAMLOG CSV
     let hamlog_data = generate_hamlog_csv(result);
     files.insert(format!("hamlog-{}.csv", log_name), hamlog_data);
-
-    // AirHam CSV
-    let airham_data = generate_airham_csv(result);
-    files.insert(format!("airham-{}.csv", log_name), airham_data);
 
     // SOTA CSV: UTCの日付ごと。山のあるQSOだけ
     if result.has_sota {
@@ -633,70 +628,6 @@ fn to_cp932(s: &str) -> Vec<u8> {
     out
 }
 
-/// AirHam CSV形式を生成
-fn generate_airham_csv(result: &FleCompileResult) -> Vec<u8> {
-    let mut output = Vec::new();
-
-    // ヘッダー
-    let header = "id,callsign,portable,qso_at,sent_rst,received_rst,sent_qth,received_qth,received_qra,frequency,mode,card,remarks\n";
-    output.extend(header.as_bytes());
-
-    for record in &result.records {
-        // ISO 8601形式の日時
-        let dt =
-            NaiveDate::from_ymd_opt(record.year as i32, record.month as u32, record.day as u32)
-                .and_then(|d| d.and_hms_opt(record.hour as u32, record.min as u32, 0));
-        let iso_time = dt
-            .map(|t| {
-                let utc = FixedOffset::east_opt(0).unwrap();
-                utc.from_utc_datetime(&t).to_rfc3339()
-            })
-            .unwrap_or_default();
-
-        let (operator, portable) = split_callsign(&record.callsign);
-
-        let freq = band_to_freq(&record.band, false).unwrap_or_default();
-        let freq_num = freq
-            .replace("MHz", "")
-            .replace("KHz", "")
-            .replace("GHz", "");
-        let mode = mode_to_airham_mode(&record.mode, &freq_num);
-
-        // 受信QTH
-        let mut his_refs = Vec::new();
-        if !record.hissota.is_empty() {
-            his_refs.push(record.hissota.clone());
-        }
-        if !record.hiswwff.is_empty() {
-            his_refs.push(record.hiswwff.clone());
-        }
-        for p in &record.hispota {
-            his_refs.push(p.clone());
-        }
-        let received_qth = format!("{} {}", his_refs.join(","), record.qsormks);
-
-        let fields = [
-            "", // id
-            &operator,
-            &portable,
-            &iso_time,
-            &record.rst_sent,
-            &record.rst_rcvd,
-            &record.qslmsg,
-            received_qth.trim(),
-            &record.qsomsg,
-            freq,
-            &mode,
-            "", // card
-            "", // remarks
-        ];
-
-        output.extend(format!("{}\n", csv_row(&fields)).as_bytes());
-    }
-
-    output
-}
-
 /// ZLOG (コンテスト)形式を生成
 fn generate_zlog(result: &FleCompileResult) -> Vec<u8> {
     let mut output = Vec::new();
@@ -1055,7 +986,7 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
     }
 
     #[test]
-    fn the_whole_log_still_goes_into_the_hamlog_and_airham_files() {
+    fn the_whole_log_still_goes_into_the_hamlog_file() {
         let files = output_of(TWO_PARKS);
         let hamlog = files
             .iter()
@@ -1081,7 +1012,7 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         assert!(adif.contains("<STATION_CALLSIGN:8>7K1ABC/1"), "{adif}");
         assert_eq!(calls_in(adif), vec!["8J1RL", "7N4XYZ"]);
         for (name, body) in &files {
-            if name.starts_with("hamlog-") || name.starts_with("airham-") {
+            if name.starts_with("hamlog-") {
                 assert!(
                     body.to_uppercase().contains("8J1RL") && body.to_uppercase().contains("7N4XYZ"),
                     "{name}"
@@ -1346,20 +1277,13 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
     fn rig_is_only_in_the_hamlog_file_and_the_message() {
         let files = output_of(RIG_LOG);
         for (name, body) in &files {
-            let in_hamlog = name.starts_with("hamlog-");
-            let in_airham = name.starts_with("airham-");
             // ADIF・SOTA の CSV には、rig は出ない(HAMLOG の Rig= と、メッセージの $rig の置き換えだけ)
-            if !in_hamlog && !in_airham {
+            if !name.starts_with("hamlog-") {
                 assert!(!body.contains("KX2/IC-705+EFHW"), "{name}");
             }
         }
-        // AirHam には、メッセージ(置き換えた $rig を含む)が入る
-        let airham = files
-            .iter()
-            .find(|(k, _)| k.starts_with("airham-"))
-            .unwrap()
-            .1;
-        assert!(airham.contains("TNX QSO KX2/IC-705+EFHW"));
+        // AirHam の CSV は、もう作らない
+        assert!(!files.keys().any(|k| k.starts_with("airham-")));
     }
 
     // ---- HAMLOG の日時(入力の時間帯 timezone に従う)----

@@ -36,7 +36,6 @@ FLE は Fast Log Entry の略で、1 行に 1 QSO を短く書くログの書き
 | `sotaYYYYMMDD.csv` | SOTA のログ(山の QSO のみ。UTC の日付ごと)。S2S があれば `sota-s2s-….csv` も |
 | `コールサイン@公園-日付.adi` | POTA の ADIF(公園・日付ごと)。WWFF も同様 |
 | `hamlog-….csv` | HAMLOG の取り込み用 CSV |
-| `airham-….csv` | AirHam 用 CSV |
 | `contest-日付.txt` | ZLOG 形式(コンテストのログのとき) |
 
 エラーのある行があると、これらは作られず、エラーを書いたテキストだけが出ます。

@@ -499,22 +499,6 @@ pub fn mode_to_adif_mode(mode: &str) -> (String, String) {
     (smode, String::new())
 }
 
-/// Convert mode to AirHam mode (handles SSB -> LSB/USB based on frequency)
-pub fn mode_to_airham_mode(mode: &str, freq_str: &str) -> String {
-    let freq: f64 = freq_str.parse().unwrap_or(0.0);
-    let mode_upper = mode.to_uppercase();
-
-    if mode_upper == "SSB" {
-        if freq <= 7.2 {
-            "SSB(LSB)".to_string()
-        } else {
-            "SSB(USB)".to_string()
-        }
-    } else {
-        mode_upper
-    }
-}
-
 /// Split callsign into operator and portable parts
 pub fn split_callsign(call: &str) -> (String, String) {
     let call = call.to_uppercase();
@@ -817,13 +801,6 @@ mod tests {
             mode_to_adif_mode("C4FM"),
             ("DIGITALVOICE".to_string(), "C4FM".to_string())
         );
-    }
-
-    #[test]
-    fn test_mode_to_airham_mode() {
-        assert_eq!(mode_to_airham_mode("SSB", "7.1"), "SSB(LSB)");
-        assert_eq!(mode_to_airham_mode("SSB", "14.2"), "SSB(USB)");
-        assert_eq!(mode_to_airham_mode("CW", "7.0"), "CW");
     }
 
     #[test]
