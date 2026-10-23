@@ -1754,6 +1754,7 @@
 		};
 
 		var geojson = L.topoJson(null, {
+			attribution: "公園区域: <a href='https://www.biodic.go.jp/' target='_blank'>国立公園区域GISデータ(環境省生物多様性センター)</a>・<a href='https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-A10-v3_1.html' target='_blank'>国土数値情報(自然公園地域)</a>を加工",
 			style: function (feature) {
 				return {
 					color: "#000",
@@ -1805,7 +1806,7 @@
 		}
 
 		function loadAreas() {
-			getGeoData('json/jaffpota-annotated-v23.json').then(data => geojson.addData(data));
+			getGeoData('json/jaffpota-annotated-v24.json').then(data => geojson.addData(data));
 		}
 
 		loadAreas();
