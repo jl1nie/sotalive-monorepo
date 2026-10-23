@@ -156,6 +156,17 @@ impl Here {
     }
 }
 
+/// 協会を省いた山の番号を、補えなかった(自局の山がない)
+fn missing_association(env: &mut FleEnvironment, here: Here, code: &str, span: Span) {
+    here.error(
+        env,
+        "missing_association",
+        &[code],
+        span,
+        format!("Write the association of the summit (e.g. JA/{code}): {code}"),
+    );
+}
+
 // ---------------------------------------------------------------------------
 // 指令
 // ---------------------------------------------------------------------------
@@ -190,12 +201,12 @@ fn apply_directive(env: &mut FleEnvironment, d: &Directive, here: Here) {
             }
         }
         DirValue::Operator(call) => env.operator = call.clone(),
-        DirValue::Sota(v) => {
-            env.mysota = v
-                .as_deref()
-                .map(|c| full_sota(c, &env.mysota))
-                .unwrap_or_default()
-        }
+        DirValue::Sota(None) => env.mysota.clear(),
+        // 協会を省いた番号は、それまでの自局の山と同じ協会。なければ誤り
+        DirValue::Sota(Some(code)) => match full_sota(code, &env.mysota) {
+            Some(full) => env.mysota = full,
+            None => missing_association(env, here, code, arg),
+        },
         DirValue::Wwff(v) => env.mywwff = v.clone().unwrap_or_default(),
         DirValue::Pota(v) => env.mypota = v.clone().unwrap_or_default(),
         DirValue::Grid(v) => env.mygrid = v.clone().unwrap_or_default(),
@@ -433,8 +444,11 @@ fn eval_qso(
                 );
             }
             QsoItem::Ref { kind, code } => match kind {
-                // 協会を省いた番号(`nn-123`)は、自局の山と同じ協会(なければ JA)
-                RefKind::Sota => env.current.his_sota = full_sota(code, &env.mysota),
+                // 協会を省いた番号(`nn-123`)は、自局の山と同じ協会。自局の山がなければ誤り
+                RefKind::Sota => match full_sota(code, &env.mysota) {
+                    Some(full) => env.current.his_sota = full,
+                    None => missing_association(env, here, code, it.span),
+                },
                 RefKind::Wwff => env.current.his_wwff = code.clone(),
                 RefKind::Pota => env.current.his_pota.push(code.clone()),
             },
@@ -752,6 +766,28 @@ mypota JA-0001 JA-0002
         assert!(result.has_pota);
         assert_eq!(result.mypota, vec!["JA-0001", "JA-0002"]);
         assert_eq!(result.records[0].hispota, vec!["JA-0003"]);
+    }
+
+    #[test]
+    fn a_summit_without_its_association_takes_the_association_of_my_summit() {
+        // 協会を省いた相手の山(英字2文字・数字3桁)は、自局の山と同じ協会。公園としては読まない
+        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\nmysota G/LD-002\n40m cw\n0900 g4abc nn-123\nmysota ld-003\n0910 g4abd");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        assert_eq!(r.records[0].hissota, "G/NN-123");
+        assert!(r.records[0].hispota.is_empty());
+        // 自局の山も、それまでの山と同じ協会なら省ける
+        assert_eq!(r.records[1].mysota, "G/LD-003");
+    }
+
+    #[test]
+    fn a_summit_without_its_association_is_an_error_without_my_summit() {
+        // 自局の山がなければ、協会を補えない(国ごとに決め打ちしない)
+        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1xyz nn-123");
+        assert_eq!(r.errors.len(), 1);
+        assert_eq!(r.errors[0].code, "missing_association");
+        assert_eq!(r.errors[0].args, vec!["NN-123"]);
+        let r = compile_fle("mycall JA1ABC\ndate 2026-10-18\nmysota nn-108\n40m cw\n0900 ja1xyz");
+        assert_eq!(r.errors[0].code, "missing_association");
     }
 
     #[test]

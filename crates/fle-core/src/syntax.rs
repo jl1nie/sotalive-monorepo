@@ -455,14 +455,15 @@ fn is_sota_region(s: &str) -> bool {
     })
 }
 
-/// 山の番号に協会を補う(`NN-123` → `JA/NN-123`)。協会は `mysota`(自局の山)と同じ。なければ `JA`。
-/// 協会のある番号は、そのまま
-pub fn full_sota(code: &str, mysota: &str) -> String {
+/// 山の番号に協会を補う(`NN-123` → `JA/NN-123`)。協会は `mysota`(自局の山)と同じ。
+/// 自局の山がなければ、補えないので None(国ごとの決め打ちはしない)。協会のある番号は、そのまま
+pub fn full_sota(code: &str, mysota: &str) -> Option<String> {
     if code.contains('/') {
-        return code.to_string();
+        return Some(code.to_string());
     }
-    let assoc = mysota.split_once('/').map_or("JA", |(a, _)| a);
-    format!("{assoc}/{code}")
+    mysota
+        .split_once('/')
+        .map(|(assoc, _)| format!("{assoc}/{code}"))
 }
 
 /// `\w+-\d+`
@@ -1290,10 +1291,11 @@ mod tests {
         assert!(matches!(classify("nn-123"), Class::Sota(c) if c == "NN-123"));
         assert!(matches!(classify("JA-1234"), Class::Pota(_)));
         assert!(matches!(classify("K-0001"), Class::Pota(_)));
-        assert_eq!(full_sota("NN-123", "JA/NN-108"), "JA/NN-123");
-        assert_eq!(full_sota("LD-001", "G/LD-002"), "G/LD-001");
-        assert_eq!(full_sota("NN-123", ""), "JA/NN-123");
-        assert_eq!(full_sota("JA/TK-001", "G/LD-002"), "JA/TK-001");
+        assert_eq!(full_sota("NN-123", "JA/NN-108").as_deref(), Some("JA/NN-123"));
+        assert_eq!(full_sota("LD-001", "G/LD-002").as_deref(), Some("G/LD-001"));
+        assert_eq!(full_sota("JA/TK-001", "").as_deref(), Some("JA/TK-001"));
+        // 自局の山がなければ、協会を補わない
+        assert_eq!(full_sota("NN-123", ""), None);
         // キーワード・モードは、コールサインより先
         assert!(matches!(classify("date"), Class::Keyword("date")));
         assert!(matches!(classify("ssb"), Class::Mode(_)));

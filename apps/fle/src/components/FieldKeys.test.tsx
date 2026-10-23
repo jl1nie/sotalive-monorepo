@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { useRef, useState } from 'react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { FieldKeyboard } from './FieldKeys'
 import { FieldKeysContext, useFieldKeyProps } from '@/hooks/useFieldKeys'
@@ -26,7 +26,7 @@ function Form({ enabled = true }: { enabled?: boolean }) {
       <div ref={ref}>
         <Field label="call" />
         <Field label="sota" />
-        <input aria-label="memo" />
+        <input aria-label="title" />
         <FieldKeyboard within={ref} />
       </div>
     </FieldKeysContext.Provider>
@@ -37,19 +37,15 @@ const tapKey = (name: string | RegExp) => fireEvent.click(screen.getAllByRole('b
 const focus = (el: HTMLElement) => act(() => el.focus())
 
 describe('FieldKeyboard: シートの入力欄の画面のキーボード', () => {
-  it('欄にフォーカスがある間だけ出て、OS のキーボードを出さない(日本語の欄では出さない)', () => {
+  it('欄にフォーカスがある間だけ出て、OS のキーボードを出さない(日本語の欄では出さない)', async () => {
     render(<Form />)
     expect(screen.queryByRole('group', { name: 'キーボード' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('call')).toHaveAttribute('inputmode', 'none')
     focus(screen.getByLabelText('call'))
     expect(screen.getByRole('group', { name: 'キーボード' })).toBeInTheDocument()
-    focus(screen.getByLabelText('memo'))
-    return new Promise<void>((done) =>
-      setTimeout(() => {
-        expect(screen.queryByRole('group', { name: 'キーボード' })).not.toBeInTheDocument()
-        done()
-      }, 10)
-    )
+    focus(screen.getByLabelText('title'))
+    // フォーカスが外れたかは、少し待ってから決める(移った先を見る)
+    await waitFor(() => expect(screen.queryByRole('group', { name: 'キーボード' })).not.toBeInTheDocument())
   })
 
   it('英字は大文字で入り、⌫・↶ で直せる。↵ で次の欄へ', () => {
