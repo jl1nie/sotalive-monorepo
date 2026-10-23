@@ -431,12 +431,18 @@ fn generate_adif_record(params: &AdifRecordParams<'_>) -> String {
     if !params.submode.is_empty() {
         fields.push(adif_field("SUBMODE", params.submode));
     }
+    // 周波数を書いたときだけ(バンドだけなら、バンドの名前が入っている)
+    if is_mhz(&params.record.freq) {
+        fields.push(adif_field("FREQ", &params.record.freq));
+    }
     fields.push(adif_field("RST_SENT", &params.record.rst_sent));
     fields.push(adif_field("RST_RCVD", &params.record.rst_rcvd));
     fields.push(adif_field("MY_SIG", params.sig));
     fields.push(adif_field("MY_SIG_INFO", params.sig_info));
     fields.push(adif_field("MY_GRIDSQUARE", &params.record.my_grid));
     fields.push(adif_field("GRIDSQUARE", &his_grid(params.record)));
+    fields.push(adif_field("MY_SOTA_REF", &params.record.mysota));
+    fields.push(adif_field("SOTA_REF", &params.record.hissota));
 
     if let Some(his) = params.his_sig {
         fields.push(adif_field("SIG", params.sig));
@@ -960,6 +966,25 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         assert!(files["JA1ABC@JA-0001-20261018.adi"].contains("<MY_GRIDSQUARE:6>PM95uq"));
         assert!(files["JA1ABC@JA-0002-20261018.adi"].contains("<MY_GRIDSQUARE:6>PM96aa"));
         assert!(!files["JA1ABC@JA-0001-20261018.adi"].contains("PM96aa"));
+    }
+
+    #[test]
+    fn adif_carries_the_frequency_and_the_summits() {
+        // 周波数を書いたときは FREQ。自局と相手の山は MY_SOTA_REF・SOTA_REF(相手のアソシエーションは省ける)
+        let files = output_of(
+            "mycall JA1ABC\ndate 2026-10-18\nmysota JA/NN-108\nmypota JA-0001\n7.029 cw\n0900 jm1mmm/1 449 339 nn-123\n40m\n0910 ja1bbb",
+        );
+        let adif = &files["JA1ABC@JA-0001-20261018.adi"];
+        let records: Vec<&str> = adif.split("<EOR>").collect();
+        assert!(records[0].contains("<FREQ:5>7.029"));
+        assert!(records[0].contains("<MY_SOTA_REF:9>JA/NN-108"));
+        assert!(records[0].contains("<SOTA_REF:9>JA/NN-123"));
+        // アソシエーションを省いた山を、公園として書かない
+        assert!(!records[0].contains("<SIG_INFO:6>NN-123"));
+        // バンドだけのときは FREQ を書かない。相手が山でなければ SOTA_REF もない
+        assert!(!records[1].contains("FREQ"));
+        assert!(!records[1].contains("<SOTA_REF"));
+        assert!(records[1].contains("<MY_SOTA_REF:9>JA/NN-108"));
     }
 
     #[test]

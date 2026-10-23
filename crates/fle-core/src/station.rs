@@ -171,7 +171,8 @@ fn validate(s: &Station) -> Vec<FieldError> {
     if !s.sota.is_empty() {
         check(
             "sota",
-            is(&s.sota, |t| matches!(t, Class::Sota(_))),
+            // 自局の山は、アソシエーションまで書く(アソシエーションを補う元がない)
+            is(&s.sota, |t| matches!(t, Class::Sota(c) if c.contains('/'))),
             "Invalid SOTA reference (e.g. JA/TK-001)",
         );
     }
@@ -393,6 +394,10 @@ mod tests {
         assert!(plan.edits.is_empty());
         let fields: Vec<&str> = plan.errors.iter().map(|e| e.field.as_str()).collect();
         assert_eq!(fields, vec!["mycall", "sota", "pota", "wwff", "grid"]);
+        // 自局の山は、アソシエーションまで書く
+        let plan = station_plan("", 0, &st("", "nn-108", &[], "", ""));
+        assert_eq!(plan.errors.len(), 1);
+        assert_eq!(plan.errors[0].field, "sota");
     }
 
     #[test]

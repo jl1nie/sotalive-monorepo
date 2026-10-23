@@ -38,7 +38,6 @@ const ja = {
   'notice.undo': '元に戻す',
   'landscape.title': '縦向きにしてお使いください',
   'landscape.hint': '書いたログは、そのまま残っています。ホーム画面に追加して開くと、縦向きに固定されます(Android)',
-  'editor.placeholder': 'mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 JA1XYZ',
   'clock.label': '時刻と運用先',
 
   // QSO一覧
@@ -303,7 +302,6 @@ const en: Record<MessageKey, string> = {
   'notice.undo': 'Undo',
   'landscape.title': 'Please turn your phone upright',
   'landscape.hint': 'Your log is still here. Open it from the home screen to keep it upright (Android)',
-  'editor.placeholder': 'mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 JA1XYZ',
   'clock.label': 'Time and location',
 
   'list.errorsTitle': '{qsos} QSO / {errors} errors',

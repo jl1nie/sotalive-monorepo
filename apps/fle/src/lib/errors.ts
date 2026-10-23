@@ -35,6 +35,7 @@ const JA: Record<string, (args: Args) => string> = {
   unexpected_keyword: (x) => `この位置に置けないキーワードです: ${a(x, 0)}`,
   unexpected_word: (x) => `この位置に置けない語です: ${a(x, 0)}`,
   missing_callsign: () => 'QSOの行には、コールサインが必要です',
+  missing_association: (x) => `山のアソシエーションを書いてください(例: JA/${a(x, 0)})。アソシエーションを省けるのは、自分の山(mysota)があるときだけです`,
   unclosed_comment: () => '括弧が閉じていません',
   missing_operand: (x) => `${a(x, 0)} の値(${OPERAND_JA[a(x, 0)] ?? '値'})がありません`,
   invalid_operand: (x) => `${a(x, 0)} の値が正しくありません: ${a(x, 1)}`,
