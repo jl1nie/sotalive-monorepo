@@ -31,15 +31,15 @@ interface Options {
 type Json = Record<string, unknown>
 const str = (v: unknown): string => (typeof v === 'string' ? v : '')
 
-/** sotaapp2 の応答から、メモの本文(`JCC 100103 港区`、`JCG 17008 南都留郡 富士河口湖町`)。どちらもなければ空 */
+/** sotaapp2 の応答から、メモの本文(`JCC 100103 港区`、`JCC 0101 区 010101 札幌市 中央区`、`JCG 17008 南都留郡 富士河口湖町`)。どちらもなければ空 */
 export function memoOf(r: Json): string {
   const jcc = str(r.jccCode)
   const jcg = str(r.jcgCode)
   const muni = str(r.municipality)
   if (jcc) {
-    // 政令市は、区の番号も(`JCC 0101 札幌市 中央区 010101`)
+    // 政令市は、区の番号も、住所の前に(`JCC 0101 区 010101 札幌市 中央区`)。ラベルは短く(ログの行に収める)
     const ward = str(r.wardCode)
-    return [`JCC ${jcc}`, muni || str(r.jccText), ward].filter(Boolean).join(' ')
+    return [`JCC ${jcc}`, ward && `区 ${ward}`, muni || str(r.jccText)].filter(Boolean).join(' ')
   }
   if (jcg) return [`JCG ${jcg}`, str(r.jcgText), muni].filter(Boolean).join(' ')
   return ''
