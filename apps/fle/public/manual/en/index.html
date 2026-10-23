@@ -110,7 +110,7 @@
 
 <h3>First: choose a plan</h3>
 <ol>
-  <li>Menu → "New log".</li>
+  <li>Menu → "New log". The log you are writing is closed and you start from an empty log (Undo in the menu brings it back). Your callsign is filled in from last time.</li>
   <li>Under "Choose a plan", tap today's plan. Your callsign, summit, grid and so on are filled in.</li>
   <li>Press "Write to log". Lines like these are written at the top of the log:</li>
 </ol>
@@ -121,7 +121,7 @@ rig KX2+EFHW
 qslmsg $mysota $rig
 # JCC 1307 秩父市</code></pre>
 <p>You can also skip plans and type your callsign and summit on the spot (suggestions appear as you type a name).</p>
-<p><b>The last <code>#</code> line is the memo field (JCC/JCG etc.).</b> The location screen and plans have a "Memo" field. Choose a summit or park from the suggestions, or find your position with 📍, and JCC/JCG is looked up while online (Japan only; from the Geospatial Information Authority of Japan and the backend). You can check and fix it before writing (for example when the summit is on a border). If you write with the field empty, it is looked up from the summit or park. Plans keep a memo too, so look it up at home and it works without signal on the summit.</p>
+<p><b>The last <code>#</code> line is the memo field (JCC/JCG etc.).</b> The location screen and plans have a "Memo" field. Choose a summit or park from the suggestions (typing the same reference works too), or find your position with 📍, and JCC/JCG is looked up while online (Japan only; from the Geospatial Information Authority of Japan and the backend; a memo you typed yourself is not replaced just by typing a reference). You can check and fix it before writing (for example when the summit is on a border). If you write with the field empty, it is looked up from the summit or park. Plans keep a memo too, so look it up at home and it works without signal on the summit.</p>
 <p>The memo is written as a <code>#</code> line (a comment), so it is not output. When the screen opens, the field shows the memo in effect at that point. Change it and write, and a new <code>#</code> line is added (the old memo stays). A <code>#</code> line you write yourself is a memo too.</p>
 
 <h3>Write QSOs</h3>
@@ -156,7 +156,7 @@ ssb
 <ul>
   <li>Tap a <b>suggestion</b> shown at the bottom of the editor to insert a keyword, band or mode (with full keys, suggestions appear over the green bar).</li>
   <li>With "Digit key row" on in the settings, a row of digits appears above the keyboard (handy for callsigns such as JA1ABC/1; on from the start on touch devices). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
-  <li>If you move, use Menu → "New log" to switch the location for the QSOs from there on.</li>
+  <li>If you move, use Menu → "Change location" to switch the location for the QSOs from the cursor line on (in the same log).</li>
   <li>The QSO list can also be opened from Menu → "QSO list".</li>
   <li>On a PC, <b>Ctrl+Z (⌘Z on a Mac) undoes the last edit</b>, in any layout, the same way as ↶ in full keys (including changes made by confirming or picking a suggestion).</li>
 </ul>
@@ -198,6 +198,7 @@ ssb
   <li><b>Drag the handle on the top edge of the keyboard up or down to change the key height</b> (from square up to 1.5 times). Taller keys are easier to hit, for example with gloves. The log and the display above it use the rest of the height. Each device remembers it.</li>
   <li>Hold ⌫ to keep deleting. Swipe left or right <b>from space, ← or →</b> to move the cursor one character at a time (see <a href="#swipe">Swipe</a>). Letter keys never turn into a swipe, even if your finger slides while typing fast.</li>
   <li>For <b>Japanese</b> text (messages such as <code>&lt;Yamada-san&gt;</code>, remarks, <code>qslmsg</code>), tap 🌐 to switch to the phone's keyboard. When done, tap "Back to full keys" at the bottom. Enter on the phone's keyboard works the same as ↵.</li>
+  <li>On screens such as "New log", "Change location" and "Plans", <b>the callsign, SOTA, POTA, WWFF, grid and memo fields are typed with the same on-screen keyboard</b> (letters start in capitals). ↵ moves to the next field and closes the keyboard on the last one. For Japanese in the memo, tap 🌐 to switch to the phone's keyboard. Other fields for Japanese text, such as plan names, use the phone's keyboard.</li>
 </ul>
 
 <h3 id="fix">Fix a QSO</h3>

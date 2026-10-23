@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Crosshair } from 'lucide-react'
 import type { FieldError } from '@/lib/fle'
 import type { Values } from '@/lib/stationValues'
@@ -35,8 +35,11 @@ export function StationFields({
   onChange: (values: Values) => void
   errors: FieldError[]
   idPrefix?: string
-  /** 山・公園を候補から選んだとき、現在地が取れたときに、その緯度・経度を知らせる(JCC・JCG のメモを引く) */
-  onPlace?: (pos: { lat: number; lon: number }) => void
+  /**
+   * 山・公園を候補から選んだとき、現在地が取れたときに、その緯度・経度を知らせる(JCC・JCG のメモを引く)。
+   * 候補を押さずに、打った番号が候補と同じになったときは `typed`(手で書いたメモは上書きしない)
+   */
+  onPlace?: (pos: { lat: number; lon: number }, typed?: boolean) => void
 }) {
   const t = useT()
   // いま入力している欄(候補を出す欄)と、現在地の近くの一覧
@@ -49,9 +52,22 @@ export function StationFields({
 
   const set = (key: Key, value: string) => onChange({ ...values, [key]: value })
 
+  // 打った番号が候補と同じなら、選んだときと同じく JCC・JCG を引く(候補を押さなくても、メモが番号に連動する)。
+  // 同じ番号では、1回だけ
+  const notified = useRef('')
+  const typedHit = (r: SearchResult | null, code: string) =>
+    r?.status === 'ok' ? r.items.find((c) => c.code.toUpperCase() === code.trim().toUpperCase()) : undefined
+  const hit = typedHit(sotaSearch.result, values.sota) ?? typedHit(potaSearch.result, lastToken(values.pota))
+  useEffect(() => {
+    if (!hit || notified.current === hit.code) return
+    notified.current = hit.code
+    if (Number.isFinite(hit.lat) && Number.isFinite(hit.lon)) onPlace?.({ lat: hit.lat, lon: hit.lon }, true)
+  }, [hit, onPlace])
+
   /** 候補を選ぶ。山は SOTA の欄に。公園は入力中の語を置き換え、対応する WWFF も(空なら)入れる。
    * グリッドも、空なら候補のものを入れる(どれも、あとから編集できる) */
   const pick = (c: RefCandidate) => {
+    notified.current = c.code
     onChange({
       ...values,
       ...(c.kind === 'sota'

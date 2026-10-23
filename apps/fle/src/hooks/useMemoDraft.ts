@@ -12,8 +12,12 @@ export function useMemoDraft(initial: string) {
   // 最後の問い合わせの番号(古い問い合わせの結果を捨てる)
   const seq = useRef(0)
 
-  /** 山・公園・現在地の緯度・経度から引く。引けなければ(日本の外・オフライン)、そのまま */
-  const lookup = async (pos: { lat: number; lon: number }) => {
+  /**
+   * 山・公園・現在地の緯度・経度から引く。引けなければ(日本の外・オフライン)、そのまま。
+   * `typed`(候補を押さずに番号を打ったとき)なら、手で書いたメモは上書きしない
+   */
+  const lookup = async (pos: { lat: number; lon: number }, typed = false) => {
+    if (typed && touched) return
     const n = ++seq.current
     setLooking(true)
     const found = await lookupMemo(pos.lat, pos.lon)
