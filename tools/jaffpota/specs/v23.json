@@ -1,0 +1,47 @@
+{
+  "version": 23,
+  "base": {
+    "file": "jaffpota-annotated-v22.json",
+    "sha256": "205f560a3fac50874fa7b97d8a479988364bdb02b43c1bda571bbff3f0fa3134",
+    "fallback_url": "https://myact.sotalive.net/json/jaffpota-annotated-v22.json",
+    "expect": {"null_geometries": 298, "pota": 393, "national_pota": 32, "other_pota": 361}
+  },
+  "nps": {
+    "source": "国立公園区域 GIS データ(環境省生物多様性センター)。http://gis.biodic.go.jp/BiodicWebGIS/Questionnaires?kind=nps&filename=nps.zip(2026-10-17 ダウンロード。2026-10 時点でホストは消滅)",
+    "published": "2025-04-28",
+    "path": "inputs/nps-2025-04-28/nps.zip",
+    "sha256": "2e8589185046e0dcca24dfafe0b6155f872d2909ed9e9cb451a4abee7ca4abc3",
+    "encoding": "utf-8",
+    "crs": "EPSG:4612",
+    "expect": {"records": 15293, "parks": 35}
+  },
+  "national_suffix": "国立公園",
+  "new_parks": {
+    "屋久島": {"POTA": "JP-0030", "JAFF": "JAFF-0090", "PID": "030"},
+    "やんばる": {"POTA": "JP-0032", "JAFF": "JAFF-0097", "PID": "032"},
+    "慶良間諸島": {"POTA": "JP-0033", "JAFF": "JAFF-0092", "PID": "033"}
+  },
+  "subtract": [
+    {"from": "JP-0156", "parks": ["やんばる", "慶良間諸島"], "buffer_m": 0.1}
+  ],
+  "estimate": {"tie_buffer_m": 10, "distance_decimals": 6, "min_area_m2": 1},
+  "expect": {
+    "pota": 396,
+    "national_pota": 35,
+    "geometries": 1441,
+    "polygons": 1397,
+    "multipolygons": 44,
+    "estimated_parks": 10,
+    "dropped_holes": 2812
+  },
+  "remove_after_generate": {
+    "pota": ["JP-0104"],
+    "reason": "日高山脈襟裳国定公園。日高山脈襟裳十勝国立公園(JP-2107)へ格上げされ、DB でも inactive。量子化の基準(transform)は変えずに除く"
+  },
+  "expect_final": {"pota": 395, "national_pota": 35, "geometries": 1439, "polygons": 1395, "multipolygons": 44},
+  "reference_sha256": {
+    "generated": "b2ce4ef07fb9ce762ed6a55b6e83b3f2f1e447e0e5e994fa1305e57348b90e88",
+    "final": "2a7ce58acef978ebd25cb31c04d6a8051788b3d8e917026c12e68c0621fb65c6",
+    "note": "2026-10-17 の生成の値。このツールの出力は区域としては同じだが(jaffpota.compare で対称差 0.002 m²)、リングの始点・部分の順が違うためハッシュは一致しない"
+  }
+}

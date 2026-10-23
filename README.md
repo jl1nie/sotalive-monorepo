@@ -65,6 +65,7 @@ packages/shared/ 旧版が共有する共通アセット(css, js, img など)
 functions/      Cloudflare Pages Functions(プロジェクト sotalive 用)
 pages/fle/      FLE プロジェクト用の設定と Functions
 scripts/        assemble.sh, build-static-projects.sh
+tools/jaffpota/ 公園区域 TopoJSON の生成・版管理・検証(Python。uv)
 .github/        CI/CD(workflows/ci.yml)と composite action
 docs/           ドキュメント
 dist, dist-*    ビルドの出力(git 管理外)
@@ -97,6 +98,7 @@ pnpm --filter @sotalive/myact dev     # Vite の既定のポート
 | [docs/apps/logconv.md](docs/apps/logconv.md) | LogConverter |
 | [docs/apps/myact.md](docs/apps/myact.md) | MyActivation |
 | [docs/apps/myqth.md](docs/apps/myqth.md) | MyQTH |
+| [docs/park-areas.md](docs/park-areas.md) | 公園区域データ(jaffpota-annotated-vN.json)の再生成・版の更新・DB とのずれの直し方 |
 | [docs/fle-grammar.md](docs/fle-grammar.md) | FLE 形式の文法 |
 | [docs/fle-protocol.md](docs/fle-protocol.md) | FLE のコアと画面のあいだの取り決め |
 
