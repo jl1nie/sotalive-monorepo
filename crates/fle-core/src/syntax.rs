@@ -1291,7 +1291,10 @@ mod tests {
         assert!(matches!(classify("nn-123"), Class::Sota(c) if c == "NN-123"));
         assert!(matches!(classify("JA-1234"), Class::Pota(_)));
         assert!(matches!(classify("K-0001"), Class::Pota(_)));
-        assert_eq!(full_sota("NN-123", "JA/NN-108").as_deref(), Some("JA/NN-123"));
+        assert_eq!(
+            full_sota("NN-123", "JA/NN-108").as_deref(),
+            Some("JA/NN-123")
+        );
         assert_eq!(full_sota("LD-001", "G/LD-002").as_deref(), Some("G/LD-001"));
         assert_eq!(full_sota("JA/TK-001", "").as_deref(), Some("JA/TK-001"));
         // 自局の山がなければ、アソシエーションを補わない
