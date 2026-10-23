@@ -31,10 +31,10 @@ const DOUBLE: Record<string, string> = { '-': ',', '/': '.' }
 const DOUBLE_TAP = 400
 
 /**
- * 長押しで、別の文字になるキー(キーには書かない。押している間の吹き出しで見せる)。`#` はメモ・注釈の行に使う。
- * 数字は続けて2回押す(599 など)ので、長押しにする
+ * 長押しで、別の文字になるキー(キーには書かない。押している間の吹き出しで見せる)。`#` はメモ・注釈の行だけに使うので、
+ * 続けて書けるよう、空白も入れる。数字は続けて2回押す(599 など)ので、長押しにする
  */
-const LONG: Record<string, string> = { '3': '#' }
+const LONG: Record<string, string> = { '3': '# ' }
 /** 長押しとみなす長さ(ms)。寒いところや手袋で、ゆっくり押しても数字が入るよう、少し長め */
 const LONG_PRESS = 500
 
@@ -186,7 +186,7 @@ export function FullKeyboard({
           aria-hidden="true"
           className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-20 min-w-12 h-14 px-2 rounded-xl border-2 border-gray-400 dark:border-gray-500 bg-white dark:bg-gray-700 shadow-lg flex items-center justify-center font-mono text-3xl font-bold pointer-events-none ${caps ? 'uppercase' : ''}`}
         >
-          {held === k ? LONG[k] : k}
+          {held === k ? LONG[k].trim() : k}
         </span>
       )}
     </button>
