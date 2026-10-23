@@ -3,8 +3,11 @@
 規則は docs/park-areas.md の「区域を生成する」と、版ごとの仕様ファイル(specs/vN.json)に従う。
 
     uv run python -m jaffpota.generate specs/v23.json --out out/ [--strict] [--base 旧版.json] [--nps nps.zip]
+    uv run python -m jaffpota.generate specs/v24.json --out out/ --a10 A10-10.geojson
 
 --base を省くと packages/shared/common/json/ の仕様の旧版を、--nps を省くと仕様の path(tools/jaffpota からの相対)を読む。
+仕様に others.source = "a10" があるとき(v24 以降)は、国定・県立等を旧版の形ではなく国土数値情報 A10 の原形から作る。
+A10 は再配布できない(非商用)ので repo に置かず、--a10 か環境変数 JAFFPOTA_A10 でパスを渡す。
 
 --strict は、複数区分の公園に未割当・重複があれば推定割当をせずに止める(最初の確認用)。
 出力は out/ の jaffpota-annotated-vN.json、report.json(診断)、problems.geojson(未割当・重複の形状)。
@@ -13,6 +16,7 @@ import argparse
 import hashlib
 import io
 import json
+import os
 import sys
 import time
 import zipfile
@@ -166,6 +170,105 @@ def load_nps(spec, raw):
     return {name: union(gs) for name, gs in by_name.items()}, n
 
 
+def load_a10(spec, raw):
+    """国土数値情報 自然公園地域(A10)の GeoJSON。国立公園(A10_003 = 1)を除く (PID, geometry) の一覧を返す。"""
+    s = spec["others"]
+    check(sha256(raw) == s["sha256"], f"A10 のハッシュが仕様と違う: {sha256(raw)}")
+    fc = json.loads(raw)
+    crs = (fc.get("crs") or {}).get("properties", {}).get("name", "")
+    check(crs.endswith(s["crs"].split(":")[-1]), f"A10 の座標系が {s['crs']} でない: {crs}")
+    tr = Transformer.from_crs(s["crs"], OUT_CRS, always_xy=True)
+    out, n, invalid = [], 0, 0
+    for f in fc["features"]:
+        n += 1
+        q = f["properties"]
+        if q["A10_003"] == "1" or not f.get("geometry"):
+            continue
+        g = shape(f["geometry"])
+        g = shapely.transform(g, lambda c: np.column_stack(tr.transform(c[:, 0], c[:, 1])))
+        invalid += not g.is_valid
+        g = valid(g)
+        if g is not None:
+            out.append((q["A10_005"], g))
+    e = s.get("expect", {})
+    check(n == e.get("records", n), f"A10 の地物が {n} 件(期待 {e.get('records')})")
+    return out, n, invalid
+
+
+def rebuild_others(spec, a10, drawable, nps, national_pota, proj, report):
+    """国定・県立等を A10 の原形から作る。
+
+    - 属性(JAFF・PID・POTA・NAME)は旧版から取る。A10 の地物は、同じ PID の旧版の地物のうち最も重なるものの属性にする。
+      重ならない地物(旧版の簡略化で消えた小島など)は、同じ PID の最も近い旧版の地物の属性にする。
+      旧版に同じ PID がない地物(国立公園に編入・格上げされた公園など)は除く。
+    - 同じ属性の地物は一つの geometry に統合する。
+    - 国立公園(Shape の全区域)と重なる部分を差し引く。2010 年のあとに国立公園へ編入された区域を除くため。
+    - A10 に形がない旧版の公園は、旧版の形をそのまま残す。
+    """
+    s = spec["others"]
+    base = [(p, valid(g)) for p, g in drawable if p["POTA"] not in national_pota]
+    base = [(p, g) for p, g in base if g is not None]
+    by_pid = {}
+    for p, g in base:
+        by_pid.setdefault(p["PID"], []).append(({k: p[k] for k in ("JAFF", "NAME", "PID", "POTA")}, g))
+    groups, how, dropped = {}, {"overlap": 0, "nearest": 0}, {}
+    for pid, g in a10:
+        cands = by_pid.get(pid)
+        if not cands:
+            dropped[pid] = dropped.get(pid, 0) + 1
+            continue
+        inter = [g.intersection(c).area for _, c in cands]
+        if max(inter) > 0:
+            p = cands[int(np.argmax(inter))][0]
+            how["overlap"] += 1
+        else:
+            p = min(cands, key=lambda c: g.distance(c[1]))[0]
+            how["nearest"] += 1
+        groups.setdefault((p["POTA"], p["JAFF"], p["PID"], p["NAME"]), (p, []))[1].append(g)
+    kept_base = []
+    have = {k[0] for k in groups}
+    for p, g in base:
+        if p["POTA"] not in have:
+            q = {k: p[k] for k in ("JAFF", "NAME", "PID", "POTA")}
+            groups.setdefault((q["POTA"], q["JAFF"], q["PID"], q["NAME"]), (q, []))[1].append(g)
+            kept_base.append(p["POTA"])
+    natl = [proj.lonlat(proj.metric(g).buffer(s["subtract_buffer_m"])) for g in nps.values()]
+    tree = shapely.STRtree(natl)
+    out, removed = [], {}
+    for key in sorted(groups):
+        p, gs = groups[key]
+        g = union(gs)
+        hit = tree.query(g, predicate="intersects")
+        if len(hit):
+            before = proj.area(g)
+            g = difference(g, union([natl[i] for i in hit]))
+            r = before - proj.area(g)
+            if r > spec["estimate"]["min_area_m2"]:
+                removed[p["POTA"]] = removed.get(p["POTA"], 0.0) + r
+        if g is None:
+            continue
+        out.append((p, g))
+    # 国定・県立等どうしの重なり(原典のまま。直さずに記録だけする)
+    gt = shapely.STRtree([g for _, g in out])
+    overlaps = []
+    for i, (p, g) in enumerate(out):
+        for j in gt.query(g, predicate="intersects"):
+            if j <= i or out[j][0]["POTA"] == p["POTA"]:
+                continue
+            a = proj.area(intersection(g, out[j][1]))
+            if a > spec["estimate"]["min_area_m2"]:
+                overlaps.append({"a": p["POTA"], "b": out[j][0]["POTA"], "m2": a})
+    report["others"] = {
+        "source": s["source_note"],
+        "assigned": how,
+        "dropped_pid": dict(sorted(dropped.items())),
+        "kept_base_shape": sorted(set(kept_base)),
+        "national_overlap_removed_m2": dict(sorted(removed.items())),
+        "overlaps_between_others": sorted(overlaps, key=lambda o: -o["m2"]),
+    }
+    return out
+
+
 # ---- 区域の組み立て ----
 
 def match_parks(spec, nps, drawable):
@@ -283,7 +386,7 @@ def national(spec, name, pota, old, new, proj, strict, report, problems):
     return [(props[c], parts[c]) for c in combos if parts[c] is not None]
 
 
-def build(spec, base_raw, nps_raw, strict=False):
+def build(spec, base_raw, nps_raw, strict=False, a10_raw=None):
     """(topology または None, report, problems) を返す。strict で止まったときの topology は None。"""
     proj = Projector()
     report = {"spec_version": spec["version"], "inputs": {
@@ -304,7 +407,14 @@ def build(spec, base_raw, nps_raw, strict=False):
     if "national_pota" in e:
         check(len(old_national) == e["national_pota"], f"旧版の国立公園が {len(old_national)} POTA(期待 {e['national_pota']})")
 
-    features = retained(spec, nps, drawable, national_pota, proj, report)
+    if spec.get("others", {}).get("source") == "a10":
+        check(a10_raw is not None, "仕様は国定・県立等を A10 から作る。--a10 か JAFFPOTA_A10 で A10 の GeoJSON を渡すこと")
+        a10, records, invalid = load_a10(spec, a10_raw)
+        log(f"A10: {records} 地物、国立公園以外 {len(a10)}(修復 {invalid})")
+        report["inputs"]["a10"] = {"source": spec["others"]["source_note"], "sha256": sha256(a10_raw), "records": records, "invalid": invalid}
+        features = rebuild_others(spec, a10, drawable, nps, national_pota, proj, report)
+    else:
+        features = retained(spec, nps, drawable, national_pota, proj, report)
     log(f"国定・県立等: {len(features)} geometry")
     if "other_pota" in e:
         n = len({p["POTA"] for p, _ in features})
@@ -312,6 +422,11 @@ def build(spec, base_raw, nps_raw, strict=False):
     stopped = False
     for name in sorted(nps):
         pota, old = matched[name]
+        if spec.get("national_from_base"):
+            # 旧版の国立公園がすでにこの Shape から作られている(v24 以降)。区分の形を旧版のまま引き継ぐ
+            features.extend(sorted(((p, valid(g)) for p, g in old), key=lambda e: (e[0]["JAFF"], e[0]["PID"])))
+            report["parks"].append({"name": name + spec["national_suffix"], "POTA": pota, "from_base": len(old)})
+            continue
         out = national(spec, name, pota, old, nps[name], proj, strict, report, problems)
         log(f"{name}: {pota} {0 if out is None else len(out)} geometry")
         if out is None:
@@ -323,6 +438,17 @@ def build(spec, base_raw, nps_raw, strict=False):
         report["stopped"] = "strict: 複数区分の公園に未割当・重複がある。problems.geojson を地図で確認すること"
         return None, report, problems
 
+    tiny = spec.get("drop_parts_below_m2")
+    if tiny:
+        # 細片(数 mm の楔など)は量子化で外周が潰れるので、符号化の前に除く
+        kept, n = [], 0
+        for p, g in features:
+            parts = [q for q in topo.polygons_of(g) if proj.area(q) >= tiny]
+            n += len(topo.polygons_of(g)) - len(parts)
+            if parts:
+                kept.append((p, parts[0] if len(parts) == 1 else MultiPolygon(parts)))
+        report["dropped_tiny_parts"] = {"below_m2": tiny, "parts": n, "geometries": len(features) - len(kept)}
+        features = kept
     features = [({**p, "UID": str(i)}, g) for i, (p, g) in enumerate(features, 1)]
     t, dropped = topo.encode(features)
     log(f"符号化: geometry {len(features)}、潰れた穴 {dropped}")
@@ -389,12 +515,15 @@ def main(argv=None):
     ap.add_argument("--nps", type=Path, help="環境省の国立公園 Shape ZIP(既定: 仕様の path)")
     ap.add_argument("--out", type=Path, required=True, help="出力ディレクトリ")
     ap.add_argument("--strict", action="store_true", help="未割当・重複があれば推定割当をせずに止める")
+    ap.add_argument("--a10", type=Path, help="国土数値情報 A10 の GeoJSON(仕様が others.source = a10 のとき。既定: 環境変数 JAFFPOTA_A10)")
     a = ap.parse_args(argv)
     spec = json.loads(a.spec.read_text(encoding="utf-8"))
     base = a.base or default_base(spec)
     nps = a.nps or default_nps(spec)
     try:
-        t, report, problems = build(spec, base.read_bytes(), nps.read_bytes(), strict=a.strict)
+        a10 = a.a10 or (Path(os.environ["JAFFPOTA_A10"]) if os.environ.get("JAFFPOTA_A10") else None)
+        t, report, problems = build(spec, base.read_bytes(), nps.read_bytes(), strict=a.strict,
+                                    a10_raw=a10.read_bytes() if a10 else None)
     except (SpecError, topo.CollapsedExterior) as e:
         print(f"生成できません: {e}", file=sys.stderr)
         return 2

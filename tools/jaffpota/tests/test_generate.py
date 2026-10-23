@@ -189,5 +189,111 @@ class TestRules(unittest.TestCase):
             run(nps=nps, spec=spec)
 
 
+# ---- v24 以降: 国定・県立等を A10 の原形から作り、国立公園は旧版の区分をそのまま引き継ぐ ----
+
+def a10_geojson(features):
+    """features は (PID, 区分 A10_003, Polygon) の一覧。"""
+    return json.dumps({
+        "type": "FeatureCollection",
+        "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::4612"}},
+        "features": [{"type": "Feature", "properties": {"A10_003": cat, "A10_005": pid},
+                      "geometry": {"type": "MultiPolygon", "coordinates": [[list(map(list, poly.exterior.coords))]]}}
+                     for pid, cat, poly in features],
+    }).encode("utf-8")
+
+
+A10_OLD = [
+    (props("JP-0500", "JAFF-0500", "500", "県立公園"), box(140.00, 36.00, 140.01, 36.01)),
+    (props("JP-0010", "JAFF-0010", "010", "テスト国立公園"), box(140.10, 36.00, 140.11, 36.01)),
+    (props("JP-0010", "JAFF-0011", "011", "テスト国立公園"), box(140.11, 36.00, 140.12, 36.01)),
+    (props("JP-0600", "JAFF-0600", "600", "国定公園"), box(140.125, 36.00, 140.14, 36.01)),
+    (props("JP-0800", "JAFF-0800", "800", "形なし県立公園"), box(140.50, 36.00, 140.51, 36.01)),
+]
+A10_NPS = [("テスト", "普通地域", box(140.10, 36.00, 140.12, 36.01))]
+A10 = [
+    ("500", "3", box(140.00, 36.00, 140.0105, 36.01)),   # 旧版と重なる → JP-0500。形は原形
+    ("500", "3", box(140.02, 36.00, 140.021, 36.001)),   # 旧版で消えた小島 → 同じ PID の最も近い JP-0500
+    ("600", "2", box(140.115, 36.00, 140.14, 36.01)),    # 国立公園と重なる部分(140.115〜140.12)は差し引く
+    ("700", "3", box(141.00, 36.00, 141.01, 36.01)),     # 旧版にない PID → 除く
+    ("010", "1", box(140.10, 36.00, 140.12, 36.02)),     # A10 の国立公園は使わない
+]
+A10_SPEC = {
+    "version": 98,
+    "base": {"file": "base.json", "sha256": None, "expect": {"null_geometries": 1, "pota": 4, "national_pota": 1, "other_pota": 3}},
+    "nps": {"source": "test", "published": "2000-01-01", "sha256": None, "encoding": "utf-8", "crs": "EPSG:4612",
+            "expect": {"records": 1, "parks": 1}},
+    "others": {"source": "a10", "source_note": "test", "sha256": None, "crs": "EPSG:4612", "subtract_buffer_m": 0.1,
+               "expect": {"records": 5}},
+    "national_suffix": "国立公園",
+    "national_from_base": True,
+    "drop_parts_below_m2": 1,
+    "new_parks": {},
+    "subtract": [],
+    "estimate": {"tie_buffer_m": 10, "distance_decimals": 6, "min_area_m2": 1},
+    "expect": {},
+}
+
+
+def run_a10(a10=A10, spec=A10_SPEC, with_a10=True):
+    base, z, g = base_topo(A10_OLD), nps_zip(A10_NPS), a10_geojson(a10)
+    spec = copy.deepcopy(spec)
+    spec["base"]["sha256"] = hashlib.sha256(base).hexdigest()
+    spec["nps"]["sha256"] = hashlib.sha256(z).hexdigest()
+    spec["others"]["sha256"] = hashlib.sha256(g).hexdigest()
+    return generate.build(spec, base, z, a10_raw=g if with_a10 else None)
+
+
+class TestBuildFromA10(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.t, cls.report, cls.problems = run_a10()
+        cls.out = topo.decode(cls.t)
+        cls.proj = generate.Projector()
+
+    def test_order(self):
+        self.assertEqual([(p["POTA"], p["JAFF"]) for p, _ in self.out], [
+            ("JP-0500", "JAFF-0500"), ("JP-0600", "JAFF-0600"), ("JP-0800", "JAFF-0800"),
+            ("JP-0010", "JAFF-0010"), ("JP-0010", "JAFF-0011"),
+        ])
+
+    def test_shape_from_a10_and_islet_merged(self):
+        (g,) = [g for p, g in self.out if p["POTA"] == "JP-0500"]
+        want = box(140.00, 36.00, 140.0105, 36.01).union(box(140.02, 36.00, 140.021, 36.001))
+        self.assertLess(self.proj.area(g.symmetric_difference(want)), 1)
+        self.assertEqual(self.report["others"]["assigned"], {"overlap": 2, "nearest": 1})
+
+    def test_national_overlap_subtracted(self):
+        (g,) = [g for p, g in self.out if p["POTA"] == "JP-0600"]
+        self.assertLess(self.proj.area(g.symmetric_difference(box(140.12, 36.00, 140.14, 36.01))), 200)  # 0.1 m の緩衝の分だけ違う
+        self.assertGreater(self.report["others"]["national_overlap_removed_m2"]["JP-0600"], 400_000)
+
+    def test_unknown_pid_dropped_and_base_kept_when_no_a10(self):
+        self.assertEqual(self.report["others"]["dropped_pid"], {"700": 1})
+        self.assertEqual(self.report["others"]["kept_base_shape"], ["JP-0800"])
+
+    def test_national_parts_taken_from_base(self):
+        parts = {p["JAFF"]: g for p, g in self.out if p["POTA"] == "JP-0010"}
+        self.assertLess(self.proj.area(parts["JAFF-0010"].symmetric_difference(box(140.10, 36.00, 140.11, 36.01))), 1)  # 量子化 2 回分
+        self.assertLess(self.proj.area(parts["JAFF-0011"].symmetric_difference(box(140.11, 36.00, 140.12, 36.01))), 1)
+
+    def test_a10_required(self):
+        with self.assertRaisesRegex(generate.SpecError, "A10"):
+            run_a10(with_a10=False)
+
+    def test_a10_hash_checked(self):
+        spec = copy.deepcopy(A10_SPEC)
+        base, z, g = base_topo(A10_OLD), nps_zip(A10_NPS), a10_geojson(A10)
+        spec["base"]["sha256"] = hashlib.sha256(base).hexdigest()
+        spec["nps"]["sha256"] = hashlib.sha256(z).hexdigest()
+        spec["others"]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(generate.SpecError, "A10 のハッシュ"):
+            generate.build(spec, base, z, a10_raw=g)
+
+    def test_tiny_parts_dropped_before_encoding(self):
+        sliver = Polygon([(140.03, 36.00), (140.03000001, 36.00), (140.03, 36.00000001)])
+        _, report, _ = run_a10(a10=A10 + [("500", "3", sliver)], spec={**A10_SPEC, "others": {**A10_SPEC["others"], "expect": {"records": 6}}})
+        self.assertEqual(report["dropped_tiny_parts"]["parts"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

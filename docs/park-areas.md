@@ -31,6 +31,7 @@ AI に作業させるときは、この文書全体を渡し、次のように�
 | コマンド | 用途 |
 |---|---|
 | `uv run python -m jaffpota.generate specs/vN.json --out out/ [--strict] [--base 旧版.json] [--nps nps.zip]` | 旧版と環境省 Shape から新しい版を生成する。`out/` に JSON、`report.json`(診断)、`problems.geojson`(未割当・重複の形状)。`--base` を省くと共通アセットの旧版、`--nps` を省くと仕様の `path` を読む |
+| `uv run python -m jaffpota.generate specs/v24.json --out out/v24 --a10 A10-10.geojson` | v24 以降。国定・県立等を国土数値情報 A10 の原形から作る(下の「v24: 国定・県立等を原形にする」) |
 | `uv run python -m jaffpota.compare a.json b.json [--ignore-pota JP-xxxx]` | 二つの版を区域として比べる。geometry が対応すれば対称差の面積、しなければ POTA ごとの面積の差 |
 | `uv run python -m jaffpota.release` | 最新版と、読む側の参照の版を表示する |
 | `uv run python -m jaffpota.release bump new.json` | `new.json` を次の版として置き、参照を差し替えて検証を実行する |
@@ -106,6 +107,10 @@ v22 の国立公園 32 件について、同名の新区域との差集合や旧
 
 > 国立公園区域 GIS データ(環境省生物多様性センター)(2026-10-17 ダウンロード)を使用し、JL1NIE(sotalive.net)が加工したものである。
 
+v24 以降の国定・県立等は、国土数値情報を加工したものです。表示するときは次のように書きます。
+
+> 「国土数値情報(自然公園地域データ)」(国土交通省)(https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-A10-v3_1.html)を加工して作成
+
 MyACT の画面には、まだこの表示がありません(下の「未完のこと」)。
 
 ## 生成の規則
@@ -142,6 +147,33 @@ v22 にない 3 公園は、次の値で追加します(`specs/v23.json` の `ne
 
 診断結果(`report.json`)には、入力の取得元・日付・ハッシュ、公園別の新旧面積、未割当と重複の面積、推定割当の面積、JP-0156 から除いた面積、修復した旧図形の数と除いた図形、出力の件数、潰れた穴の件数が入ります。
 未割当と重複の形状は `problems.geojson`(FeatureCollection)で、各 Feature に `POTA`、`NAME`、問題の種類(`kind`: `unassigned` か `overlap`)、面積が付きます。
+
+## v24: 国定・県立等を原形にする
+
+v23 までの国定・県立等は、v22 を簡略化したままの形でした(元は国土数値情報 自然公園地域 A10-10。山頂から 1 km 以内の境界で、ずれの中央値 4.5 m、99% が 44 m 以内、最大 897 m)。
+v22 には形が空(type:null)の地物が 298 件あり、簡略化で消えた小島が多く含まれます。2010 年のあとに国立公園へ編入された区域も、JP-0156 のほかは差し引かれずに国立公園と重なっていました。
+SOTA の山頂ごとの POTA 判定(sotaapp2)にはこの誤差が効くので、v24 では国定・県立等を A10 の原形から作り直します。仕様は `specs/v24.json` です。
+
+```bash
+cd tools/jaffpota
+uv run python -m jaffpota.generate specs/v24.json --out out/v24 --a10 /path/to/A10-10.geojson
+JAFFPOTA_A10=/path/to/A10-10.geojson uv run python -m unittest tests.test_reproduce -v   # 件数と、国立公園が v23 と同じこと
+```
+
+**A10 は repo に置きません。** 国土数値情報の自然公園地域データは「非商用」で、複製物の再配布ができません(国土数値情報ダウンロードサイトの利用約款)。この repo は公開なので、入力はパスで渡し、仕様にはハッシュだけを書きます。
+固定版は都道府県別のファイルを QGIS で 1 つにまとめた GeoJSON(`A10-10.geojson`、1,949 地物、JGD2000 経緯度、SHA-256 `dd5c9e2b828bc1d1d8dd7aa0157b6349385259c0b1e9f5e1edeb48c9489c29da`)です。
+
+規則(v23 の規則との違い):
+
+1. 旧版は v23。国立公園は、v23 の区分(すでに 2025 年の Shape から作ったもの)をそのまま引き継ぐ(`national_from_base`)。推定割当は起きない。
+2. A10 の国立公園(`A10_003` = 1)は使わない。それ以外の各地物に、同じ PID(`A10_005`)の v23 の地物のうち最も重なるものの JAFF・PID・POTA・NAME を付ける。重ならない地物(v23 で消えていた小島など)は、同じ PID の最も近い地物の属性にする。v23 に同じ PID がない地物は除く(固定版では PID 104・110・154・215・398・399。どれも国立公園に編入・格上げされた公園)。
+3. 同じ属性の地物を一つの geometry に統合する。v23 のように地物ごとに分けない。
+4. 全国立公園の区域(Shape。0.1 m 広げる)と重なる部分を、すべての国定・県立等から差し引く。v23 の `subtract`(JP-0156 だけ)はこれに含まれる。固定版では 39 POTA から差し引き、大きいのは JP-0156 の 204.7 km²、JP-1405 奥越高原の 22.6 km²。
+5. A10 に形がない v23 の公園は、v23 の形を残す(固定版では 0 件)。
+6. 符号化の前に、1 m² 未満の部分を除く(`drop_parts_below_m2`)。全体の範囲が変わって量子化の刻みが変わり、v23 では残っていた数 mm の楔の外周が潰れるため。固定版では 9 部分。
+7. 国定・県立等どうしの重なりは直さずに `report.json` の `others.overlaps_between_others` に記録する(固定版では JP-0137 と JP-1532 の 86 m² だけ)。
+
+結果は 395 POTA、416 geometry、22.6 MB(v23 は 14.5 MB)。ファイルが大きくなるので、MyACT に組み込むかは別に決めます。組み込むなら、A10 の出典(下の「出典の表示」)も画面に出します。
 
 ## 確かめてから組み込む
 
