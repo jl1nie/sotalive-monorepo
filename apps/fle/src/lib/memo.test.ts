@@ -17,9 +17,9 @@ describe('memoAt', () => {
 })
 
 describe('memoOf', () => {
-  it('JCC は市(政令市は区の番号も)、JCG は郡と町村', () => {
+  it('JCC は市(政令市は、区の番号を住所の前に)、JCG は郡と町村', () => {
     expect(memoOf({ jccCode: '100103', municipality: '港区', jccText: '港区' })).toBe('JCC 100103 港区')
-    expect(memoOf({ jccCode: '0101', municipality: '札幌市 中央区', wardCode: '010101' })).toBe('JCC 0101 札幌市 中央区 010101')
+    expect(memoOf({ jccCode: '0101', municipality: '札幌市 中央区', wardCode: '010101' })).toBe('JCC 0101 区 010101 札幌市 中央区')
     expect(memoOf({ jcgCode: '17008', jcgText: '南都留郡', municipality: '富士河口湖町' })).toBe('JCG 17008 南都留郡 富士河口湖町')
     expect(memoOf({})).toBe('')
   })
