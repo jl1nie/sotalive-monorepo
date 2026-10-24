@@ -119,7 +119,9 @@ export function StationFields({
                     }, 300)
                   }}
                   placeholder={t('place.example', { value: f.example })}
-                  autoCapitalize="characters"
+                  // 山・公園の欄は、名前(漢字)でも探す。大文字の指定があると、iPhone のローマ字入力が
+                  // かなに変換されない(英字のまま入る)ので外す。番号は小文字でも、コアが大文字として読む
+                  autoCapitalize={f.key === 'sota' || f.key === 'pota' ? 'none' : 'characters'}
                   autoCorrect="off"
                   autoComplete="off"
                   spellCheck={false}
