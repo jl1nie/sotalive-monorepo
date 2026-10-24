@@ -9,6 +9,7 @@ import {
   Home,
   Keyboard,
   List,
+  Map as MapIcon,
   MapPin,
   Save,
   Smartphone,
@@ -67,6 +68,9 @@ import { exportName } from '@/lib/fileName'
 import { SuggestStrip } from '@/components/SuggestStrip'
 import { QsoSheet } from '@/components/QsoSheet'
 import { PlaceSheet } from '@/components/PlaceSheet'
+import { MapSheet } from '@/components/MapSheet'
+import { downloadRegionOf } from '@/lib/mapStore'
+import { regionOf } from '@/lib/summitMap'
 import { FieldKeysContext } from '@/hooks/useFieldKeys'
 import { PlanSheet } from '@/components/PlanSheet'
 import { JoinSheet } from '@/components/JoinSheet'
@@ -137,6 +141,8 @@ function Editor({
   // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値。`fresh` なら、新しいログ(空のログに書く)
   const [place, setPlace] = useState<{ line: number; initial: Station; memo: string; isNewLog: boolean; fresh: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // 山頂の地図のシート: どの山頂か(開いた時点のカーソル位置で有効な mysota)。null なら閉じている
+  const [mapSummit, setMapSummit] = useState<string | null>(null)
   // 時間帯を変えるときの確認(QSO のあるログで、時刻を変換するか)
   const [retime, setRetime] = useState<{ tz: number; from: string; to: string; qsos: number } | null>(null)
 
@@ -424,6 +430,12 @@ function Editor({
     })
   }
 
+  /** 山頂の地図を開く。山頂は、カーソル位置で有効な mysota */
+  const openMap = async (line = caretLine) => {
+    const current = await stationAt(text, line)
+    setMapSummit(current.sota.trim())
+  }
+
   /** 場所をログに書き込む(指令の行の書式はコアが決める)。誤りがあれば返す。新しいログなら、空のログに書いて置き換える */
   const applyPlace = async (want: Station, extras: PlanExtras | undefined, memoValue: string | null): Promise<FieldError[]> => {
     if (!place) return []
@@ -454,6 +466,11 @@ function Editor({
     }
     saveLastCall(want.mycall)
     setPlace(null)
+    // 山頂の地域の地図を、電波のあるうちに端末へ入れておく(山頂ではオフラインで見る)
+    const region = regionOf(want.sota)
+    if (region && navigator.onLine) {
+      void downloadRegionOf(want.sota).then((n) => n && notify(t('notice.mapSaved', { region })))
+    }
     return []
   }
 
@@ -905,6 +922,8 @@ function Editor({
           plans={plansStore.plans}
         />
 
+        <MapSheet open={mapSummit !== null} onClose={() => setMapSummit(null)} summit={mapSummit ?? ''} />
+
         <PlanSheet
           open={plansOpen}
           onClose={() => setPlansOpen(false)}
@@ -926,6 +945,7 @@ function Editor({
           <MenuGroup title={t('menu.group.before')}>
             <MenuButton icon={FilePlus} label={t('menu.place')} onClick={fromMenu(openNewLog)} />
             {hasText && <MenuButton icon={MapPin} label={t('menu.change')} onClick={fromMenu(() => void openPlace())} />}
+            {hasText && <MenuButton icon={MapIcon} label={t('menu.map')} onClick={fromMenu(() => void openMap())} />}
             <MenuButton icon={ClipboardList} label={t('menu.plans')} onClick={fromMenu(() => setPlansOpen(true))} />
           </MenuGroup>
           {/* フルキーでは、QSO の数は表示だけ。一覧はここから */}
