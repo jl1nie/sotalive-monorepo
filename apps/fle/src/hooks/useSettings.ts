@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LangPref, Translate } from '@/lib/i18n'
 import { parseRigs } from '@/lib/rig'
+import { DEFAULT_HAMLOG_COLUMNS, type HamlogColumns } from '@/lib/hamlog'
 
 export type Theme = 'light' | 'dark' | 'system'
 /** 入力欄の文字。等幅(同梱の Roboto Mono)か、ゴシック(本文と同じ)か */
@@ -56,6 +57,19 @@ export interface Settings {
   capsLock: boolean
   /** よく使うリグ。`rig` の値(HAMLOG の `Rig=` の右辺)の候補になる */
   rigs: string[]
+  /** HAMLOG の QTH・Rmks1・Rmks2 の欄に書く内容(`{memo}` などを差し込む書式) */
+  hamlog: HamlogColumns
+}
+
+/** HAMLOG の欄の書式の長さの上限(同期のサーバーと同じ) */
+export const HAMLOG_COLUMN_MAX = 100
+
+/** 保存した HAMLOG の欄の書式を読む。欄ごとに、文字列でなければ既定 */
+export function parseHamlogColumns(v: unknown): HamlogColumns {
+  const o = typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {}
+  const col = (k: keyof HamlogColumns) =>
+    typeof o[k] === 'string' && (o[k] as string).length <= HAMLOG_COLUMN_MAX ? (o[k] as string) : DEFAULT_HAMLOG_COLUMNS[k]
+  return { qth: col('qth'), rmks1: col('rmks1'), rmks2: col('rmks2') }
 }
 
 export const TIMEZONE_MIN = -12
@@ -97,6 +111,7 @@ const DEFAULTS: Settings = {
   showClock: true,
   capsLock: false,
   rigs: [],
+  hamlog: DEFAULT_HAMLOG_COLUMNS,
 }
 
 /** この端末で、前に FLEonline を使ったことがあるか(ログ・前回のコールサインなど、fle. で始まる保存がある) */
@@ -144,6 +159,7 @@ function load(): Settings {
       showClock: typeof v.showClock === 'boolean' ? v.showClock : DEFAULTS.showClock,
       capsLock: typeof v.capsLock === 'boolean' ? v.capsLock : DEFAULTS.capsLock,
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
+      hamlog: parseHamlogColumns(v.hamlog),
     }
     // 初めて読んだときに決めた配置を覚えておく(あとでログができても、配置が変わらないように)
     if (stored === null) localStorage.setItem(KEY, JSON.stringify(settings))

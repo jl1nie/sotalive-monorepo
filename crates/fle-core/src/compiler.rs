@@ -85,6 +85,10 @@ pub(crate) fn fold(input: &str) -> Fold {
 
         let ast = parse_line(line);
         if ast.kind == LineKind::Blank {
+            // `#` の行はメモ。そのあとのQSOに、いま有効なメモとして持たせる(出力の欄に使える)
+            if let Some(memo) = memo_text(line) {
+                env.memo = memo;
+            }
             continue;
         }
         // 現在のQSO状態をリセット
@@ -604,7 +608,15 @@ fn eval_qso(
         qsomsg: env.current.qso_msg.clone(),
         qsormks: env.current.qso_rmks.clone(),
         qslmsg: expand_rig(&env.qslmsg, &env.rig),
+        memo: env.memo.clone(),
     })
+}
+
+/// `#`(全角の `＃` も)で始まる行の本文。メモの行でなければ None
+fn memo_text(line: &str) -> Option<String> {
+    let t = line.trim_start();
+    let rest = t.strip_prefix('#').or_else(|| t.strip_prefix('＃'))?;
+    Some(rest.trim().to_string())
 }
 
 /// QSLメッセージの `$rig` を、そのQSOの `rig` で置き換える。`rig` が空のとき、末尾に空白が残らないようにする

@@ -42,6 +42,8 @@ pub struct LineInfo {
     /// この時点で数える日(UTC、`YYYY-MM-DD`)。この日のQSOの数を出すのに使う。
     /// 最後のQSOのあとで日付を変えていなければ、そのQSOのUTCの日付。変えていれば、基準日付
     pub qso_date: String,
+    /// QSO の行で、時刻が前の QSO より前に戻っている(日付が変わったのに `day +` がないかもしれない)
+    pub time_back: bool,
 }
 
 /// `line`(0始まり)の行までを読んだ時点の状態
@@ -82,6 +84,19 @@ pub fn line_info(text: &str, line: usize) -> LineInfo {
         _ => base.map(ymd).unwrap_or_default(),
     };
 
+    // この行の QSO が、前の QSO より前の時刻になっているか(UTC で比べる)
+    let utc = |q: &crate::types::FleQsoRecord| {
+        NaiveDate::from_ymd_opt(q.year.into(), q.month.into(), q.day.into())
+            .and_then(|d| d.and_hms_opt(q.hour.into(), q.min.into(), 0))
+            .map(|t| t - chrono::Duration::hours(i64::from(q.tz)))
+    };
+    let time_back = match f.records.as_slice() {
+        [.., prev, cur] if cur.line == line && !cur.date_unset && !prev.date_unset => {
+            matches!((utc(prev), utc(cur)), (Some(p), Some(c)) if c < p)
+        }
+        _ => false,
+    };
+
     LineInfo {
         kind: kind.to_string(),
         directive: directive.to_string(),
@@ -104,6 +119,7 @@ pub fn line_info(text: &str, line: usize) -> LineInfo {
         },
         qslmsg2: env.qslmsg2.clone(),
         qso_date,
+        time_back,
     }
 }
 
@@ -128,6 +144,17 @@ rig -
     fn at(s: &str) -> LineInfo {
         let line = LOG.split('\n').position(|l| l == s).expect("line in LOG");
         line_info(LOG, line)
+    }
+
+    #[test]
+    fn a_time_that_goes_back_is_noticed() {
+        let log = "date 2026-10-17\n2359 ja1aaa\n0001 jh1hhh\nday +\n0002 jh1iii";
+        assert!(line_info(log, 2).time_back);
+        assert!(!line_info(log, 1).time_back);
+        assert!(!line_info(log, 4).time_back);
+        // 注釈の行や、同じ時刻は戻っていない
+        assert!(!line_info("date 2026-10-17\n2359 ja1aaa\n2359 ja1bbb", 2).time_back);
+        assert!(!line_info(log, 3).time_back);
     }
 
     #[test]
@@ -188,10 +215,18 @@ rig -
     #[test]
     fn an_ignored_mycall_or_mygrid_line_shows_no_value() {
         let log = "mycall ja1abc\nmygrid pm95uq\nmycall ???\nmygrid zz\nmygrid -\n40m cw";
-        assert_eq!(line_info(log, 2).mycall, "", "読めない行は、前の値を出さない");
+        assert_eq!(
+            line_info(log, 2).mycall,
+            "",
+            "読めない行は、前の値を出さない"
+        );
         assert_eq!(line_info(log, 3).mygrid, "");
         assert_eq!(line_info(log, 4).mygrid, "", "mygrid - で空に戻る");
-        assert_eq!(line_info(log, 5).mycall, "JA1ABC", "あとの行には、前の値が続く");
+        assert_eq!(
+            line_info(log, 5).mycall,
+            "JA1ABC",
+            "あとの行には、前の値が続く"
+        );
         assert_eq!(line_info(log, 5).mygrid, "", "mygrid - のあと");
     }
 

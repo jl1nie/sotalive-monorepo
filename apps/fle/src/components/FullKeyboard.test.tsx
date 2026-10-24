@@ -167,7 +167,7 @@ describe('FullKeyboard', () => {
     expect(onNewline).toHaveBeenCalledTimes(1)
   })
 
-  it('3 を長押し(0.5 秒)すると # と空白(# はコメントの行だけ)。吹き出しは # 。キーには書かない', () => {
+  it('3 を長押し(0.5 秒)すると #(JCC# のように続けて書けるよう、空白は入れない)。吹き出しは # 。キーには書かない', () => {
     vi.useFakeTimers()
     try {
       const { onKey } = renderKeys()
@@ -178,7 +178,23 @@ describe('FullKeyboard', () => {
       expect(screen.getByRole('button', { name: '3' })).toHaveTextContent(/#$/)
       fireEvent.pointerUp(three, { clientX: 100, pointerId: 1 })
       fireEvent.click(three)
-      expect(onKey.mock.calls).toEqual([['# ']])
+      expect(onKey.mock.calls).toEqual([['#']])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('0 の長押しで +(day +)、7 の長押しで ?(聞き取れなかった文字)', () => {
+    vi.useFakeTimers()
+    try {
+      const { onKey } = renderKeys()
+      for (const k of ['0', '7']) {
+        const key = screen.getByRole('button', { name: k })
+        fireEvent.pointerDown(key, { clientX: 100, pointerId: 1 })
+        act(() => vi.advanceTimersByTime(500))
+        fireEvent.pointerUp(key, { clientX: 100, pointerId: 1 })
+      }
+      expect(onKey.mock.calls).toEqual([['+'], ['?']])
     } finally {
       vi.useRealTimers()
     }
@@ -194,7 +210,7 @@ describe('FullKeyboard', () => {
       // 長押しでコンテキストメニューを出さない
       expect(fireEvent.contextMenu(three)).toBe(false)
       fireEvent.pointerUp(three, { clientX: 100, pointerId: 1 })
-      expect(onKey.mock.calls).toEqual([['# ']])
+      expect(onKey.mock.calls).toEqual([['#']])
     } finally {
       vi.useRealTimers()
     }

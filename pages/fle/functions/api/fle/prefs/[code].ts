@@ -19,6 +19,7 @@ const MAX_BODY = 32 * 1024;
 /** 使われなくなったものを消すまで(PUT のたびに延びる。クライアントは、月に1回は PUT する) */
 const TTL_SECONDS = 400 * 24 * 60 * 60;
 const MAX_RIGS = 20;
+const MAX_HAMLOG_COLUMN = 100;
 const MAX_PLANS = 60; // 消した予定(deleted)も数える
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const PLAN_ID = /^[A-Za-z0-9_-]{8,24}$/;
@@ -67,6 +68,12 @@ export function sanitizeSettings(data: unknown): Record<string, unknown> | null 
   if ("language" in data) {
     if (data.language !== "auto" && data.language !== "ja" && data.language !== "en") return null;
     out.language = data.language;
+  }
+  if ("hamlog" in data) {
+    // HAMLOG の QTH・Rmks1・Rmks2 の欄の書式
+    const h = data.hamlog;
+    if (!isObject(h) || !["qth", "rmks1", "rmks2"].every((k) => text(h[k], MAX_HAMLOG_COLUMN))) return null;
+    out.hamlog = { qth: h.qth, rmks1: h.rmks1, rmks2: h.rmks2 };
   }
   return out;
 }

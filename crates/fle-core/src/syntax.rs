@@ -21,7 +21,7 @@ use nom::{
     IResult,
 };
 
-use crate::callsign::is_callsign;
+use crate::callsign::{is_callsign, is_unsure_callsign};
 use crate::ham::{band_to_freq, FREQ_TABLE};
 use crate::types::MODE_TABLE;
 
@@ -518,7 +518,7 @@ pub fn classify(raw: &str) -> Class {
             value: word.to_string(),
         };
     }
-    if is_callsign(&upper) {
+    if is_callsign(&upper) || is_unsure_callsign(&upper) {
         return Class::Call(upper);
     }
     let mut chars = upper.chars();

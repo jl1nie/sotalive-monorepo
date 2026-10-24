@@ -11,6 +11,7 @@ import {
   fill,
   generateZip,
   gridLocator,
+  lineInfo,
   sampleLog,
   stationAt,
   stationPlan,
@@ -150,13 +151,41 @@ describe('fle wasm', () => {
     expect(checkOutput('mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JP-0117\nmygrid PM95pp\n0900 ja1aaa')).toEqual([])
   })
 
+  it('fill: date を指定すると、日付が変わった行の前に day + を書く', () => {
+    const text = 'date 2026-10-17\n2359 ja1aaa\njh1hhh'
+    const at = Date.UTC(2026, 9, 18, 0, 1)
+    const edits = fill(text, 2, at, 0, { date: true }) as { from: number; insert: string }[]
+    expect(edits.map((e) => e.insert)).toEqual(['day +\n0001 '])
+    // 指定しなければ、時刻だけ
+    expect((fill(text, 2, at, 0, undefined) as { insert: string }[]).map((e) => e.insert)).toEqual(['0001 '])
+  })
+
+  it('lineInfo: 手で打った時刻が前の QSO より前なら timeBack', () => {
+    const text = 'date 2026-10-17\n2359 ja1aaa\n0001 jh1hhh'
+    expect(lineInfo(text, 2).timeBack).toBe(true)
+    expect(lineInfo(text, 1).timeBack).toBe(false)
+  })
+
+  it('checkOutput: ? のあるコールサインを、出力の前に知らせる', () => {
+    const w = checkOutput('mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1ab?')
+    expect(w).toEqual([{ code: 'unsure_call', field: 'call', severity: 'required', qsos: 1, items: ['JA1AB?'] }])
+  })
+
   it('generateZip: ZIPのシグネチャで始まる', () => {
-    const zip = generateZip(SAMPLE, Date.UTC(2026, 9, 18, 9, 30, 45))
+    const zip = generateZip(SAMPLE, Date.UTC(2026, 9, 18, 9, 30, 45), undefined)
     expect(zip).toBeInstanceOf(Uint8Array)
     expect(Array.from(zip.slice(0, 2))).toEqual([0x50, 0x4b]) // "PK"
   })
 
   it('generateZip: 空入力は例外', () => {
-    expect(() => generateZip('', 0)).toThrow()
+    expect(() => generateZip('', 0, undefined)).toThrow()
+  })
+
+  it('generateZip: HAMLOG の欄の書式を渡せる(省略すると既定)', () => {
+    const at = Date.UTC(2026, 9, 18, 9, 30, 45)
+    const a = generateZip(SAMPLE, at, undefined)
+    const b = generateZip(SAMPLE, at, { hamlog: { qth: '{hisref}', rmks1: '{memo}', rmks2: '{myref}' } })
+    expect(a).not.toEqual(b)
+    expect(() => generateZip(SAMPLE, at, { hamlog: { qth: 1 } })).toThrow()
   })
 })

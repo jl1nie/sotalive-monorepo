@@ -15,7 +15,7 @@ type Key = FieldError['field']
 const FIELDS: { key: Key; label: MessageKey | null; name?: string; example: string }[] = [
   { key: 'mycall', label: 'place.mycall', example: 'JA1ABC/1' },
   { key: 'sota', label: null, name: 'SOTA', example: 'JA/TK-001' },
-  { key: 'pota', label: 'place.pota', example: 'JA-0001 JA-0002' },
+  { key: 'pota', label: 'place.pota', example: 'JP-0001 JP-0002' },
   { key: 'wwff', label: null, name: 'WWFF', example: 'JAFF-0001' },
   { key: 'grid', label: 'place.grid', example: 'PM95uq' },
 ]

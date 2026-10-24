@@ -33,8 +33,8 @@ export function StationClock({ info, tz, memo = '' }: Props) {
     <div
       role="group"
       aria-label={t('clock.label')}
-      // 高さは決まった値(CLOCK_REM。入るかどうかを、この高さで決める)
-      className="flex-none h-[6.5rem] overflow-hidden flex flex-col items-center justify-center gap-1 select-none"
+      // 高さは決まった値(CLOCK_REM。入るかどうかを、この高さで決める)。行の間は詰め、最後の行とログ欄の間は少し空ける
+      className="flex-none h-[6rem] pb-1 overflow-hidden flex flex-col items-center justify-center gap-[0.2rem] select-none"
     >
       <div className="flex items-baseline gap-3 font-mono font-bold tabular-nums">
         <span className="text-4xl leading-none">{clockAt(now, tz)}</span>
@@ -44,14 +44,14 @@ export function StationClock({ info, tz, memo = '' }: Props) {
       </div>
       {(info?.mycall || places.length > 0) && (
         // 運用先が多ければ(山と公園の n-fer)、折り返して2行まで
-        <div className="max-w-full flex flex-wrap justify-center gap-x-3 font-mono text-xl font-bold leading-snug">
+        <div className="max-w-full flex flex-wrap justify-center gap-x-3 font-mono text-xl font-bold leading-[1.1]">
           {[info?.mycall, ...places].filter(Boolean).map((code) => (
             <span key={code}>{code}</span>
           ))}
         </div>
       )}
       {/* メモは1行。長ければ末尾を省く。運用先と同じく読み上げるので、同じ文字(等幅・大きさ・太さ) */}
-      {memo && <div className="max-w-full px-3 truncate font-mono text-xl font-bold leading-snug">{memo}</div>}
+      {memo && <div className="max-w-full px-3 truncate font-mono text-xl font-bold leading-[1.1]">{memo}</div>}
     </div>
   )
 }

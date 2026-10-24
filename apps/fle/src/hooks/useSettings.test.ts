@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, renderHook } from '@testing-library/react'
-import { useSettings } from './useSettings'
+import { parseHamlogColumns, useSettings } from './useSettings'
 import { SYNCED_KEYS } from '@/lib/sync'
 
 const KEY = 'fle.settings'
@@ -187,5 +187,18 @@ describe('useSettings: Caps(フルキー)', () => {
 
   it('同期しない(端末ごと)', () => {
     expect(SYNCED_KEYS).not.toContain('capsLock')
+  })
+})
+
+describe('parseHamlogColumns: HAMLOG の欄の書式', () => {
+  it('保存がなければ、既定(旧 HamLogConv と同じ)', () => {
+    expect(parseHamlogColumns(undefined)).toEqual({ qth: '{rmks} {hisref}', rmks1: '{myref}', rmks2: '%{qslmsg}%{rig}' })
+  })
+  it('欄ごとに読み、文字列でない欄・長すぎる欄は既定', () => {
+    expect(parseHamlogColumns({ qth: '{hisref}', rmks1: 3, rmks2: 'x'.repeat(101) })).toEqual({
+      qth: '{hisref}',
+      rmks1: '{myref}',
+      rmks2: '%{qslmsg}%{rig}',
+    })
   })
 })
