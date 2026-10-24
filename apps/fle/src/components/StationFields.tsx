@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Crosshair } from 'lucide-react'
+import { Crosshair, Map as MapIcon } from 'lucide-react'
+import { regionOf } from '@/lib/summitMap'
 import type { FieldError } from '@/lib/fle'
 import type { Values } from '@/lib/stationValues'
 import { searchNearby, type RefCandidate, type SearchResult } from '@/lib/reference'
@@ -30,6 +31,7 @@ export function StationFields({
   errors,
   idPrefix = 'place',
   onPlace,
+  onMap,
 }: {
   values: Values
   onChange: (values: Values) => void
@@ -40,6 +42,8 @@ export function StationFields({
    * 候補を押さずに、打った番号が候補と同じになったときは `typed`(手で書いたメモは上書きしない)
    */
   onPlace?: (pos: { lat: number; lon: number }, typed?: boolean) => void
+  /** SOTA の欄の横の地図ボタン(山頂の地図を開く)。なければボタンを出さない */
+  onMap?: (summit: string) => void
 }) {
   const t = useT()
   // いま入力している欄(候補を出す欄)と、現在地の近くの一覧
@@ -124,6 +128,17 @@ export function StationFields({
                   aria-describedby={error ? `${idPrefix}-${f.key}-error` : undefined}
                   className="input font-mono"
                 />
+                {f.key === 'sota' && onMap && regionOf(values.sota) && (
+                  <button
+                    type="button"
+                    onClick={() => onMap(values.sota.trim().toUpperCase())}
+                    aria-label={t('place.mapLabel')}
+                    className="btn-secondary !px-3 shrink-0"
+                  >
+                    <MapIcon className="w-5 h-5" />
+                    {t('place.map')}
+                  </button>
+                )}
                 {f.key === 'grid' && (
                   <button
                     type="button"

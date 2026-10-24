@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { Sheet } from '@/components/Sheet'
 import { useOnline } from '@/hooks/useOnline'
-import { downloadRegionOf, getSummitMap } from '@/lib/mapStore'
+import { downloadRegionOf, loadSummitMap } from '@/lib/mapStore'
 import { distanceKm, distanceLabel } from '@/lib/reference'
 import { contains, munisOf, pathOf, projector, summitOf, zoneOf, type SummitMap } from '@/lib/summitMap'
 import { useT } from '@/lib/i18n'
@@ -33,22 +33,26 @@ function MapBody({ summit }: { summit: string }) {
   const t = useT()
   const online = useOnline()
   const [map, setMap] = useState<SummitMap | null | 'loading'>('loading')
-  const [refreshing, setRefreshing] = useState(false)
   const gps = useGps()
 
+  // 保存した地図をすぐ出し、電波があれば裏で取り直して差し替える(取り直しの操作は要らない)
   useEffect(() => {
     let alive = true
-    void getSummitMap(summit, navigator.onLine).then((m) => alive && setMap(m))
+    void (async () => {
+      const saved = await loadSummitMap(summit)
+      if (!alive) return
+      if (saved) setMap(saved)
+      if (navigator.onLine && (await downloadRegionOf(summit))) {
+        const fresh = await loadSummitMap(summit)
+        if (alive && fresh) setMap(fresh)
+        return
+      }
+      if (alive && !saved) setMap(null)
+    })()
     return () => {
       alive = false
     }
   }, [summit])
-
-  const refresh = async () => {
-    setRefreshing(true)
-    if (await downloadRegionOf(summit)) setMap(await getSummitMap(summit, false))
-    setRefreshing(false)
-  }
 
   if (map === 'loading') return <p>{t('map.loading')}</p>
   if (!map) return <p>{online ? t('map.notFound') : t('map.offlineMissing')}</p>
@@ -59,11 +63,6 @@ function MapBody({ summit }: { summit: string }) {
       <GpsLine map={map} gps={gps} />
       <MuniList map={map} />
       <p className="text-xs text-gray-700 dark:text-gray-300">{map.attribution}</p>
-      {online && (
-        <button type="button" onClick={() => void refresh()} disabled={refreshing} className="btn-secondary w-full">
-          {refreshing ? t('map.refreshing') : t('map.refresh')}
-        </button>
-      )}
     </div>
   )
 }

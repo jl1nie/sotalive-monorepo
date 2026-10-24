@@ -70,6 +70,7 @@ import { QsoSheet } from '@/components/QsoSheet'
 import { PlaceSheet } from '@/components/PlaceSheet'
 import { MapSheet } from '@/components/MapSheet'
 import { downloadRegionOf } from '@/lib/mapStore'
+import { usePlanMaps } from '@/hooks/usePlanMaps'
 import { regionOf } from '@/lib/summitMap'
 import { FieldKeysContext } from '@/hooks/useFieldKeys'
 import { PlanSheet } from '@/components/PlanSheet'
@@ -116,6 +117,8 @@ function Editor({
   const keyboard = useVisualViewport()
   const { t, lang } = useI18n()
   const plansStore = usePlans()
+  // 予定に入れた山頂の地図は、電波のあるうちに端末へそろえておく(山頂で電波がなくても見られる)
+  const planMaps = usePlanMaps(plansStore.plans)
   const sync = useSync({
     settings,
     update: updateSettings,
@@ -956,6 +959,7 @@ function Editor({
           replacing={place?.fresh && text.trim() !== ''}
           onApply={applyPlace}
           plans={plansStore.plans}
+          onOpenMap={setMapSummit}
         />
 
         <MapSheet open={mapSummit !== null} onClose={() => setMapSummit(null)} summit={mapSummit ?? ''} />
@@ -966,6 +970,8 @@ function Editor({
           plans={plansStore.plans}
           onSave={plansStore.save}
           onRemove={plansStore.remove}
+          onOpenMap={setMapSummit}
+          mapStatus={planMaps.statusOf}
         />
 
         <JoinSheet

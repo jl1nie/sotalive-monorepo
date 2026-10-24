@@ -5,6 +5,7 @@ import { MemoField } from '@/components/MemoField'
 import { useMemoDraft } from '@/hooks/useMemoDraft'
 import { stationPlan, type FieldError } from '@/lib/fle'
 import { MAX_PLANS, emptyPlan, newPlanId, planLabel, sortPlans, type Plan } from '@/lib/plans'
+import type { MapStatus } from '@/lib/mapStore'
 import { toStation, toValues, type Values } from '@/lib/stationValues'
 import { useT } from '@/lib/i18n'
 
@@ -15,6 +16,10 @@ interface Props {
   /** 保存する。いっぱいで足せなければ false */
   onSave: (plan: Omit<Plan, 'updatedAt'>) => boolean
   onRemove: (id: string) => void
+  /** 山頂の地図を開く */
+  onOpenMap?: (summit: string) => void
+  /** 山頂の地図の保存の状態(予定の一覧に出す。電波のないところでも見られるか) */
+  mapStatus?: (summit: string) => MapStatus | null
 }
 
 const today = () => new Date().toLocaleDateString('sv-SE')
@@ -24,7 +29,7 @@ export function PlanSheet(props: Props) {
   return props.open ? <Plans {...props} /> : null
 }
 
-function Plans({ onClose, plans, onSave, onRemove }: Props) {
+function Plans({ onClose, plans, onSave, onRemove, onOpenMap, mapStatus }: Props) {
   const t = useT()
   const [editing, setEditing] = useState<Plan | null>(null)
   const [full, setFull] = useState(false)
@@ -33,6 +38,7 @@ function Plans({ onClose, plans, onSave, onRemove }: Props) {
     return (
       <PlanForm
         plan={editing}
+        onOpenMap={onOpenMap}
         onBack={() => setEditing(null)}
         onClose={onClose}
         onSave={(p) => {
@@ -81,6 +87,7 @@ function Plans({ onClose, plans, onSave, onRemove }: Props) {
               >
                 <span className="font-bold">{planLabel(p)}</span>
                 {p.date && <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{p.date}</span>}
+                <MapState status={mapStatus?.(p.sota) ?? null} />
               </button>
             </li>
           ))}
@@ -90,14 +97,30 @@ function Plans({ onClose, plans, onSave, onRemove }: Props) {
   )
 }
 
+/** 予定の山頂の地図が、端末に保存してあるか(電波のないところでも見られるか) */
+function MapState({ status }: { status: MapStatus | null }) {
+  const t = useT()
+  if (status === null) return null
+  const text = { saved: t('plans.mapSaved'), pending: t('plans.mapPending'), none: t('plans.mapNone') }[status]
+  return (
+    <span
+      className={`block text-sm ${status === 'pending' ? 'font-semibold text-amber-800 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300'}`}
+    >
+      {text}
+    </span>
+  )
+}
+
 function PlanForm({
   plan,
   onBack,
   onClose,
   onSave,
   onRemove,
+  onOpenMap,
 }: {
   plan: Plan
+  onOpenMap?: (summit: string) => void
   onBack: () => void
   onClose: () => void
   onSave: (plan: Omit<Plan, 'updatedAt'>) => void
@@ -162,7 +185,7 @@ function PlanForm({
           <label htmlFor="plan-date" className="label">{t('plans.date')}</label>
           <input id="plan-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input" />
         </div>
-        <StationFields values={values} onChange={setValues} errors={errors} idPrefix="plan" onPlace={memo.lookup} />
+        <StationFields values={values} onChange={setValues} errors={errors} idPrefix="plan" onPlace={memo.lookup} onMap={onOpenMap} />
         <MemoField id="plan-memo" memo={memo.memo} looking={memo.looking} onChange={memo.edit} />
         <div>
           <label htmlFor="plan-rig" className="label">{t('plans.rig')}</label>
