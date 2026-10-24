@@ -39,6 +39,11 @@
     "estimated_parks": 0,
     "dropped_holes": 151
   },
+  "display": {
+    "simplify_m": 2,
+    "note": "MyACT に置く表示用の版。判定(sotaapp2)には簡略化しない -full を使う",
+    "expect": {"pota": 395, "national_pota": 35, "geometries": 416, "polygons": 167, "multipolygons": 249, "dropped_holes": 1}
+  },
   "expect_final": {"pota": 395, "national_pota": 35, "geometries": 416, "polygons": 167, "multipolygons": 249},
   "reference_sha256": {
     "generated": "26b53ba95f3e6c410b9368d5432f2077b4804ce7cb17ac31234eba9034a5dccd",

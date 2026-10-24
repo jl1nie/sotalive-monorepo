@@ -54,9 +54,16 @@ class TestReproduceV24(unittest.TestCase):
     def setUpClass(cls):
         base = generate.default_base(SPEC24).read_bytes()
         cls.t, cls.report, _ = generate.build(SPEC24, base, NPS.read_bytes(), a10_raw=A10.read_bytes())
+        cls.display = generate.display_version(SPEC24, cls.t, cls.report)
 
     def test_counts_match_spec(self):
         self.assertEqual(generate.compare_expect(SPEC24, self.report), {})
+
+    def test_display_is_committed_version(self):
+        # 共通アセットに置いた v24 は、この表示用の版と同じ内容
+        placed = release.path_of(24)
+        if placed.is_file():
+            self.assertEqual(generate.sha256(placed.read_bytes()), generate.sha256(topo.dumps(self.display).encode("utf-8")))
 
     def test_national_parts_same_as_v23(self):
         v23 = [(p, g) for p, g in topo.decode(json.loads(release.path_of(23).read_text(encoding="utf-8"))) if p["NAME"].endswith("国立公園")]

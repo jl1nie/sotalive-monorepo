@@ -9,7 +9,10 @@ import json
 import unittest
 import zipfile
 
+import numpy as np
 import shapefile
+import shapely
+import shapely.affinity
 from shapely.geometry import Polygon, box
 
 from jaffpota import generate, topo
@@ -293,6 +296,26 @@ class TestBuildFromA10(unittest.TestCase):
         sliver = Polygon([(140.03, 36.00), (140.03000001, 36.00), (140.03, 36.00000001)])
         _, report, _ = run_a10(a10=A10 + [("500", "3", sliver)], spec={**A10_SPEC, "others": {**A10_SPEC["others"], "expect": {"records": 6}}})
         self.assertEqual(report["dropped_tiny_parts"]["parts"], 1)
+
+
+class TestDisplayVersion(unittest.TestCase):
+    def test_simplified_within_tolerance_and_properties_kept(self):
+        proj = generate.Projector()
+        # 1 km 四方の辺に、振幅 0.5 m・間隔 5 m のぎざぎざを付ける
+        xs = np.linspace(0, 1000, 201)
+        south = [(x, 0.5 * (i % 2)) for i, x in enumerate(xs)]
+        ring = south + [(1000, 1000), (0, 1000)]
+        m = Polygon(ring)
+        g = proj.lonlat(shapely.affinity.translate(m, *proj.metric(shapely.Point(140.0, 36.0)).coords[0]))
+        t, _ = topo.encode([({"JAFF": "J", "NAME": "N", "PID": "1", "POTA": "JP-0001", "UID": "1"}, g)])
+        report = {}
+        dt = generate.display_version({"display": {"simplify_m": 2}, "drop_parts_below_m2": 1}, t, report)
+        (p, h), = topo.decode(dt)
+        self.assertEqual(p["POTA"], "JP-0001")
+        self.assertLess(len(h.exterior.coords), 10)  # ぎざぎざは消える
+        self.assertLessEqual(proj.metric(h).hausdorff_distance(proj.metric(g)), 2.0)
+        self.assertEqual(report["display"]["simplify_m"], 2)
+        self.assertEqual(report["display"]["geometries"], 1)
 
 
 if __name__ == "__main__":

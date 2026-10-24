@@ -13,7 +13,7 @@ AI に作業させるときは、この文書全体を渡し、次のように�
 | 項目 | 内容 |
 |---|---|
 | 形式 | TopoJSON の `jaffpota` という GeometryCollection 1 つ。各 geometry は Polygon か MultiPolygon で、文字列の `POTA`、`JAFF`、`NAME`、`PID`、`UID` を持つ |
-| 読む側 | 旧版 MyACT(`apps/myact-org/index.html` の `loadAreas`)。React 版(`apps/myact`)はまだ v22 を読んでいる(下の「未完のこと」) |
+| 読む側 | 旧版 MyACT(`apps/myact-org/index.html` の `updateGeoJson`。設定の「自然公園の領域を表示」(Cookie `display_area`、既定は表示)で切り替える)。React 版(`apps/myact`)はまだ v22 を読んでいる(下の「未完のこと」) |
 | 版 | ファイル名の `-vN` が CDN・ブラウザーのキャッシュの無効化を兼ねる。更新は次の版のファイルを足して参照を差し替える。旧版はロールバック用に残す |
 | 影響しないもの | POTA マーカーの位置・名称・ログ(外部 API から取る) |
 
@@ -173,7 +173,17 @@ JAFFPOTA_A10=/path/to/A10-10.geojson uv run python -m unittest tests.test_reprod
 6. 符号化の前に、1 m² 未満の部分を除く(`drop_parts_below_m2`)。全体の範囲が変わって量子化の刻みが変わり、v23 では残っていた数 mm の楔の外周が潰れるため。固定版では 9 部分。
 7. 国定・県立等どうしの重なりは直さずに `report.json` の `others.overlaps_between_others` に記録する(固定版では JP-0137 と JP-1532 の 86 m² だけ)。
 
-結果は 395 POTA、416 geometry、22.6 MB(v23 は 14.5 MB)。ファイルが大きくなるので、MyACT に組み込むかは別に決めます。組み込むなら、A10 の出典(下の「出典の表示」)も画面に出します。
+結果は 395 POTA、416 geometry です。
+
+**表示用と判定用の 2 つを出力します**(仕様の `display`)。
+
+| ファイル | 中身 | 使う場所 |
+|---|---|---|
+| `jaffpota-annotated-v24.json` | 各 geometry を EPSG:6933 で 2 m 簡略化した版(位相は保つ)。14.3 MB、頂点 101 万 | MyACT(共通アセットに置く) |
+| `jaffpota-annotated-v24-full.json` | 簡略化しない版。22.6 MB、頂点 171 万 | sotaapp2 の山頂ごとの POTA 判定(バッチ)。repo には置かない |
+
+簡略化しない版は Cloudflare Pages の 1 ファイル 25 MiB の上限に近く、携帯での描画も重くなるためです。2 m はズーム 18(1 画素 約 0.5 m)でも線の太さの中にほぼ収まります。隣り合う公園の境界は別々に簡略化するので、最大 2 m の隙間や重なりができます。
+MyACT の画面には、公園区域の出典(下の「出典の表示」)を地図の右下に出します。
 
 ## 確かめてから組み込む
 
@@ -223,4 +233,3 @@ DB にない・非表示の POTA では、新しい POTA コードを尋ねま�
 
 - React 版 MyACT(`apps/myact/src/components/Map/layers/ParkPolygonLayer.tsx`)は v22 を読んでいます。`release bump` の差し替えの対象にも入れていません。v23 に替えるなら、読み込み先を替え、`jaffpota/release.py` の `REFERENCES` に足してください。`apps/myact/public/json/` の v22 の写しは、共通アセットの `/json/` と重なっています。
 - ブラウザーでのクリック表示(上の「確かめてから組み込む」の 2)は、まだ確かめていません。
-- MyACT の地図に、国立公園の区域の出典の表示(上の「出典の表示」)をまだ入れていません。
