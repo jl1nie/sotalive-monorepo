@@ -249,17 +249,26 @@ function ReadingCard({ map, here }: { map: SummitMap; here?: string }) {
         <span className="font-mono">{map.summit}</span> {summitNameOf(map)}
         {alt !== undefined && <span className="ml-2 font-normal">{alt} m</span>}
       </p>
+      {/* 市区町村 1 つを 1 つの枠にし、その JCC・JCG を選ぶと当たる POTA を、見出し付きで枠の中に書く */}
       <ul className="mt-1 space-y-1">
         {munis.map((m) => (
-          <li key={m.key} className={m.key === here ? 'font-bold' : ''}>
+          <li
+            key={m.key}
+            className={`rounded-lg border-2 px-2 py-1 ${
+              m.key === here
+                ? 'font-bold border-green-700 bg-green-50 dark:border-green-400 dark:bg-green-950'
+                : 'border-gray-300 dark:border-gray-700'
+            }`}
+          >
             <div className="flex gap-1">
               <span className="w-3 flex-none" aria-hidden="true">{m.key === here ? '▶' : ''}</span>
               <span className="font-mono flex-none">{m.key}</span>
               <span className="min-w-0">{withoutPrefecture(m.name)}</span>
             </div>
             {m.pota.map((q) => (
-              <div key={q.code} className="pl-8">
-                {parkLine(q, t)}
+              <div key={q.code} className="flex gap-2 pl-4">
+                <span className="flex-none text-xs font-bold text-gray-700 dark:text-gray-300 pt-0.5">POTA</span>
+                <span className="min-w-0">{parkLine(q, t)}</span>
               </div>
             ))}
           </li>
