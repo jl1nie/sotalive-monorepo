@@ -3,7 +3,10 @@ import {
   contains,
   edgeDistanceM,
   fetchRegionMaps,
+  labelPointIn,
   munisOf,
+  parkCodesOf,
+  parkStyleOf,
   parseSummitMap,
   pathOf,
   projector,
@@ -216,5 +219,34 @@ describe('withoutPrefecture: 読み上げる欄の市区町村名', () => {
     expect(withoutPrefecture('東京都八王子市')).toBe('八王子市')
     expect(withoutPrefecture('京都府京都市')).toBe('京都市')
     expect(withoutPrefecture('和歌山県田辺市')).toBe('田辺市')
+  })
+})
+
+describe('公園の見分け', () => {
+  const sq = (w: number, s: number, e: number, n: number) => ({
+    type: 'Polygon' as const,
+    coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] as [number, number][][],
+  })
+  it('公園ごとに、違う色と向き(出てくる順)', () => {
+    const map = parseSummitMap({
+      ...MAP,
+      features: [
+        { type: 'Feature', properties: { kind: 'muni', key: 'K', name: 'x', pota: [{ code: 'JP-0118', coverage: 'part' }, { code: 'JP-1289', coverage: 'part' }] }, geometry: { type: 'Point', coordinates: [0, 0] } },
+      ],
+    })!
+    const codes = parkCodesOf(map)
+    expect(codes).toEqual(['JP-0118', 'JP-1289'])
+    const a = parkStyleOf(codes, 'JP-0118')
+    const b = parkStyleOf(codes, 'JP-1289')
+    expect(a.color).not.toBe(b.color)
+    expect(a.angle).not.toBe(b.angle)
+  })
+  it('文字を置く点は、多角形の中で、地図の範囲に入る', () => {
+    const bbox: [number, number, number, number] = [0, 0, 10, 10]
+    const p = labelPointIn(sq(-5, -5, 3, 20), bbox)!
+    expect(p[0]).toBeGreaterThanOrEqual(0)
+    expect(p[0]).toBeLessThanOrEqual(3)
+    expect(contains(sq(-5, -5, 3, 20), p)).toBe(true)
+    expect(labelPointIn(sq(20, 20, 30, 30), bbox)).toBeNull()
   })
 })

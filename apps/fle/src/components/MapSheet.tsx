@@ -4,7 +4,10 @@ import { useOnline } from '@/hooks/useOnline'
 import { downloadRegionOf, loadSummitMap } from '@/lib/mapStore'
 import { distanceKm, distanceLabel } from '@/lib/reference'
 import {
+  labelPointIn,
   munisOf,
+  parkCodesOf,
+  parkStyleOf,
   pathOf,
   projector,
   summitAltOf,
@@ -98,6 +101,7 @@ function useGps(): GpsState {
 function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
   const t = useT()
   const hatch = useId()
+  const codes = parkCodesOf(map)
   const { width, height, xy, perMeter } = projector(map.bbox, W)
   const peak = summitOf(map)
   const feats = map.features
@@ -114,18 +118,24 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
       className="w-full rounded-xl border-2 border-gray-300 dark:border-gray-700 bg-white text-gray-950"
     >
       <defs>
-        <pattern id={hatch} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="6" stroke="#15803d" strokeWidth="1.5" />
-        </pattern>
+        {/* 公園ごとに、斜線の色と向きを変える(公園が重なる・隣り合うところでも見分けられるように) */}
+        {codes.map((c, i) => {
+          const st = parkStyleOf(codes, c)
+          return (
+            <pattern key={c} id={`${hatch}-${i}`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform={`rotate(${st.angle})`}>
+              <line x1="0" y1="0" x2="0" y2="6" stroke={st.color} strokeWidth="1.5" />
+            </pattern>
+          )
+        })}
       </defs>
       {feats.map((f, i) =>
         f.properties.kind === 'park' ? (
           <path
             key={`p${i}`}
             d={pathOf(f.geometry, xy)}
-            fill={`url(#${hatch})`}
+            fill={`url(#${hatch}-${codes.indexOf(f.properties.code)})`}
             fillOpacity={0.6}
-            stroke="#15803d"
+            stroke={parkStyleOf(codes, f.properties.code).color}
             strokeDasharray="3 2"
             fillRule="evenodd"
           />
@@ -141,6 +151,19 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
           <path key={`b${i}`} d={pathOf(f.geometry, xy)} fill="none" stroke="#374151" strokeWidth={1.5} />
         ) : null
       )}
+      {/* 公園の区域の中に、番号を書く */}
+      {feats.map((f, i) => {
+        const p = f.properties
+        if (p.kind !== 'park') return null
+        const at = labelPointIn(f.geometry, map.bbox)
+        if (!at) return null
+        const [x, y] = xy(at)
+        return (
+          <text key={`pl${i}`} x={x} y={y} textAnchor="middle" fontSize="10" fontWeight="bold" fill={parkStyleOf(codes, p.code).color} stroke="#fff" strokeWidth="3" paintOrder="stroke">
+            {p.code}
+          </text>
+        )
+      })}
       {feats.map((f, i) => {
         const p = f.properties
         if (p.kind !== 'muni' || f.geometry.type !== 'Point') return null
@@ -243,6 +266,7 @@ function ReadingCard({ map, here }: { map: SummitMap; here?: string }) {
   const t = useT()
   const alt = summitAltOf(map)
   const munis = [...munisOf(map)].sort((a, b) => Number(b.key === here) - Number(a.key === here))
+  const codes = parkCodesOf(map)
   return (
     <div className="text-sm leading-snug">
       <p className="font-bold">
@@ -268,6 +292,8 @@ function ReadingCard({ map, here }: { map: SummitMap; here?: string }) {
             {m.pota.map((q) => (
               <div key={q.code} className="flex gap-2 pl-4">
                 <span className="flex-none text-xs font-bold text-gray-700 dark:text-gray-300 pt-0.5">POTA</span>
+                {/* 地図の斜線と同じ色の印 */}
+                <span className="flex-none w-3 h-3 mt-1 rounded-sm" style={{ background: parkStyleOf(codes, q.code).color }} aria-hidden="true" />
                 <span className="min-w-0">{parkLine(q, t)}</span>
               </div>
             ))}
