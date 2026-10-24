@@ -10,6 +10,7 @@ import {
   regionOf,
   summitOf,
   whereAmI,
+  withoutPrefecture,
   zoneOf,
 } from './summitMap'
 
@@ -204,5 +205,16 @@ describe('whereAmI: 現在地の答え', () => {
     const z = zoneOf(map)!.geometry
     // 中心から縁まで 0.001 度(経度方向は cos で縮む)
     expect(edgeDistanceM(z, [139.005, 36.005])).toBeCloseTo(0.001 * 111320 * Math.cos((36.005 * Math.PI) / 180), 0)
+  })
+})
+
+describe('withoutPrefecture: 読み上げる欄の市区町村名', () => {
+  it('都道府県を外し、郡名は残す', () => {
+    expect(withoutPrefecture('山梨県南都留郡富士河口湖町')).toBe('南都留郡富士河口湖町')
+    expect(withoutPrefecture('神奈川県愛甲郡清川村')).toBe('愛甲郡清川村')
+    expect(withoutPrefecture('北海道札幌市')).toBe('札幌市')
+    expect(withoutPrefecture('東京都八王子市')).toBe('八王子市')
+    expect(withoutPrefecture('京都府京都市')).toBe('京都市')
+    expect(withoutPrefecture('和歌山県田辺市')).toBe('田辺市')
   })
 })

@@ -32,7 +32,7 @@ export type FeatureProps =
   | { kind: 'muni'; key: string; name: string; pota: MuniPota[] }
   | { kind: 'park'; code: string; key: string }
   | { kind: 'area'; key: string }
-  | { kind: 'summit'; code: string; name?: string }
+  | { kind: 'summit'; code: string; name?: string; alt?: number }
 
 export interface Feature {
   type: 'Feature'
@@ -93,11 +93,17 @@ export const zoneOf = (map: SummitMap): Feature | undefined => map.features.find
 export const munisOf = (map: SummitMap) =>
   map.features.flatMap((f) => (f.properties.kind === 'muni' ? [{ ...f.properties, geometry: f.geometry }] : []))
 
-/** 山頂の名前(古い地図にはない) */
-export const summitNameOf = (map: SummitMap): string => {
+/** 山頂の名前と標高(古い地図にはない) */
+export const summitNameOf = (map: SummitMap): string => summitPropsOf(map)?.name ?? ''
+export const summitAltOf = (map: SummitMap): number | undefined => summitPropsOf(map)?.alt
+
+function summitPropsOf(map: SummitMap) {
   const f = map.features.find((x) => x.properties.kind === 'summit')
-  return f?.properties.kind === 'summit' ? (f.properties.name ?? '') : ''
+  return f?.properties.kind === 'summit' ? f.properties : undefined
 }
+
+/** 市区町村名から都道府県を外す(山頂のコードで分かる。読み上げる欄の幅を取らない)。郡名は残す */
+export const withoutPrefecture = (name: string): string => name.replace(/^(東京都|北海道|(?:京都|大阪)府|.{2,3}県)/, '')
 
 export const summitOf = (map: SummitMap): Position | null => {
   const f = map.features.find((x) => x.properties.kind === 'summit')
