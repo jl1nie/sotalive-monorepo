@@ -250,7 +250,7 @@ ssb
 </ol>
 <table>
 <tr><th>sotaYYYYMMDD.csv</th><td>SOTA log (QSOs from a summit, per day). <code>sota-s2s-….csv</code> too if there are S2S contacts</td></tr>
-<tr><th>CALLSIGN@PARK-DATE.adi</th><td>POTA ADIF (per park and day). WWFF is the same. FREQ is included when you wrote a frequency, and MY_SOTA_REF (yours) and SOTA_REF (theirs) when there is a summit</td></tr>
+<tr><th>CALLSIGN@PARK-DATE.adi</th><td>POTA ADIF (one file per park, even across UTC midnight; the date is that of the first QSO). WWFF is the same. FREQ is included when you wrote a frequency, and MY_SOTA_REF (yours) and SOTA_REF (theirs) when there is a summit</td></tr>
 <tr><th>hamlog-….csv</th><td>CSV for importing into HAMLOG (with QSL message and rig)</td></tr>
 </table>
 <p>Import the sota….csv into the SOTA database, the .adi file into the POTA site, and the hamlog….csv into HAMLOG. If any line has an error, no files are made; only a text file listing the errors is produced (fix them and export again).</p>

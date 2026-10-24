@@ -124,36 +124,35 @@ pub fn generate_fle_output_with(
         }
     }
 
-    // WWFF / POTA の ADIF: 運用場所(リファレンス)× UTCの日付ごとに、そのQSOだけで作る
-    // (別の山や公園、別の日のQSOが混ざらない)
+    // WWFF / POTA の ADIF: 運用場所(リファレンス)ごとに、そのQSOだけで 1 つのファイルにする。日をまたいでも分けず、
+    // 名前は、その場所の最初のQSOの日付(1回の運用を1つのファイルにする。logconv・旧版の FLE と同じ)。
+    // 別の山や公園のQSOは混ざらない
     for (sig, refs_of) in [
         ("WWFF", wwff_refs as fn(&FleQsoRecord) -> Vec<String>),
         ("POTA", pota_refs as fn(&FleQsoRecord) -> Vec<String>),
     ] {
-        for (date, day) in group_by_date(result.records.iter()) {
-            let mut placed: Vec<String> = Vec::new();
-            for r in &day {
-                for place in refs_of(r) {
-                    if !placed.contains(&place) {
-                        placed.push(place);
-                    }
+        let mut placed: Vec<String> = Vec::new();
+        for r in &result.records {
+            for place in refs_of(r) {
+                if !placed.contains(&place) {
+                    placed.push(place);
                 }
             }
-            for place in placed {
-                let at_place: Vec<&FleQsoRecord> = day
-                    .iter()
-                    .copied()
-                    .filter(|r| refs_of(r).contains(&place))
-                    .collect();
-                let adif_data = generate_adif(&at_place, sig, &place);
-                let fname = format!(
-                    "{}@{}-{}.adi",
-                    at_place[0].mycall.replace('/', "-"),
-                    place,
-                    date
-                );
-                files.insert(fname, adif_data);
-            }
+        }
+        for place in placed {
+            let at_place: Vec<&FleQsoRecord> = result
+                .records
+                .iter()
+                .filter(|r| refs_of(r).contains(&place))
+                .collect();
+            let adif_data = generate_adif(&at_place, sig, &place);
+            let fname = format!(
+                "{}@{}-{}.adi",
+                at_place[0].mycall.replace('/', "-"),
+                place,
+                date_key(at_place[0])
+            );
+            files.insert(fname, adif_data);
         }
     }
 
@@ -1014,16 +1013,17 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
     }
 
     #[test]
-    fn a_park_activated_on_two_utc_days_gets_one_file_per_day() {
+    fn a_park_activated_across_utc_midnight_stays_in_one_file() {
+        // 1回の運用は、日をまたいでも1つのファイル(名前は最初のQSOの日付。logconv・旧版の FLE と同じ)
         let files = output_of("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JA-0001\n2300 ja1aaa\nday +\n0010 ja1bbb");
         assert_eq!(
             calls_in(&files["JA1ABC@JA-0001-20261018.adi"]),
-            vec!["JA1AAA"]
+            vec!["JA1AAA", "JA1BBB"]
         );
-        assert_eq!(
-            calls_in(&files["JA1ABC@JA-0001-20261019.adi"]),
-            vec!["JA1BBB"]
-        );
+        assert_eq!(files.keys().filter(|k| k.ends_with(".adi")).count(), 1);
+        // SOTA の CSV は、日ごとにアクティベーションを数えるので、UTC の日付ごとのまま
+        let files = output_of("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n2300 ja1aaa\nday +\n0010 ja1bbb");
+        assert!(files.contains_key("sota20261018.csv") && files.contains_key("sota20261019.csv"));
     }
 
     #[test]

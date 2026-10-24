@@ -250,7 +250,7 @@ ssb
 </ol>
 <table>
 <tr><th>sotaYYYYMMDD.csv</th><td>SOTA のログ(山のQSO。日付ごと)。S2S があれば <code>sota-s2s-…csv</code> も</td></tr>
-<tr><th>コールサイン@公園-日付.adi</th><td>POTA の ADIF(公園・日付ごと)。WWFF も同様。周波数を書いたときは FREQ、山があれば MY_SOTA_REF(自分)・SOTA_REF(相手)も入ります</td></tr>
+<tr><th>コールサイン@公園-日付.adi</th><td>POTA の ADIF(公園ごと。日をまたいでも 1 つで、日付は最初の QSO の日)。WWFF も同様。周波数を書いたときは FREQ、山があれば MY_SOTA_REF(自分)・SOTA_REF(相手)も入ります</td></tr>
 <tr><th>hamlog-….csv</th><td>HAMLOG の取り込み用 CSV(QSLメッセージ・リグ入り)</td></tr>
 </table>
 <p>SOTA のデータベースには sota…csv を、POTA のサイトには .adi を、HAMLOG には hamlog…csv を取り込みます。エラーのある行があるときは、ファイルは作られず、エラー内容を書いたテキストだけが出ます(直してから、もう一度生成します)。</p>
