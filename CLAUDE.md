@@ -99,6 +99,12 @@ pnpm run pages:deploy:preview # Preview (develop)
 - CI（`.github/workflows/ci.yml`）: PR と push で走る。変わったパスに関係するテストだけを並列に走らせ（Rust・fle・logconv・myact・parks）、ビルドは1回（artifact でプロジェクトごとの出力を渡す）。デプロイは push のときだけで、Pages のプロジェクトごとに並列、関係するテストが通ってから。共通の部分（ワークフロー・lock ファイル・`packages/shared`・`scripts`）が変わったら、すべて走る。手元では `pnpm run test` / `pnpm run lint:apps`
 - ビルド: `pnpm run build`（`build:apps` → `scripts/assemble.sh`）。FLE の wasm は CI でキャッシュする（`.github/actions/fle-wasm`。`crates/` が変わったときだけビルド）
 
+## エージェントの進め方
+
+- **1 つのループで、作業の種類でモデルを選ぶ**(`docs/agent-workflow.md`)。既定は `opusplan`(`.claude/settings.json`): plan mode の Opus で設計し、承認したら同じループの Sonnet で実装する。設計・原因の分からない不具合は Opus、実装・docs・CI は Sonnet。モデルを替えるのは `/model` で、`fork` は使わない(hook が拒む)。
+- サブエージェントは、ログで文脈がふくらむとき・互いに関係のない並列の作業(`runner`、Sonnet)・テストで判断できない変更のレビュー(`reviewer`、Opus)のときだけ。reviewer が要るのは、テストのない旧版と `packages/shared`、`functions/`・`pages/fle/functions`、公園区域の仕様、FLE の文法。
+- 並列に任せたあとは `git status` を見て、試しのコードが残っていないか確かめ、パスを指定してコミットする。
+
 ## 関連リポジトリ
 
 - **sotaapp2**: バックエンドAPI (Rust/Axum) - https://github.com/jl1nie/sotaapp2(手元では、このリポジトリと同じ階層の `../sotaapp2`)
