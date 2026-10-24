@@ -3,7 +3,17 @@ import { Sheet } from '@/components/Sheet'
 import { useOnline } from '@/hooks/useOnline'
 import { downloadRegionOf, loadSummitMap } from '@/lib/mapStore'
 import { distanceKm, distanceLabel } from '@/lib/reference'
-import { munisOf, pathOf, projector, summitOf, whereAmI, type Side, type SummitMap } from '@/lib/summitMap'
+import {
+  munisOf,
+  pathOf,
+  projector,
+  summitAltOf,
+  summitNameOf,
+  summitOf,
+  whereAmI,
+  withoutPrefecture,
+  type SummitMap,
+} from '@/lib/summitMap'
 import { useT } from '@/lib/i18n'
 
 interface Props {
@@ -61,7 +71,7 @@ function MapBody({ summit }: { summit: string }) {
     <div className="space-y-3">
       <MapSvg map={map} fix={gps.status === 'ok' ? gps.fix : null} />
       <GpsLine map={map} gps={gps} />
-      <MuniList map={map} />
+      <ReadingCard map={map} here={gps.status === 'ok' ? whereAmI(map, [gps.fix.lon, gps.fix.lat], gps.fix.accuracy).muni?.key : undefined} />
       <p className="text-xs text-gray-700 dark:text-gray-300">{map.attribution}</p>
     </div>
   )
@@ -135,7 +145,7 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
         const p = f.properties
         if (p.kind !== 'muni' || f.geometry.type !== 'Point') return null
         const [x, y] = xy(f.geometry.coordinates)
-        const lines = [p.name, ...(p.pota.length ? p.pota.map((q) => potaLabel(q, t)) : [t('map.noPota')])]
+        const lines = [withoutPrefecture(p.name), ...(p.pota.length ? p.pota.map((q) => potaLabel(q, t)) : [t('map.noPota')])]
         return (
           <text key={`m${i}`} x={x} y={y} textAnchor="middle" fontSize="11" fill="#111827" stroke="#fff" strokeWidth="3" paintOrder="stroke">
             {lines.map((l, j) => (
@@ -148,7 +158,26 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
       })}
       {peak && (() => {
         const [x, y] = xy(peak)
-        return <path d={`M${x},${y - 7}L${x + 6},${y + 4}L${x - 6},${y + 4}Z`} fill="#111827" />
+        // 山頂の位置(SOTA の山頂の点)。コードと山名を添える。文字は右に出し、右端なら左に出す
+        const right = x < width - 110
+        return (
+          <g>
+            <path d={`M${x},${y - 7}L${x + 6},${y + 4}L${x - 6},${y + 4}Z`} fill="#111827" />
+            <text
+              x={right ? x + 9 : x - 9}
+              y={y + 3}
+              textAnchor={right ? 'start' : 'end'}
+              fontSize="10"
+              fontWeight="bold"
+              fill="#111827"
+              stroke="#fff"
+              strokeWidth="3"
+              paintOrder="stroke"
+            >
+              {[map.summit, summitNameOf(map)].filter(Boolean).join(' ')}
+            </text>
+          </g>
+        )
       })()}
       {me && meInside && (
         <g>
@@ -170,7 +199,16 @@ function potaLabel(q: { code: string; coverage: 'all' | 'part' }, t: ReturnType<
   return q.coverage === 'all' ? q.code : t('map.partial', { code: q.code })
 }
 
-/** 現在地の答え: ゾーンの中か、いまいる市区町村(ログに書く JCC・JCG)と、そこで当たる POTA の公園の中か */
+/** 一覧に出す公園: `JP-1289 丹沢大山県立自然公園`(一部なら、そう添える) */
+function parkLine(q: { code: string; name?: string; coverage: 'all' | 'part' }, t: ReturnType<typeof useT>): string {
+  const label = [q.code, q.name].filter(Boolean).join(' ')
+  return q.coverage === 'all' ? label : t('map.partialSuffix', { label })
+}
+
+/**
+ * 現在地の答え: その位置で当たるリファレンスだけを 1 行で(`JA/YN-051 JP-0016`)。
+ * 中か外かは地図で見えるので、文字にしない。境界付近のものは色だけ変える。ゾーンの外なら、山頂までの距離
+ */
 function GpsLine({ map, gps }: { map: SummitMap; gps: GpsState }) {
   const t = useT()
   if (gps.status === 'waiting') return <p>{t('map.gpsWaiting')}</p>
@@ -178,56 +216,55 @@ function GpsLine({ map, gps }: { map: SummitMap; gps: GpsState }) {
   const { lat, lon, accuracy } = gps.fix
   const where = whereAmI(map, [lon, lat], accuracy)
   const peak = summitOf(map)
-  const dist = peak ? distanceLabel(distanceKm(lat, lon, peak[1], peak[0])) : ''
-  const zoneText = { in: t('map.inZone'), out: t('map.outZone', { dist }), near: t('map.nearZone') }[where.zone]
-  const sideText = (side: Side) => ({ in: t('map.inPark'), out: t('map.outPark'), near: t('map.nearPark') })[side]
+  const refs = [
+    ...(where.zone !== 'out' ? [{ code: map.summit, near: where.zone === 'near' }] : []),
+    ...where.pota.filter((q) => q.side !== 'out').map((q) => ({ code: q.code, near: q.side === 'near' })),
+  ]
   return (
-    <div className="space-y-1" role="status">
-      <p className={where.zone === 'in' ? 'font-bold text-green-700 dark:text-green-400' : 'font-bold'}>
-        {zoneText}
-        <span className="ml-2 text-sm font-normal text-gray-700 dark:text-gray-300">{t('map.accuracy', { m: String(Math.round(accuracy)) })}</span>
-      </p>
-      {where.muni && (
-        <p className="font-bold">
-          {t('map.here')} {where.muni.name} <span className="font-mono">{where.muni.key}</span>
-          {where.muni.near && <span className="ml-1 font-normal text-amber-800 dark:text-amber-300">{t('map.nearBorder')}</span>}
-        </p>
-      )}
-      {where.muni && where.zone !== 'out' && (
-        <ul className="text-sm">
-          {where.pota.length === 0 ? (
-            <li>{t('map.noPota')}</li>
-          ) : (
-            where.pota.map((q) => (
-              <li key={q.code} className={q.side === 'in' ? 'font-bold text-green-700 dark:text-green-400' : q.side === 'near' ? 'font-bold text-amber-800 dark:text-amber-300' : ''}>
-                <span className="font-mono">{q.code}</span> {sideText(q.side)}
-              </li>
-            ))
-          )}
-        </ul>
-      )}
-    </div>
+    <p role="status" className="font-mono text-xl font-bold">
+      {refs.length > 0
+        ? refs.map((r) => (
+            <span key={r.code} className={`mr-3 ${r.near ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-400'}`}>
+              {r.code}
+            </span>
+          ))
+        : peak && <span className="font-sans text-base">{t('map.toSummit', { dist: distanceLabel(distanceKm(lat, lon, peak[1], peak[0])) })}</span>}
+      <span className="font-sans text-sm font-normal text-gray-700 dark:text-gray-300">{t('map.accuracy', { m: String(Math.round(accuracy)) })}</span>
+    </p>
   )
 }
 
-/** 市区町村ごとに、選ぶと当たる POTA */
-function MuniList({ map }: { map: SummitMap }) {
+/**
+ * 交信で聞かれたときに読み上げる欄: 山頂のコード・山名・標高と、ゾーンにかかる市区町村ごとの JCC・JCG と当たる POTA。
+ * POTA のない市区町村も出す(JCC・JCG は聞かれる)。いまいる市区町村に ▶ を付けて先頭に並べる。
+ * 市区町村 1 つを 2 段に分ける(1 段目: JCC・JCG と郡名を含む名前、2 段目: 公園)。長い名前は折り返す
+ */
+function ReadingCard({ map, here }: { map: SummitMap; here?: string }) {
   const t = useT()
-  const munis = munisOf(map)
-  if (munis.length === 0) return null
+  const alt = summitAltOf(map)
+  const munis = [...munisOf(map)].sort((a, b) => Number(b.key === here) - Number(a.key === here))
   return (
-    <ul className="space-y-1 text-sm">
-      {munis.map((m) => (
-        <li key={m.key}>
-          <span className="font-bold">{m.name}</span>
-          <span className="ml-1 font-mono text-gray-700 dark:text-gray-300">{m.key}</span>
-          {': '}
-          {m.pota.length ? m.pota.map((q) => potaLabel(q, t)).join(', ') : t('map.noPota')}
-        </li>
-      ))}
-      {munis.some((m) => m.pota.some((q) => q.coverage === 'part')) && (
-        <li className="text-gray-700 dark:text-gray-300">{t('map.partialHint')}</li>
-      )}
-    </ul>
+    <div className="text-sm leading-snug">
+      <p className="font-bold">
+        <span className="font-mono">{map.summit}</span> {summitNameOf(map)}
+        {alt !== undefined && <span className="ml-2 font-normal">{alt} m</span>}
+      </p>
+      <ul className="mt-1 space-y-1">
+        {munis.map((m) => (
+          <li key={m.key} className={m.key === here ? 'font-bold' : ''}>
+            <div className="flex gap-1">
+              <span className="w-3 flex-none" aria-hidden="true">{m.key === here ? '▶' : ''}</span>
+              <span className="font-mono flex-none">{m.key}</span>
+              <span className="min-w-0">{withoutPrefecture(m.name)}</span>
+            </div>
+            {m.pota.map((q) => (
+              <div key={q.code} className="pl-8">
+                {parkLine(q, t)}
+              </div>
+            ))}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
