@@ -77,39 +77,61 @@ var ContourLayer = L.GridLayer.extend({
     }
 });
 
+// 山頂の画素(タイル内 px, py)の ±3 画素で最も高い画素を探す。demAt(dx, dy) は、山頂のタイルから
+// dx, dy だけ離れたタイルの標高(長さ 65536)を返す。探す範囲がタイルの端を越えたら隣のタイルを読む
+// (以前はタイルの中の添字で探していたので、左右の端では隣の行の反対側の画素を読んでいた)。
+function findPeak(px, py, demAt) {
+    var peak = 0, cx = px, cy = py, moved = false;
+    for (var i = -3; i < 4; i++)
+	for (var j = -3; j < 4; j++) {
+	    var x = px + i, y = py + j;
+	    var e = demAt(Math.floor(x / 256), Math.floor(y / 256));
+	    if (!e)
+		continue;
+	    var h = e[(((y % 256) + 256) % 256) * 256 + ((x % 256) + 256) % 256];
+	    if (h > peak) {
+		cx = x;
+		cy = y;
+		peak = h;
+		moved = true;
+	    }
+	}
+    return {peak: peak, cx: cx, cy: cy, moved: moved};
+}
+
 L.contourLayer = function(lat, lon, zoom, height, uplmt, vdist, hdist ,options,done) {
     if (zoom > 14)
 	zoom = 14
-    pxl = latlonToPxl(lat,lon,zoom)
-    p = getDEM({x:pxl['tx'], y:pxl['ty'], z:zoom},e => {
-	var px = pxl['px'] % 256,
-	    py = pxl['py'] % 256,
-	    peak  = 0,
-	    cx = px,cy = py,
-	    moved = false;
-	
-	for (var i = -3; i < 4; i++) 
-	    for (var j = -3; j < 4; j++) {
-		pos = (py + j) * 256 + px + i
-		if (pos >=0 && pos <= 65535)
-		    if (e[pos] > peak) {
-			cx = px + i
-			cy = py + j
-			peak = e[pos]
-			moved = true
-		    }
-	    }
-	pxl['px'] = pxl['tx']*256+cx
-	pxl['py'] = pxl['ty']*256+cy
-	latlon = pxlTolatlon(pxl['px'],pxl['py'],zoom)
+    var pxl = latlonToPxl(lat,lon,zoom)
+    var px = pxl['px'] % 256,
+	py = pxl['py'] % 256;
+    // 探す範囲にかかるタイル(普通は山頂のタイルだけ。端では隣も)
+    var need = {};
+    for (var i = -3; i < 4; i += 6)
+	for (var j = -3; j < 4; j += 6) {
+	    var dx = Math.floor((px + i) / 256), dy = Math.floor((py + j) / 256);
+	    need[dx + ',' + dy] = [dx, dy];
+	}
+    Promise.all(Object.keys(need).map(k => new Promise(resolve =>
+	getDEM({x: pxl['tx'] + need[k][0], y: pxl['ty'] + need[k][1], z: zoom}, e => resolve([k, e]))
+    ))).then(list => {
+	var dems = {};
+	list.forEach(r => { dems[r[0]] = r[1]; });
+	var r = findPeak(px, py, (dx, dy) => dems[dx + ',' + dy]);
+	// 塗り始めは最高点の画素。最高点が隣のタイルにあれば、そのタイルを中心にする
+	pxl['px'] = pxl['tx'] * 256 + r.cx
+	pxl['py'] = pxl['ty'] * 256 + r.cy
+	pxl['tx'] = Math.floor(pxl['px'] / 256)
+	pxl['ty'] = Math.floor(pxl['py'] / 256)
+	var latlon = pxlTolatlon(pxl['px'],pxl['py'],zoom)
 	if (done)
-	    done(new ContourLayer(pxl, zoom, peak,
+	    done(new ContourLayer(pxl, zoom, r.peak,
 				  [{opaque:0x01,
 				    color:[0xff,0x00,0x00,0x60]},
 				   {opaque:0x02,
 				    color:[0x00,0x00,0xff,0x60]}],
 				  uplmt,
-				  vdist, hdist, options),latlon,moved)
+				  vdist, hdist, options),latlon,r.moved)
     })
 }
 
@@ -160,3 +182,6 @@ function redoActivationZone() {
     }
 }
 
+
+if (typeof module !== 'undefined')
+    module.exports = { findPeak: findPeak, latlonToPxl: latlonToPxl };
