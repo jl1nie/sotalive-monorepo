@@ -3,7 +3,7 @@ import { Sheet } from '@/components/Sheet'
 import { useOnline } from '@/hooks/useOnline'
 import { downloadRegionOf, loadSummitMap } from '@/lib/mapStore'
 import { distanceKm, distanceLabel } from '@/lib/reference'
-import { munisOf, pathOf, projector, summitNameOf, summitOf, whereAmI, type Side, type SummitMap } from '@/lib/summitMap'
+import { munisOf, pathOf, projector, summitNameOf, summitOf, whereAmI, type SummitMap } from '@/lib/summitMap'
 import { useT } from '@/lib/i18n'
 
 interface Props {
@@ -195,7 +195,10 @@ function parkLine(q: { code: string; name?: string; coverage: 'all' | 'part' }, 
   return q.coverage === 'all' ? label : t('map.partial', { code: label })
 }
 
-/** 現在地の答え: ゾーンの中か、いまいる市区町村(ログに書く JCC・JCG)と、そこで当たる POTA の公園の中か */
+/**
+ * 現在地の答え: その位置で当たるリファレンスだけを 1 行で(`JA/YN-051 JP-0016`)。
+ * 中か外かは地図で見えるので、文字にしない。境界付近のものは色だけ変える。ゾーンの外なら、山頂までの距離
+ */
 function GpsLine({ map, gps }: { map: SummitMap; gps: GpsState }) {
   const t = useT()
   if (gps.status === 'waiting') return <p>{t('map.gpsWaiting')}</p>
@@ -203,62 +206,37 @@ function GpsLine({ map, gps }: { map: SummitMap; gps: GpsState }) {
   const { lat, lon, accuracy } = gps.fix
   const where = whereAmI(map, [lon, lat], accuracy)
   const peak = summitOf(map)
-  const dist = peak ? distanceLabel(distanceKm(lat, lon, peak[1], peak[0])) : ''
-  const zoneText = { in: t('map.inZone'), out: t('map.outZone', { dist }), near: t('map.nearZone') }[where.zone]
-  const sideText = (side: Side) => ({ in: t('map.inPark'), out: t('map.outPark'), near: t('map.nearPark') })[side]
+  const refs = [
+    ...(where.zone !== 'out' ? [{ code: map.summit, near: where.zone === 'near' }] : []),
+    ...where.pota.filter((q) => q.side !== 'out').map((q) => ({ code: q.code, near: q.side === 'near' })),
+  ]
   return (
-    <div className="space-y-1" role="status">
-      <p className={where.zone === 'in' ? 'font-bold text-green-700 dark:text-green-400' : 'font-bold'}>
-        {zoneText}
-        <span className="ml-2 text-sm font-normal text-gray-700 dark:text-gray-300">{t('map.accuracy', { m: String(Math.round(accuracy)) })}</span>
-      </p>
-      {where.muni && (
-        <p className="font-bold">
-          {t('map.here')} {where.muni.name} <span className="font-mono">{where.muni.key}</span>
-          {where.muni.near && <span className="ml-1 font-normal text-amber-800 dark:text-amber-300">{t('map.nearBorder')}</span>}
-        </p>
-      )}
-      {where.muni && where.zone !== 'out' && (
-        <ul className="text-sm">
-          {where.pota.length === 0 ? (
-            <li>{t('map.noPota')}</li>
-          ) : (
-            where.pota.map((q) => (
-              <li key={q.code} className={q.side === 'in' ? 'font-bold text-green-700 dark:text-green-400' : q.side === 'near' ? 'font-bold text-amber-800 dark:text-amber-300' : ''}>
-                <span className="font-mono">{q.code}</span> {q.name} — {sideText(q.side)}
-              </li>
-            ))
-          )}
-        </ul>
-      )}
-    </div>
+    <p role="status" className="font-mono text-xl font-bold">
+      {refs.length > 0
+        ? refs.map((r) => (
+            <span key={r.code} className={`mr-3 ${r.near ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-400'}`}>
+              {r.code}
+            </span>
+          ))
+        : peak && <span className="font-sans text-base">{t('map.toSummit', { dist: distanceLabel(distanceKm(lat, lon, peak[1], peak[0])) })}</span>}
+      <span className="font-sans text-sm font-normal text-gray-700 dark:text-gray-300">{t('map.accuracy', { m: String(Math.round(accuracy)) })}</span>
+    </p>
   )
 }
 
-/** 市区町村ごとに、選ぶと当たる POTA */
+/** 市区町村ごとに、選ぶと当たる POTA。POTA のない市区町村は出さない(地図には出す) */
 function MuniList({ map }: { map: SummitMap }) {
   const t = useT()
-  const munis = munisOf(map)
+  const munis = munisOf(map).filter((m) => m.pota.length > 0)
   if (munis.length === 0) return null
   return (
-    <ul className="space-y-1 text-sm">
-      {munis.map((m) => (
-        <li key={m.key}>
-          <span className="font-bold">{m.name}</span>
-          <span className="ml-1 font-mono text-gray-700 dark:text-gray-300">{m.key}</span>
-          {m.pota.length ? (
-            <ul className="ml-4">
-              {m.pota.map((q) => (
-                <li key={q.code}>{parkLine(q, t)}</li>
-              ))}
-            </ul>
-          ) : (
-            <span>: {t('map.noPota')}</span>
-          )}
-        </li>
-      ))}
-      {munis.some((m) => m.pota.some((q) => q.coverage === 'part')) && (
-        <li className="text-gray-700 dark:text-gray-300">{t('map.partialHint')}</li>
+    <ul className="text-sm">
+      {munis.flatMap((m) =>
+        m.pota.map((q) => (
+          <li key={`${m.key}|${q.code}`}>
+            <span className="font-mono">{m.key}</span> {m.name.replace(/^(東京都|北海道|(?:京都|大阪)府|.{2,3}県)/, '')}: {parkLine(q, t)}
+          </li>
+        ))
       )}
     </ul>
   )
