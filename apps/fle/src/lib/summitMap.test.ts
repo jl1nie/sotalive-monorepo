@@ -1,5 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { contains, fetchRegionMaps, munisOf, parseSummitMap, pathOf, projector, regionOf, summitOf, zoneOf } from './summitMap'
+import {
+  contains,
+  edgeDistanceM,
+  fetchRegionMaps,
+  munisOf,
+  parseSummitMap,
+  pathOf,
+  projector,
+  regionOf,
+  summitOf,
+  whereAmI,
+  zoneOf,
+} from './summitMap'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -131,5 +143,65 @@ describe('fetchRegionMaps', () => {
     expect(await fetchRegionMaps('JA/ST')).toBeNull()
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')))
     expect(await fetchRegionMaps('JA/ST')).toBeNull()
+  })
+})
+
+describe('whereAmI: 現在地の答え', () => {
+  // ゾーンは 139.004〜139.006 / 36.004〜36.006。北(36.005 より上)が本庄市、南が長瀞町。
+  // 本庄市の JP-1148 は一部だけ(区域は 139.0045 より東)、長瀞町の JP-1148 は全部
+  const sq = (w: number, s: number, e: number, n: number) => ({
+    type: 'Polygon' as const,
+    coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] as [number, number][][],
+  })
+  const map = parseSummitMap({
+    ...MAP,
+    features: [
+      ...MAP.features,
+      { type: 'Feature', properties: { kind: 'area', key: 'JCC#1311' }, geometry: sq(139.0, 36.005, 139.01, 36.01) },
+      { type: 'Feature', properties: { kind: 'area', key: 'JCG#13007C' }, geometry: sq(139.0, 36.0, 139.01, 36.005) },
+      { type: 'Feature', properties: { kind: 'park', code: 'JP-1148', key: 'JCC#1311' }, geometry: sq(139.0045, 36.005, 139.01, 36.01) },
+    ],
+  })!
+
+  it('ゾーンの中で、公園の区域の中なら in', () => {
+    const w = whereAmI(map, [139.0055, 36.0055], 5)
+    expect(w.zone).toBe('in')
+    expect(w.muni).toEqual({ key: 'JCC#1311', name: '埼玉県本庄市', near: false })
+    expect(w.pota).toEqual([{ code: 'JP-1148', side: 'in' }])
+  })
+
+  it('全部入る公園は、ゾーンの中なら in', () => {
+    const w = whereAmI(map, [139.005, 36.0041], 15)
+    expect(w.muni?.key).toBe('JCG#13007C')
+    expect(w.zone).toBe('near') // ゾーンの南の縁から 11 m、誤差 15 m
+    expect(whereAmI(map, [139.005, 36.0045], 1).pota).toEqual([{ code: 'JP-1148', side: 'in' }])
+  })
+
+  it('境界が誤差より近ければ near。公園の境界は、データのずれ(20 m)も足す', () => {
+    // 市区町村境(36.005)から約 11 m
+    expect(whereAmI(map, [139.0055, 36.0051], 15).muni?.near).toBe(true)
+    expect(whereAmI(map, [139.0055, 36.0051], 5).muni?.near).toBe(false)
+    // 公園の西の縁(139.0045)から約 18 m: 誤差 5 m でも、公園は near
+    expect(whereAmI(map, [139.0047, 36.0055], 5).pota).toEqual([{ code: 'JP-1148', side: 'near' }])
+    // 誤差が大きければ、ゾーンの真ん中でも near
+    expect(whereAmI(map, [139.005, 36.0055], 100).zone).toBe('near')
+  })
+
+  it('ゾーンの外では、POTA を判定しない', () => {
+    const w = whereAmI(map, [139.008, 36.008], 5)
+    expect(w.zone).toBe('out')
+    expect(w.muni?.key).toBe('JCC#1311')
+    expect(w.pota).toEqual([])
+  })
+
+  it('市区町村の区域がない古い地図では、ゾーンだけ', () => {
+    const old = parseSummitMap(MAP)!
+    expect(whereAmI(old, [139.005, 36.0055], 5)).toEqual({ zone: 'in', muni: null, pota: [] })
+  })
+
+  it('edgeDistanceM: 縁までの距離(m)', () => {
+    const z = zoneOf(map)!.geometry
+    // 中心から縁まで 0.001 度(経度方向は cos で縮む)
+    expect(edgeDistanceM(z, [139.005, 36.005])).toBeCloseTo(0.001 * 111320 * Math.cos((36.005 * Math.PI) / 180), 0)
   })
 })
