@@ -29,6 +29,7 @@ export type FeatureProps =
   | { kind: 'border' }
   | { kind: 'muni'; key: string; name: string; pota: MuniPota[] }
   | { kind: 'park'; code: string; key: string }
+  | { kind: 'area'; key: string }
   | { kind: 'summit'; code: string }
 
 export interface Feature {
@@ -151,4 +152,69 @@ export function pathOf(g: Geometry, xy: (p: Position) => Position): string {
     default:
       return ''
   }
+}
+
+/** 公園の境界は、この距離(m、GPS の誤差に足す)より近ければ言い切らない(公園区域のデータには数十 m のずれがある) */
+export const EDGE_M = 20
+
+/** 中・外・境界付近 */
+export type Side = 'in' | 'out' | 'near'
+
+/** 現在地の答え。古い地図(市区町村の区域がない)では muni は null */
+export interface Where {
+  zone: Side
+  muni: { key: string; name: string; near: boolean } | null
+  /** その市区町村で当たる POTA と、現在地がその公園の中か。ゾーンの外なら空 */
+  pota: { code: string; side: Side }[]
+}
+
+/** 点から、多角形の縁までの距離(m)。狭い範囲なので、緯度の縮みだけを直した平面で測る */
+export function edgeDistanceM(g: Geometry, [lon, lat]: Position): number {
+  const k = Math.cos((lat * Math.PI) / 180)
+  const m = ([x, y]: Position): Position => [(x - lon) * k * 111320, (y - lat) * 111320]
+  let best = Infinity
+  for (const ring of polygonsOf(g).flat()) {
+    for (let i = 1; i < ring.length; i++) {
+      const [ax, ay] = m(ring[i - 1])
+      const [bx, by] = m(ring[i])
+      const dx = bx - ax
+      const dy = by - ay
+      const len = dx * dx + dy * dy
+      const t = len === 0 ? 0 : Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len))
+      best = Math.min(best, Math.hypot(ax + t * dx, ay + t * dy))
+    }
+  }
+  return best
+}
+
+function sideOf(g: Geometry, p: Position, margin: number): Side {
+  if (edgeDistanceM(g, p) < margin) return 'near'
+  return contains(g, p) ? 'in' : 'out'
+}
+
+/**
+ * 現在地(経度, 緯度)と GPS の誤差(m)から、ゾーン・市区町村・当たる POTA の中か外かを答える。
+ * 境界が GPS の誤差より近ければ near(言い切らない)。公園の境界は、データのずれ(EDGE_M)も足す。
+ * ゾーン(同じ標高データから作る)と市区町村境(国土数値情報)は、ずれが小さいので誤差だけ
+ */
+export function whereAmI(map: SummitMap, p: Position, accuracy: number): Where {
+  const margin = Math.max(0, accuracy)
+  const zoneF = zoneOf(map)
+  const zone: Side = zoneF ? sideOf(zoneF.geometry, p, margin) : 'out'
+  const area = map.features.find((f) => f.properties.kind === 'area' && contains(f.geometry, p))
+  const key = area?.properties.kind === 'area' ? area.properties.key : null
+  const m = key ? munisOf(map).find((x) => x.key === key) : undefined
+  const muni = m && area ? { key: m.key, name: m.name, near: edgeDistanceM(area.geometry, p) < margin } : null
+  const pota =
+    m && zone !== 'out'
+      ? m.pota.map((q) => {
+          if (q.coverage === 'all') return { code: q.code, side: zone }
+          // 一部だけ入る公園: その市区町村の中の公園の区域で判定する
+          const park = map.features.find(
+            (f) => f.properties.kind === 'park' && f.properties.code === q.code && f.properties.key === m.key
+          )
+          return { code: q.code, side: park ? sideOf(park.geometry, p, margin + EDGE_M) : ('near' as Side) }
+        })
+      : []
+  return { zone, muni, pota }
 }

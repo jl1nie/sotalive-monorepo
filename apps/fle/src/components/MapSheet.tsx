@@ -3,7 +3,7 @@ import { Sheet } from '@/components/Sheet'
 import { useOnline } from '@/hooks/useOnline'
 import { downloadRegionOf, loadSummitMap } from '@/lib/mapStore'
 import { distanceKm, distanceLabel } from '@/lib/reference'
-import { contains, munisOf, pathOf, projector, summitOf, zoneOf, type SummitMap } from '@/lib/summitMap'
+import { munisOf, pathOf, projector, summitOf, whereAmI, type Side, type SummitMap } from '@/lib/summitMap'
 import { useT } from '@/lib/i18n'
 
 interface Props {
@@ -170,20 +170,43 @@ function potaLabel(q: { code: string; coverage: 'all' | 'part' }, t: ReturnType<
   return q.coverage === 'all' ? q.code : t('map.partial', { code: q.code })
 }
 
+/** 現在地の答え: ゾーンの中か、いまいる市区町村(ログに書く JCC・JCG)と、そこで当たる POTA の公園の中か */
 function GpsLine({ map, gps }: { map: SummitMap; gps: GpsState }) {
   const t = useT()
   if (gps.status === 'waiting') return <p>{t('map.gpsWaiting')}</p>
   if (gps.status === 'denied') return <p>{t('map.gpsDenied')}</p>
   const { lat, lon, accuracy } = gps.fix
-  const zone = zoneOf(map)
-  const inside = zone ? contains(zone.geometry, [lon, lat]) : false
+  const where = whereAmI(map, [lon, lat], accuracy)
   const peak = summitOf(map)
   const dist = peak ? distanceLabel(distanceKm(lat, lon, peak[1], peak[0])) : ''
+  const zoneText = { in: t('map.inZone'), out: t('map.outZone', { dist }), near: t('map.nearZone') }[where.zone]
+  const sideText = (side: Side) => ({ in: t('map.inPark'), out: t('map.outPark'), near: t('map.nearPark') })[side]
   return (
-    <p className={inside ? 'font-bold text-green-700 dark:text-green-400' : 'font-bold'}>
-      {inside ? t('map.inZone') : t('map.outZone', { dist })}
-      <span className="ml-2 text-sm font-normal text-gray-700 dark:text-gray-300">{t('map.accuracy', { m: String(Math.round(accuracy)) })}</span>
-    </p>
+    <div className="space-y-1" role="status">
+      <p className={where.zone === 'in' ? 'font-bold text-green-700 dark:text-green-400' : 'font-bold'}>
+        {zoneText}
+        <span className="ml-2 text-sm font-normal text-gray-700 dark:text-gray-300">{t('map.accuracy', { m: String(Math.round(accuracy)) })}</span>
+      </p>
+      {where.muni && (
+        <p className="font-bold">
+          {t('map.here')} {where.muni.name} <span className="font-mono">{where.muni.key}</span>
+          {where.muni.near && <span className="ml-1 font-normal text-amber-800 dark:text-amber-300">{t('map.nearBorder')}</span>}
+        </p>
+      )}
+      {where.muni && where.zone !== 'out' && (
+        <ul className="text-sm">
+          {where.pota.length === 0 ? (
+            <li>{t('map.noPota')}</li>
+          ) : (
+            where.pota.map((q) => (
+              <li key={q.code} className={q.side === 'in' ? 'font-bold text-green-700 dark:text-green-400' : q.side === 'near' ? 'font-bold text-amber-800 dark:text-amber-300' : ''}>
+                <span className="font-mono">{q.code}</span> {sideText(q.side)}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
   )
 }
 
