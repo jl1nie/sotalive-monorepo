@@ -20,6 +20,12 @@ from . import topo
 from .release import latest_path
 
 DEFAULT_API = "https://sotaapp2.sotalive.net"
+# Python の既定の User-Agent(Python-urllib)は sotaapp2 の前の Cloudflare に 403 で拒まれる
+USER_AGENT = "sotalive-jaffpota/1.0"
+
+
+def api_request(url):
+    return urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
 
 _cache = {}
 
@@ -30,7 +36,7 @@ def query_park(api_url, code):
         return _cache[code]
     url = f"{api_url}/api/v2/pota/parks/{urllib.parse.quote(code)}"
     try:
-        with urllib.request.urlopen(url, timeout=10) as r:
+        with urllib.request.urlopen(api_request(url), timeout=10) as r:
             result = json.loads(r.read())
     except urllib.error.HTTPError as e:
         if e.code != 404:

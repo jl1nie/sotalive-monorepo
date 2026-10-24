@@ -306,6 +306,11 @@
 								<label class="custom-control-label" for="jaff_ref">JAFF</label>
 							</div>
 							<div class="custom-control custom-checkbox">
+								<input class="custom-control-input" type="checkbox" value="" id="display_area"
+									onclick="clickPrefs()">
+								<label class="custom-control-label" for="display_area">自然公園の領域を表示</label>
+							</div>
+							<div class="custom-control custom-checkbox">
 								<input class="custom-control-input" type="checkbox" value="" id="aprs_track"
 									onclick="clickPrefs()">
 								<label class="custom-control-label" for="aprs_track">SOTA APRS</label>
@@ -559,6 +564,8 @@
 			'sota_ref': true,
 			'pota_ref': true,
 			'jaff_ref': true,
+			// 以前の版と同じ Cookie 名。保存してある設定があれば、それに従う
+			'display_area': true,
 			'aprs_track': true,
 			'pilgrim': false,
 			'show_potalog': false,
@@ -1257,6 +1264,7 @@
 					}
 				}
 			}
+			updateGeoJson();
 		}
 
 		function readCookie(pref) {
@@ -1754,6 +1762,7 @@
 		};
 
 		var geojson = L.topoJson(null, {
+			attribution: "公園区域: <a href='https://www.biodic.go.jp/' target='_blank'>国立公園区域GISデータ(環境省生物多様性センター)</a>・<a href='https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-A10-v3_1.html' target='_blank'>国土数値情報(自然公園地域)</a>を加工",
 			style: function (feature) {
 				return {
 					color: "#000",
@@ -1786,7 +1795,6 @@
 		});
 
 
-		geojson.addTo(map);
 		kp_index();
 		setInterval(kp_index, 1000 * 1800);
 		clock();
@@ -1804,11 +1812,25 @@
 			return data;
 		}
 
-		function loadAreas() {
-			getGeoData('json/jaffpota-annotated-v23.json').then(data => geojson.addData(data));
+		// 自然公園の領域。表示にしたときに初めて読み込み、その後は層の付け外しだけをする
+		var areas_loaded = false;
+
+		function updateGeoJson() {
+			if (typeof geojson === 'undefined' || !map)
+				return;
+			if (prefs['display_area']) {
+				if (!map.hasLayer(geojson))
+					geojson.addTo(map);
+				if (!areas_loaded) {
+					areas_loaded = true;
+					getGeoData('json/jaffpota-annotated-v24.json').then(data => geojson.addData(data));
+				}
+			} else if (map.hasLayer(geojson)) {
+				map.removeLayer(geojson);
+			}
 		}
 
-		loadAreas();
+		updateGeoJson();
 
 		userChange = true;
 

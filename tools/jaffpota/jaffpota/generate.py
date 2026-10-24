@@ -462,6 +462,25 @@ def build(spec, base_raw, nps_raw, strict=False, a10_raw=None):
     return t, report, problems
 
 
+def display_version(spec, t, report):
+    """MyACT で表示する版。各 geometry を EPSG:6933 で simplify_m だけ簡略化する(位相は保つ)。
+
+    判定用には簡略化しない版を使う。隣の公園との境界は別々に簡略化するので、最大 simplify_m の隙間や重なりができる。
+    """
+    d = spec["display"]
+    proj = Projector()
+    tiny = spec.get("drop_parts_below_m2") or 0
+    out = []
+    for p, g in topo.decode(t):
+        g = valid(proj.lonlat(proj.metric(valid(g)).simplify(d["simplify_m"], preserve_topology=True)))
+        parts = [q for q in topo.polygons_of(g) if proj.area(q) >= tiny] if g is not None else []
+        check(parts, f"簡略化で消えた: {p}")
+        out.append((p, parts[0] if len(parts) == 1 else MultiPolygon(parts)))
+    dt, dropped = topo.encode(out)
+    report["display"] = {"simplify_m": d["simplify_m"], **stats(dt, dropped)}
+    return dt
+
+
 def stats(t, dropped=None):
     geoms = t["objects"][topo.OBJECT]["geometries"]
     out = {
@@ -488,6 +507,9 @@ def compare_expect(spec, report):
     for k, v in spec.get("expect_final", {}).items():
         if report["final"].get(k) != v:
             diff[f"final.{k}"] = {"expect": v, "got": report["final"].get(k)}
+    for k, v in spec.get("display", {}).get("expect", {}).items():
+        if report.get("display", {}).get(k) != v:
+            diff[f"display.{k}"] = {"expect": v, "got": report.get("display", {}).get(k)}
     ref = spec.get("reference_sha256", {})
     report["reference_sha256_match"] = {
         "generated": ref.get("generated") == report["output"]["sha256"],
@@ -530,7 +552,13 @@ def main(argv=None):
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / "problems.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": problems}, ensure_ascii=False) + "\n", encoding="utf-8")
     if t is not None:
-        (a.out / f"jaffpota-annotated-v{spec['version']}.json").write_text(topo.dumps(t), encoding="utf-8", newline="\n")
+        name = f"jaffpota-annotated-v{spec['version']}"
+        if spec.get("display"):
+            # 簡略化しない版(判定用)は -full、MyACT に置くのは表示用の版
+            (a.out / f"{name}-full.json").write_text(topo.dumps(t), encoding="utf-8", newline="\n")
+            t = display_version(spec, t, report)
+            log(f"表示用: {spec['display']['simplify_m']} m で簡略化 {report['display']}")
+        (a.out / f"{name}.json").write_text(topo.dumps(t), encoding="utf-8", newline="\n")
         report["differences_from_spec"] = compare_expect(spec, report)
     (a.out / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     if t is None:

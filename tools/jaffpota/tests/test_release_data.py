@@ -1,6 +1,6 @@
 """配備する最新版 jaffpota-annotated-vN.json の検証。
 
-版に依存しない検査(書式・属性・UID・arc・参照・DB 照合)と、v23 固有の検査(件数・新規公園・除いた公園)に分かれる。
+版に依存しない検査(書式・属性・UID・arc・参照・DB 照合)と、v23 以降の検査(件数・新規公園・除いた公園)に分かれる。
 
     uv run python -m unittest tests.test_release_data -v
     JAFFPOTA_API=https://sotaapp2.sotalive.net uv run python -m unittest tests.test_release_data -v   # DB 照合も実行
@@ -13,11 +13,14 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
+from jaffpota import patch
 from jaffpota import release as rel
 from jaffpota import topo
 
 PATH = rel.latest_path()
-V23 = rel.latest_version() == 23
+VERSION = rel.latest_version()
+V23_OR_LATER = VERSION >= 23
+GEOMETRIES = {23: 1439, 24: 416}  # v24 は同じ公園の地物を 1 つにまとめた
 PROPS = ["JAFF", "NAME", "PID", "POTA", "UID"]
 NEW_PARKS = {
     "JP-0030": ("JAFF-0090", "030", "屋久島国立公園"),
@@ -76,15 +79,15 @@ class TestLatest(unittest.TestCase):
         for ref in rel.REFERENCES:
             self.assertEqual(rel.referenced_versions(ref), {rel.latest_version()}, f"{ref} の参照が最新版とずれている")
 
-    @unittest.skipUnless(V23, "v23 固有の検査")
+    @unittest.skipUnless(VERSION in GEOMETRIES, "件数を決めていない版")
     def test_counts(self):
-        self.assertEqual(len(self.geoms), 1439)
+        self.assertEqual(len(self.geoms), GEOMETRIES[VERSION])
         pota = {g["properties"]["POTA"] for g in self.geoms}
         self.assertEqual(len(pota), 395)
         national = {g["properties"]["POTA"] for g in self.geoms if g["properties"]["NAME"].endswith("国立公園")}
         self.assertEqual(len(national), 35)
 
-    @unittest.skipUnless(V23, "v23 固有の検査")
+    @unittest.skipUnless(V23_OR_LATER, "v23 以降の検査")
     def test_new_national_parks(self):
         for pota, (jaff, pid, name) in NEW_PARKS.items():
             gs = [g["properties"] for g in self.geoms if g["properties"]["POTA"] == pota]
@@ -93,7 +96,7 @@ class TestLatest(unittest.TestCase):
                 self.assertEqual((p["JAFF"], p["PID"], p["NAME"]), (jaff, pid, name))
         self.assertTrue(any(g["properties"]["POTA"] == "JP-0029" for g in self.geoms))  # 霧島錦江湾と屋久島は別の公園
 
-    @unittest.skipUnless(V23, "v23 固有の検査")
+    @unittest.skipUnless(V23_OR_LATER, "v23 以降の検査")
     def test_removed_pota_absent(self):
         present = {g["properties"]["POTA"] for g in self.geoms}
         self.assertFalse(present & REMOVED)
@@ -107,12 +110,13 @@ class TestLatest(unittest.TestCase):
         def get(code):
             url = f"{api}/api/v2/pota/parks/{urllib.parse.quote(code)}"
             try:
-                with urllib.request.urlopen(url, timeout=15) as r:
+                with urllib.request.urlopen(patch.api_request(url), timeout=15) as r:
                     return code, json.loads(r.read())
             except urllib.error.HTTPError as e:
                 return code, e.code
 
-        with ThreadPoolExecutor(8) as ex:
+        # 本番の sotaapp2(shared-cpu-1x)に負荷をかけすぎないよう、並列は 2 にする
+        with ThreadPoolExecutor(2) as ex:
             res = dict(ex.map(get, codes))
         missing = [c for c, v in res.items() if not isinstance(v, dict)]
         inactive = [c for c, v in res.items() if isinstance(v, dict) and v.get("parkInactive")]
