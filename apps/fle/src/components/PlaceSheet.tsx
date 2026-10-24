@@ -33,6 +33,8 @@ interface Props {
   onApply: (want: Station, extras: PlanExtras | undefined, memo: string | null, bandMode: string) => Promise<FieldError[]>
   /** 登録した予定(選ぶと入力欄に入る) */
   plans?: Plan[]
+  /** 山頂の地図を開く */
+  onOpenMap?: (summit: string) => void
 }
 
 /**
@@ -45,7 +47,7 @@ export function PlaceSheet(props: Props) {
   return props.open ? <PlaceForm {...props} /> : null
 }
 
-function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, fresh = false, replacing = false, onApply, plans = [] }: Props) {
+function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, fresh = false, replacing = false, onApply, plans = [], onOpenMap }: Props) {
   const t = useT()
   const [values, setValues] = useState<Values>(() => toValues(initial))
   const [errors, setErrors] = useState<FieldError[]>([])
@@ -123,7 +125,7 @@ function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, fresh = false
         </section>
       )}
       {extras && <p className="mb-3 text-sm">{t('plans.usedNote', { name: extras.name })}</p>}
-      <StationFields values={values} onChange={setValues} errors={errors} onPlace={memo.lookup} />
+      <StationFields values={values} onChange={setValues} errors={errors} onPlace={memo.lookup} onMap={onOpenMap} />
       {newLog && (
         <div className="mt-3">
           <BandModeFields value={bandMode} onChange={setBandMode} error={bandModeError} />

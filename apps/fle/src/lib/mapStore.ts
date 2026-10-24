@@ -96,9 +96,65 @@ export async function downloadRegionOf(summit: string): Promise<number | null> {
   return (await saveRegion(region, maps)) ? maps.length : null
 }
 
-/** 保存してあればそれを、なければ(オンラインなら)取ってから返す */
-export async function getSummitMap(summit: string, online: boolean): Promise<SummitMap | null> {
-  const saved = await loadSummitMap(summit)
-  if (saved || !online) return saved
-  return (await downloadRegionOf(summit)) ? loadSummitMap(summit) : null
+/** 地図の保存の状態。saved: 端末にある / pending: まだない(電波があれば取る) / none: その地域の地図がサーバーにない */
+export type MapStatus = 'saved' | 'pending' | 'none'
+
+/** 保存し直す間隔(公園区域などのデータを直したとき、古い地図を使い続けないように) */
+const REFRESH_MS = 30 * 86_400_000
+
+/**
+ * 地域(JA/KN など)の地図を、端末にそろえる(予定に入れた山頂は、電波がなくても地図が見えるようにする)。
+ * まだない地域と、古くなった地域を取る。電波がなければ取らない。地域ごとの状態を返す
+ */
+export async function ensureRegions(
+  regions: string[],
+  online: boolean,
+  store: RegionStore = idbStore,
+  now = Date.now()
+): Promise<Map<string, MapStatus>> {
+  const saved = new Map((await store.list()).map((r) => [r.region, r]))
+  const status = new Map<string, MapStatus>()
+  for (const region of regions) {
+    const rec = saved.get(region)
+    const stale = !rec || now - Date.parse(rec.savedAt) > REFRESH_MS
+    if (stale && online) {
+      const maps = await store.fetch(region)
+      if (maps && maps.length > 0 && (await store.save(region, maps))) {
+        status.set(region, 'saved')
+        continue
+      }
+      // サーバーが空を返したら、その地域の地図はない(取り直しても同じ)
+      if (maps && maps.length === 0 && !rec) {
+        status.set(region, 'none')
+        continue
+      }
+    }
+    status.set(region, rec ? 'saved' : 'pending')
+  }
+  if (regions.length > 0) await store.persist()
+  return status
+}
+
+/** ensureRegions が使う保存先と取得先(テストで差し替える) */
+export interface RegionStore {
+  list: () => Promise<{ region: string; savedAt: string }[]>
+  save: (region: string, maps: SummitMap[]) => Promise<boolean>
+  fetch: (region: string) => Promise<SummitMap[] | null>
+  persist: () => Promise<void>
+}
+
+const idbStore: RegionStore = {
+  list: listRegions,
+  save: saveRegion,
+  fetch: (region) => fetchRegionMaps(region),
+  persist: requestPersist,
+}
+
+/** 端末の保存を、ブラウザが空き容量の都合で消さないように頼む(断られても動作は変わらない) */
+async function requestPersist(): Promise<void> {
+  try {
+    if (navigator.storage?.persisted && !(await navigator.storage.persisted())) await navigator.storage.persist?.()
+  } catch {
+    // 頼めない環境では何もしない
+  }
 }
