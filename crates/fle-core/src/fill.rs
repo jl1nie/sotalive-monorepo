@@ -45,6 +45,8 @@ pub struct FillScope {
     pub rst: bool,
     /// 時刻のない行に、いまの時刻を入れない(紙ログの打ち込み用)。その行は前の時刻を引き継ぐ
     pub no_clock: bool,
+    /// いまの時刻を入れるとき、日付が変わっていれば、行の前に `day +` か `date` を書く(`date` がまだないときも)
+    pub date: bool,
 }
 
 impl FillScope {
@@ -54,6 +56,7 @@ impl FillScope {
         band_mode: false,
         rst: false,
         no_clock: false,
+        date: false,
     };
     /// すべて
     pub const FULL: Self = Self {
@@ -61,6 +64,7 @@ impl FillScope {
         band_mode: true,
         rst: true,
         no_clock: false,
+        date: false,
     };
 
     /// QSOの解釈結果(コンパイルの結果)が要るか
@@ -139,7 +143,17 @@ pub fn fill_with(
             if let Some(tz_line) = tz_line {
                 parts.push((0, 0, insert_at(0, tz_line)));
             }
-            let hhmm = (now + Duration::hours(i64::from(tz))).format("%H%M");
+            let local = now + Duration::hours(i64::from(tz));
+            // 日付が変わっていたら、QSO の行の前に書く(いまの時計で決めるので、推測しない)。
+            // 翌日なら `day +`、もっと離れていたり、`date` がまだなければ `date`
+            if let Some(dir) = scope
+                .date
+                .then(|| date_directive(text, line, local.date_naive()))
+                .flatten()
+            {
+                parts.push((line_start, 0, insert_at(line_start, dir)));
+            }
+            let hhmm = local.format("%H%M");
             parts.push((base, 1, insert_at(base, format!("{hhmm} "))));
         }
         Some(i) => {
@@ -215,6 +229,21 @@ pub fn fill_with(
     }
 
     merge(parts)
+}
+
+/// 時刻を自動で入れる行の前に書く、日付の指令(改行付き)。日付がそのままなら None。
+/// 基準日付より前(先の日付を書いておいた予定のログなど)は、書き換えない
+fn date_directive(text: &str, line: usize, today: NaiveDate) -> Option<String> {
+    let info = crate::line_info::line_info(text, line);
+    if info.date.is_empty() {
+        return Some(format!("date {}\n", today.format("%Y-%m-%d")));
+    }
+    let base = NaiveDate::parse_from_str(&info.date, "%Y-%m-%d").ok()?;
+    match (today - base).num_days() {
+        1 => Some("day +\n".to_string()),
+        d if d >= 2 => Some(format!("date {}\n", today.format("%Y-%m-%d"))),
+        _ => None,
+    }
 }
 
 fn insert_at(at: usize, insert: String) -> Edit {
@@ -683,6 +712,100 @@ mod tests {
         assert!(select_part(LOG, 0, Part::RstRcvd, NOW, 0, false).is_none());
     }
 
+    // ---- 日付(時刻を自動で入れるとき) ----
+
+    fn with_date(text: &str, line: usize, now_ms: i64, tz: i32) -> String {
+        let scope = FillScope {
+            date: true,
+            ..FillScope::TIME
+        };
+        apply(text, &fill_with(text, line, now_ms, tz, scope))
+    }
+
+    // NOW は 2026-10-18 09:05 UTC
+
+    #[test]
+    fn writes_day_plus_when_the_date_has_moved_to_the_next_day() {
+        let text = "date 2026-10-17\n2359 ja1aaa\njh1hhh";
+        assert_eq!(
+            with_date(text, 2, NOW, 0),
+            "date 2026-10-17\n2359 ja1aaa\nday +\n0905 jh1hhh"
+        );
+        // 書いたあとは、もう書かない(冪等)
+        let done = "date 2026-10-17\n2359 ja1aaa\nday +\n0905 jh1hhh";
+        assert_eq!(
+            fill_with(
+                done,
+                3,
+                NOW,
+                0,
+                FillScope {
+                    date: true,
+                    ..FillScope::TIME
+                }
+            ),
+            vec![]
+        );
+    }
+
+    #[test]
+    fn writes_nothing_on_the_same_day() {
+        let text = "date 2026-10-18\n0900 ja1aaa\njh1hhh";
+        assert_eq!(
+            with_date(text, 2, NOW, 0),
+            "date 2026-10-18\n0900 ja1aaa\n0905 jh1hhh"
+        );
+    }
+
+    #[test]
+    fn writes_the_date_when_days_have_passed_or_there_is_no_date() {
+        let text = "date 2026-10-15\n0900 ja1aaa\njh1hhh";
+        assert_eq!(
+            with_date(text, 2, NOW, 0),
+            "date 2026-10-15\n0900 ja1aaa\ndate 2026-10-18\n0905 jh1hhh"
+        );
+        assert_eq!(
+            with_date("mycall JA1ABC\nja1aaa", 1, NOW, 0),
+            "mycall JA1ABC\ndate 2026-10-18\n0905 ja1aaa"
+        );
+    }
+
+    #[test]
+    fn leaves_a_date_set_ahead_for_a_planned_log() {
+        let text = "date 2026-10-20\nja1aaa";
+        assert_eq!(with_date(text, 1, NOW, 0), "date 2026-10-20\n0905 ja1aaa");
+    }
+
+    #[test]
+    fn the_date_follows_the_timezone_of_the_log() {
+        // 2026-10-18 15:05 UTC は、JST では 10-19 00:05。JST のログなら翌日、UTC のログなら同じ日
+        let late = NOW + 6 * 3_600_000;
+        let jst = "timezone +9\ndate 2026-10-18\n2350 ja1aaa\njh1hhh";
+        assert_eq!(
+            with_date(jst, 3, late, 0),
+            "timezone +9\ndate 2026-10-18\n2350 ja1aaa\nday +\n0005 jh1hhh"
+        );
+        let utc = "date 2026-10-18\n1500 ja1aaa\njh1hhh";
+        assert_eq!(
+            with_date(utc, 2, late, 0),
+            "date 2026-10-18\n1500 ja1aaa\n1505 jh1hhh"
+        );
+    }
+
+    #[test]
+    fn writes_the_date_after_a_new_timezone_line() {
+        assert_eq!(
+            with_date("ja1aaa", 0, NOW, 9),
+            "timezone +9\ndate 2026-10-18\n1805 ja1aaa"
+        );
+    }
+
+    #[test]
+    fn a_time_written_by_hand_is_left_alone() {
+        let text = "date 2026-10-17\n2359 ja1aaa\n0001 jh1hhh";
+        assert_eq!(with_date(text, 2, NOW, 0), text);
+    }
+
     // ---- Full(確定ボタン) ----
 
     fn full(text: &str, line: usize, tz: i32) -> Vec<Edit> {
@@ -978,6 +1101,7 @@ mod tests {
                 expand_time: false,
                 band_mode: true,
                 rst: false,
+                date: false,
                 no_clock: false,
             }
         );

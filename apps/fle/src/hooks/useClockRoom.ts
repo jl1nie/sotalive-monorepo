@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 
 /** ログ欄の上に、時刻と運用先を出す高さ(rem)。時刻と、運用先の2行(n-fer で折り返したとき) */
-export const CLOCK_REM = 6.5
+export const CLOCK_REM = 6
 
 /** ログ欄に残す、いちばん少ない行数(前の行と、打っている行) */
 export const MIN_LINES = 2

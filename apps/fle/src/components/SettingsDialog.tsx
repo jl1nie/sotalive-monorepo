@@ -14,6 +14,7 @@ import {
 import { Sheet } from '@/components/Sheet'
 import { parseRigs } from '@/lib/rig'
 import { SyncSection } from '@/components/SyncSection'
+import { HamlogColumnsSection } from '@/components/HamlogColumnsSection'
 import type { useSync } from '@/hooks/useSync'
 import { useT, type MessageKey } from '@/lib/i18n'
 
@@ -272,6 +273,8 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
           />
           <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{t('settings.rigs.hint')}</p>
         </div>
+
+        <HamlogColumnsSection value={settings.hamlog} onChange={(hamlog) => onChange({ hamlog })} />
 
         <div>
           <label htmlFor="language" className="label">

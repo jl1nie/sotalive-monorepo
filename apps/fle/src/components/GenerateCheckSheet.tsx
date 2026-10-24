@@ -66,7 +66,7 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
             <span className="flex-none text-xs font-bold mt-1">
               {w.severity === 'required' ? t('check.required') : t('check.recommended')}
             </span>
-            <span>{t(`check.${w.code}`, { qsos: w.qsos })}</span>
+            <span>{t(`check.${w.code}`, { qsos: w.qsos, calls: (w.items ?? []).join(', ') })}</span>
           </li>
         ))}
       </ul>

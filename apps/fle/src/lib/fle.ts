@@ -123,14 +123,19 @@ export interface StationPlan {
 
 /** 出力する前に知らせる、ログの不足。文面は画面が作る(コードで区別する) */
 export interface OutputWarning {
-  code: 'missing_date' | 'missing_mycall' | 'missing_place' | 'missing_grid'
-  /** 入力する項目 */
-  field: 'date' | 'mycall' | 'place' | 'grid'
+  code: 'missing_date' | 'missing_mycall' | 'missing_place' | 'missing_grid' | 'unsure_call'
+  /** 入力する項目(`call` は、ログの中で直してもらう) */
+  field: 'date' | 'mycall' | 'place' | 'grid' | 'call'
   /** required: ないと出力が不完全。recommended: あったほうがよい */
   severity: 'required' | 'recommended'
   /** 影響を受けるQSOの数 */
   qsos: number
+  /** 該当するもの(`unsure_call` なら、`?` のあるコールサイン) */
+  items?: string[]
 }
+
+import { DEFAULT_HAMLOG_COLUMNS, type HamlogColumns } from '@/lib/hamlog'
+export { DEFAULT_HAMLOG_COLUMNS, type HamlogColumns }
 
 let ready: Promise<unknown> | null = null
 let initialized = false
@@ -176,6 +181,8 @@ export interface FillOptions {
   bandMode?: boolean
   /** 省略された RST を書き、省略形(4 など)を解決した値に置き換える */
   rst?: boolean
+  /** いまの時刻を入れるとき、日付が変わっていれば行の前に `day +` か `date` を書く(`date` がまだないときも) */
+  date?: boolean
 }
 
 /**
@@ -255,6 +262,8 @@ export interface LineInfo {
   qslmsg2: string
   /** この時点で数える日(UTC、`YYYY-MM-DD`)。この日のQSOの数を出す */
   qsoDate: string
+  /** QSO の行で、時刻が前の QSO より前に戻っている(日付が変わったのに `day +` がないかもしれない) */
+  timeBack: boolean
 }
 
 export async function lineInfo(text: string, line: number): Promise<LineInfo> {
@@ -295,7 +304,11 @@ export async function retimeLog(text: string, tz: number, convert: boolean): Pro
   return wasmRetime(text, tz, convert)
 }
 
-export async function generateFleZip(text: string, now: Date = new Date()): Promise<Uint8Array> {
+export async function generateFleZip(
+  text: string,
+  now: Date = new Date(),
+  hamlog: HamlogColumns = DEFAULT_HAMLOG_COLUMNS
+): Promise<Uint8Array> {
   await ensureReady()
-  return wasmGenerateZip(text, now.getTime())
+  return wasmGenerateZip(text, now.getTime(), { hamlog })
 }

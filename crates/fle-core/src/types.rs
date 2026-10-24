@@ -52,6 +52,8 @@ pub struct FleEnvironment {
     pub operator: String,
     pub qslmsg: String,
     pub qslmsg2: String,
+    /// いま有効なメモ(最後の `#` の行の本文)。HAMLOG の Rmks などに使える
+    pub memo: String,
     pub mywwff: String,
     pub mysota: String,
     pub mypota: Vec<String>,
@@ -236,6 +238,7 @@ impl Default for FleEnvironment {
             operator: String::new(),
             qslmsg: String::new(),
             qslmsg2: String::new(),
+            memo: String::new(),
             mywwff: String::new(),
             mysota: String::new(),
             mypota: Vec::new(),
@@ -340,6 +343,9 @@ pub struct FleQsoRecord {
     pub qsomsg: String,
     pub qsormks: String,
     pub qslmsg: String,
+    /// そのQSOの時点で有効なメモ(最後の `#` の行の本文)。なければ空。出力(HAMLOG の欄)にだけ使う
+    #[serde(skip)]
+    pub memo: String,
 }
 
 /// FLEコンパイル結果

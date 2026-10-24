@@ -32,6 +32,7 @@ const settings = (over: Partial<SyncedSettings> = {}): SyncedSettings => ({
   writeBandMode: false,
   writeRst: true,
   language: 'auto',
+  hamlog: { qth: '{rmks} {hisref}', rmks1: '{myref}', rmks2: '%{qslmsg}%{rig}' },
   ...over,
 })
 const plan = (id: string, over: Partial<Plan> = {}): Plan => ({ ...emptyPlan(id, 1000, 'JA1ABC'), ...over })
@@ -179,6 +180,8 @@ describe('サーバーの検査', () => {
     const { fetchImpl } = fakeServer()
     expect((await put(fetchImpl, { base: 0, data: { settings: { rigs: ['a%b'] }, plans: [] } })).status).toBe(400)
     expect((await put(fetchImpl, { base: 0, data: { settings: { timezone: 99 }, plans: [] } })).status).toBe(400)
+    expect((await put(fetchImpl, { base: 0, data: { settings: { hamlog: { qth: '', rmks1: 1, rmks2: '' } }, plans: [] } })).status).toBe(400)
+    expect((await put(fetchImpl, { base: 0, data: { settings: { hamlog: { qth: 'x'.repeat(101), rmks1: '', rmks2: '' } }, plans: [] } })).status).toBe(400)
     expect((await put(fetchImpl, { base: 0, data: { settings: {}, plans: [{ id: 'x' }] } })).status).toBe(400)
     expect((await put(fetchImpl, { base: 'x', data: { settings: {}, plans: [] } })).status).toBe(400)
     const big = { base: 0, data: { settings: {}, plans: [], pad: 'x'.repeat(40_000) } }

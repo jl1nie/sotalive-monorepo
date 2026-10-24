@@ -4,6 +4,9 @@ import type { FieldError, Station } from '@/lib/fle'
 import { Sheet } from '@/components/Sheet'
 import { StationFields } from '@/components/StationFields'
 import { MemoField } from '@/components/MemoField'
+import { BandModeFields } from '@/components/BandModeFields'
+import { bandModeLine, type BandMode } from '@/lib/bandMode'
+import { compileLog } from '@/lib/fle'
 import { useMemoDraft } from '@/hooks/useMemoDraft'
 import { toStation, toValues, type Values } from '@/lib/stationValues'
 import { extrasOf, type PlanExtras } from '@/lib/planApply'
@@ -24,9 +27,10 @@ interface Props {
   replacing?: boolean
   /**
    * ログに書き込む。誤りがあれば、項目ごとの誤りを返す(空なら書き込めた)。
-   * `memo` は、メモの欄の値。手で触っておらず空なら null(書き込むときに、山・公園から JCC・JCG を引く)
+   * `memo` は、メモの欄の値。手で触っておらず空なら null(書き込むときに、山・公園から JCC・JCG を引く)。
+   * `bandMode` は、新しいログの予定の周波数(バンド)とモードの行(`7.032 cw`)。なければ空
    */
-  onApply: (want: Station, extras: PlanExtras | undefined, memo: string | null) => Promise<FieldError[]>
+  onApply: (want: Station, extras: PlanExtras | undefined, memo: string | null, bandMode: string) => Promise<FieldError[]>
   /** 登録した予定(選ぶと入力欄に入る) */
   plans?: Plan[]
 }
@@ -49,11 +53,23 @@ function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, fresh = false
   const memo = useMemoDraft(initialMemo)
   // 書き込み中(JCC・JCG を引く間)。2回押しても、2回書かない
   const [busy, setBusy] = useState(false)
+  // 新しいログ: 予定の周波数(バンド)とモード
+  const newLog = fresh || isNewLog
+  const [bandMode, setBandMode] = useState<BandMode>({ freq: '', mode: '' })
+  const [bandModeError, setBandModeError] = useState<string | undefined>()
 
   const apply = async () => {
     if (busy) return
     setBusy(true)
-    const errs = await onApply(toStation(values), extras ?? undefined, memo.value())
+    // 周波数・モードの行は、コアが読めるものだけ書く(読めなければ、欄の下に知らせる)
+    const line = newLog ? bandModeLine(bandMode) : ''
+    if (line && (await compileLog(line)).errors.length > 0) {
+      setBandModeError(t('place.bandModeInvalid'))
+      setBusy(false)
+      return
+    }
+    setBandModeError(undefined)
+    const errs = await onApply(toStation(values), extras ?? undefined, memo.value(), line)
     setBusy(false)
     setErrors(errs)
   }
@@ -108,6 +124,11 @@ function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, fresh = false
       )}
       {extras && <p className="mb-3 text-sm">{t('plans.usedNote', { name: extras.name })}</p>}
       <StationFields values={values} onChange={setValues} errors={errors} onPlace={memo.lookup} />
+      {newLog && (
+        <div className="mt-3">
+          <BandModeFields value={bandMode} onChange={setBandMode} error={bandModeError} />
+        </div>
+      )}
       <div className="mt-3">
         <MemoField id="place-memo" memo={memo.memo} looking={memo.looking} onChange={memo.edit} />
       </div>

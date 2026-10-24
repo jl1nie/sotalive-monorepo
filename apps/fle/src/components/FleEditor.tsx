@@ -343,6 +343,8 @@ function Editor({
     expandTime: true,
     bandMode: settings.writeBandMode,
     rst: writeRst,
+    // いまの時刻を入れるときは、日付が変わっていれば `day +`(か `date`)も書く。時刻を手で打つ行には書かない
+    date: true,
   }
 
   // この行を確定したら、どう見えるか(時刻・バンド・モード・RSTが入った姿)を先に見せる
@@ -354,7 +356,7 @@ function Editor({
     if (edits.length === 0) return
     let current = true
     const filled = applyEdits(text, edits)
-    const shift = filled.split('\n').length - text.split('\n').length // timezone行が先頭に増える分
+    const shift = filled.split('\n').length - text.split('\n').length // 先頭の timezone の行・前の日付の行で増える分
     compileLog(filled)
       .then((v) => {
         const qso = v.qsos.find((q) => q.line === line + shift)
@@ -437,7 +439,12 @@ function Editor({
   }
 
   /** 場所をログに書き込む(指令の行の書式はコアが決める)。誤りがあれば返す。新しいログなら、空のログに書いて置き換える */
-  const applyPlace = async (want: Station, extras: PlanExtras | undefined, memoValue: string | null): Promise<FieldError[]> => {
+  const applyPlace = async (
+    want: Station,
+    extras: PlanExtras | undefined,
+    memoValue: string | null,
+    bandMode = ''
+  ): Promise<FieldError[]> => {
     if (!place) return []
     const base = place.fresh ? '' : text
     const plan = await stationPlan(base, place.line, want)
@@ -448,6 +455,8 @@ function Editor({
     const lines = [
       ...(extras ? extraLines(extras, base) : []),
       ...(memo && memoAt(base, place.line) !== memo ? [`# ${memo}`] : []),
+      // 予定の周波数(バンド)とモードは、最初の QSO のすぐ前に
+      ...(bandMode ? [bandMode] : []),
     ]
     const edits = withExtras(base, place.line, plan.edits, lines)
     if (place.fresh) {
@@ -472,6 +481,15 @@ function Editor({
       void downloadRegionOf(want.sota).then((n) => n && notify(t('notice.mapSaved', { region })))
     }
     return []
+  }
+
+  /** カーソルの行(QSO)の前に `day +` を書く(時刻を手で打っていて、前の QSO より前に戻ったとき) */
+  const insertDayPlus = () => {
+    const [start] = lineRange(text, caretLine)
+    const at = caret + 'day +\n'.length
+    pendingCaret.current = at
+    setText(text.slice(0, start) + 'day +\n' + text.slice(start))
+    setCaret(at)
   }
 
   /** 山(なければ最初の公園)の JCC・JCG。引けなければ空 */
@@ -507,7 +525,13 @@ function Editor({
     const line = caretLine
     const edits = fillLine(text, line, startedAtFor(line), settings.timezone, confirmScope)
     const filled = applyEdits(text, edits)
-    const shift = filled.split('\n').length - text.split('\n').length // timezone行が先頭に増える分
+    // 日付の行を書き足したら、知らせる(元に戻せる)
+    const dated = edits.find((e) => /^(?:timezone [+-]\d+\n)?(day \+|date \S+)\n/.test(e.insert))
+    if (dated) {
+      const dir = /(day \+|date \S+)\n/.exec(dated.insert)![1]
+      notify(t('notice.dateInserted', { directive: dir }), text)
+    }
+    const shift = filled.split('\n').length - text.split('\n').length // 先頭の timezone の行・前の日付の行で増える分
     const done = line + shift
     lineStartedAt.current = null
     const lines = filled.split('\n')
@@ -619,7 +643,7 @@ function Editor({
   const generateNow = useCallback(
     async (source: string) => {
       try {
-        const zip = await generateFleZip(source)
+        const zip = await generateFleZip(source, new Date(), settings.hamlog)
         const name = exportName(await logFileStem(source), new Date(), 'zip')
         download(new Blob([zip as BlobPart], { type: 'application/zip' }), name)
         if (view?.status === 'ERR') {
@@ -629,7 +653,7 @@ function Editor({
         notify(err instanceof Error ? err.message : t('notice.generateFailed'))
       }
     },
-    [view, notify, t]
+    [view, notify, t, settings.hamlog]
   )
 
   /** FLE のログを、そのままテキストで保存する(あとで「FLEログを開く」で読める) */
@@ -769,6 +793,18 @@ function Editor({
         </div>
 
         {/* フルキーでは、補完候補は候補バーに重ねて出す(打っている行のすぐ下) */}
+        {info?.timeBack && (
+          <div
+            role="status"
+            {...keepFocus}
+            className="flex-none mb-1 p-2 rounded-xl border-2 border-amber-700 bg-amber-50 text-amber-950 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-100 flex items-center gap-2 text-sm font-semibold"
+          >
+            <span className="flex-1">{t('timeBack.hint')}</span>
+            <button type="button" onClick={insertDayPlus} {...keepFocus} className="btn-secondary !min-h-10 font-mono">
+              day +
+            </button>
+          </div>
+        )}
         <div className="relative flex-none">
           <CandidateBar
             view={view}
@@ -991,7 +1027,7 @@ function Editor({
               </li>
             )}
           </MenuGroup>
-          <p className="mt-3 text-center text-xs text-gray-700 dark:text-gray-300 font-mono">{__APP_VERSION__}</p>
+          <p className="mt-3 text-center text-2xl text-gray-700 dark:text-gray-300 font-mono">{__APP_VERSION__}</p>
         </Sheet>
       </div>
     </FieldKeysContext.Provider>

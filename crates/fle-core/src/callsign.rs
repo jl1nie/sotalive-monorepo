@@ -42,6 +42,16 @@ pub fn is_callsign(s: &str) -> bool {
         && parts.iter().any(|p| is_plain_call(p))
 }
 
+/// 聞き取れなかった文字を `?` にしたコールサイン(`JA1AB?`、`JA1?BC`)。`?` を英字か数字に置き換えて
+/// コールサインになるものだけ。QSO として受け付け、出力の前に「確かめてください」と知らせる
+pub fn is_unsure_callsign(s: &str) -> bool {
+    s.contains('?')
+        && s.chars().any(|c| c != '?' && c != '/')
+        && ['A', '0']
+            .iter()
+            .any(|r| is_callsign(&s.replace('?', &r.to_string())))
+}
+
 /// コールサインを (全体, 基本のコール, ポータブル, QRP) に分ける
 pub fn parse_callsign(call: &str) -> Option<(String, String, String, String)> {
     let call_upper = call.to_uppercase();
@@ -161,6 +171,17 @@ mod tests {
         ] {
             assert!(!is_plain_call(w), "{w}");
             assert!(!is_callsign(w), "{w}");
+        }
+    }
+
+    #[test]
+    fn unsure_callsigns() {
+        for c in ["JA1AB?", "JA1?BC", "JA?ABC", "JA1A??", "JA1AB?/P"] {
+            assert!(is_unsure_callsign(c), "{c}");
+            assert!(!is_callsign(c), "{c}");
+        }
+        for c in ["?", "??", "JA1ABC", "?/?", "HELLO?", "73?"] {
+            assert!(!is_unsure_callsign(c), "{c}");
         }
     }
 

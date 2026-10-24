@@ -8,7 +8,7 @@ import type { Settings } from '@/hooks/useSettings'
 import { mergePlans, type PlanRecord } from '@/lib/plans'
 
 /** 端末をまたいで同じにする設定(テーマ・数字キーの行は、端末ごとに違うので除く) */
-export const SYNCED_KEYS = ['rigs', 'timezone', 'writeBandMode', 'writeRst', 'language'] as const
+export const SYNCED_KEYS = ['rigs', 'timezone', 'writeBandMode', 'writeRst', 'language', 'hamlog'] as const
 export type SyncedSettings = Pick<Settings, (typeof SYNCED_KEYS)[number]>
 
 /** 同期する内容 */
@@ -50,7 +50,14 @@ export const formatCode = (code: string): string => code.match(/.{1,4}/g)?.join(
 // ---- 設定・内容のマージ ----
 
 export function pickSettings(s: Settings): SyncedSettings {
-  return { rigs: s.rigs, timezone: s.timezone, writeBandMode: s.writeBandMode, writeRst: s.writeRst, language: s.language }
+  return {
+    rigs: s.rigs,
+    timezone: s.timezone,
+    writeBandMode: s.writeBandMode,
+    writeRst: s.writeRst,
+    language: s.language,
+    hamlog: s.hamlog,
+  }
 }
 
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b)

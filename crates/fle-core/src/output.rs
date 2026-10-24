@@ -19,10 +19,73 @@ use crate::ham::{
 /// 出力ファイルマップ
 pub type OutputFiles = HashMap<String, Vec<u8>>;
 
+/// 出力の設定(画面の設定から渡す)
+#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct OutputOptions {
+    pub hamlog: HamlogColumns,
+}
+
+/// HAMLOG の QTH・Rmks1・Rmks2 の欄に書く内容。差し込める値は次のとおりで、ほかの文字はそのまま書く。
+///
+/// - `{myref}`: 自局のリファレンス(SOTA・WWFF・POTA)
+/// - `{hisref}`: 相手局のリファレンス(カンマ区切り)
+/// - `{memo}`: そのQSOの時点で有効なメモ(最後の `#` の行)
+/// - `{rmks}`: QSO の行の備考(`{…}`。リファレンスを除いたもの)
+/// - `{qslmsg}`: QSL メッセージ
+/// - `{rig}`: `Rig=…`(`rig` がなければ空)
+///
+/// 差し込んだあと、続いた空白は1つにし、前後の空白は取る。既定は、旧 HamLogConv と同じ出力
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct HamlogColumns {
+    pub qth: String,
+    pub rmks1: String,
+    pub rmks2: String,
+}
+
+impl Default for HamlogColumns {
+    fn default() -> Self {
+        Self {
+            qth: "{rmks} {hisref}".to_string(),
+            rmks1: "{myref}".to_string(),
+            rmks2: "%{qslmsg}%{rig}".to_string(),
+        }
+    }
+}
+
+impl HamlogColumns {
+    /// 欄の内容を差し込む
+    fn expand(template: &str, record: &FleQsoRecord, his_refs: &str) -> String {
+        let rig = if record.rig.is_empty() {
+            String::new()
+        } else {
+            format!("Rig={}", record.rig)
+        };
+        let text = template
+            .replace("{myref}", &my_refs(record))
+            .replace("{hisref}", his_refs)
+            .replace("{memo}", &record.memo)
+            .replace("{rmks}", &remarks_text(&record.qsormks))
+            .replace("{qslmsg}", &record.qslmsg)
+            .replace("{rig}", &rig);
+        text.split_whitespace().collect::<Vec<_>>().join(" ")
+    }
+}
+
 /// FLE結果を各種形式に変換してZIPを生成
 pub fn generate_fle_output(
     result: &FleCompileResult,
     now: chrono::NaiveDateTime,
+) -> Result<Vec<u8>, String> {
+    generate_fle_output_with(result, now, &OutputOptions::default())
+}
+
+/// 設定を指定して、各種形式に変換してZIPを生成
+pub fn generate_fle_output_with(
+    result: &FleCompileResult,
+    now: chrono::NaiveDateTime,
+    options: &OutputOptions,
 ) -> Result<Vec<u8>, String> {
     let mut files: OutputFiles = HashMap::new();
 
@@ -46,7 +109,7 @@ pub fn generate_fle_output(
     let log_name = log_file_stem(result).unwrap_or_else(|| date_str.clone());
 
     // HAMLOG CSV
-    let hamlog_data = generate_hamlog_csv(result);
+    let hamlog_data = generate_hamlog_csv(result, &options.hamlog);
     files.insert(format!("hamlog-{}.csv", log_name), hamlog_data);
 
     // SOTA CSV: UTCの日付ごと。山のあるQSOだけ
@@ -259,6 +322,9 @@ pub struct OutputWarning {
     pub severity: Severity,
     /// 影響を受けるQSOの数
     pub qsos: usize,
+    /// 該当するもの(`unsure_call` なら、`?` のあるコールサイン)。ほかの警告では空
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub items: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -291,6 +357,7 @@ pub fn check_output(result: &FleCompileResult) -> Vec<OutputWarning> {
             field: "date",
             severity: Severity::Required,
             qsos: no_date,
+            items: Vec::new(),
         });
     }
 
@@ -301,6 +368,7 @@ pub fn check_output(result: &FleCompileResult) -> Vec<OutputWarning> {
             field: "mycall",
             severity: Severity::Required,
             qsos: no_mycall,
+            items: Vec::new(),
         });
     }
 
@@ -312,6 +380,7 @@ pub fn check_output(result: &FleCompileResult) -> Vec<OutputWarning> {
             field: "place",
             severity: Severity::Recommended,
             qsos: result.records.len(),
+            items: Vec::new(),
         });
     }
 
@@ -324,6 +393,29 @@ pub fn check_output(result: &FleCompileResult) -> Vec<OutputWarning> {
             field: "grid",
             severity: Severity::Recommended,
             qsos: no_grid,
+            items: Vec::new(),
+        });
+    }
+
+    // 聞き取れなかった文字を `?` にしたコールサイン。SOTA・POTA に上げる前に直してもらう
+    let unsure: Vec<&FleQsoRecord> = result
+        .records
+        .iter()
+        .filter(|r| r.callsign.contains('?'))
+        .collect();
+    if !unsure.is_empty() {
+        let mut items: Vec<String> = Vec::new();
+        for r in &unsure {
+            if !items.contains(&r.callsign) {
+                items.push(r.callsign.clone());
+            }
+        }
+        warnings.push(OutputWarning {
+            code: "unsure_call",
+            field: "call",
+            severity: Severity::Required,
+            qsos: unsure.len(),
+            items,
         });
     }
     warnings
@@ -500,7 +592,7 @@ fn hamlog_date_time(record: &FleQsoRecord) -> (String, String) {
 }
 
 /// HAMLOG CSV形式を生成
-fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
+fn generate_hamlog_csv(result: &FleCompileResult, columns: &HamlogColumns) -> Vec<u8> {
     let mut output = Vec::new();
 
     for record in &result.records {
@@ -526,17 +618,12 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
             his_refs.push(p.clone());
         }
 
-        let qth_str = format!("{} {}", remarks_text(&record.qsormks), his_refs.join(","))
-            .trim()
-            .to_string();
-        let my_refs = my_refs(record);
-
-        // QSLメッセージ。`rig` があれば、`%…%` の外側に `Rig=` として付ける(HAMLOG の書式)
-        let qsl_msg = if record.rig.is_empty() {
-            format!("%{}%", record.qslmsg)
-        } else {
-            format!("%{}%Rig={}", record.qslmsg, record.rig)
-        };
+        // QTH・Rmks1・Rmks2 は、設定の書式に差し込む。既定では、QTH は備考と相手のリファレンス、
+        // Rmks1 は自局のリファレンス、Rmks2 は QSL メッセージ(`rig` があれば `%…%` の外側に `Rig=`。HAMLOG の書式)
+        let his_refs = his_refs.join(",");
+        let qth_str = HamlogColumns::expand(&columns.qth, record, &his_refs);
+        let rmks1 = HamlogColumns::expand(&columns.rmks1, record, &his_refs);
+        let qsl_msg = HamlogColumns::expand(&columns.rmks2, record, &his_refs);
 
         // CSVフィールド
         let fields: [&str; 15] = [
@@ -552,7 +639,7 @@ fn generate_hamlog_csv(result: &FleCompileResult) -> Vec<u8> {
             "", // QSL
             &record.qsomsg,
             &qth_str,
-            &my_refs, // Remarks1
+            &rmks1, // Remarks1
             &qsl_msg,
             "0", // QSL
         ];
@@ -725,6 +812,7 @@ mod tests {
                 qsomsg: String::new(),
                 qsormks: String::new(),
                 qslmsg: "TNX QSO".to_string(),
+                memo: String::new(),
             }],
             errors: Vec::new(),
             has_sota: true,
@@ -1111,6 +1199,22 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
     }
 
     #[test]
+    fn unsure_callsigns_are_accepted_and_warned_before_output() {
+        let log = "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1ab?\n0910 ja1?bc\n0920 ja1ab?\n0930 ja1ccc";
+        let result = crate::compile_fle(log);
+        assert!(result.errors.is_empty(), "{:?}", result.errors);
+        assert_eq!(result.records[0].callsign, "JA1AB?");
+        let w = check_output(&result);
+        assert_eq!(w.len(), 1);
+        assert_eq!(
+            (w[0].code, w[0].field, w[0].qsos),
+            ("unsure_call", "call", 3)
+        );
+        assert_eq!(w[0].severity, Severity::Required);
+        assert_eq!(w[0].items, vec!["JA1AB?", "JA1?BC"]);
+    }
+
+    #[test]
     fn a_log_without_a_date_warns_first() {
         assert_eq!(
             codes("mycall JA1ABC\n40m cw\nmysota JA/TK-001\n0900 ja1aaa\n0910 ja1bbb"),
@@ -1231,6 +1335,53 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             .trim_start_matches('"')
             .trim_end_matches('"');
         inner.split("\",\"").nth(n).unwrap().replace("\"\"", "\"")
+    }
+
+    #[test]
+    fn the_hamlog_columns_follow_the_templates() {
+        let log = "mycall JA1ABC\ndate 2026-10-18\nmysota JA/KN-006\nrig KX2\nqslmsg TNX\n# JCC 1115 伊勢原市\n40m cw\n0900 ja1aaa {hello} JA/TK-001\n# 山頂は霧\n0910 ja1bbb";
+        let result = crate::compile_fle(log);
+        // 既定: QTH は備考と相手の参照、Rmks1 は自局の参照、Rmks2 は QSL メッセージと Rig
+        let files = zip_files(generate_fle_output(&result, test_now()).unwrap());
+        let lines = hamlog_lines(&files);
+        let cols = |l: &str| {
+            (
+                hamlog_column(l, 11),
+                hamlog_column(l, 12),
+                hamlog_column(l, 13),
+            )
+        };
+        assert_eq!(
+            cols(&lines[0]),
+            (
+                "hello JA/TK-001".into(),
+                "JA/KN-006".into(),
+                "%TNX%Rig=KX2".into()
+            )
+        );
+        // メモを Rmks2 に、QSO の備考を Rmks1 に
+        let options = OutputOptions {
+            hamlog: HamlogColumns {
+                qth: "{hisref}".into(),
+                rmks1: "{rmks}".into(),
+                rmks2: "{memo} {myref}".into(),
+            },
+        };
+        let files = zip_files(generate_fle_output_with(&result, test_now(), &options).unwrap());
+        let lines = hamlog_lines(&files);
+        assert_eq!(
+            cols(&lines[0]),
+            (
+                "JA/TK-001".into(),
+                "hello".into(),
+                "JCC 1115 伊勢原市 JA/KN-006".into()
+            )
+        );
+        // メモは、そのQSOの時点で最後の `#` の行
+        assert_eq!(
+            cols(&lines[1]),
+            ("".into(), "".into(), "山頂は霧 JA/KN-006".into())
+        );
     }
 
     #[test]
