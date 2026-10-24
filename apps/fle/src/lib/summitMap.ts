@@ -233,3 +233,53 @@ export function whereAmI(map: SummitMap, p: Position, accuracy: number): Where {
       : []
   return { zone, muni, pota }
 }
+
+/** 公園の色と斜線の向き。同じ地図の中の公園を見分ける(色だけに頼らず、向きも変える) */
+export const PARK_STYLES = [
+  { color: '#15803d', angle: 45 },
+  { color: '#1d4ed8', angle: -45 },
+  { color: '#9333ea', angle: 0 },
+  { color: '#c2410c', angle: 90 },
+] as const
+
+/** 地図に出てくる公園の番号を、出てくる順に並べる(色と向きは、この順で割り当てる) */
+export function parkCodesOf(map: SummitMap): string[] {
+  const codes: string[] = []
+  for (const f of map.features) {
+    const p = f.properties
+    const list = p.kind === 'park' ? [p.code] : p.kind === 'muni' ? p.pota.map((q) => q.code) : []
+    for (const c of list) if (!codes.includes(c)) codes.push(c)
+  }
+  return codes
+}
+
+export const parkStyleOf = (codes: string[], code: string) =>
+  PARK_STYLES[Math.max(0, codes.indexOf(code)) % PARK_STYLES.length]
+
+/**
+ * 多角形の中で、地図の範囲 `bbox` に入る、文字を置く点。範囲の中で、多角形のいちばん広いところを横切る線の真ん中。
+ * 範囲の中に多角形がなければ null
+ */
+export function labelPointIn(g: Geometry, bbox: SummitMap['bbox']): Position | null {
+  const [w, s, e, n] = bbox
+  let best: { pos: Position; width: number } | null = null
+  // 範囲を縦に 9 等分した横線で探す
+  for (let k = 1; k <= 9; k++) {
+    const y = s + ((n - s) * k) / 10
+    const xs: number[] = []
+    for (const ring of polygonsOf(g).flat()) {
+      for (let i = 1; i < ring.length; i++) {
+        const [x1, y1] = ring[i - 1]
+        const [x2, y2] = ring[i]
+        if (y1 > y !== y2 > y) xs.push(x1 + ((y - y1) * (x2 - x1)) / (y2 - y1))
+      }
+    }
+    xs.sort((a, b) => a - b)
+    for (let i = 0; i + 1 < xs.length; i += 2) {
+      const a = Math.max(xs[i], w)
+      const b = Math.min(xs[i + 1], e)
+      if (b - a > (best?.width ?? 0)) best = { pos: [(a + b) / 2, y], width: b - a }
+    }
+  }
+  return best?.pos ?? null
+}
