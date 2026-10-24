@@ -20,6 +20,8 @@ export type Geometry =
 
 export interface MuniPota {
   code: string
+  /** 公園名(sotaapp2 の POTA の参照データ)。古い地図にはない */
+  name?: string
   /** all: 市区町村の中のゾーンが全部公園に入る / part: 一部だけ入る */
   coverage: 'all' | 'part'
 }
@@ -30,7 +32,7 @@ export type FeatureProps =
   | { kind: 'muni'; key: string; name: string; pota: MuniPota[] }
   | { kind: 'park'; code: string; key: string }
   | { kind: 'area'; key: string }
-  | { kind: 'summit'; code: string }
+  | { kind: 'summit'; code: string; name?: string }
 
 export interface Feature {
   type: 'Feature'
@@ -90,6 +92,12 @@ export const zoneOf = (map: SummitMap): Feature | undefined => map.features.find
 
 export const munisOf = (map: SummitMap) =>
   map.features.flatMap((f) => (f.properties.kind === 'muni' ? [{ ...f.properties, geometry: f.geometry }] : []))
+
+/** 山頂の名前(古い地図にはない) */
+export const summitNameOf = (map: SummitMap): string => {
+  const f = map.features.find((x) => x.properties.kind === 'summit')
+  return f?.properties.kind === 'summit' ? (f.properties.name ?? '') : ''
+}
 
 export const summitOf = (map: SummitMap): Position | null => {
   const f = map.features.find((x) => x.properties.kind === 'summit')
@@ -165,7 +173,7 @@ export interface Where {
   zone: Side
   muni: { key: string; name: string; near: boolean } | null
   /** その市区町村で当たる POTA と、現在地がその公園の中か。ゾーンの外なら空 */
-  pota: { code: string; side: Side }[]
+  pota: { code: string; name: string; side: Side }[]
 }
 
 /** 点から、多角形の縁までの距離(m)。狭い範囲なので、緯度の縮みだけを直した平面で測る */
@@ -208,12 +216,13 @@ export function whereAmI(map: SummitMap, p: Position, accuracy: number): Where {
   const pota =
     m && zone !== 'out'
       ? m.pota.map((q) => {
-          if (q.coverage === 'all') return { code: q.code, side: zone }
+          const name = q.name ?? ''
+          if (q.coverage === 'all') return { code: q.code, name, side: zone }
           // 一部だけ入る公園: その市区町村の中の公園の区域で判定する
           const park = map.features.find(
             (f) => f.properties.kind === 'park' && f.properties.code === q.code && f.properties.key === m.key
           )
-          return { code: q.code, side: park ? sideOf(park.geometry, p, margin + EDGE_M) : ('near' as Side) }
+          return { code: q.code, name, side: park ? sideOf(park.geometry, p, margin + EDGE_M) : ('near' as Side) }
         })
       : []
   return { zone, muni, pota }

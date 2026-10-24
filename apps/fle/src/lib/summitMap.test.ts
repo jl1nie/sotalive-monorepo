@@ -41,7 +41,7 @@ const MAP = {
     { type: 'Feature', properties: { kind: 'border' }, geometry: { type: 'LineString', coordinates: [[139.0, 36.005], [139.01, 36.005]] } },
     {
       type: 'Feature',
-      properties: { kind: 'muni', key: 'JCC#1311', name: '埼玉県本庄市', pota: [{ code: 'JP-1148', coverage: 'part' }] },
+      properties: { kind: 'muni', key: 'JCC#1311', name: '埼玉県本庄市', pota: [{ code: 'JP-1148', name: '長瀞玉淀県立自然公園', coverage: 'part' }] },
       geometry: { type: 'Point', coordinates: [139.005, 36.008] },
     },
     {
@@ -167,14 +167,15 @@ describe('whereAmI: 現在地の答え', () => {
     const w = whereAmI(map, [139.0055, 36.0055], 5)
     expect(w.zone).toBe('in')
     expect(w.muni).toEqual({ key: 'JCC#1311', name: '埼玉県本庄市', near: false })
-    expect(w.pota).toEqual([{ code: 'JP-1148', side: 'in' }])
+    expect(w.pota).toEqual([{ code: 'JP-1148', name: '長瀞玉淀県立自然公園', side: 'in' }])
   })
 
   it('全部入る公園は、ゾーンの中なら in', () => {
     const w = whereAmI(map, [139.005, 36.0041], 15)
     expect(w.muni?.key).toBe('JCG#13007C')
     expect(w.zone).toBe('near') // ゾーンの南の縁から 11 m、誤差 15 m
-    expect(whereAmI(map, [139.005, 36.0045], 1).pota).toEqual([{ code: 'JP-1148', side: 'in' }])
+    // 古い地図(公園名がない)では、名前は空
+    expect(whereAmI(map, [139.005, 36.0045], 1).pota).toEqual([{ code: 'JP-1148', name: '', side: 'in' }])
   })
 
   it('境界が誤差より近ければ near。公園の境界は、データのずれ(20 m)も足す', () => {
@@ -182,7 +183,7 @@ describe('whereAmI: 現在地の答え', () => {
     expect(whereAmI(map, [139.0055, 36.0051], 15).muni?.near).toBe(true)
     expect(whereAmI(map, [139.0055, 36.0051], 5).muni?.near).toBe(false)
     // 公園の西の縁(139.0045)から約 18 m: 誤差 5 m でも、公園は near
-    expect(whereAmI(map, [139.0047, 36.0055], 5).pota).toEqual([{ code: 'JP-1148', side: 'near' }])
+    expect(whereAmI(map, [139.0047, 36.0055], 5).pota).toEqual([{ code: 'JP-1148', name: '長瀞玉淀県立自然公園', side: 'near' }])
     // 誤差が大きければ、ゾーンの真ん中でも near
     expect(whereAmI(map, [139.005, 36.0055], 100).zone).toBe('near')
   })

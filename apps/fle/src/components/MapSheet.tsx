@@ -3,7 +3,7 @@ import { Sheet } from '@/components/Sheet'
 import { useOnline } from '@/hooks/useOnline'
 import { downloadRegionOf, loadSummitMap } from '@/lib/mapStore'
 import { distanceKm, distanceLabel } from '@/lib/reference'
-import { munisOf, pathOf, projector, summitOf, whereAmI, type Side, type SummitMap } from '@/lib/summitMap'
+import { munisOf, pathOf, projector, summitNameOf, summitOf, whereAmI, type Side, type SummitMap } from '@/lib/summitMap'
 import { useT } from '@/lib/i18n'
 
 interface Props {
@@ -148,7 +148,26 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
       })}
       {peak && (() => {
         const [x, y] = xy(peak)
-        return <path d={`M${x},${y - 7}L${x + 6},${y + 4}L${x - 6},${y + 4}Z`} fill="#111827" />
+        // 山頂の位置(SOTA の山頂の点)。コードと山名を添える。文字は右に出し、右端なら左に出す
+        const right = x < width - 110
+        return (
+          <g>
+            <path d={`M${x},${y - 7}L${x + 6},${y + 4}L${x - 6},${y + 4}Z`} fill="#111827" />
+            <text
+              x={right ? x + 9 : x - 9}
+              y={y + 3}
+              textAnchor={right ? 'start' : 'end'}
+              fontSize="10"
+              fontWeight="bold"
+              fill="#111827"
+              stroke="#fff"
+              strokeWidth="3"
+              paintOrder="stroke"
+            >
+              {[map.summit, summitNameOf(map)].filter(Boolean).join(' ')}
+            </text>
+          </g>
+        )
       })()}
       {me && meInside && (
         <g>
@@ -168,6 +187,12 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
 
 function potaLabel(q: { code: string; coverage: 'all' | 'part' }, t: ReturnType<typeof useT>): string {
   return q.coverage === 'all' ? q.code : t('map.partial', { code: q.code })
+}
+
+/** 一覧に出す公園: `JP-1289 丹沢大山県立自然公園`(一部なら、そう添える) */
+function parkLine(q: { code: string; name?: string; coverage: 'all' | 'part' }, t: ReturnType<typeof useT>): string {
+  const label = [q.code, q.name].filter(Boolean).join(' ')
+  return q.coverage === 'all' ? label : t('map.partial', { code: label })
 }
 
 /** 現在地の答え: ゾーンの中か、いまいる市区町村(ログに書く JCC・JCG)と、そこで当たる POTA の公園の中か */
@@ -200,7 +225,7 @@ function GpsLine({ map, gps }: { map: SummitMap; gps: GpsState }) {
           ) : (
             where.pota.map((q) => (
               <li key={q.code} className={q.side === 'in' ? 'font-bold text-green-700 dark:text-green-400' : q.side === 'near' ? 'font-bold text-amber-800 dark:text-amber-300' : ''}>
-                <span className="font-mono">{q.code}</span> {sideText(q.side)}
+                <span className="font-mono">{q.code}</span> {q.name} — {sideText(q.side)}
               </li>
             ))
           )}
@@ -221,8 +246,15 @@ function MuniList({ map }: { map: SummitMap }) {
         <li key={m.key}>
           <span className="font-bold">{m.name}</span>
           <span className="ml-1 font-mono text-gray-700 dark:text-gray-300">{m.key}</span>
-          {': '}
-          {m.pota.length ? m.pota.map((q) => potaLabel(q, t)).join(', ') : t('map.noPota')}
+          {m.pota.length ? (
+            <ul className="ml-4">
+              {m.pota.map((q) => (
+                <li key={q.code}>{parkLine(q, t)}</li>
+              ))}
+            </ul>
+          ) : (
+            <span>: {t('map.noPota')}</span>
+          )}
         </li>
       ))}
       {munis.some((m) => m.pota.some((q) => q.coverage === 'part')) && (
