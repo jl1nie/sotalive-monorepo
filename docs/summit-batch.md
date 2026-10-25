@@ -60,6 +60,21 @@ uv run python -m jaffpota.summit_export \
 
 山頂の位置(小数 5 桁)、ゾーンの形、ゾーンにかかる市区町村の区域と候補の公園の区域(地図の窓で切ったもの)、候補の組のハッシュ(`r1-` + 16 桁)。窓の外の変更では変わらない。目視は、確定したときの `input_rev` を持ち、今の推定の `input_rev` と違えば要再確認になる。
 
+## ⑤〜⑦ をまとめて実行する
+
+```bash
+tools/jaffpota/scripts/load_summit_data.sh --base-url https://sotaapp2.sotalive.net \
+  --out ~/sotaapp2-backups/sota_pota_20261024/sotaapp_out7 --old ~/sotaapp2-backups/sota_pota_20261024/sotaapp_out6
+```
+
+- 本番では、接続先のホスト名の入力で確認します。そのあと、**Firebase のメールアドレスとパスワードを画面で尋ね**ます(パスワードは表示しません。環境変数は読みません)。端末から実行してください。
+- 順に、推定の取り込み → 地図の取り込み → 目視の移行(`--dry-run` のあと本実行)→ 配信の検証を実行します。各ステップで、応答の件数を `summary.json` と照合し、合わなければそこで止まります。
+- 止まったら、直してから `--from pota|maps|migrate|verify` で続きから実行できます(各ステップは何度実行しても同じ結果になります)。
+- 手元のサーバー(`localhost`・`127.0.0.1`。`ADMIN_DEV_EMAIL` 付きで起動)には、尋ねずに認証なしで実行します。
+- 実行する前に、DB のバックアップを取ってください(sotaapp2 の Deploy は自動で取ります)。
+
+以下は、スクリプトがしていることを、1 ステップずつ手で実行するときの手順です。
+
 ## ⑤ sotaapp2 に入れる
 
 管理者の認証が要ります。**順番は「推定の CSV を先に、地図を後に」**(逆だと、地図の下地の版が古い入力のままになり、`map_mismatch` が出る)。
@@ -83,7 +98,7 @@ curl -H "Authorization: Bearer $TOKEN" -F file=@$OUT/summit_maps.jsonl.gz "$BASE
 推定の組と目視の組が一致していないと、確定の API が 400 にします。⑤ のあとに実行します。
 
 ```bash
-export SOTAAPP_EMAIL=... SOTAAPP_PASSWORD=...     # Firebase のサインイン。表示もログもされない
+export SOTAAPP_EMAIL=... SOTAAPP_PASSWORD=...     # Firebase のサインイン(単独で実行するとき。スクリプトは画面で尋ねる)。表示もログもされない
 uv run python -m jaffpota.migrate_verdicts $B/sotaapp_out7/verdicts.json --base-url "$BASE" --dry-run
 uv run python -m jaffpota.migrate_verdicts $B/sotaapp_out7/verdicts.json --base-url "$BASE"
 ```
