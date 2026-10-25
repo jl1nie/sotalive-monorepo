@@ -315,8 +315,12 @@ function ReadingCard({ map, here }: { map: SummitMap; here?: string }) {
             {m.pota.map((q) => (
               <div key={q.code} className="flex gap-2 pl-4">
                 <span className="flex-none text-xs font-bold text-gray-700 dark:text-gray-300 pt-0.5">POTA</span>
-                {/* 地図の斜線と同じ色の印 */}
-                <span className="flex-none w-3 h-3 mt-1 rounded-sm" style={{ background: parkStyleOf(codes, q.code).color }} aria-hidden="true" />
+                {/* 地図の斜線と同じ色の印。斜線があるのは「一部」の公園だけ(「全部」の区域は描かない)ので、そのときだけ付ける */}
+                <span
+                  className="flex-none w-3 h-3 mt-1 rounded-sm"
+                  style={q.coverage === 'part' ? { background: parkStyleOf(codes, q.code).color } : undefined}
+                  aria-hidden="true"
+                />
                 <span className="min-w-0">{parkLine(q, t)}</span>
               </div>
             ))}
