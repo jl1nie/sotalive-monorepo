@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { resetNet } from './net'
 import {
   bboxAround,
   distanceKm,
@@ -11,6 +12,8 @@ import {
   searchNearby,
 } from './reference'
 
+// 通信の失敗で入る遮断(net)を、テストごとに解く
+beforeEach(() => resetNet())
 afterEach(() => vi.unstubAllGlobals())
 
 const SOTA_ROW = {
@@ -122,10 +125,23 @@ describe('searchByName', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
-  it('通信に失敗したら誤り。HTTPエラーも誤り', async () => {
+  it('通信が止まったと分かったあとは、待たずにオフライン(通信しない)', async () => {
+    vi.stubGlobal('navigator', { onLine: true })
+    const down = vi.fn(async () => {
+      throw new TypeError('network')
+    }) as unknown as typeof fetch
+    expect(await searchByName('sota', 'JA', { fetchImpl: down })).toEqual({ status: 'offline' })
+    const next = vi.fn()
+    expect(await searchByName('sota', 'JA', { fetchImpl: next as never })).toEqual({ status: 'offline' })
+    expect(await searchByName('pota', 'JP-0', { fetchImpl: next as never })).toEqual({ status: 'offline' })
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('接続できなければオフライン(待たない)。HTTPエラーは誤り', async () => {
     vi.stubGlobal('navigator', { onLine: true })
     const down = (async () => { throw new TypeError('network') }) as unknown as typeof fetch
-    expect(await searchByName('sota', 'JA', { fetchImpl: down })).toEqual({ status: 'error' })
+    expect(await searchByName('sota', 'JA', { fetchImpl: down })).toEqual({ status: 'offline' })
+    resetNet()
     const bad = (async () => ({ ok: false, status: 500, json: async () => ({}) })) as unknown as typeof fetch
     expect(await searchByName('sota', 'JA', { fetchImpl: bad })).toEqual({ status: 'error' })
   })

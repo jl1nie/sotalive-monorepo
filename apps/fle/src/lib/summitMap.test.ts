@@ -1,8 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { resetNet } from './net'
 import {
   contains,
   edgeDistanceM,
   fetchRegionMaps,
+  fetchRegionVersion,
   labelPointIn,
   munisOf,
   parkCodesOf,
@@ -17,6 +19,8 @@ import {
   zoneOf,
 } from './summitMap'
 
+// 通信の失敗で入る遮断(net)を、テストごとに解く
+beforeEach(() => resetNet())
 afterEach(() => vi.unstubAllGlobals())
 
 // sotaapp2 の /api/v2/sota/summits/{code}/map と同じ形(座標は小さくしたもの)
@@ -131,6 +135,30 @@ describe('pathOf', () => {
       'M0.0,0.0L1.0,1.0M2.0,2.0L3.0,3.0'
     )
     expect(pathOf({ type: 'Point', coordinates: [0, 0] }, xy)).toBe('')
+  })
+})
+
+describe('fetchRegionVersion', () => {
+  it('地域を指定して聞き、その地域の更新日時を返す', async () => {
+    const body = [{ region: 'JA/KN', updatedAt: '2026-10-25T04:00:00Z' }, { region: 'JA/KN2', updatedAt: 'x' }]
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(body) })
+    vi.stubGlobal('fetch', fetchMock)
+    expect(await fetchRegionVersion('JA/KN')).toBe('2026-10-25T04:00:00Z')
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v2/sota/maps/versions?prefix=JA%2FKN')
+  })
+  it('その地域がなければ null(サーバーに地図がない)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) }))
+    expect(await fetchRegionVersion('JA/KN')).toBeNull()
+  })
+  it('失敗・形が違うときも null(例外にしない)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+    expect(await fetchRegionVersion('JA/KN')).toBeNull()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ not: 'array' }) }))
+    expect(await fetchRegionVersion('JA/KN')).toBeNull()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([{ region: 'JA/KN', updatedAt: 1 }]) }))
+    expect(await fetchRegionVersion('JA/KN')).toBeNull()
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')))
+    expect(await fetchRegionVersion('JA/KN')).toBeNull()
   })
 })
 

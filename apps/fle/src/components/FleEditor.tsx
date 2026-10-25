@@ -69,7 +69,8 @@ import { SuggestStrip } from '@/components/SuggestStrip'
 import { QsoSheet } from '@/components/QsoSheet'
 import { PlaceSheet } from '@/components/PlaceSheet'
 import { MapSheet } from '@/components/MapSheet'
-import { downloadRegionOf } from '@/lib/mapStore'
+import { refreshRegionOf } from '@/lib/mapStore'
+import { isOffline } from '@/lib/net'
 import { usePlanMaps } from '@/hooks/usePlanMaps'
 import { regionOf } from '@/lib/summitMap'
 import { FieldKeysContext } from '@/hooks/useFieldKeys'
@@ -480,8 +481,9 @@ function Editor({
     setPlace(null)
     // 山頂の地域の地図を、電波のあるうちに端末へ入れておく(山頂ではオフラインで見る)
     const region = regionOf(want.sota)
-    if (region && navigator.onLine) {
-      void downloadRegionOf(want.sota).then((n) => n && notify(t('notice.mapSaved', { region })))
+    // (待たない。通信が止まっていれば、すぐ終わる。版が同じなら取り直さない)
+    if (region && !isOffline()) {
+      void refreshRegionOf(want.sota).then((r) => r === 'updated' && notify(t('notice.mapSaved', { region })))
     }
     return []
   }

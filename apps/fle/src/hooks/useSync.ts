@@ -62,7 +62,8 @@ export function useSync({ settings, update, records, replacePlans }: Args) {
     setStatus(kind === 'network' ? 'offline' : kind === 'unavailable' ? 'unavailable' : 'error')
   }, [])
 
-  const run = useCallback(async () => {
+  /** `force`: 利用者が押した「今すぐ同期」(通信が止まっていると覚えていても、試す) */
+  const run = useCallback(async (force = false) => {
     const st = stateRef.current
     if (!st) return
     if (running.current) {
@@ -72,7 +73,7 @@ export function useSync({ settings, update, records, replacePlans }: Args) {
     running.current = true
     setStatus('syncing')
     try {
-      const { state: next, merged } = await syncOnce(st, docRef.current)
+      const { state: next, merged } = await syncOnce(st, docRef.current, undefined, undefined, force)
       stateRef.current = next
       saveSyncState(next)
       setState(next)
@@ -115,7 +116,7 @@ export function useSync({ settings, update, records, replacePlans }: Args) {
     async (code: string) => {
       setStatus('syncing')
       try {
-        const { state: next, merged } = await join(code, docRef.current)
+        const { state: next, merged } = await join(code, docRef.current, undefined, undefined, true)
         stateRef.current = next
         saveSyncState(next)
         setState(next)
@@ -143,8 +144,8 @@ export function useSync({ settings, update, records, replacePlans }: Args) {
     saveSyncState(null)
     setState(null)
     setStatus('off')
-    if (st && deleteRemote) await removeRemote(st.code).catch(() => undefined)
+    if (st && deleteRemote) await removeRemote(st.code, undefined, true).catch(() => undefined)
   }, [])
 
-  return { code: state?.code ?? null, status, lastAt, create, joinWith, leave, syncNow: run }
+  return { code: state?.code ?? null, status, lastAt, create, joinWith, leave, syncNow: () => run(true) }
 }

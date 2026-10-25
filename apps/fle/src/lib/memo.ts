@@ -18,9 +18,11 @@ export function memoAt(text: string, line: number): string {
   return ''
 }
 
+import { netFetch } from '@/lib/net'
+
 const GSI = 'https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress'
 const JCC_JCG = '/api/v2/locator/jcc-jcg'
-/** 書き込みを待たせすぎない(山の上の弱い電波) */
+/** 書き込みを待たせすぎない(山の上の弱い電波)。2 回の問い合わせを合わせた上限。通信が止まっていれば、待たずに空を返す(net の遮断) */
 const TIMEOUT_MS = 5000
 
 interface Options {
@@ -45,8 +47,8 @@ export function memoOf(r: Json): string {
   return ''
 }
 
-async function getJson(url: string, o: Options, signal: AbortSignal): Promise<Json> {
-  const res = await (o.fetchImpl ?? fetch)(url, { signal })
+async function getJson(url: string, o: Options, timeoutMs: number): Promise<Json> {
+  const res = await netFetch(url, {}, { fetchImpl: o.fetchImpl, timeoutMs })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return (await res.json()) as Json
 }
@@ -56,18 +58,15 @@ async function getJson(url: string, o: Options, signal: AbortSignal): Promise<Js
  */
 export async function lookupMemo(lat: number, lon: number, o: Options = {}): Promise<string> {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return ''
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) return ''
-  const ctl = new AbortController()
-  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS)
+  const deadline = Date.now() + TIMEOUT_MS
   try {
-    const geo = await getJson(`${GSI}?${new URLSearchParams({ lat: String(lat), lon: String(lon) })}`, o, ctl.signal)
+    const geo = await getJson(`${GSI}?${new URLSearchParams({ lat: String(lat), lon: String(lon) })}`, o, TIMEOUT_MS)
     const muni = str((geo.results as Json | undefined)?.muniCd)
     if (!muni) return ''
-    const r = await getJson(`${JCC_JCG}?${new URLSearchParams({ muni_code: muni })}`, o, ctl.signal)
+    // 残りの時間で(1 回目に時間がかかったら、2 回目は短く)
+    const r = await getJson(`${JCC_JCG}?${new URLSearchParams({ muni_code: muni })}`, o, Math.max(1000, deadline - Date.now()))
     return memoOf(r)
   } catch {
     return ''
-  } finally {
-    clearTimeout(timer)
   }
 }

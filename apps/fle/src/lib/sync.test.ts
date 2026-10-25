@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { resetNet } from './net'
 import { emptyPlan, isDeleted, livePlans, type Plan } from './plans'
 import {
   SYNCED_KEYS,
@@ -56,6 +57,9 @@ function fakeServer(kvEnabled = true) {
   }) as typeof fetch
   return { fetchImpl, store }
 }
+
+// 通信の失敗で入る遮断(net)を、テストごとに解く
+beforeEach(() => resetNet())
 
 describe('同期コード', () => {
   it('26文字の A-Z2-7。呼ぶたびに違う', () => {
@@ -168,6 +172,24 @@ describe('サーバーとの同期', () => {
       throw new TypeError('offline')
     }) as typeof fetch
     await expect(pull(code, down)).rejects.toMatchObject({ kind: 'network' })
+  })
+
+  it('通信が止まったと分かったあとは、待たずに network。利用者が押した操作(force)は試す', async () => {
+    const down = (async () => {
+      throw new TypeError('offline')
+    }) as typeof fetch
+    await expect(pull(code, down)).rejects.toMatchObject({ kind: 'network' })
+
+    const { fetchImpl } = fakeServer()
+    let calls = 0
+    const counted = ((u: RequestInfo | URL, i?: RequestInit) => (calls++, fetchImpl(u, i))) as typeof fetch
+    await expect(pull(code, counted)).rejects.toMatchObject({ kind: 'network' })
+    expect(calls).toBe(0) // 通信していない(待たない)
+    expect(await pull(code, counted, true)).toBeNull() // force: 試す。サーバーに何もなければ null
+    expect(calls).toBe(1)
+    // 通信できたので、遮断は解けている
+    expect(await pull(code, counted)).toBeNull()
+    expect(calls).toBe(2)
   })
 })
 

@@ -5,6 +5,7 @@
 // 食い違ったら、設定は項目ごとに3者で、予定は1件ごとに新しいほうを残して、マージする。
 
 import type { Settings } from '@/hooks/useSettings'
+import { netFetch } from '@/lib/net'
 import { mergePlans, type PlanRecord } from '@/lib/plans'
 
 /** 端末をまたいで同じにする設定(テーマ・数字キーの行は、端末ごとに違うので除く) */
@@ -104,17 +105,18 @@ export interface Remote {
 type Fetch = typeof fetch
 const endpoint = (code: string) => `/api/fle/prefs/${code}`
 
-async function request(fetchImpl: Fetch, code: string, init?: RequestInit): Promise<Response> {
+/** `force`: 利用者が押した操作(通信が止まっていると覚えていても、試す) */
+async function request(fetchImpl: Fetch, code: string, init?: RequestInit, force = false): Promise<Response> {
   try {
-    return await fetchImpl(endpoint(code), init)
+    return await netFetch(endpoint(code), init, { fetchImpl, force })
   } catch {
     throw new SyncError('network')
   }
 }
 
 /** サーバーの内容を取る。まだなければ null */
-export async function pull(code: string, fetchImpl: Fetch = fetch): Promise<Remote | null> {
-  const res = await request(fetchImpl, code)
+export async function pull(code: string, fetchImpl: Fetch = fetch, force = false): Promise<Remote | null> {
+  const res = await request(fetchImpl, code, undefined, force)
   if (res.status === 404) return null
   if (res.status === 503) throw new SyncError('unavailable')
   if (!res.ok) throw new SyncError('invalid')
@@ -130,12 +132,17 @@ function readRemote(body: unknown): Remote {
 export type PushResult = { ok: true; updatedAt: number } | { ok: false; remote: Remote }
 
 /** サーバーに送る。`base` は、最後に見たサーバーの版(なければ 0)。ほかの端末が先に保存していたら、そのサーバーの内容を返す */
-export async function push(code: string, base: number, doc: SyncDoc, fetchImpl: Fetch = fetch): Promise<PushResult> {
-  const res = await request(fetchImpl, code, {
-    method: 'PUT',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ base, data: doc }),
-  })
+export async function push(code: string, base: number, doc: SyncDoc, fetchImpl: Fetch = fetch, force = false): Promise<PushResult> {
+  const res = await request(
+    fetchImpl,
+    code,
+    {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ base, data: doc }),
+    },
+    force
+  )
   if (res.status === 409) return { ok: false, remote: readRemote(await res.json()) }
   if (res.status === 503) throw new SyncError('unavailable')
   if (!res.ok) throw new SyncError('invalid')
@@ -145,8 +152,8 @@ export async function push(code: string, base: number, doc: SyncDoc, fetchImpl: 
 }
 
 /** サーバーの設定・予定を消す */
-export async function removeRemote(code: string, fetchImpl: Fetch = fetch): Promise<void> {
-  const res = await request(fetchImpl, code, { method: 'DELETE' })
+export async function removeRemote(code: string, fetchImpl: Fetch = fetch, force = false): Promise<void> {
+  const res = await request(fetchImpl, code, { method: 'DELETE' }, force)
   if (!res.ok) throw new SyncError(res.status === 503 ? 'unavailable' : 'invalid')
 }
 
@@ -169,12 +176,13 @@ export async function syncOnce(
   state: SyncState,
   local: SyncDoc,
   fetchImpl: Fetch = fetch,
-  now = Date.now()
+  now = Date.now(),
+  force = false
 ): Promise<{ state: SyncState; merged: SyncDoc }> {
-  let remote = await pull(state.code, fetchImpl)
+  let remote = await pull(state.code, fetchImpl, force)
   for (let attempt = 0; attempt < 4; attempt++) {
     if (!remote) {
-      const sent = await push(state.code, 0, local, fetchImpl)
+      const sent = await push(state.code, 0, local, fetchImpl, force)
       if (sent.ok) return { state: { ...state, base: sent.updatedAt, snapshot: local }, merged: local }
       remote = sent.remote
       continue
@@ -183,7 +191,7 @@ export async function syncOnce(
     if (sameDoc(merged, remote.data)) {
       return { state: { ...state, base: remote.updatedAt, snapshot: merged }, merged }
     }
-    const sent = await push(state.code, remote.updatedAt, merged, fetchImpl)
+    const sent = await push(state.code, remote.updatedAt, merged, fetchImpl, force)
     if (sent.ok) return { state: { ...state, base: sent.updatedAt, snapshot: merged }, merged }
     remote = sent.remote
     local = merged
@@ -199,11 +207,12 @@ export async function join(
   code: string,
   local: SyncDoc,
   fetchImpl: Fetch = fetch,
-  now = Date.now()
+  now = Date.now(),
+  force = false
 ): Promise<{ state: SyncState; merged: SyncDoc }> {
   // 基準を、端末の内容にする: 端末の設定は「変えていない」扱いになり、サーバーにある設定が採用される。
   // 予定は、端末のものと合わせる。サーバーに何もなければ、端末の内容を送る
-  return syncOnce({ code, base: 0, snapshot: local }, local, fetchImpl, now)
+  return syncOnce({ code, base: 0, snapshot: local }, local, fetchImpl, now, force)
 }
 
 // ---- 端末への保存 ----
