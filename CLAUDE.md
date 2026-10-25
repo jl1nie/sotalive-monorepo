@@ -103,6 +103,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 - **1 つのループで、作業の種類でモデルを選ぶ**(`docs/agent-workflow.md`)。既定は `opusplan`(`.claude/settings.json`): plan mode の Opus で設計し、承認したら同じループの Sonnet で実装する。設計・原因の分からない不具合は Opus、実装・docs・CI は Sonnet。モデルを替えるのは `/model` で、`fork` は使わない(hook が拒む)。
 - サブエージェントは、ログで文脈がふくらむとき・互いに関係のない並列の作業(`runner`、Sonnet)・テストで判断できない変更のレビュー(`reviewer`、Opus)のときだけ。reviewer が要るのは、テストのない旧版と `packages/shared`、`functions/`・`pages/fle/functions`、公園区域の仕様、FLE の文法。
+- **計画の先頭に `Type:`(feature / fix / data / docs / infra)と `本番:` の行を書く**(`docs/agent-workflow.md` 2a 章。hook が拒む)。「通ったか」は `scripts/verify.sh`、CI は `scripts/ci-wait.sh` の**最後の 1 行**で読む(8 章)。作業が終わったら `scripts/agent-log.sh` で記録し、月の最初の作業日に `--summary` を見て、プロセスの変更を最大 1 つ検討する(7 章)。
 - 並列に任せたあとは `git status` を見て、試しのコードが残っていないか確かめ、パスを指定してコミットする。
 
 ## 関連リポジトリ
