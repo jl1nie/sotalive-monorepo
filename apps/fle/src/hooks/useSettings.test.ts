@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, renderHook } from '@testing-library/react'
-import { parseHamlogColumns, useSettings } from './useSettings'
+import { activeLayout, FONT_SCALE, parseHamlogColumns, touchDevice, useSettings } from './useSettings'
 import { SYNCED_KEYS } from '@/lib/sync'
 
 const KEY = 'fle.settings'
@@ -28,24 +28,26 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('useSettings: 入力欄の文字', () => {
-  it('初めては、等幅(Roboto Mono)', () => {
+describe('useSettings: ログ欄の文字の大きさ', () => {
+  it('初めては、中(今の大きさ)', () => {
     const { result } = renderHook(() => useSettings())
-    expect(result.current.settings.editorFont).toBe('mono')
+    expect(result.current.settings.fontSize).toBe('medium')
+    expect(FONT_SCALE).toEqual({ small: 0.85, medium: 1, large: 1.2 })
   })
 
-  it('ゴシックを選ぶと保存され、開き直してもゴシック', () => {
+  it('大きさを選ぶと保存され、開き直しても同じ。同期しない(端末ごと)', () => {
     const first = renderHook(() => useSettings())
-    act(() => first.result.current.update({ editorFont: 'gothic' }))
-    expect(JSON.parse(localStorage.getItem(KEY)!).editorFont).toBe('gothic')
-    const again = renderHook(() => useSettings())
-    expect(again.result.current.settings.editorFont).toBe('gothic')
+    act(() => first.result.current.update({ fontSize: 'large' }))
+    expect(JSON.parse(localStorage.getItem(KEY)!).fontSize).toBe('large')
+    expect(renderHook(() => useSettings()).result.current.settings.fontSize).toBe('large')
+    expect(SYNCED_KEYS).not.toContain('fontSize')
   })
 
-  it('知らない値は、等幅として読む', () => {
-    localStorage.setItem(KEY, JSON.stringify({ editorFont: 'serif' }))
-    const { result } = renderHook(() => useSettings())
-    expect(result.current.settings.editorFont).toBe('mono')
+  it('知らない値は中として読む。以前のフォントの設定は無視して、等幅のまま', () => {
+    localStorage.setItem(KEY, JSON.stringify({ fontSize: 'huge', editorFont: 'gothic' }))
+    const { settings } = renderHook(() => useSettings()).result.current
+    expect(settings.fontSize).toBe('medium')
+    expect('editorFont' in settings).toBe(false)
   })
 })
 
@@ -75,73 +77,35 @@ describe('useSettings: 時刻を自動で入れる', () => {
 })
 
 describe('useSettings: 画面の配置', () => {
-  it('初めては、従来の配置', () => {
-    const { result } = renderHook(() => useSettings())
-    expect(result.current.settings.layout).toBe('classic')
-  })
-
-  it('知らない値は従来として読む', () => {
-    localStorage.setItem(KEY, JSON.stringify({ layout: 'grid' }))
-    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
-  })
-
-  it('以前のコンパクトは、PC では従来として読む', () => {
-    localStorage.setItem(KEY, JSON.stringify({ layout: 'compact' }))
-    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
-  })
-
-  it('フルキーを選ぶと保存され、開き直してもフルキー', () => {
-    const first = renderHook(() => useSettings())
-    act(() => first.result.current.update({ layout: 'fullkey' }))
-    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('fullkey')
-  })
-
-  it('同期しない(端末ごとに選ぶ)', () => {
-    expect(SYNCED_KEYS).not.toContain('layout')
-    expect(SYNCED_KEYS).not.toContain('writeRstCompact')
-  })
-
-  it('確定で RST を書くかは、従来はリリース版のまま書き、フルキーは書かない', () => {
-    const { result } = renderHook(() => useSettings())
-    expect(result.current.settings.writeRst).toBe(true)
-    expect(result.current.settings.writeRstCompact).toBe(false)
-  })
-})
-
-describe('useSettings: スマホで初めて使うときは、フルキー', () => {
   const touch = () =>
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(pointer: coarse)', addEventListener() {}, removeEventListener() {} }))
 
-  it('スマホで初めて使うときは、フルキーで始まり、それを覚える', () => {
+  it('タッチ端末はフルキー、PC は従来。選べない(端末で決まる)', () => {
+    expect(activeLayout(true)).toBe('fullkey')
+    expect(activeLayout(false)).toBe('classic')
+  })
+
+  it('保存された配置の設定は、読まない(前に選んでいても、端末で決まる)', () => {
     touch()
+    localStorage.setItem(KEY, JSON.stringify({ layout: 'classic', digitRow: true }))
+    const { settings } = renderHook(() => useSettings()).result.current
+    expect('layout' in settings).toBe(false)
+    expect(activeLayout(touchDevice())).toBe('fullkey')
+  })
+
+  it('数字キーの行は、初めてはオフ(スマホでも。PC の従来の配置でだけ使う)', () => {
+    touch()
+    expect(renderHook(() => useSettings()).result.current.settings.digitRow).toBe(false)
+  })
+
+  it('同期しない(端末ごと)', () => {
+    expect(SYNCED_KEYS).not.toContain('writeRstCompact')
+  })
+
+  it('確定で RST を書くかは、PC(従来)は書き、スマホ(フルキー)は書かない', () => {
     const { result } = renderHook(() => useSettings())
-    expect(result.current.settings.layout).toBe('fullkey')
-    expect(JSON.parse(localStorage.getItem(KEY)!).layout).toBe('fullkey')
-    // あとでログができても、フルキーのまま
-    localStorage.setItem('fle.log', '40m cw')
-    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('fullkey')
-  })
-
-  it('前から使っているスマホ(ログがある)は、設定を変えたことがなくても、従来のまま', () => {
-    touch()
-    localStorage.setItem('fle.log', 'mycall JA1ABC')
-    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
-  })
-
-  it('配置を選ばずに設定を保存していたスマホは、従来のまま', () => {
-    touch()
-    localStorage.setItem(KEY, JSON.stringify({ theme: 'dark' }))
-    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
-  })
-
-  it('以前のコンパクトは、スマホではフルキーとして読む(🌐 で同じ画面になる)', () => {
-    touch()
-    localStorage.setItem(KEY, JSON.stringify({ layout: 'compact' }))
-    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('fullkey')
-  })
-
-  it('PC では、初めてでも従来', () => {
-    expect(renderHook(() => useSettings()).result.current.settings.layout).toBe('classic')
+    expect(result.current.settings.writeRst).toBe(true)
+    expect(result.current.settings.writeRstCompact).toBe(false)
   })
 })
 

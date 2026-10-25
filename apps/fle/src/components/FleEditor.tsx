@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   BookOpen,
   ClipboardList,
@@ -49,14 +49,14 @@ import { resolveLang, useI18n } from '@/lib/i18n'
 import { lineOf, lineRange, replaceRange } from '@/lib/lines'
 import { applyEdits, mapCaret } from '@/lib/edits'
 import { keepFocus } from '@/lib/keepFocus'
-import { alignToBottom, scrollCaretIntoView } from '@/lib/caretScroll'
+import { alignToBottom, caretTop, scrollCaretIntoView } from '@/lib/caretScroll'
 import { loadLastCall, loadLog, loadPrev, rememberPrev, saveLastCall } from '@/lib/storage'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useLandscapePhone } from '@/hooks/useLandscapePhone'
 import { useClockRoom } from '@/hooks/useClockRoom'
 import { useAutosave } from '@/hooks/useAutosave'
 import { usePwa } from '@/hooks/usePwa'
-import { activeLayout, touchDevice, useSettings, type Settings } from '@/hooks/useSettings'
+import { activeLayout, FONT_SCALE, touchDevice, useSettings, type Settings } from '@/hooks/useSettings'
 import { Header } from '@/components/Header'
 import { DigitRow } from '@/components/DigitRow'
 import { FullKeyboard } from '@/components/FullKeyboard'
@@ -95,6 +95,8 @@ const MENU_ITEM =
   'btn-secondary w-full !justify-start !min-h-14 text-left'
 
 /** 設定(言語を含む)を持ち、画面全体に表示言語を渡す */
+const NEW_DAY_MS = 3000
+
 export function FleEditor() {
   const { settings, update } = useSettings()
   const lang = resolveLang(settings.language)
@@ -203,6 +205,17 @@ function Editor({
     setCaret(snap.caret)
   }
 
+  /** 日またぎの `day +` を自動で入れた知らせ(その行と、元に戻す先)。ログの上に、約 3 秒出す */
+  const [newDay, setNewDay] = useState<{ line: number; undoTo: string } | null>(null)
+  const [newDayTop, setNewDayTop] = useState(0)
+  const newDayTimer = useRef<number>(0)
+  useLayoutEffect(() => {
+    const ta = taRef.current
+    if (!newDay || !ta) return
+    const pos = lineRange(text, newDay.line)[0]
+    setNewDayTop(ta.offsetTop + caretTop(ta, pos) + parseFloat(getComputedStyle(ta).paddingTop) - ta.scrollTop)
+  }, [newDay, text])
+
   /** 取り消せる操作のあとは、通知に「元に戻す」を添える(戻す先の内容を持つ) */
   const [undoTo, setUndoTo] = useState<string | null>(null)
   const notify = useCallback((message: string, undo?: string) => {
@@ -270,9 +283,9 @@ function Editor({
   }, [text, caret, settings.rigs])
 
   // フルキー: OS のキーボードの代わりに、画面のキーボードを出す。🌐 で、OS のキーボード(日本語など)に切り替える
-  // PC(タッチでない端末)では、フルキーを選んでいても、従来として動く(物理キーボードがある)
+  // 配置は端末で決まる(タッチ端末はフルキー、PC は物理キーボードがあるので従来)
   const [touch] = useState(touchDevice)
-  const fullkey = activeLayout(settings.layout, touch) === 'fullkey'
+  const fullkey = activeLayout(touch) === 'fullkey'
   // フルキーでは、打っている行を、欄の下端(候補バーのすぐ上)に寄せる。内容が変わったときと、欄の大きさが変わったとき。
   // キャレットを置き直すより先に(寄せたあとの位置で、見えるところまで動かす)。OS のキーボードにしている間も同じ
   const compact = fullkey
@@ -280,7 +293,7 @@ function Editor({
   const landscape = useLandscapePhone() && compact
 
   // フルキー: ログ欄の上に、時刻と運用先を出す(設定で出すとき、入る場所があれば)
-  const clockRoom = useClockRoom({ enabled: compact && settings.showClock, taRef, deps: [settings.editorFont] })
+  const clockRoom = useClockRoom({ enabled: compact && settings.showClock, taRef, deps: [settings.fontSize] })
   const [osKeyboard, setOsKeyboard] = useState(false)
   const onScreenKeys = fullkey && !osKeyboard
   // シートの入力欄(自局・リファレンスなど)の画面のキーボード。🌐 での切り替えは、ログ欄とは別に持つ
@@ -307,7 +320,7 @@ function Editor({
     if (!ta) return
     if (compact) alignToBottom(ta)
     else ta.style.paddingTop = ''
-  }, [text, settings.editorFont, compact])
+  }, [text, settings.fontSize, compact])
   useEffect(() => {
     const ta = taRef.current
     if (!compact || !ta || typeof ResizeObserver === 'undefined') return
@@ -347,8 +360,10 @@ function Editor({
     expandTime: true,
     bandMode: settings.writeBandMode,
     rst: writeRst,
-    // いまの時刻を入れるときは、日付が変わっていれば `day +`(か `date`)も書く。時刻を手で打つ行には書かない
+    // いまの時刻を入れるときは、日付が変わっていれば `day +`(か `date`)も書く
     date: true,
+    // 手で打った時刻が、日をまたいだらしい(2358 のあとの 0002 など)ときも `day +` を書く。ほかの戻りは書かず、警告する
+    dayRollover: true,
   }
 
   // この行を確定したら、どう見えるか(時刻・バンド・モード・RSTが入った姿)を先に見せる
@@ -532,12 +547,19 @@ function Editor({
     const filled = applyEdits(text, edits)
     // 日付の行を書き足したら、知らせる(元に戻せる)
     const dated = edits.find((e) => /^(?:timezone [+-]\d+\n)?(day \+|date \S+)\n/.test(e.insert))
-    if (dated) {
-      const dir = /(day \+|date \S+)\n/.exec(dated.insert)![1]
-      notify(t('notice.dateInserted', { directive: dir }), text)
-    }
     const shift = filled.split('\n').length - text.split('\n').length // 先頭の timezone の行・前の日付の行で増える分
     const done = line + shift
+    if (dated) {
+      const dir = /(day \+|date \S+)\n/.exec(dated.insert)![1]
+      // 時刻を手で打った行の `day +`(いまの時刻は入れていない)は、ログの上にそっと知らせる
+      if (dir === 'day +' && !edits.some((e) => /\d{4} $/.test(e.insert))) {
+        window.clearTimeout(newDayTimer.current)
+        setNewDay({ line: done - 1, undoTo: text })
+        newDayTimer.current = window.setTimeout(() => setNewDay(null), NEW_DAY_MS)
+      } else {
+        notify(t('notice.dateInserted', { directive: dir }), text)
+      }
+    }
     lineStartedAt.current = null
     const lines = filled.split('\n')
     if (done < lines.length - 1) {
@@ -764,9 +786,34 @@ function Editor({
           sync={sync}
         />
 
-        <div ref={clockRoom.boxRef} className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}>
+        <div
+          ref={clockRoom.boxRef}
+          className={`relative flex-1 min-h-0 flex ${compact ? 'flex-col justify-end' : ''}`}
+          // ログ欄と情報窓の文字の大きさ(設定。小 0.85・中 1・大 1.2)
+          style={{ '--fle-scale': FONT_SCALE[settings.fontSize] } as CSSProperties}
+        >
           {clockRoom.fits && (
             <StationClock info={info} tz={clockZone(info, view, caretLine, settings.timezone)} memo={memoAt(text, caretLine)} />
+          )}
+          {newDay && (
+            <div
+              role="status"
+              className="fle-fade-out absolute left-1/2 -translate-x-1/2 -translate-y-full z-10 w-max max-w-[calc(100%-1rem)] px-3 py-1 rounded-lg text-sm font-semibold bg-gray-950 text-white dark:bg-white dark:text-gray-950"
+              style={{ top: newDayTop }}
+            >
+              {t('notice.newDay')}
+              <button
+                type="button"
+                className="ml-3 underline font-bold"
+                onClick={() => {
+                  setText(newDay.undoTo)
+                  setNewDay(null)
+                }}
+                {...keepFocus}
+              >
+                {t('notice.undo')}
+              </button>
+            </div>
           )}
           <textarea
             ref={taRef}
@@ -788,17 +835,18 @@ function Editor({
             // フルキー: OS のキーボードを出さない(キャレットは出る)
             inputMode={onScreenKeys ? 'none' : undefined}
             // 従来の配置では、下端に重なる補完候補の分だけ、末尾の行が隠れないよう余白を取る。
-            // 文字は太め(細い文字は、日なたで読めない)。ゴシックは本文と同じフォントを引き継ぐ
+            // 文字は太めの等幅(細い文字は、日なたで読めない)。大きさは設定の倍率(`--fle-scale`)を掛ける。
             // フルキーでは、緑のバーのコールサインと同じ大きさ(目が読み替えずに済む)。行間は詰める
-            className={`input flex-1 h-full min-h-0 resize-none font-semibold ${
-              compact ? '!text-xl leading-[1.3]' : 'leading-relaxed pb-20'
-            } ${settings.editorFont === 'mono' ? 'font-mono' : ''}`}
+            className={`input flex-1 h-full min-h-0 resize-none font-semibold font-mono ${
+              compact ? 'leading-[1.3]' : 'leading-relaxed pb-20'
+            }`}
+            style={{ fontSize: `calc(${compact ? 1.25 : 1}rem * var(--fle-scale, 1))` }}
           />
           {!compact && <SuggestStrip candidates={completion.candidates} onPick={pick} />}
         </div>
 
         {/* フルキーでは、補完候補は候補バーに重ねて出す(打っている行のすぐ下) */}
-        {info?.timeBack && (
+        {info?.timeBack && !info.newDay && (
           <div
             role="status"
             {...keepFocus}

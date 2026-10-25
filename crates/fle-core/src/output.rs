@@ -62,6 +62,12 @@ impl HamlogColumns {
         } else {
             format!("Rig={}", record.rig)
         };
+        // QSL メッセージが空なら、それを囲む `%` ごと消す(Rig だけのとき `%%Rig=…` にしない)
+        let template = if record.qslmsg.is_empty() {
+            template.replace("%{qslmsg}%", "")
+        } else {
+            template.to_string()
+        };
         let text = template
             .replace("{myref}", &my_refs(record))
             .replace("{hisref}", his_refs)
@@ -1422,6 +1428,25 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         );
         // `rig -` で解除すると、以降は、どちらもない
         assert!(!lines[2].contains("Rig="), "{}", lines[2]);
+    }
+
+    #[test]
+    fn rmks2_is_empty_when_there_is_no_qsl_message_and_no_rig() {
+        let record = |log: &str| {
+            let r = compile_fle(log);
+            assert!(r.errors.is_empty(), "{:?}", r.errors);
+            r.records[0].clone()
+        };
+        let tpl = "%{qslmsg}%{rig}";
+        let none = record("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1aaa");
+        assert_eq!(HamlogColumns::expand(tpl, &none, ""), "");
+        // Rig だけ: `%%` を付けない
+        let rig = record("mycall JA1ABC\ndate 2026-10-18\n40m cw\nrig KX2\n0900 ja1aaa");
+        assert_eq!(HamlogColumns::expand(tpl, &rig, ""), "Rig=KX2");
+        // QSL メッセージがあれば、今までどおり
+        let msg =
+            record("mycall JA1ABC\ndate 2026-10-18\n40m cw\nqslmsg TNX\nrig KX2\n0900 ja1aaa");
+        assert_eq!(HamlogColumns::expand(tpl, &msg, ""), "%TNX%Rig=KX2");
     }
 
     #[test]

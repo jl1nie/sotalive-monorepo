@@ -9,6 +9,8 @@
 //! - `expand_time`: 省略形の時刻(`15`、`115`)を、前の行から決まる `HHMM` に展開する。
 //! - `band_mode`: 省略されたバンド・モードを、コールサインの前に挿入する。
 //! - `rst`: 省略された RST を挿入し、省略形(`4` など)を解決した値に置き換える。
+//! - `date`: いまの時刻を入れるとき、日付が変わっていれば行の前に `day +`(か `date`)を書く。
+//! - `day_rollover`: 手で打った時刻が日をまたいだらしいとき(前が 21 時以降、この行が 3 時未満で前に戻る)、`day +` を書く。
 //!
 //! 利用者が書いたリファレンスやコメントは動かさない。
 //!
@@ -19,6 +21,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::compiler::compile_fle;
 use crate::ham::is_mhz;
+use crate::line_info::is_day_rollover;
 use crate::syntax::{parse_line, DirValue, LineKind, QsoItem, Rst, Span, Spanned};
 use crate::types::FleQsoRecord;
 
@@ -47,6 +50,9 @@ pub struct FillScope {
     pub no_clock: bool,
     /// いまの時刻を入れるとき、日付が変わっていれば、行の前に `day +` か `date` を書く(`date` がまだないときも)
     pub date: bool,
+    /// 手で打った時刻の行が、日をまたいだらしいとき(前の QSO がログの時刻で 21 時以降、この行が 3 時未満で
+    /// 前に戻っている)、行の前に `day +` を書く。それ以外の戻りは、推測せず、そのままにする
+    pub day_rollover: bool,
 }
 
 impl FillScope {
@@ -57,6 +63,7 @@ impl FillScope {
         rst: false,
         no_clock: false,
         date: false,
+        day_rollover: false,
     };
     /// すべて
     pub const FULL: Self = Self {
@@ -65,11 +72,12 @@ impl FillScope {
         rst: true,
         no_clock: false,
         date: false,
+        day_rollover: false,
     };
 
     /// QSOの解釈結果(コンパイルの結果)が要るか
     fn needs_record(self) -> bool {
-        self.expand_time || self.band_mode || self.rst
+        self.expand_time || self.band_mode || self.rst || self.day_rollover
     }
 }
 
@@ -110,17 +118,23 @@ pub fn fill_with(
     let before_tz = timezone_before(&lines[..line]);
 
     // 解釈の結果が要る確定: エラーのある行や、解釈できない行は、何も変えない
-    let record = if scope.needs_record() {
+    let (record, prev_record) = if scope.needs_record() {
         let compiled = compile_fle(text);
         if compiled.errors.iter().any(|e| e.line == line) {
             return Vec::new();
         }
+        let prev = compiled
+            .records
+            .iter()
+            .rev()
+            .find(|r| r.line < line)
+            .cloned();
         match compiled.records.into_iter().find(|r| r.line == line) {
-            Some(r) => Some(r),
+            Some(r) => (Some(r), prev),
             None => return Vec::new(),
         }
     } else {
-        None
+        (None, None)
     };
 
     // (位置, 同じ位置に入れるときの順序, 修正)。同じ位置の挿入は、順序どおりに1つへまとめる
@@ -157,6 +171,14 @@ pub fn fill_with(
             parts.push((base, 1, insert_at(base, format!("{hhmm} "))));
         }
         Some(i) => {
+            // 日をまたいだらしい(2358 のあとの 0002 など)なら、`day +` を書く。ほかの戻りは推測しない
+            if let (true, Some(rec), Some(prev)) =
+                (scope.day_rollover, record.as_ref(), prev_record.as_ref())
+            {
+                if is_day_rollover(prev, rec) {
+                    parts.push((line_start, 0, insert_at(line_start, "day +\n".to_string())));
+                }
+            }
             // 省略形(分だけ・H:MM)は、指定があるときだけ HHMM に展開する
             if let (true, Some(rec), QsoItem::Time { digits, .. }) =
                 (scope.expand_time, record.as_ref(), &items[i].node)
@@ -1103,8 +1125,11 @@ mod tests {
                 rst: false,
                 date: false,
                 no_clock: false,
+                day_rollover: false,
             }
         );
+        let on: FillScope = serde_json::from_str(r#"{"dayRollover":true}"#).unwrap();
+        assert!(on.day_rollover);
         let none: FillScope = serde_json::from_str("{}").unwrap();
         assert_eq!(none, FillScope::TIME);
     }
@@ -1133,5 +1158,65 @@ mod tests {
             apply(text, &full(text, 1, 0)),
             "40m cw\n0905 40m CW 7k1abc 599 599"
         );
+    }
+
+    fn rollover(text: &str, line: usize, tz: i32) -> String {
+        let scope = FillScope {
+            day_rollover: true,
+            ..FillScope::TIME
+        };
+        apply(text, &fill_with(text, line, NOW, tz, scope))
+    }
+
+    #[test]
+    fn writes_day_plus_when_a_typed_time_goes_past_midnight() {
+        let text = "date 2026-10-17\n40m cw\n2358 ja1aaa\n0002 jh1hhh";
+        assert_eq!(
+            rollover(text, 3, 0),
+            "date 2026-10-17\n40m cw\n2358 ja1aaa\nday +\n0002 jh1hhh"
+        );
+        // 書いたあとは、もう書かない(冪等)
+        let done = "date 2026-10-17\n40m cw\n2358 ja1aaa\nday +\n0002 jh1hhh";
+        assert_eq!(rollover(done, 4, 0), done);
+    }
+
+    #[test]
+    fn day_plus_follows_the_log_time_not_utc() {
+        // JST のログ: 23:58 のあとの 00:02(UTC でも戻る)。ログの時刻で 21 時以降・3 時未満を見る
+        // (UTC の 14:58 のあとの 15:02 と取り違えない。UTC の時刻では条件に当たらない)
+        let text = "timezone +9\ndate 2026-10-17\n40m cw\n2358 ja1aaa\n0002 jh1hhh";
+        assert_eq!(
+            rollover(text, 4, 0),
+            "timezone +9\ndate 2026-10-17\n40m cw\n2358 ja1aaa\nday +\n0002 jh1hhh"
+        );
+    }
+
+    #[test]
+    fn day_plus_is_not_written_for_other_going_backs() {
+        // 前が 21 時より前
+        let early = "date 2026-10-17\n40m cw\n2000 ja1aaa\n0100 jh1hhh";
+        assert_eq!(rollover(early, 3, 0), early);
+        // 今が 3 時以降
+        let late = "date 2026-10-17\n40m cw\n2358 ja1aaa\n0300 jh1hhh";
+        assert_eq!(rollover(late, 3, 0), late);
+        // ふつうの戻り
+        let back = "date 2026-10-17\n40m cw\n1030 ja1aaa\n0930 jh1hhh";
+        assert_eq!(rollover(back, 3, 0), back);
+        // 戻っていない
+        let fwd = "date 2026-10-17\n40m cw\n2330 ja1aaa\n2359 jh1hhh";
+        assert_eq!(rollover(fwd, 3, 0), fwd);
+    }
+
+    #[test]
+    fn day_plus_is_not_written_when_the_date_was_set_back() {
+        // 日付を前に戻したログでは、書いても戻ったままなので書かない(確定のたびに増えない)
+        let text = "date 2026-10-17\n40m cw\n2358 ja1aaa\ndate 2026-10-16\n0002 jh1hhh";
+        assert_eq!(rollover(text, 4, 0), text);
+    }
+
+    #[test]
+    fn day_plus_is_only_written_when_asked() {
+        let text = "date 2026-10-17\n40m cw\n2358 ja1aaa\n0002 jh1hhh";
+        assert_eq!(fill(text, 3, NOW, 0), vec![]);
     }
 }

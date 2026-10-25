@@ -4,14 +4,16 @@ import { parseRigs } from '@/lib/rig'
 import { DEFAULT_HAMLOG_COLUMNS, type HamlogColumns } from '@/lib/hamlog'
 
 export type Theme = 'light' | 'dark' | 'system'
-/** 入力欄の文字。等幅(同梱の Roboto Mono)か、ゴシック(本文と同じ)か */
-export type EditorFont = 'gothic' | 'mono'
+/** ログ欄と情報窓の文字の大きさ。中が今の大きさ */
+export type FontSize = 'small' | 'medium' | 'large'
+/** 文字の大きさの倍率(CSS の `--fle-scale`) */
+export const FONT_SCALE: Record<FontSize, number> = { small: 0.85, medium: 1, large: 1.2 }
 /** QSO の数の出し方。その日(カーソルの日、UTC)の数と全体の数か、全体の数だけか */
 export type QsoCount = 'day' | 'total'
 /**
  * 入力画面の配置。classic は従来のもの(PC)。fullkey は、打っている行・候補バーを手元にまとめ(ログは下寄せ、
  * 補完候補は候補バーに重ねる)、OS のキーボードの代わりに画面のキーボード(数字・英字・記号・改行)を出すもの(スマホ)。
- * 以前の compact(fullkey の 🌐 で OS のキーボードにしたときと同じ)は、読むときにどちらかへ移す
+ * タッチ端末はフルキー、PC は従来で、選べない(端末で決まる)
  */
 export type Layout = 'classic' | 'fullkey'
 
@@ -34,12 +36,10 @@ export interface Settings {
   language: LangPref
   /** キーボードの上に、数字の行(0〜9 と / と -)を出す(ソフトキーボードで、文字と数字の切り替えを減らす) */
   digitRow: boolean
-  /** 入力欄の文字(どちらも太め。屋外で読めるように) */
-  editorFont: EditorFont
+  /** ログ欄と情報窓の文字の大きさ(文字は太めの等幅で固定。屋外で読めるように)。同期しない(端末ごと) */
+  fontSize: FontSize
   /** 候補バーの左の、QSO の数の出し方 */
   qsoCount: QsoCount
-  /** 入力画面の配置。同期しない(端末ごと) */
-  layout: Layout
   /**
    * フルキーのキーの高さ(幅に対する倍率)。1 は正方形、最大 1.5。キーボードの上の縁をドラッグして変える。
    * 同期しない(端末ごと)
@@ -80,7 +80,7 @@ export const KEY_SCALE_MAX = 1.5
 
 const KEY = 'fle.settings'
 /**
- * タッチ端末(ソフトキーボード)か。数字の行は初期でオン。フルキーは、タッチ端末でだけ選べる
+ * タッチ端末(ソフトキーボード)か。タッチ端末はフルキー、PC は従来の配置
  * (PC は物理キーボードがあるので、画面のキーボードは要らない)
  */
 export const touchDevice = () => {
@@ -90,9 +90,9 @@ export const touchDevice = () => {
     return false
   }
 }
-/** 実際に動く配置。フルキーは、タッチ端末でだけ(PC では、フルキーを選んでいても従来として動く) */
-export function activeLayout(layout: Layout, touch: boolean): Layout {
-  return layout === 'fullkey' && touch ? 'fullkey' : 'classic'
+/** 動く配置。端末で決まる(タッチ端末はフルキー、PC は従来) */
+export function activeLayout(touch: boolean): Layout {
+  return touch ? 'fullkey' : 'classic'
 }
 
 const DEFAULTS: Settings = {
@@ -104,9 +104,8 @@ const DEFAULTS: Settings = {
   writeRstCompact: false,
   language: 'auto',
   digitRow: false,
-  editorFont: 'mono',
+  fontSize: 'medium',
   qsoCount: 'day',
-  layout: 'classic',
   keyScale: 1,
   showClock: true,
   capsLock: false,
@@ -114,18 +113,9 @@ const DEFAULTS: Settings = {
   hamlog: DEFAULT_HAMLOG_COLUMNS,
 }
 
-/** この端末で、前に FLEonline を使ったことがあるか(ログ・前回のコールサインなど、fle. で始まる保存がある) */
-function usedBefore(): boolean {
-  for (let i = 0; i < localStorage.length; i++) {
-    if (localStorage.key(i)?.startsWith('fle.')) return true
-  }
-  return false
-}
-
 function load(): Settings {
   try {
-    const stored = localStorage.getItem(KEY)
-    const v = JSON.parse(stored ?? '{}')
+    const v = JSON.parse(localStorage.getItem(KEY) ?? '{}')
     const theme: Theme = v.theme === 'light' || v.theme === 'dark' ? v.theme : 'system'
     const timezone =
       Number.isInteger(v.timezone) && v.timezone >= TIMEZONE_MIN && v.timezone <= TIMEZONE_MAX
@@ -139,21 +129,10 @@ function load(): Settings {
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
       writeRstCompact: typeof v.writeRstCompact === 'boolean' ? v.writeRstCompact : DEFAULTS.writeRstCompact,
       language: v.language === 'ja' || v.language === 'en' ? v.language : 'auto',
-      digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : touchDevice(),
-      editorFont: v.editorFont === 'gothic' ? 'gothic' : 'mono',
+      // 数字キーの行は、PC の従来の配置でだけ使う(タッチ端末はフルキー)
+      digitRow: typeof v.digitRow === 'boolean' ? v.digitRow : DEFAULTS.digitRow,
+      fontSize: v.fontSize === 'small' || v.fontSize === 'large' ? v.fontSize : 'medium',
       qsoCount: v.qsoCount === 'total' ? 'total' : 'day',
-      // 配置: 初めて使うスマホはフルキー。前から使っている端末は、選んでいなければ従来のまま。
-      // 以前のコンパクトは、スマホならフルキー(🌐 で同じ画面になる)、PC なら従来へ
-      layout:
-        v.layout === 'fullkey' || v.layout === 'classic'
-          ? v.layout
-          : v.layout === 'compact'
-            ? touchDevice()
-              ? 'fullkey'
-              : 'classic'
-            : stored === null && touchDevice() && !usedBefore()
-              ? 'fullkey'
-              : 'classic',
       keyScale:
         typeof v.keyScale === 'number' && v.keyScale >= KEY_SCALE_MIN && v.keyScale <= KEY_SCALE_MAX ? v.keyScale : 1,
       showClock: typeof v.showClock === 'boolean' ? v.showClock : DEFAULTS.showClock,
@@ -161,8 +140,6 @@ function load(): Settings {
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
       hamlog: parseHamlogColumns(v.hamlog),
     }
-    // 初めて読んだときに決めた配置を覚えておく(あとでログができても、配置が変わらないように)
-    if (stored === null) localStorage.setItem(KEY, JSON.stringify(settings))
     return settings
   } catch {
     return DEFAULTS

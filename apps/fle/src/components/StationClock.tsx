@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CLOCK_REM } from '@/hooks/useClockRoom'
 import { zoneLabel, type LineInfo } from '@/lib/fle'
 import { useT } from '@/lib/i18n'
 
@@ -10,6 +11,11 @@ interface Props {
   /** カーソルの位置で有効なメモ(行の先頭が `#` の行。JCC・JCG など) */
   memo?: string
 }
+
+/** 文字の大きさの倍率(設定。親の箱の `--fle-scale`)。なければ 1 */
+const SCALE = 'var(--fle-scale, 1)'
+/** 文字の大きさ(rem)に、設定の倍率を掛ける */
+const size = (rem: number) => ({ fontSize: `calc(${rem}rem * ${SCALE})` })
 
 /** 時刻(`HH:MM:SS`)。`tz` は UTC からの時間差 */
 function clockAt(now: number, tz: number): string {
@@ -33,25 +39,35 @@ export function StationClock({ info, tz, memo = '' }: Props) {
     <div
       role="group"
       aria-label={t('clock.label')}
-      // 高さは決まった値(CLOCK_REM。入るかどうかを、この高さで決める)。行の間は詰め、最後の行とログ欄の間は少し空ける
-      className="flex-none h-[6rem] pb-1 overflow-hidden flex flex-col items-center justify-center gap-[0.2rem] select-none"
+      // 高さは決まった値(CLOCK_REM × 文字の大きさの倍率。入るかどうかを、この高さで決める)。
+      // 行の間は詰め、最後の行とログ欄の間は少し空ける
+      className="flex-none pb-1 overflow-hidden flex flex-col items-center justify-center gap-[0.2rem] select-none"
+      style={{ height: `calc(${CLOCK_REM}rem * ${SCALE})` }}
     >
       <div className="flex items-baseline gap-3 font-mono font-bold tabular-nums">
-        <span className="text-4xl leading-none">{clockAt(now, tz)}</span>
-        <span className="text-base">{tz === 0 ? 'UTC' : zoneLabel(tz)}</span>
+        <span className="leading-none" style={size(2.25)}>{clockAt(now, tz)}</span>
+        <span style={size(1)}>{tz === 0 ? 'UTC' : zoneLabel(tz)}</span>
         {/* ログの時間帯が UTC でなければ、UTC も小さく(SOTA・POTA のスポットは UTC) */}
-        {tz !== 0 && <span className="text-base text-gray-500 dark:text-gray-400">UTC {clockAt(now, 0).slice(0, 5)}</span>}
+        {tz !== 0 && (
+          <span className="text-gray-500 dark:text-gray-400" style={size(1)}>
+            UTC {clockAt(now, 0).slice(0, 5)}
+          </span>
+        )}
       </div>
       {(info?.mycall || places.length > 0) && (
         // 運用先が多ければ(山と公園の n-fer)、折り返して2行まで
-        <div className="max-w-full flex flex-wrap justify-center gap-x-3 font-mono text-xl font-bold leading-[1.1]">
+        <div className="max-w-full flex flex-wrap justify-center gap-x-3 font-mono font-bold leading-[1.1]" style={size(1.25)}>
           {[info?.mycall, ...places].filter(Boolean).map((code) => (
             <span key={code}>{code}</span>
           ))}
         </div>
       )}
       {/* メモは1行。長ければ末尾を省く。運用先と同じく読み上げるので、同じ文字(等幅・大きさ・太さ) */}
-      {memo && <div className="max-w-full px-3 truncate font-mono text-xl font-bold leading-[1.1]">{memo}</div>}
+      {memo && (
+        <div className="max-w-full px-3 truncate font-mono font-bold leading-[1.1]" style={size(1.25)}>
+          {memo}
+        </div>
+      )}
     </div>
   )
 }

@@ -26,15 +26,17 @@ export function clockFits(m: LogMetrics): boolean {
   return m.box - m.clock >= MIN_LINES * m.line + m.chrome
 }
 
-function measure(ta: HTMLTextAreaElement, box: number): LogMetrics {
+function measure(ta: HTMLTextAreaElement, boxEl: HTMLElement): LogMetrics {
   const style = getComputedStyle(ta)
   const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+  // 文字の大きさの倍率(`--fle-scale`)。情報窓の高さも同じ倍率で変わる
+  const scale = parseFloat(getComputedStyle(boxEl).getPropertyValue('--fle-scale')) || 1
   return {
-    box,
+    box: boxEl.clientHeight,
     line: parseFloat(style.lineHeight) || 26,
     // 上の余白は、下寄せ(alignToBottom)で増えていることがあるので、下と同じとみなす
     chrome: parseFloat(style.paddingBottom) * 2 + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth),
-    clock: CLOCK_REM * rem,
+    clock: CLOCK_REM * rem * scale,
   }
 }
 
@@ -49,7 +51,7 @@ export function useClockRoom({
 }: {
   enabled: boolean
   taRef: RefObject<HTMLTextAreaElement | null>
-  /** 行の高さが変わるもの(文字の種類など) */
+  /** 行の高さが変わるもの(文字の大きさなど) */
   deps: unknown[]
 }) {
   const boxRef = useRef<HTMLDivElement>(null)
@@ -58,7 +60,7 @@ export function useClockRoom({
   const remeasure = () => {
     const ta = taRef.current
     const box = boxRef.current
-    if (ta && box) setMetrics(measure(ta, box.clientHeight))
+    if (ta && box) setMetrics(measure(ta, box))
   }
   useLayoutEffect(remeasure, [enabled, ...deps]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {

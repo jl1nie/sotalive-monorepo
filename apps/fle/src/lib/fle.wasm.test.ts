@@ -166,6 +166,23 @@ describe('fle wasm', () => {
     expect(lineInfo(text, 1).timeBack).toBe(false)
   })
 
+  it('fill: dayRollover を指定すると、日をまたいだらしい手打ちの時刻の行の前に day + を書く', () => {
+    const text = 'date 2026-10-17\n40m cw\n2358 ja1aaa\n0002 jh1hhh'
+    const at = Date.UTC(2026, 9, 18, 0, 3)
+    const edits = fill(text, 3, at, 0, { dayRollover: true }) as { insert: string }[]
+    expect(edits.map((e) => e.insert)).toEqual(['day +\n'])
+    // 指定しなければ、何も書かない。ふつうの戻りも書かない
+    expect(fill(text, 3, at, 0, undefined)).toEqual([])
+    expect(fill('date 2026-10-17\n40m cw\n1030 ja1aaa\n0930 jh1hhh', 3, at, 0, { dayRollover: true })).toEqual([])
+  })
+
+  it('lineInfo: 日をまたいだらしい戻りは newDay', () => {
+    const text = 'date 2026-10-17\n40m cw\n2358 ja1aaa\n0002 jh1hhh\n2000 ja1bbb\n1030 ja1ccc'
+    expect(lineInfo(text, 3).newDay).toBe(true)
+    expect(lineInfo(text, 5).newDay).toBe(false)
+    expect(lineInfo(text, 5).timeBack).toBe(true)
+  })
+
   it('checkOutput: ? のあるコールサインを、出力の前に知らせる', () => {
     const w = checkOutput('mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n0900 ja1ab?')
     expect(w).toEqual([{ code: 'unsure_call', field: 'call', severity: 'required', qsos: 1, items: ['JA1AB?'] }])

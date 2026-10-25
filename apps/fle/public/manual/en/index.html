@@ -69,12 +69,14 @@
     </ul>
   </li>
   <li><b>Insert the current time</b>: confirming a QSO line without a time inserts the current time (on by default). Turn it off when typing in a paper log; a line without a time then takes the time of the line before. This is set per device and is not synced.</li>
-  <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST. Band/mode is off at first. RST is kept per layout: on at first in the classic layout, off at first in the full keys layout (the log stays as you typed it, and the green bar shows the filled-in values). The settings screen shows which layout the RST setting is for.</li>
-  <li><b>Screen layout</b>: "Classic" or "Full keys (trial)". Full keys keeps the line you are typing and the green bar together, and shows an on-screen keyboard instead of the phone's (see <a href="#fullkey">Full keys layout</a>; available on touch devices such as phones). A device that used the former "Compact" layout moves to full keys on a phone and to classic on a PC. A phone starts with full keys the first time, a PC with classic. This is set per device and is not synced.</li>
-  <li><b>Show the time and location</b>: with full keys, shows the time and your location (and memo) in large type above the log (on by default). It appears only while full keys is selected. This is set per device and is not synced.</li>
-  <li><b>Digit key row</b>: in the classic layout, a row of digit keys above the keyboard (on from the start on touch devices). Not used with full keys (the keyboard has digits).</li>
+  <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST. Band/mode is off at first. RST is kept separately for a PC (classic layout) and a phone (full keys): on at first on a PC, off at first on a phone (the log stays as you typed it, and the green bar shows the filled-in values). The settings screen shows whether the RST setting is for a PC or a phone.</li>
+  <li><b>Screen layout</b>: there is no setting; the device decides. Touch devices such as phones use the <a href="#fullkey">Full keys layout</a> (it keeps the line you are typing and the green bar together, and shows an on-screen keyboard instead of the phone's). A PC uses the classic layout (you type on the physical keyboard).</li>
+  <li><b>Show the time and location</b>: on a phone (full keys), shows the time and your location (and memo) in large type above the log (on by default). It appears only on a phone. This is set per device and is not synced.</li>
+  <li><b>Digit key row</b>: in the classic layout on a PC, a row of digit keys above the keyboard (off at first). Not used with full keys on a phone (the keyboard has digits).</li>
   <li><b>QSO count</b>: the number on the left shows "Day / total" or only the "Total".</li>
-  <li><b>Log text</b>: monospace (Roboto Mono) or gothic. <b>Theme</b>: light / dark / follow the device. <b>Language</b>: the language of the screen and error messages (日本語 / English / follow the device).</li>
+  <li><b>Log text size</b>: Small, Medium or Large (Medium is the standard; Small is 0.85 times, Large 1.2 times). It changes the log and the time and location above it. The type is always a heavy monospace. This is set per device and is not synced.</li>
+  <li><b>HAMLOG output</b>: what goes into the QTH, Rmks1 and Rmks2 columns of HAMLOG. Choose a preset ("Classic" is the same as the old HamLogConv; "Memo in Rmks1, your place in Rmks2") or tick the items for each column (remarks, other station, your place, memo, QSL message, Rig). With neither a QSL message nor a rig, Rmks2 is left empty. This setting is synced (it follows you to another device).</li>
+  <li><b>Theme</b>: light / dark / follow the device. <b>Language</b>: the language of the screen and error messages (日本語 / English / follow the device).</li>
 </ul>
 
 <h3>Plans (destinations)</h3>
@@ -156,13 +158,13 @@ ssb
 <p>The number on the left is the QSOs on the day at the cursor (UTC), with the total (such as <code>/10</code>) under it. Choose "Total" under "QSO count" in the settings to show only the total. In the classic layout, tap it to see the QSO list and errors; tapping an error jumps to that line (for the full keys layout, see <a href="#fullkey">Full keys layout</a>).</p>
 <ul>
   <li>Tap a <b>suggestion</b> shown at the bottom of the editor to insert a keyword, band or mode (with full keys, suggestions appear over the green bar).</li>
-  <li>With "Digit key row" on in the settings, a row of digits appears above the keyboard (handy for callsigns such as JA1ABC/1; on from the start on touch devices). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
+  <li>In the classic layout on a PC, with "Digit key row" on in the settings, a row of digits appears above the keyboard (handy for callsigns such as JA1ABC/1). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
   <li>If you move, use Menu → "Change location" to switch the location for the QSOs from the cursor line on (in the same log).</li>
   <li>The QSO list can also be opened from Menu → "QSO list".</li>
   <li>On a PC, <b>Ctrl+Z (⌘Z on a Mac) undoes the last edit</b>, in any layout, the same way as ↶ in full keys (including changes made by confirming or picking a suggestion).</li>
 </ul>
 <h3 id="fullkey">Full keys layout (trial)</h3>
-<p>Choose "Full keys" under "Screen layout" in the settings to keep the line you are typing and the green bar together, with an on-screen keyboard that has just the keys needed to write FLE, instead of the phone's keyboard. No more switching the phone's keyboard between input modes. It is available on touch devices such as phones (a PC uses the classic layout). You can switch back to the classic layout in the settings at any time (the log stays as it is).</p>
+<p>On touch devices such as phones, the line you are typing and the green bar are kept together, with an on-screen keyboard that has just the keys needed to write FLE, instead of the phone's keyboard. No more switching the phone's keyboard between input modes (a PC uses the classic layout).</p>
 <pre><code>      10:05:12 JST  UTC 01:05
        JA1ABC  JA/TK-001
 │ 1111 jj0pic         │
@@ -181,7 +183,7 @@ ssb
   <li><b>The green bar is shorter</b>: the callsign and RST in the same large text on the first row, and the time, band, mode etc. small on the second. ✓ OK is always to the right of the bar. It turns green and can be tapped only when the line can be confirmed (a green line), and it moves to the next line (it works even while suggestions are shown).</li>
   <li><b>Suggestions appear over the green bar.</b> They never cover the QSO count on the left.</li>
   <li><b>The QSO count on the left is display only</b> (tapping it does not open the list; use Menu → "QSO list"). When activating POTA or SOTA, the lower number is the QSOs needed for an activation (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once the activation is complete. It turns red when there are errors, with a count such as <code>⚠2</code>.</li>
-  <li><b>Confirming keeps the log as you typed it</b> (writing the RST is off at first). Type <code>7</code> and the green bar shows the filled-in value such as <code>579/599</code>. To write it into the log, turn on RST under "What confirming writes" in the settings <b>while the full keys layout is selected</b> (this setting is kept separately from the classic layout, and the settings screen says which layout it is for).</li>
+  <li><b>Confirming keeps the log as you typed it</b> (writing the RST is off at first). Type <code>7</code> and the green bar shows the filled-in value such as <code>579/599</code>. To write it into the log, turn on RST under "What confirming writes" in the settings <b>on the phone</b> (this setting is kept separately from the PC, and the settings screen says whether it is for a PC or a phone).</li>
   <li>While the keyboard is shown, there is no gap between the keys and the keyboard.</li>
 </ul>
 <h4>The keyboard</h4>
@@ -239,7 +241,7 @@ ssb
   <li><b>Example: change <code>date 2026-10-19</code> to the 18th</b> → tap the end of the line (<code>19|</code>) → ⌫ → <code>8</code>. No swipe is needed at the end of a line.</li>
   <li><b>Example: change the middle 5 of the sent report 559 to 7</b> → tap the RST twice for <code>559|</code> → swipe the digit row left by one character for <code>55|9</code> → ⌫ → <code>7</code>, giving <code>579</code>.</li>
   <li>Tap the editor to get near, then swipe for the fine position.</li>
-  <li>Show the digit row with "Digit key row" in the settings (it is on from the start on touch devices).</li>
+  <li>Show the digit row with "Digit key row" in the settings (classic layout on a PC).</li>
 </ul>
 
 <h2 id="out">5. After operating: make the files</h2>
@@ -278,7 +280,7 @@ ssb
 <tr><th><code>mywwff JAFF-0001</code></th><td>Your WWFF reference</td></tr>
 <tr><th><code>mygrid PM95uq</code></th><td>Your grid (4, 6 or 8 characters)</td></tr>
 <tr><th><code>date 2026-10-25</code></th><td>The date (<code>10/25</code> also works). Resets the time to 00:00</td></tr>
-<tr><th><code>day +</code> / <code>day ++</code></th><td>Advance the date by 1 / 2 days (when crossing midnight)</td></tr>
+<tr><th><code>day +</code> / <code>day ++</code></th><td>Advance the date by 1 / 2 days (when crossing midnight). When a time you typed goes back past midnight (the previous QSO at 21:00 or later, this one before 03:00, such as 0002 after 2358), confirming (OK) adds <code>day +</code> automatically and shows "New day" above the log for about 3 seconds (you can tap Undo). Other times that go back (such as 0930 after 1030) only get a warning</td></tr>
 <tr><th><code>timezone jst</code></th><td>Time zone of the times: <code>jst</code>, <code>utc</code>, or a number such as <code>+9</code>. Default UTC. Normally the "Time zone" setting writes it at the top. Changed in the middle of a log, the last time carries over as the same moment in the new zone (after UTC 23:30, <code>timezone jst</code> continues from 08:30 the next day)</td></tr>
 <tr><th><code>rig KX2+EFHW</code></th><td>The rig (HAMLOG's <code>Rig=</code>). <code>-</code> clears it</td></tr>
 <tr><th><code>qslmsg …</code></th><td>QSL message. Can use <code>$mysota</code> <code>$mypota</code> <code>$mywwff</code> <code>$rig</code></td></tr>
