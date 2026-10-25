@@ -3,6 +3,7 @@
 MyACT の地図に描く POTA/JAFF の公園区域は、TopoJSON の `packages/shared/common/json/jaffpota-annotated-vN.json` です。
 この文書は、区域データの作成経緯、再生成の方法、版の更新、DB とのずれの直し方をまとめたものです。
 道具は `tools/jaffpota`(Python。依存の版は `pyproject.toml` と `uv.lock` で固定)にあります。
+山頂ごとの POTA 判定(FLEonline の地図と sotaapp2 の管理画面)に使うデータの作り方は [summit-batch.md](summit-batch.md) です。
 
 AI に作業させるときは、この文書全体を渡し、次のように依頼してください。
 
