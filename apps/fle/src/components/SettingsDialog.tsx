@@ -5,8 +5,7 @@ import {
   TIMEZONE_MIN,
   timezoneLabel,
   touchDevice,
-  type EditorFont,
-  type Layout,
+  type FontSize,
   type QsoCount,
   type Settings,
   type Theme,
@@ -24,19 +23,15 @@ const THEME_OPTIONS: { value: Theme; label: MessageKey; hint: MessageKey }[] = [
   { value: 'dark', label: 'settings.theme.dark', hint: 'settings.theme.dark.hint' },
 ]
 
-const FONT_OPTIONS: { value: EditorFont; label: MessageKey; hint: MessageKey }[] = [
-  { value: 'mono', label: 'settings.editorFont.mono', hint: 'settings.editorFont.mono.hint' },
-  { value: 'gothic', label: 'settings.editorFont.gothic', hint: 'settings.editorFont.gothic.hint' },
+const SIZE_OPTIONS: { value: FontSize; label: MessageKey }[] = [
+  { value: 'small', label: 'settings.fontSize.small' },
+  { value: 'medium', label: 'settings.fontSize.medium' },
+  { value: 'large', label: 'settings.fontSize.large' },
 ]
 
 const COUNT_OPTIONS: { value: QsoCount; label: MessageKey; hint: MessageKey }[] = [
   { value: 'day', label: 'settings.qsoCount.day', hint: 'settings.qsoCount.day.hint' },
   { value: 'total', label: 'settings.qsoCount.total', hint: 'settings.qsoCount.total.hint' },
-]
-
-const LAYOUT_OPTIONS: { value: Layout; label: MessageKey; hint: MessageKey }[] = [
-  { value: 'classic', label: 'settings.layout.classic', hint: 'settings.layout.classic.hint' },
-  { value: 'fullkey', label: 'settings.layout.fullkey', hint: 'settings.layout.fullkey.hint' },
 ]
 
 const CONFIRM_OPTIONS: { key: 'writeBandMode' | 'writeRst'; label: MessageKey; hint: MessageKey }[] = [
@@ -58,8 +53,8 @@ interface Props {
 export function SettingsDialog({ open, onClose, settings, onChange, sync }: Props) {
   const t = useT()
   const [touch] = useState(touchDevice)
-  // PC でフルキーが選ばれていたら、実際に動いている従来として見せる
-  const layout = activeLayout(settings.layout, touch)
+  // 配置は端末で決まる(タッチ端末はフルキー、PC は従来)
+  const layout = activeLayout(touch)
   return (
     <Sheet open={open} onClose={onClose} title={t('settings.title')}>
       <div className="space-y-5">
@@ -137,54 +132,20 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
           })}
         </fieldset>
 
-        <label className="flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 border-gray-300 dark:border-gray-700 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={settings.digitRow}
-            onChange={(e) => onChange({ digitRow: e.target.checked })}
-            className="mt-1 w-5 h-5 accent-primary-700"
-          />
-          <span>
-            <span className="block font-semibold">{t('settings.digitRow')}</span>
-            <span className="block text-sm text-gray-700 dark:text-gray-300">{t('settings.digitRow.hint')}</span>
-          </span>
-        </label>
-
-        <fieldset className="space-y-2">
-          <legend className="label">{t('settings.layout')}</legend>
-          {LAYOUT_OPTIONS.map((opt) => {
-            // フルキーは、タッチ端末でだけ選べる(PC では、物理キーボードがあるので要らない)
-            const unavailable = opt.value === 'fullkey' && !touch
-            return (
-              <label
-                key={opt.value}
-                className={`flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 ${
-                  unavailable ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
-                } ${
-                  layout === opt.value
-                    ? 'border-primary-700 bg-primary-50 dark:border-primary-400 dark:bg-gray-800'
-                    : 'border-gray-300 dark:border-gray-700'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="layout"
-                  value={opt.value}
-                  checked={layout === opt.value}
-                  disabled={unavailable}
-                  onChange={() => onChange({ layout: opt.value })}
-                  className="mt-1 w-5 h-5 accent-primary-700"
-                />
-                <span>
-                  <span className="block font-semibold">{t(opt.label)}</span>
-                  <span className="block text-sm text-gray-700 dark:text-gray-300">
-                    {t(unavailable ? 'settings.layout.fullkey.touchOnly' : opt.hint)}
-                  </span>
-                </span>
-              </label>
-            )
-          })}
-        </fieldset>
+        {layout === 'classic' && (
+          <label className="flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 border-gray-300 dark:border-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.digitRow}
+              onChange={(e) => onChange({ digitRow: e.target.checked })}
+              className="mt-1 w-5 h-5 accent-primary-700"
+            />
+            <span>
+              <span className="block font-semibold">{t('settings.digitRow')}</span>
+              <span className="block text-sm text-gray-700 dark:text-gray-300">{t('settings.digitRow.hint')}</span>
+            </span>
+          </label>
+        )}
 
         {layout === 'fullkey' && (
           <label className="flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 border-gray-300 dark:border-gray-700 cursor-pointer">
@@ -202,30 +163,30 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
         )}
 
         <fieldset className="space-y-2">
-          <legend className="label">{t('settings.editorFont')}</legend>
-          {FONT_OPTIONS.map((opt) => (
-            <label
-              key={opt.value}
-              className={`flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 cursor-pointer ${
-                settings.editorFont === opt.value
-                  ? 'border-primary-700 bg-primary-50 dark:border-primary-400 dark:bg-gray-800'
-                  : 'border-gray-300 dark:border-gray-700'
-              }`}
-            >
-              <input
-                type="radio"
-                name="editorFont"
-                value={opt.value}
-                checked={settings.editorFont === opt.value}
-                onChange={() => onChange({ editorFont: opt.value })}
-                className="mt-1 w-5 h-5 accent-primary-700"
-              />
-              <span>
-                <span className={`block font-semibold ${opt.value === 'mono' ? 'font-mono' : ''}`}>{t(opt.label)}</span>
-                <span className="block text-sm text-gray-700 dark:text-gray-300">{t(opt.hint)}</span>
-              </span>
-            </label>
-          ))}
+          <legend className="label">{t('settings.fontSize')}</legend>
+          <p className="text-sm text-gray-700 dark:text-gray-300">{t('settings.fontSize.hint')}</p>
+          <div className="grid grid-cols-3 gap-2">
+            {SIZE_OPTIONS.map((opt) => (
+              <label
+                key={opt.value}
+                className={`flex items-center justify-center gap-2 p-3 min-h-14 rounded-xl border-2 cursor-pointer font-semibold ${
+                  settings.fontSize === opt.value
+                    ? 'border-primary-700 bg-primary-50 dark:border-primary-400 dark:bg-gray-800'
+                    : 'border-gray-300 dark:border-gray-700'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="fontSize"
+                  value={opt.value}
+                  checked={settings.fontSize === opt.value}
+                  onChange={() => onChange({ fontSize: opt.value })}
+                  className="w-5 h-5 accent-primary-700"
+                />
+                {t(opt.label)}
+              </label>
+            ))}
+          </div>
         </fieldset>
 
         <fieldset className="space-y-2">

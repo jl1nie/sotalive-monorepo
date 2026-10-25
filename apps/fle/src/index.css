@@ -92,3 +92,22 @@
 @utility label {
   @apply block text-base font-semibold text-gray-950 dark:text-gray-50 mb-1;
 }
+
+/* 日またぎ(day +)の通知: 約 3 秒、しばらく出して、薄れて消える。動きを減らす設定では、薄れずに消える */
+@keyframes fle-fade-out {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.fle-fade-out {
+  animation: fle-fade-out 3s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fle-fade-out {
+    animation: none;
+  }
+}

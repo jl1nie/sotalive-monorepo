@@ -3,7 +3,7 @@
 //! 日付・バンド・モードなどの引き継ぎを知っているのはコアだけ。画面は、ここで解決した値を並べるだけにする
 //! (`day +` の先の日付、`$mysota` を置き換えたQSLの文面など)。
 
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, Timelike};
 use serde::Serialize;
 
 use crate::compiler::{expand_rig, fold};
@@ -44,6 +44,32 @@ pub struct LineInfo {
     pub qso_date: String,
     /// QSO の行で、時刻が前の QSO より前に戻っている(日付が変わったのに `day +` がないかもしれない)
     pub time_back: bool,
+    /// `time_back` のうち、日をまたいだらしいもの(前の QSO がログの時刻で 21 時以降、この QSO が 3 時未満)。
+    /// 手で打った時刻の行では、確定のとき `day +` を自動で入れる(`FillScope::day_rollover`)
+    pub new_day: bool,
+}
+
+/// `cur` が、`prev` の次の QSO として日をまたいだらしいか。ログの時刻(各 QSO の `tz`)で、
+/// 前が 21 時以降・今が 3 時未満、かつ UTC では前に戻っている(日付を変えていない)。
+/// UTC で見ると JST の 23:59 は 14:59 なので、ログの時刻で判定する
+pub(crate) fn is_day_rollover(
+    prev: &crate::types::FleQsoRecord,
+    cur: &crate::types::FleQsoRecord,
+) -> bool {
+    if prev.date_unset || cur.date_unset {
+        return false;
+    }
+    let utc = |q: &crate::types::FleQsoRecord| {
+        NaiveDate::from_ymd_opt(q.year.into(), q.month.into(), q.day.into())
+            .and_then(|d| d.and_hms_opt(q.hour.into(), q.min.into(), 0))
+    };
+    let (Some(p), Some(c)) = (utc(prev), utc(cur)) else {
+        return false;
+    };
+    let hour =
+        |t: chrono::NaiveDateTime, tz: i32| (t + chrono::Duration::hours(i64::from(tz))).hour();
+    // `day +` を足せば前の QSO より後になること(日付を前に戻したログでは、足しても戻ったままで、確定のたびに増える)
+    c < p && c + chrono::Duration::days(1) > p && hour(p, prev.tz) >= 21 && hour(c, cur.tz) < 3
 }
 
 /// `line`(0始まり)の行までを読んだ時点の状態
@@ -97,6 +123,11 @@ pub fn line_info(text: &str, line: usize) -> LineInfo {
         _ => false,
     };
 
+    let new_day = match f.records.as_slice() {
+        [.., prev, cur] if cur.line == line => is_day_rollover(prev, cur),
+        _ => false,
+    };
+
     LineInfo {
         kind: kind.to_string(),
         directive: directive.to_string(),
@@ -120,6 +151,7 @@ pub fn line_info(text: &str, line: usize) -> LineInfo {
         qslmsg2: env.qslmsg2.clone(),
         qso_date,
         time_back,
+        new_day,
     }
 }
 
@@ -256,5 +288,30 @@ rig -
         // 08:00 JST は、前の日の 23:00 UTC
         assert_eq!(line_info(log, 5).qso_date, "2026-10-18");
         assert_eq!(line_info(log, 5).timezone, Some(9));
+    }
+
+    #[test]
+    fn new_day_is_not_claimed_when_the_date_was_set_back() {
+        // 日付を前の日に戻したログ: `day +` を足しても前の QSO より前のまま
+        let log = "date 2026-10-17\n40m cw\n2358 ja1aaa\ndate 2026-10-16\n0002 jh1hhh";
+        assert!(!line_info(log, 4).new_day);
+        assert!(line_info(log, 4).time_back);
+    }
+
+    #[test]
+    fn new_day_is_a_going_back_across_midnight() {
+        let log = "date 2026-10-17\n40m cw\n2358 ja1aaa\n0002 jh1hhh\n2000 ja1bbb\n1030 ja1ccc\n0930 ja1ddd";
+        assert!(line_info(log, 3).new_day);
+        assert!(line_info(log, 3).time_back);
+        // 日をまたぐ戻りではない戻り
+        assert!(!line_info(log, 6).new_day);
+        assert!(line_info(log, 6).time_back);
+        assert!(!line_info(log, 2).new_day);
+        // ログの時刻で見る(JST の 23:58 のあとの 00:02)。UTC の 14:58 と 15:02 の時刻では、条件に当たらない
+        let jst = "timezone +9\ndate 2026-10-17\n40m cw\n2358 ja1aaa\n0002 jh1hhh";
+        assert!(line_info(jst, 4).new_day);
+        // JST で 14:58 のあとの 15:02 は戻っていない
+        let day = "timezone +9\ndate 2026-10-17\n40m cw\n1458 ja1aaa\n1502 jh1hhh";
+        assert!(!line_info(day, 4).new_day);
     }
 }

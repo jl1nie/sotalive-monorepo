@@ -183,6 +183,8 @@ export interface FillOptions {
   rst?: boolean
   /** いまの時刻を入れるとき、日付が変わっていれば行の前に `day +` か `date` を書く(`date` がまだないときも) */
   date?: boolean
+  /** 手で打った時刻の行が日をまたいだらしいとき(前が 21 時以降・この行が 3 時未満で前に戻る)、行の前に `day +` を書く */
+  dayRollover?: boolean
 }
 
 /**
@@ -264,6 +266,8 @@ export interface LineInfo {
   qsoDate: string
   /** QSO の行で、時刻が前の QSO より前に戻っている(日付が変わったのに `day +` がないかもしれない) */
   timeBack: boolean
+  /** `timeBack` のうち、日をまたいだらしいもの。確定(OK)で `day +` が自動で入る */
+  newDay: boolean
 }
 
 export async function lineInfo(text: string, line: number): Promise<LineInfo> {

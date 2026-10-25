@@ -29,6 +29,9 @@ interface Props {
 
 /** 地図の SVG の幅(座標の単位) */
 const W = 320
+/** 文字の倍率(スマホで小さく読みにくかったため、もとの 1.3 倍)。文字の大きさ・行の間・縁取り・位置の余白に掛ける */
+const FS = 1.3
+const fs = (n: number) => Math.round(n * FS * 10) / 10
 
 type Fix = { lat: number; lon: number; accuracy: number }
 type GpsState = { status: 'waiting' } | { status: 'denied' } | { status: 'ok'; fix: Fix }
@@ -117,6 +120,9 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
   const feats = map.features
   // 縮尺の棒: 地図の幅の 1/4 前後のきりのよい長さ
   const barM = [50, 100, 200, 500, 1000].find((m) => m * perMeter >= width / 6) ?? 1000
+  // 北の印は右上。山頂がそこにあれば左上へ(重ならないように)
+  const peakAt = peak ? xy(peak) : null
+  const northAtLeft = peakAt !== null && peakAt[0] > width - 70 && peakAt[1] < 60
   const me = fix ? xy([fix.lon, fix.lat]) : null
   const meInside = me && me[0] >= 0 && me[0] <= width && me[1] >= 0 && me[1] <= height
 
@@ -169,7 +175,7 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
         if (!at) return null
         const [x, y] = xy(at)
         return (
-          <text key={`pl${i}`} x={x} y={y} textAnchor="middle" fontSize="10" fontWeight="bold" fill={parkStyleOf(codes, p.code).color} stroke="#fff" strokeWidth="3" paintOrder="stroke">
+          <text key={`pl${i}`} x={x} y={y} textAnchor="middle" fontSize={fs(10)} fontWeight="bold" fill={parkStyleOf(codes, p.code).color} stroke="#fff" strokeWidth={fs(3)} paintOrder="stroke">
             {p.code}
           </text>
         )
@@ -180,9 +186,9 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
         const [x, y] = xy(f.geometry.coordinates)
         const lines = [withoutPrefecture(p.name), ...(p.pota.length ? p.pota.map((q) => potaLabel(q, t)) : [t('map.noPota')])]
         return (
-          <text key={`m${i}`} x={x} y={y} textAnchor="middle" fontSize="11" fill="#111827" stroke="#fff" strokeWidth="3" paintOrder="stroke">
+          <text key={`m${i}`} x={x} y={y} textAnchor="middle" fontSize={fs(11)} fill="#111827" stroke="#fff" strokeWidth={fs(3)} paintOrder="stroke">
             {lines.map((l, j) => (
-              <tspan key={j} x={x} dy={j === 0 ? 0 : 13}>
+              <tspan key={j} x={x} dy={j === 0 ? 0 : fs(13)}>
                 {l}
               </tspan>
             ))}
@@ -192,19 +198,19 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
       {peak && (() => {
         const [x, y] = xy(peak)
         // 山頂の位置(SOTA の山頂の点)。コードと山名を添える。文字は右に出し、右端なら左に出す
-        const right = x < width - 110
+        const right = x < width - fs(110)
         return (
           <g>
             <path d={`M${x},${y - 7}L${x + 6},${y + 4}L${x - 6},${y + 4}Z`} fill="#111827" />
             <text
-              x={right ? x + 9 : x - 9}
-              y={y + 3}
+              x={right ? x + fs(9) : x - fs(9)}
+              y={y + fs(3)}
               textAnchor={right ? 'start' : 'end'}
-              fontSize="10"
+              fontSize={fs(10)}
               fontWeight="bold"
               fill="#111827"
               stroke="#fff"
-              strokeWidth="3"
+              strokeWidth={fs(3)}
               paintOrder="stroke"
             >
               {[map.summit, summitNameOf(map)].filter(Boolean).join(' ')}
@@ -218,10 +224,17 @@ function MapSvg({ map, fix }: { map: SummitMap; fix: Fix | null }) {
           <circle cx={me[0]} cy={me[1]} r={5} fill="#2563eb" stroke="#fff" strokeWidth={2} />
         </g>
       )}
-      <g transform={`translate(8,${height - 10})`}>
+      <g transform={`translate(8,${height - fs(10)})`}>
         <line x1="0" y1="0" x2={barM * perMeter} y2="0" stroke="#111827" strokeWidth="2" />
-        <text x={barM * perMeter + 4} y="4" fontSize="10" fill="#111827">
+        <text x={barM * perMeter + 4} y={fs(4)} fontSize={fs(10)} fill="#111827" stroke="#fff" strokeWidth={fs(3)} paintOrder="stroke">
           {barM >= 1000 ? `${barM / 1000}km` : `${barM}m`}
+        </text>
+      </g>
+      {/* 北の印(地図はいつも北が上)。右上に出し、山頂が右上にあるときは左上 */}
+      <g transform={`translate(${northAtLeft ? 16 : width - 16},${fs(18)})`} aria-hidden="true">
+        <path d="M0,-12L5,2L0,-1L-5,2Z" fill="#111827" stroke="#fff" strokeWidth="1" paintOrder="stroke" />
+        <text y={fs(12) + 4} textAnchor="middle" fontSize={fs(10)} fontWeight="bold" fill="#111827" stroke="#fff" strokeWidth={fs(3)} paintOrder="stroke">
+          N
         </text>
       </g>
     </svg>
