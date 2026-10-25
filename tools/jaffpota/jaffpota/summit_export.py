@@ -21,9 +21,11 @@ import csv
 import glob
 import hashlib
 import json
+import multiprocessing
 import os
 import sqlite3
 import sys
+import time
 from pathlib import Path
 
 import shapefile
@@ -263,6 +265,52 @@ def read_verdict_dir(path):
     return V
 
 
+def map_results(codes, work, jobs=1):
+    """`work(code)` の結果を、`codes` の順に返す。`jobs` が 2 以上なら、fork したプロセスで並列に計算する。
+
+    山頂ごとの地図は、互いに独立(読み込み済みの図形を読むだけ)なので並列にできる。fork なので、読み込み済みの
+    N03・公園区域は、コピーせずに子プロセスが共有する(メモリは増えない)。結果は `codes` の順に返るので、
+    直列のときと同じ出力になる。`work` はモジュールの関数(fork したプロセスに渡すため)。
+    失敗したら、そこで止まる(どの山頂かは、`work` が例外に入れる)。
+    """
+    if jobs <= 1 or len(codes) <= 1:
+        for c in codes:
+            yield work(c)
+        return
+    try:
+        ctx = multiprocessing.get_context("fork")
+    except ValueError:  # fork がない環境(Windows)では、直列で
+        print("fork が使えないので、並列にせず、直列で処理します", file=sys.stderr)
+        for c in codes:
+            yield work(c)
+        return
+    with ctx.Pool(min(jobs, len(codes))) as pool:
+        yield from pool.imap(work, codes, chunksize=8)
+
+
+# 並列の子プロセスが読む、読み込み済みの入力(main が fork の前に入れる)
+_STATE: dict = {}
+
+
+def _summit_line(code):
+    """1 山頂の地図の 1 行(JSON)と input_rev。ゾーンを描けなければ None"""
+    st = _STATE
+    lat, lon = st["info"][code]
+    d = st["D"].get(code)
+    pairs = d["pairs"] if d else []
+    has_saved = st["has_saved"].get(code, False)
+    estimates = {sp.pair_id(p["key"], p["pota"]): sp.estimate_answer(p, has_saved) for p in pairs}
+    try:
+        r = build_summit_map(st["geo"], code, lat, lon, st["zones"][code]["geometry"], st["zkeys"].get(code, []), pairs,
+                             estimates, st["summit_name"].get(code, ""), st["summit_alt"].get(code), st["park_name"])
+    except Exception as e:  # 並列のとき、どの山頂か分かるように
+        raise RuntimeError(f"{code}: {type(e).__name__}: {e}") from e
+    if r is None:
+        return None
+    fc, rev = r
+    return json.dumps(fc, ensure_ascii=False, separators=(",", ":")), rev, bool(pairs)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--parks", required=True, help="判定用の公園区域(jaffpota-annotated-vN-full.json)")
@@ -279,6 +327,9 @@ def main(argv=None):
     ap.add_argument("--park-version")
     ap.add_argument("--muni-version")
     ap.add_argument("--munitable-version")
+    ap.add_argument("--jobs", type=int, default=1,
+                    help="地図を作るプロセスの数(既定 1 = 直列。0 は CPU の数)。出力は直列と同じ。読み込み(約 40 秒)は直列のまま")
+    ap.add_argument("--limit", type=int, help="先頭の何山頂ぶんだけ地図を作る(確認用。CSV と verdicts は全部)")
     a = ap.parse_args(argv)
 
     versions = {
@@ -326,25 +377,25 @@ def main(argv=None):
     os.makedirs(a.out, exist_ok=True)
     revs = {}
     n = 0
+    codes = [c for c, f in sorted(zones.items()) if f["geometry"] and c in info]
+    if a.limit:
+        codes = codes[: a.limit]
+    jobs = (os.cpu_count() or 1) if a.jobs == 0 else max(1, a.jobs)
+    _STATE.update(geo=geo, info=info, D=D, has_saved=has_saved, zones=zones, zkeys=zkeys,
+                  summit_name=summit_name, summit_alt=summit_alt, park_name=park_name)
+    t0 = time.monotonic()
     with open(f"{a.out}/summit_maps.jsonl", "w", encoding="utf-8") as fo:
-        for code, f in sorted(zones.items()):
-            if not f["geometry"] or code not in info:
+        for code, res in zip(codes, map_results(codes, _summit_line, jobs)):
+            if res is None:
                 continue
-            lat, lon = info[code]
-            s = D.get(code)
-            pairs = s["pairs"] if s else []
-            estimates = {sp.pair_id(p["key"], p["pota"]): sp.estimate_answer(p, has_saved.get(code, False)) for p in pairs}
-            r = build_summit_map(geo, code, lat, lon, f["geometry"], zkeys.get(code, []), pairs, estimates,
-                                 summit_name.get(code, ""), summit_alt.get(code), park_name)
-            if r is None:
-                continue
-            fc, rev = r
-            if pairs:
+            line, rev, has_pairs = res
+            if has_pairs:
                 revs[code] = rev
-            fo.write(json.dumps(fc, ensure_ascii=False, separators=(",", ":")) + "\n")
+            fo.write(line + "\n")
             n += 1
             if n % 1000 == 0:
-                print(n, code, file=sys.stderr, flush=True)
+                print(n, code, f"{time.monotonic() - t0:.0f}s", file=sys.stderr, flush=True)
+    print(f"地図 {n} 山頂({jobs} プロセス、{time.monotonic() - t0:.0f} 秒)", file=sys.stderr, flush=True)
 
     rows = 0
     with open(f"{a.out}/summit_pota.csv", "w", encoding="utf-8", newline="") as fo:

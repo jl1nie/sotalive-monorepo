@@ -1,7 +1,9 @@
 """summit_export: 下地の地図・input_rev・推定の CSV の行。小さな合成の図形で確かめる。"""
 import csv
 import io
+import json
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -182,6 +184,61 @@ class TestEstimateRows(unittest.TestCase):
         self.assertIn(r["coverage"], sp.COVERAGES)
         for c in ("noise", "shallow", "needs_review"):
             self.assertIn(r[c], (0, 1))
+
+
+# ---- 並列(fork したプロセスに渡す関数は、モジュールの関数) ----
+
+_GEO = make_geo()  # fork 前に読み込み済み。子プロセスが共有する(読み取りだけ)
+
+
+def _slow_upper(code):
+    # 山頂の順と逆に待たせて、終わる順をばらばらにする
+    time.sleep((int(code[1:]) % 7) * 0.002)
+    return code.upper()
+
+
+def _fail_at_7(code):
+    if code == "s007":
+        raise RuntimeError("s007: 図形が壊れている")
+    return code
+
+
+def _map_line(code):
+    """合成の図形で、山頂の地図の 1 行と input_rev を作る(summit_export の 1 山頂ぶんと同じ計算)"""
+    i = int(code[1:])
+    pairs = PAIRS if i % 2 else PAIRS[:1]
+    est = {k: v for k, v in ESTIMATES.items() if k in {f"{p['key']}|{p['pota']}" for p in pairs}}
+    fc, rev = se.build_summit_map(_GEO, code, SUMMIT[0], SUMMIT[1], mapping(ZONE), ["JCC#1", "JCC#2"], pairs, est,
+                                  f"山{i}", 1000 + i, PARK_NAME)
+    return json.dumps(fc, ensure_ascii=False, separators=(",", ":")), rev
+
+
+class TestMapResults(unittest.TestCase):
+    codes = [f"s{i:03d}" for i in range(40)]
+
+    def test_parallel_results_are_in_order_and_equal_to_serial(self):
+        want = [c.upper() for c in self.codes]
+        for jobs in (1, 2, 4, 8):
+            self.assertEqual(list(se.map_results(self.codes, _slow_upper, jobs)), want, jobs)
+
+    def test_parallel_map_lines_are_byte_identical_to_serial(self):
+        serial = list(se.map_results(self.codes, _map_line, 1))
+        for jobs in (2, 4):
+            self.assertEqual(list(se.map_results(self.codes, _map_line, jobs)), serial, jobs)
+
+    def test_a_failure_stops_the_run_and_names_the_summit(self):
+        with self.assertRaises(RuntimeError) as cm:
+            list(se.map_results(self.codes, _fail_at_7, 4))
+        self.assertIn("s007", str(cm.exception))
+        with self.assertRaises(RuntimeError):
+            list(se.map_results(self.codes, _fail_at_7, 1))
+
+    def test_small_inputs(self):
+        self.assertEqual(list(se.map_results([], _slow_upper, 4)), [])
+        self.assertEqual(list(se.map_results(["s001"], _slow_upper, 4)), ["S001"])
+
+    def test_more_jobs_than_summits(self):
+        self.assertEqual(list(se.map_results(["s001", "s002"], _slow_upper, 16)), ["S001", "S002"])
 
 
 class TestFileVersion(unittest.TestCase):

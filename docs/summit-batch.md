@@ -41,10 +41,12 @@ uv run python -m jaffpota.summit_export \
   --n03 /path/to/N03-20250101.shp --zones $B/zones_all2 --data $B/data2.json \
   --city-j-fixes $B/city_j_fixes.csv --db /path/to/sotaapp2.db --out $B/sotaapp_out7 \
   --saved $B/db_dump/verdicts2 --rereview $B/db_dump5/verdicts --manual $B/manual_fixes.csv \
-  --park-version jaffpota-annotated-v24-full --muni-version N03-20250101
+  --park-version jaffpota-annotated-v24-full --muni-version N03-20250101 --jobs 12
 ```
 
-約 7000 山頂で十数分かかります。版(`--park-version` など)を省くと、ファイル名とハッシュの先頭 8 桁になります。
+約 7000 山頂で、直列(`--jobs` を付けない)は約 6〜7 分、`--jobs 12` なら全体で約 90 秒です(N03 と公園区域の読み込み約 40 秒は直列のまま、地図の作成が約 6 分 → 約 40 秒)。
+`--jobs N` は、地図を作るプロセスの数で、`0` は CPU の数です。山頂ごとの計算は独立で、結果は山頂の順に書くので、**出力は直列と同じ**(バイト単位で一致することを確かめてある)。読み込み済みの図形は fork で共有するので、メモリはほとんど増えない(親が約 1.4 GB)。fork が使えない環境(Windows)では、直列で動く。`--limit N` は、先頭の N 山頂ぶんだけ地図を作る確認用(CSV と `verdicts.json` は全部)。
+版(`--park-version` など)を省くと、ファイル名とハッシュの先頭 8 桁になります。
 
 ### 出力
 
