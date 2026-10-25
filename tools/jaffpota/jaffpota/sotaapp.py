@@ -1,8 +1,7 @@
 """sotaapp2 の API を呼ぶ小さなクライアント(移行・検証のスクリプトが使う)。
 
-認証は、環境変数で次のどれかを渡す。
-  SOTAAPP_EMAIL と SOTAAPP_PASSWORD   Firebase のサインイン(POST /api/v2/auth/signin)で取ったトークン
-  SOTAAPP_BEARER                      取り済みのトークン
+認証は、環境変数 SOTAAPP_EMAIL と SOTAAPP_PASSWORD(Firebase のサインイン。POST /api/v2/auth/signin)で渡す。
+ふつうは scripts/load_summit_data.sh が画面で尋ねて、子プロセスに渡す。
 どちらもなければ認証なしで呼ぶ(手元のサーバーを `ADMIN_DEV_EMAIL` 付きで起動したとき)。
 パスワードとトークンは、表示もログもしない。
 """
@@ -57,10 +56,9 @@ class Client:
 
     @classmethod
     def from_env(cls, base_url, request=None):
-        token = os.environ.get("SOTAAPP_BEARER")
-        c = cls(base_url, token, request)
+        c = cls(base_url, None, request)
         email, password = os.environ.get("SOTAAPP_EMAIL"), os.environ.get("SOTAAPP_PASSWORD")
-        if not token and email and password:
+        if email and password:
             c.token = c.sign_in(email, password)
         return c
 

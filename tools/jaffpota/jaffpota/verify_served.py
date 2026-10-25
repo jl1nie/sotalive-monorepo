@@ -16,6 +16,7 @@ import collections
 import csv
 import gzip
 import json
+import random
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
@@ -144,6 +145,17 @@ def compare_maps(code, old, served):
     return probs
 
 
+def select_codes(codes, verdict_codes, sample=None, seed=1):
+    """確かめる山頂。sample がなければ全部。あれば、目視の山頂すべてと、残りから sample 件(seed で決まる無作為)"""
+    codes = sorted(codes)
+    if sample is None:
+        return codes
+    must = sorted(set(verdict_codes) & set(codes))
+    rest = sorted(set(codes) - set(must))
+    picked = random.Random(seed).sample(rest, min(sample, len(rest)))
+    return sorted(set(must) | set(picked))
+
+
 def check_summit(client, code, old_rows, old_map, verdict_pairs, old_names=None):
     probs = []
     try:
@@ -170,6 +182,9 @@ def main(argv=None):
     ap.add_argument("--base-url", required=True)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--limit", type=int, help="先頭の何山頂だけ確かめる")
+    ap.add_argument("--sample", type=int,
+                    help="目視の山頂すべてと、残りから無作為にこの数だけ確かめる(本番ではこちらを使う。全山頂は重い)")
+    ap.add_argument("--seed", type=int, default=1, help="--sample の無作為の種")
     ap.add_argument("--show", type=int, default=20, help="表示する差の数")
     a = ap.parse_args(argv)
 
@@ -181,7 +196,7 @@ def main(argv=None):
     if a.verdicts:
         with open(a.verdicts, encoding="utf-8") as f:
             verdict_pairs = {c: set(v) for c, v in json.load(f)["verdicts"].items()}
-    codes = sorted(set(old_rows) | set(old_maps))
+    codes = select_codes(set(old_rows) | set(old_maps), set(verdict_pairs or ()), a.sample, a.seed)
     if a.limit:
         codes = codes[: a.limit]
     client = Client(a.base_url)

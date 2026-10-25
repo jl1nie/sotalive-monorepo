@@ -292,6 +292,21 @@ class TestVerifyServed(unittest.TestCase):
         self.assertEqual(len(probs), 2)
         self.assertIn("TimeoutError", probs[0])
 
+    def test_sample_always_includes_the_verdict_summits(self):
+        codes = {f"JA/XX-{i:03d}" for i in range(100)}
+        must = {"JA/XX-007", "JA/XX-042"}
+        picked = vs.select_codes(codes, must, sample=5, seed=1)
+        self.assertTrue(must <= set(picked))
+        self.assertEqual(len(picked), 7)
+        # 種が同じなら同じ、違えば別の標本
+        self.assertEqual(picked, vs.select_codes(codes, must, sample=5, seed=1))
+        self.assertNotEqual(picked, vs.select_codes(codes, must, sample=5, seed=2))
+        # sample がなければ全部。標本が多すぎても全部
+        self.assertEqual(vs.select_codes(codes, must), sorted(codes))
+        self.assertEqual(vs.select_codes(codes, must, sample=1000), sorted(codes))
+        # 旧にない山頂は、目視の山頂でも入れない
+        self.assertNotIn("JA/ZZ-999", vs.select_codes(codes, {"JA/ZZ-999"}, sample=3))
+
     def test_old_rows_and_maps_loaders(self):
         with tempfile.TemporaryDirectory() as d:
             csv_path = os.path.join(d, "a.csv")
