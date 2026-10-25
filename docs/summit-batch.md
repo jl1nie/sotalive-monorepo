@@ -69,6 +69,7 @@ tools/jaffpota/scripts/load_summit_data.sh --base-url https://sotaapp2.sotalive.
 
 - 本番では、接続先のホスト名の入力で確認します。そのあと、**Firebase のメールアドレスとパスワードを画面で尋ね**ます(パスワードは表示しません。環境変数は読みません)。端末から実行してください。
 - 順に、推定の取り込み → 地図の取り込み → 目視の移行(`--dry-run` のあと本実行)→ 配信の検証を実行します。各ステップで、応答の件数を `summary.json` と照合し、合わなければそこで止まります。
+- **配信の検証は、本番では標本**です(目視の山頂すべてと、無作為の 300 山頂を、2 並列で)。全山頂(約 1.4 万リクエスト)は、本番の小さなマシン(`shared-cpu-1x`、256 MB)に負荷がかかるので、手元のサーバーでだけ実行します。本番でも全山頂が要るときだけ `--full-verify` を付けます。
 - 止まったら、直してから `--from pota|maps|migrate|verify` で続きから実行できます(各ステップは何度実行しても同じ結果になります)。
 - 手元のサーバー(`localhost`・`127.0.0.1`。`ADMIN_DEV_EMAIL` 付きで起動)には、尋ねずに認証なしで実行します。
 - 実行する前に、DB のバックアップを取ってください(sotaapp2 の Deploy は自動で取ります)。
@@ -115,10 +116,11 @@ uv run python -m jaffpota.migrate_verdicts $B/sotaapp_out7/verdicts.json --base-
 
 ```bash
 uv run python -m jaffpota.verify_served --old-csv $B/sotaapp_out6/summit_pota.csv \
-  --old-maps $B/sotaapp_out6/summit_maps.jsonl.gz --verdicts $B/sotaapp_out7/verdicts.json --base-url "$BASE"
+  --old-maps $B/sotaapp_out6/summit_maps.jsonl.gz --verdicts $B/sotaapp_out7/verdicts.json --base-url "$BASE" \
+  --sample 300 --workers 2     # 本番。手元のサーバーなら --sample を外して全山頂(--workers 8)
 ```
 
-旧バッチの出力と、いま配信している答え(`/summits/{code}/pota`)・地図(`/summits/{code}/map`)を、全山頂で比べます。差があれば、山頂ごとに表示して終了コード 1 で終わります。
+旧バッチの出力と、いま配信している答え(`/summits/{code}/pota`)・地図(`/summits/{code}/map`)を比べます。`--sample N` は、目視の山頂すべてと、残りから無作為に N 山頂です。差があれば、山頂ごとに表示して終了コード 1 で終わります。
 
 サーバー不要の確認もあります。手元のバッチの出力が見える環境で、次を実行すると、推定と目視を合わせた答えが旧 `summit_pota.csv` と完全に一致すること(行数と、人が決めた組の `verified` を含む)と、組の分類が元の `review2_data.py` の出力と一致することを確かめます。
 

@@ -18,6 +18,7 @@ OUT=""
 OLD=""
 FROM="pota"
 YES=0
+FULL_VERIFY=0
 
 usage() {
   sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
@@ -29,6 +30,8 @@ usage() {
   --old DIR        旧バッチの出力(summit_pota.csv・summit_maps.jsonl.gz)。verify に使う(verify を実行するなら必須)
   --from STEP      pota | maps | migrate | verify から始める(既定 pota)
   --yes            確認を省く(本番では使わない)
+  --full-verify    本番でも、配信の検証を全山頂(約 1.4 万リクエスト)で実行する。本番の小さなマシンに負荷がかかるので、
+                   ふつうは使わない(本番は、目視の山頂すべてと無作為の 300 山頂を、2 並列で確かめる)
 EOF
 }
 
@@ -41,6 +44,7 @@ while [ $# -gt 0 ]; do
     --old) OLD="${2:?--old に値が要ります}"; shift 2 ;;
     --from) FROM="${2:?--from に値が要ります}"; shift 2 ;;
     --yes) YES=1; shift ;;
+    --full-verify) FULL_VERIFY=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) usage >&2; die "知らないオプション: $1" ;;
   esac
@@ -163,9 +167,16 @@ if run migrate; then
 fi
 
 if run verify; then
-  echo "== 4/4 配信の検証(全山頂。数分かかります)"
+  # 本番の小さなマシン(shared-cpu-1x)に負荷をかけないよう、標本と低い並列度にする。手元のサーバーは全山頂
+  if [ "$LOCAL" = 1 ] || [ "$FULL_VERIFY" = 1 ]; then
+    VERIFY_ARGS=(--workers 8)
+    echo "== 4/4 配信の検証(全山頂)"
+  else
+    VERIFY_ARGS=(--sample 300 --workers 2)
+    echo "== 4/4 配信の検証(目視の山頂すべてと無作為の 300 山頂。本番に負荷をかけないため)"
+  fi
   (cd "$HERE" && uv run python -m jaffpota.verify_served --old-csv "$OLD/summit_pota.csv" \
-    --old-maps "$OLD/summit_maps.jsonl.gz" --verdicts "$OUT/verdicts.json" --base-url "$BASE")
+    --old-maps "$OLD/summit_maps.jsonl.gz" --verdicts "$OUT/verdicts.json" --base-url "$BASE" "${VERIFY_ARGS[@]}")
 fi
 
 echo "完了"
