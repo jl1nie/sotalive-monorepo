@@ -1,7 +1,8 @@
 import { useEffect, useId, useState } from 'react'
 import { Sheet } from '@/components/Sheet'
 import { useOnline } from '@/hooks/useOnline'
-import { downloadRegionOf, loadSummitMap } from '@/lib/mapStore'
+import { loadSummitMap, refreshRegionOf } from '@/lib/mapStore'
+import { isOffline } from '@/lib/net'
 import { distanceKm, distanceLabel } from '@/lib/reference'
 import {
   labelPointIn,
@@ -48,19 +49,28 @@ function MapBody({ summit }: { summit: string }) {
   const [map, setMap] = useState<SummitMap | null | 'loading'>('loading')
   const gps = useGps()
 
-  // 保存した地図をすぐ出し、電波があれば裏で取り直して差し替える(取り直しの操作は要らない)
+  // 保存した地図をすぐ出し、電波があれば裏で、サーバーに新しい版があるときだけ取り直して差し替える(取り直しの操作は要らない)。
+  // 保存がなく、通信が止まっているときは、待たずに「地図なし」にする(電波が弱いときも、短い時間切れと遮断で、長く待たない)
   useEffect(() => {
     let alive = true
     void (async () => {
       const saved = await loadSummitMap(summit)
       if (!alive) return
       if (saved) setMap(saved)
-      if (navigator.onLine && (await downloadRegionOf(summit))) {
-        const fresh = await loadSummitMap(summit)
-        if (alive && fresh) setMap(fresh)
+      else if (isOffline()) {
+        setMap(null)
         return
       }
-      if (alive && !saved) setMap(null)
+      const result = await refreshRegionOf(summit)
+      if (!alive) return
+      if (result === 'updated') {
+        const fresh = await loadSummitMap(summit)
+        if (alive && fresh) {
+          setMap(fresh)
+          return
+        }
+      }
+      if (!saved) setMap(null)
     })()
     return () => {
       alive = false

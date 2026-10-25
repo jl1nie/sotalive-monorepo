@@ -1,6 +1,9 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { resetNet } from './net'
 import { lookupMemo, memoAt, memoOf } from './memo'
 
+// 通信の失敗で入る遮断(net)を、テストごとに解く
+beforeEach(() => resetNet())
 afterEach(() => vi.unstubAllGlobals())
 
 const LOG = ['mycall ja1abc', '# 1つ目のメモ', 'mysota ja/yn-001', '0100 ja1xyz # QSO の後ろのコメント', '＃ JCG 17008 南都留郡', '0110 ja1yyy'].join('\n')
@@ -34,6 +37,19 @@ function fakeFetch(geo: unknown, jcc: unknown, seen: string[] = []): typeof fetc
     return { ok: true, status: 200, json: async () => body } as Response
   }) as typeof fetch
 }
+
+describe('lookupMemo: 通信が止まっているとき', () => {
+  it('通信に失敗したあとは、待たずに空を返す(ログの行ごとに待たない)', async () => {
+    const down = vi.fn(async () => {
+      throw new TypeError('network')
+    }) as unknown as typeof fetch
+    expect(await lookupMemo(35, 139, { fetchImpl: down })).toBe('')
+    expect(down).toHaveBeenCalledTimes(1)
+    const next = vi.fn()
+    expect(await lookupMemo(35, 139, { fetchImpl: next as never })).toBe('')
+    expect(next).not.toHaveBeenCalled()
+  })
+})
 
 describe('lookupMemo', () => {
   it('緯度・経度から市区町村コードを引き、JCC・JCG を引く', async () => {

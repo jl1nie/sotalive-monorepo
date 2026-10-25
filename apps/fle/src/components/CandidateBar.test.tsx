@@ -10,6 +10,7 @@ import { compile, initSync, lineInfo, sampleLog } from '@/wasm/fle/fle'
 import type { LineInfo, LogView } from '@/lib/fle'
 import type { ReactNode } from 'react'
 import { CandidateBar } from './CandidateBar'
+import { resetNet } from '@/lib/net'
 
 let sample = ''
 let lines: string[] = []
@@ -27,6 +28,8 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
+  // 通信の失敗で入る遮断(net)を解く
+  resetNet()
   // 山・公園の名前は引けない(オフライン)ものとする。名前を確かめるテストだけ、差し替える
   vi.stubGlobal('fetch', () => Promise.reject(new TypeError('offline')))
 })

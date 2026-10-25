@@ -5,6 +5,8 @@
  * オフラインのときは候補を出さない(場所は、登る前にオンラインで入れておく前提)。
  */
 
+import { isOffline, netFetch, OfflineError } from '@/lib/net'
+
 /** 候補の最大件数(一覧は画面の中でスクロールする) */
 const SEARCH_LIMIT = 50
 
@@ -97,8 +99,6 @@ export function parsePota(raw: unknown): RefCandidate[] {
   })
 }
 
-const isOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false
-
 interface Options {
   signal?: AbortSignal
   /** テスト用に差し替える */
@@ -107,7 +107,8 @@ interface Options {
 
 async function getJson(path: string, params: Record<string, string>, o: Options): Promise<unknown> {
   const url = `${API}${path}?${new URLSearchParams(params)}`
-  const res = await (o.fetchImpl ?? fetch)(url, { signal: o.signal })
+  // 通信が止まっているときは、待たずに OfflineError(短い時間切れと遮断は net が持つ)
+  const res = await netFetch(url, { signal: o.signal }, { fetchImpl: o.fetchImpl })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
 }
@@ -115,10 +116,10 @@ async function getJson(path: string, params: Record<string, string>, o: Options)
 const PATH: Record<RefKind, string> = { sota: '/sota/summits/search', pota: '/pota/parks/search' }
 const PARSE: Record<RefKind, (raw: unknown) => RefCandidate[]> = { sota: parseSota, pota: parsePota }
 
-/** 失敗を、オフライン / 誤りに分ける。中止(AbortError)は、そのまま投げ直す */
+/** 失敗を、オフライン / 誤りに分ける。中止(AbortError)は、そのまま投げ直す。通信できなかった(OfflineError)のも、オフライン */
 function failure(e: unknown): SearchResult {
   if (e instanceof DOMException && e.name === 'AbortError') throw e
-  return isOffline() ? { status: 'offline' } : { status: 'error' }
+  return e instanceof OfflineError || isOffline() ? { status: 'offline' } : { status: 'error' }
 }
 
 /**

@@ -6,7 +6,13 @@
  * ここは形の検査・座標の変換・点がゾーンの中かの判定だけ(保存は mapStore、描画は MapSheet)。
  */
 
+import { netFetch, readJson } from '@/lib/net'
+
 const API = '/api/v2'
+/** 地域の地図(約 1 MB)を取る時間切れ。版の問い合わせで通信できると分かってから取るので、長めにする */
+const MAPS_TIMEOUT_MS = 30_000
+/** 版の問い合わせ(数百バイト)の時間切れ */
+const VERSION_TIMEOUT_MS = 5_000
 
 type Position = [number, number]
 type Ring = Position[]
@@ -75,14 +81,36 @@ export function parseSummitMap(raw: unknown): SummitMap | null {
   }
 }
 
-/** 地域の地図をまとめて取る。取れなければ null(オフライン・未対応の地域) */
+/**
+ * 地域の地図をまとめて取る。取れなければ null(オフライン・時間切れ・未対応の地域)。
+ * 通信が止まっているときは、待たずに null(`net` の遮断)
+ */
 export async function fetchRegionMaps(region: string, init?: { signal?: AbortSignal }): Promise<SummitMap[] | null> {
   try {
-    const res = await fetch(`${API}/sota/maps?prefix=${encodeURIComponent(region)}`, init)
+    const res = await netFetch(`${API}/sota/maps?prefix=${encodeURIComponent(region)}`, init ?? {}, { timeoutMs: MAPS_TIMEOUT_MS })
     if (!res.ok) return null
-    const raw: unknown = await res.json()
+    const raw = await readJson(res, MAPS_TIMEOUT_MS)
     if (!Array.isArray(raw)) return null
     return raw.map(parseSummitMap).filter((m): m is SummitMap => m !== null)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 地域の地図の版(サーバーで配信用の地図を作り直した日時。ISO 8601 の文字列)。
+ * 版が変わっていなければ、地図を取り直さなくてよい。取れなければ null(オフライン・その地域の地図がない)
+ */
+export async function fetchRegionVersion(region: string, init?: { signal?: AbortSignal }): Promise<string | null> {
+  try {
+    const res = await netFetch(`${API}/sota/maps/versions?prefix=${encodeURIComponent(region)}`, init ?? {}, {
+      timeoutMs: VERSION_TIMEOUT_MS,
+    })
+    if (!res.ok) return null
+    const raw = await readJson(res, VERSION_TIMEOUT_MS)
+    if (!Array.isArray(raw)) return null
+    const hit = raw.find((r) => isObj(r) && r.region === region && typeof r.updatedAt === 'string')
+    return hit ? (hit as { updatedAt: string }).updatedAt : null
   } catch {
     return null
   }
