@@ -1,7 +1,24 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 
 /** ログ欄の上に、時刻と運用先を出す高さ(rem)。時刻と、運用先の2行(n-fer で折り返したとき) */
-export const CLOCK_REM = 6
+export const CLOCK_REM = 6.25
+
+/** 情報窓の中身の寸法(rem)。`StationClock` が使い、余白の計算(`clockMarginRem`)とそろえる */
+export const CLOCK_TIME_REM = 2.25 // 時刻の文字(行の高さは文字と同じ)
+export const CLOCK_ROW_REM = 1.25 // 運用先・メモの文字
+export const CLOCK_LINE = 1.1 // 運用先・メモの行の高さ(文字に対する倍率)
+export const CLOCK_GAP_REM = 0.2 // 行の間
+export const CLOCK_PAD_REM = 0.5 // 下の余白(ログ窓との間)。候補バーとキーボードの間(gap-2)と同じ
+
+/**
+ * 情報窓の下とログ窓の間の余白(rem)。中身(`rows` 行: 時刻、運用先、メモ)は、下の余白を除いた高さの中央に
+ * 寄るので、余白 = 下の padding + 余りの半分。文字は倍率 `scale` で変わり、行の間と padding は変わらない。
+ * 負なら、中身が入りきらず、はみ出して切れる
+ */
+export function clockMarginRem(rows: 1 | 2 | 3, scale: number): number {
+  const content = scale * (CLOCK_TIME_REM + (rows - 1) * CLOCK_ROW_REM * CLOCK_LINE) + (rows - 1) * CLOCK_GAP_REM
+  return CLOCK_PAD_REM + (CLOCK_REM * scale - CLOCK_PAD_REM - content) / 2
+}
 
 /** ログ欄に残す、いちばん少ない行数(前の行と、打っている行) */
 export const MIN_LINES = 2

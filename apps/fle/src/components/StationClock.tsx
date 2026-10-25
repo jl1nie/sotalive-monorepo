@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CLOCK_REM } from '@/hooks/useClockRoom'
+import { CLOCK_GAP_REM, CLOCK_LINE, CLOCK_PAD_REM, CLOCK_REM, CLOCK_ROW_REM, CLOCK_TIME_REM } from '@/hooks/useClockRoom'
 import { zoneLabel, type LineInfo } from '@/lib/fle'
 import { useT } from '@/lib/i18n'
 
@@ -40,12 +40,12 @@ export function StationClock({ info, tz, memo = '' }: Props) {
       role="group"
       aria-label={t('clock.label')}
       // 高さは決まった値(CLOCK_REM × 文字の大きさの倍率。入るかどうかを、この高さで決める)。
-      // 行の間は詰め、最後の行とログ欄の間は少し空ける
-      className="flex-none pb-1 overflow-hidden flex flex-col items-center justify-center gap-[0.2rem] select-none"
-      style={{ height: `calc(${CLOCK_REM}rem * ${SCALE})` }}
+      // 行の間は詰め、最後の行とログ欄の間は、候補バーとキーボードの間と同じだけ空ける(寸法は useClockRoom の定数)
+      className="flex-none overflow-hidden flex flex-col items-center justify-center select-none"
+      style={{ height: `calc(${CLOCK_REM}rem * ${SCALE})`, paddingBottom: `${CLOCK_PAD_REM}rem`, gap: `${CLOCK_GAP_REM}rem` }}
     >
       <div className="flex items-baseline gap-3 font-mono font-bold tabular-nums">
-        <span className="leading-none" style={size(2.25)}>{clockAt(now, tz)}</span>
+        <span className="leading-none" style={size(CLOCK_TIME_REM)}>{clockAt(now, tz)}</span>
         <span style={size(1)}>{tz === 0 ? 'UTC' : zoneLabel(tz)}</span>
         {/* ログの時間帯が UTC でなければ、UTC も小さく(SOTA・POTA のスポットは UTC) */}
         {tz !== 0 && (
@@ -56,7 +56,7 @@ export function StationClock({ info, tz, memo = '' }: Props) {
       </div>
       {(info?.mycall || places.length > 0) && (
         // 運用先が多ければ(山と公園の n-fer)、折り返して2行まで
-        <div className="max-w-full flex flex-wrap justify-center gap-x-3 font-mono font-bold leading-[1.1]" style={size(1.25)}>
+        <div className="max-w-full flex flex-wrap justify-center gap-x-3 font-mono font-bold " style={{ ...size(CLOCK_ROW_REM), lineHeight: CLOCK_LINE }}>
           {[info?.mycall, ...places].filter(Boolean).map((code) => (
             <span key={code}>{code}</span>
           ))}
@@ -64,7 +64,7 @@ export function StationClock({ info, tz, memo = '' }: Props) {
       )}
       {/* メモは1行。長ければ末尾を省く。運用先と同じく読み上げるので、同じ文字(等幅・大きさ・太さ) */}
       {memo && (
-        <div className="max-w-full px-3 truncate font-mono font-bold leading-[1.1]" style={size(1.25)}>
+        <div className="max-w-full px-3 truncate font-mono font-bold" style={{ ...size(CLOCK_ROW_REM), lineHeight: CLOCK_LINE }}>
           {memo}
         </div>
       )}
