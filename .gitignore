@@ -29,3 +29,6 @@ Thumbs.db
 # Claude Code local settings
 .claude/settings.local.json
 target/
+
+# scripts/verify.sh のログ
+.verify/
