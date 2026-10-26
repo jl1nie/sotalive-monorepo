@@ -140,10 +140,10 @@ pub fn fill_with(
     // (位置, 同じ位置に入れるときの順序, 修正)。同じ位置の挿入は、順序どおりに1つへまとめる
     let mut parts: Vec<(usize, u8, Edit)> = Vec::new();
 
-    // ログに時間帯がまだなく、これが最初の QSO なら、設定の時間帯を先頭に書く。時刻を自動で入れても、
-    // 手で打っても同じ(書かないと、手で打った時刻は UTC として読まれる)。前に QSO があれば、それは
-    // UTC の意味で書かれているので、途中で変えない
-    let new_zone = || before_tz.is_none() && default_tz != 0 && !has_qso_before(text, line);
+    // ログに時間帯がまだなく、これがログでただ1つの QSO なら、設定の時間帯を先頭に書く。時刻を自動で
+    // 入れても、手で打っても同じ(書かないと、手で打った時刻は UTC として読まれる)。ほかに QSO があれば
+    // (貼り付けたログなど)、それは UTC の意味で書かれているかもしれないので変えない(画面が確かめる)
+    let new_zone = || before_tz.is_none() && default_tz != 0 && is_only_qso(text, line);
     let write_zone = |parts: &mut Vec<(usize, u8, Edit)>| {
         parts.push((0, 0, insert_at(0, format!("timezone {:+}\n", default_tz))));
     };
@@ -381,8 +381,9 @@ fn timezone_before(lines: &[&str]) -> Option<i32> {
     })
 }
 
-fn has_qso_before(text: &str, line: usize) -> bool {
-    compile_fle(text).records.iter().any(|r| r.line < line)
+/// `line` の行のほかに、QSO がない
+fn is_only_qso(text: &str, line: usize) -> bool {
+    compile_fle(text).records.iter().all(|r| r.line == line)
 }
 
 fn utf16_len(s: &str) -> usize {
@@ -587,11 +588,27 @@ mod tests {
     #[test]
     fn a_hand_typed_first_qso_keeps_the_later_clock_in_the_default_zone() {
         // 手で打った最初の QSO を確定したあと、次の QSO の時刻を自動で入れる。UTC の時刻にしない
-        let text = "mycall JA1ABC\ndate 2026-10-25\n40m cw\n1805 ja1aaa\nja1bbb";
-        let once = apply(text, &fill(text, 3, NOW, 9));
+        let text = "mycall JA1ABC\ndate 2026-10-25\n40m cw\n1805 ja1aaa";
+        let once = apply(text, &fill(text, 3, NOW, 9)) + "\nja1bbb";
         let edits = fill(&once, 5, NOW, 9);
         assert_eq!(edits.len(), 1);
         assert_eq!(edits[0].insert, "1805 ");
+    }
+
+    #[test]
+    fn does_not_write_the_timezone_line_when_later_qsos_already_exist() {
+        // timezone の行のないログを貼り付けて、最初の QSO を確定し直した。後ろの QSO は UTC の意味で
+        // 書かれているかもしれないので、時間帯を変えない(どちらで書いたかは、画面が確かめる)
+        let text = "mycall JA1ABC\ndate 2026-10-25\n40m cw\n0905 ja1aaa\n0910 ja1bbb";
+        assert!(fill(text, 3, NOW, 9).is_empty());
+        let rst = FillScope {
+            rst: true,
+            no_clock: true,
+            ..FillScope::TIME
+        };
+        assert!(fill_with(text, 3, NOW, 9, rst)
+            .iter()
+            .all(|e| !e.insert.starts_with("timezone")));
     }
 
     #[test]

@@ -93,6 +93,13 @@ describe('mergeSettings(3者)', () => {
   it('基準がなければ(初めて)、サーバーのもの', () => {
     expect(mergeSettings(settings({ timezone: 0 }), null, settings({ timezone: 9 })).timezone).toBe(9)
   })
+  it('前の版で同期した基準にない項目(あとから足した設定)は、端末で変えていないと見なす', () => {
+    // 別の端末で UTC を選んで同期した。この端末は更新したばかりで、基準に hamlogZone がない
+    const old = settings() as Partial<SyncedSettings>
+    delete old.hamlogZone
+    const merged = mergeSettings(settings(), old as SyncedSettings, settings({ hamlogZone: 'utc' }))
+    expect(merged.hamlogZone).toBe('utc')
+  })
   it('サーバーにない項目は、端末のまま', () => {
     expect(mergeSettings(settings({ rigs: ['a'] }), settings(), {}).rigs).toEqual(['a'])
     expect(SYNCED_KEYS).not.toContain('theme')

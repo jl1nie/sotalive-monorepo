@@ -29,13 +29,16 @@ function shift(utc: string, tz: number): string {
 /**
  * ログに QSO があるのに、最初の QSO より前に `timezone` の行がなく、設定の時間帯が UTC でないとき。
  * このログの時刻は UTC として読まれているので、どちらの時間帯で書いたかを確かめる(貼り付けたログや、
- * 時間帯を書く前の版で書いたログ)。
+ * 時間帯を書く前の版で書いたログ)。QSO がカーソルの行(`caretLine`。いま打っている行)だけなら、確かめない
+ * (確定すると、設定の時間帯の `timezone` の行が入る)。
  */
-export function zoneUnset(text: string, view: LogView, tz: number): boolean {
+export function zoneUnset(text: string, view: LogView, tz: number, caretLine?: number): boolean {
   if (tz === 0 || view.qsos.length === 0) return false
+  if (view.qsos.every((q) => q.line === caretLine)) return false
   const first = Math.min(...view.qsos.map((q) => q.line))
+  // 全角も半角として読む(コアの読み方と同じ)
   return !text
     .split('\n')
     .slice(0, first)
-    .some((l) => /^\s*timezone\b/i.test(l))
+    .some((l) => /^\s*timezone\b/i.test(l.normalize('NFKC')))
 }

@@ -71,7 +71,8 @@ const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.str
 export function mergeSettings(local: SyncedSettings, snapshot: SyncedSettings | null, remote: Partial<SyncedSettings>): SyncedSettings {
   const out: Record<string, unknown> = { ...local }
   for (const key of SYNCED_KEYS) {
-    const changedHere = snapshot !== null && !same(local[key], snapshot[key])
+    // 基準にない項目(前の版で同期したあとに足した設定)は、この端末で変えていないと見なす
+    const changedHere = snapshot !== null && key in snapshot && !same(local[key], snapshot[key])
     if (!changedHere && key in remote) out[key] = remote[key]
   }
   return out as unknown as SyncedSettings

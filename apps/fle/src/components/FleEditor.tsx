@@ -709,11 +709,18 @@ function Editor({
     await generateNow(text)
   }, [text, view, settings.timezone, notify, t, generateNow])
 
-  /** `timezone` の行のないログ: 書いた時刻を、設定の時間帯(`local`)か UTC の時刻として読ませる(時刻はそのまま) */
-  const settleZone = async (local: boolean) => {
-    const next = local ? await retimeLog(text, settings.timezone, false) : `timezone utc\n${text}`
-    const zone = local ? zoneLabel(settings.timezone) : 'UTC'
-    if (next !== text) replaceText(next, t('notice.relabeled', { zone }))
+  /**
+   * `timezone` の行のないログ: 書いた時刻を、設定の時間帯(`local`)か UTC の時刻として読ませる。先頭に
+   * `timezone` の行を足すだけ(時刻も、ログの途中の `timezone` の行も、そのまま)。カーソルは同じ場所に置く
+   */
+  const settleZone = (local: boolean) => {
+    const tz = settings.timezone
+    const line = local ? `timezone ${tz > 0 ? '+' : '-'}${Math.abs(tz)}\n` : 'timezone utc\n'
+    rememberPrev(text)
+    setPrev(text)
+    notify(t('notice.relabeled', { zone: local ? zoneLabel(tz) : 'UTC' }), text)
+    pendingCaret.current = caret + line.length
+    setText(line + text)
   }
 
   /** 足りない情報を、ログの先頭に書き込んでから生成する(書式の検証と行づくりはコア) */
@@ -870,17 +877,17 @@ function Editor({
             </button>
           </div>
         )}
-        {view && zoneUnset(text, view, settings.timezone) && (
+        {view && zoneUnset(text, view, settings.timezone, caretLine) && (
           <div
             role="status"
             {...keepFocus}
             className="flex-none mb-1 p-2 rounded-xl border-2 border-amber-700 bg-amber-50 text-amber-950 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-100 flex flex-wrap items-center gap-2 text-sm font-semibold"
           >
             <span className="flex-1 min-w-48">{t('zoneUnset.hint', { zone: zoneLabel(settings.timezone) })}</span>
-            <button type="button" onClick={() => void settleZone(true)} {...keepFocus} className="btn-secondary !min-h-10">
+            <button type="button" onClick={() => settleZone(true)} {...keepFocus} className="btn-secondary !min-h-10">
               {t('zoneUnset.local', { zone: zoneLabel(settings.timezone) })}
             </button>
-            <button type="button" onClick={() => void settleZone(false)} {...keepFocus} className="btn-secondary !min-h-10">
+            <button type="button" onClick={() => settleZone(false)} {...keepFocus} className="btn-secondary !min-h-10">
               {t('zoneUnset.utc')}
             </button>
           </div>

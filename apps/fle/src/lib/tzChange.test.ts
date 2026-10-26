@@ -40,6 +40,15 @@ describe('zoneUnset', () => {
     expect(zoneUnset('mycall JA1ABC\n  Timezone +9\n1805 ja1aaa', view([at(2)]), 9)).toBe(false)
   })
 
+  it('全角で書いた timezone の行も、行として数える', () => {
+    expect(zoneUnset('ｔｉｍｅｚｏｎｅ ｊｓｔ\n' + log, view([at(4)]), 9)).toBe(false)
+  })
+
+  it('QSO が、いま打っている行(カーソルの行)だけなら、知らせない(確定すると timezone の行が入る)', () => {
+    expect(zoneUnset(log, view([at(3)]), 9, 3)).toBe(false)
+    expect(zoneUnset(log + '\n1810 ja1bbb', view([at(3), at(4)]), 9, 4)).toBe(true)
+  })
+
   it('設定が UTC・QSO がない・timezone が最初の QSO よりあとにあるだけ、のとき', () => {
     expect(zoneUnset(log, view([at(3)]), 0)).toBe(false)
     expect(zoneUnset(log, view([]), 9)).toBe(false)
