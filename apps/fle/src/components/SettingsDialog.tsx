@@ -103,6 +103,19 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
           </span>
         </label>
 
+        <label className="flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 border-gray-300 dark:border-gray-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={settings.okTimeForRef}
+            onChange={(e) => onChange({ okTimeForRef: e.target.checked })}
+            className="mt-1 w-5 h-5 accent-primary-700"
+          />
+          <span>
+            <span className="block font-semibold">{t('settings.okTimeForRef')}</span>
+            <span className="block text-sm text-gray-700 dark:text-gray-300">{t('settings.okTimeForRef.hint')}</span>
+          </span>
+        </label>
+
         <fieldset className="space-y-2">
           <legend className="label">{t('settings.confirm')}</legend>
           <p className="text-sm text-gray-700 dark:text-gray-300">

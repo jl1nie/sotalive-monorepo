@@ -143,12 +143,13 @@ pub fn generate_fle_output_with(
         }
     }
 
-    // WWFF / POTA の ADIF: 運用場所(リファレンス)ごとに、そのQSOだけで 1 つのファイルにする。日をまたいでも分けず、
+    // SOTA / WWFF / POTA の ADIF: 運用場所(リファレンス)ごとに、そのQSOだけで 1 つのファイルにする。日をまたいでも分けず、
     // 名前は、その場所の最初のQSOの日付(1回の運用を1つのファイルにする。logconv・旧版の FLE と同じ)。
     // 別の山や公園のQSOは混ざらない
     for (sig, refs_of) in [
         ("WWFF", wwff_refs as fn(&FleQsoRecord) -> Vec<String>),
         ("POTA", pota_refs as fn(&FleQsoRecord) -> Vec<String>),
+        ("SOTA", sota_refs as fn(&FleQsoRecord) -> Vec<String>),
     ] {
         let mut placed: Vec<String> = Vec::new();
         for r in &result.records {
@@ -164,11 +165,17 @@ pub fn generate_fle_output_with(
                 .iter()
                 .filter(|r| refs_of(r).contains(&place))
                 .collect();
-            let adif_data = generate_adif(&at_place, sig, &place);
+            // SOTA の山は、ADIF の MY_SOTA_REF・SOTA_REF が持つので、MY_SIG は書かない
+            let (adif_sig, adif_info) = if sig == "SOTA" {
+                ("", "")
+            } else {
+                (sig, place.as_str())
+            };
+            let adif_data = generate_adif(&at_place, adif_sig, adif_info);
             let fname = format!(
                 "{}@{}-{}.adi",
                 at_place[0].mycall.replace('/', "-"),
-                place,
+                place.replace('/', "-"),
                 date_key(at_place[0])
             );
             files.insert(fname, adif_data);
@@ -493,6 +500,14 @@ fn wwff_refs(r: &FleQsoRecord) -> Vec<String> {
         Vec::new()
     } else {
         vec![r.mywwff.clone()]
+    }
+}
+
+fn sota_refs(r: &FleQsoRecord) -> Vec<String> {
+    if r.mysota.is_empty() {
+        Vec::new()
+    } else {
+        vec![r.mysota.clone()]
     }
 }
 
@@ -1109,6 +1124,18 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         assert!(files
             .keys()
             .any(|k| k.starts_with("hamlog-20261018@JA-0001-JA-0002")));
+    }
+
+    #[test]
+    fn a_sota_only_log_also_gets_an_adif_per_summit() {
+        let files = output_of(
+            "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/ST-012\n0900 ja1aaa\n0910 ja1bbb",
+        );
+        let adif = &files["JA1ABC@JA-ST-012-20261018.adi"];
+        assert_eq!(calls_in(adif), vec!["JA1AAA", "JA1BBB"]);
+        assert!(adif.contains("<MY_SOTA_REF:9>JA/ST-012"), "{adif}");
+        assert!(!adif.contains("MY_SIG"), "{adif}");
+        assert!(files.keys().any(|k| k.starts_with("sota")));
     }
 
     #[test]

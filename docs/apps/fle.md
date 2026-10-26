@@ -39,7 +39,7 @@ HAMLOG の QTH・Rmks1・Rmks2 の欄は、プリセットか、欄ごとの項�
 | ファイル | 内容 |
 |---|---|
 | `sotaYYYYMMDD.csv` | SOTA のログ(山の QSO のみ。UTC の日付ごと)。S2S があれば `sota-s2s-….csv` も |
-| `コールサイン@公園-日付.adi` | POTA の ADIF(公園・日付ごと)。WWFF も同様 |
+| `コールサイン@場所-日付.adi` | POTA の ADIF(公園ごと)。WWFF・SOTA(山ごと。`/` は `-`)も同様 |
 | `hamlog-….csv` | HAMLOG の取り込み用 CSV |
 | `contest-日付.txt` | ZLOG 形式(コンテストのログのとき) |
 
