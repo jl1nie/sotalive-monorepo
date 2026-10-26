@@ -1429,16 +1429,16 @@
 
 			switch (arg.code) {
 				case 1:
-					emesg = "位置情報の利用が許可されていません";
+					emsg = "位置情報の利用が許可されていません";
 					break;
 				case 2:
-					emesg = "端末位置がわかりませんでした";
+					emsg = "端末位置がわかりませんでした";
 					break;
 				case 3:
-					emesg = "タイムアウトしました";
+					emsg = "タイムアウトしました";
 					break;
 			}
-			window.alert(emesg);
+			window.alert(emsg);
 
 			if (lat)
 				latlng = [parseFloat(lat), parseFloat(lng)];
