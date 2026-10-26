@@ -56,7 +56,7 @@ Cloudflare Pages は、シンボリックリンクを扱えません。
 
 そのため `index.html` の `css/…`、`js/…` は、相対パスのまま動きます。
 
-共通アセットの JS には、地図のプラグイン(`leaflet.extra-markers`、`L.Icon.Pulse`、`L.Control.ZoomLabel` など)、逆ジオコーダー(`revgeocoder.js`)、標高とアクティベーションゾーンの計算(`getDEM*.js`、`actzone*.js`)などがあります。
+共通アセットの JS には、地図のプラグイン(`leaflet.extra-markers`、`L.Icon.Pulse`、`L.Control.ZoomLabel` など)、逆ジオコーダー(`revgeocoder.js`)、標高とアクティベーションゾーンの計算(`getDEM.js`、`actzone.js`)などがあります。
 
 React 版の myact も、`/json/` などの共通アセットを使うため、`scripts/assemble.sh` が `dist/shared/` に置きます([myact.md](myact.md))。
 
