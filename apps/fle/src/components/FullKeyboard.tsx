@@ -154,23 +154,45 @@ export function FullKeyboard({
     onKey(caps ? k.toUpperCase() : k)
   }
 
+  // 指ごとに、押し始めたキー(指を離したときに、そのキーの文字を打つ)
+  const downKey = useRef(new Map<number, string>())
+  // 指を離して打った数。あとから来る click は、どのキーに向いていても、その分は打ち直さない(キーボードでの操作の click だけ、打つ)
+  const typedOnUp = useRef(0)
+
   /** 文字を打つキー。押している間、吹き出しで文字を見せる */
   const charKey = (k: string, span: Span = 2) => (
     <button
       key={k}
       type="button"
-      onPointerDown={() => {
+      onPointerDown={(e) => {
         heldTyped.current = null
+        downKey.current.set(e.pointerId, k)
         press(k)
       }}
-      onPointerUp={() => {
-        if (held !== k) return
-        setHeld(null)
-        lastTap.current = null
-        heldTyped.current = k
-        onKey(LONG[k])
+      // 打つのは、click ではなく、指を離したとき。click は、速く打つと(指が重なると)、前のキーに向いたり
+      // 落ちたりして、吹き出しの文字(押したキー)と違う文字が入る
+      onPointerUp={(e) => {
+        const down = downKey.current.get(e.pointerId)
+        downKey.current.delete(e.pointerId)
+        if (down !== k) return
+        typedOnUp.current += 1
+        if (held === k) {
+          setHeld(null)
+          lastTap.current = null
+          heldTyped.current = k
+          onKey(LONG[k])
+          return
+        }
+        tap(() => typeChar(k, e.timeStamp))()
       }}
-      onClick={(e) => tap(() => typeChar(k, e.timeStamp))()}
+      onPointerCancel={(e) => downKey.current.delete(e.pointerId)}
+      onClick={(e) => {
+        if (typedOnUp.current > 0) {
+          typedOnUp.current -= 1
+          return
+        }
+        tap(() => typeChar(k, e.timeStamp))()
+      }}
       className={`${HIT} ${SPAN[span]}`}
     >
       <span className={`${CHAR} ${caps ? 'uppercase' : ''} relative`}>
