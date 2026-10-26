@@ -94,6 +94,7 @@ test('myqth: 地図をクリックすると、JCC・住所・標高のポップ�
 
 test('myact: 起動して、JS の例外が出ない', async () => {
   const { page, errors } = await openApp('myact');
+  assert.equal(await page.locator('#search_ref input').count(), 1); // 参照の検索ボックス(myact.js の先頭で初期化)
   await page.waitForTimeout(3000); // 起動のあとの読み込み(スポット・アラートなど)を待つ
   assert.deepEqual(errors, []);
   await page.close();
