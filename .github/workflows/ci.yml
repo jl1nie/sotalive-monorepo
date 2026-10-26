@@ -70,7 +70,7 @@ jobs:
               - 'apps/myqth-org/**'
             parks:
               - 'tools/jaffpota/**'
-              - 'apps/myact-org/index.html'
+              - 'packages/shared/common/js/myact.js'
             sotalive:
               - 'functions/**'
               - 'wrangler.toml'

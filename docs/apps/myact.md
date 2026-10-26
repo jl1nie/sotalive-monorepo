@@ -32,7 +32,7 @@ MyActivation (MyACT) は、SOTA・POTA のアワード活動を支える地図�
 
 jQuery + Bootstrap 4 + Leaflet で作った、ビルドのない静的なサイトです。
 
-- 画面は `apps/myact-org/index.html` の 1 枚(インライン JS を含む)です。ライブラリ(jQuery、Bootstrap、MDBootstrap、Leaflet、Chart.js、topojson など)は CDN から読み込みます。
+- 画面は `apps/myact-org/index.html` の 1 枚です。JS は `packages/shared/common/js/myact.js` に外出ししてあります(`escapeHTML` は `js/escape-html.js`)。ライブラリ(jQuery、Bootstrap、MDBootstrap、Leaflet、Chart.js、topojson など)は CDN から読み込みます。
 - 自前の JS・CSS・画像・フォント・JSON は、共通アセット `packages/shared/common` を使います。MyQTH と共有しています。仕組みは [myqth.md](myqth.md) を参照してください。
 - API は `https://sotaapp2.sotalive.net/api/v2` を直接呼びます。このため Functions は要りません。
 - `apps/myact-org/site-act.webmanifest.json` は、ホーム画面に追加したときの設定です。
