@@ -9,7 +9,7 @@ import { netFetch } from '@/lib/net'
 import { mergePlans, type PlanRecord } from '@/lib/plans'
 
 /** 端末をまたいで同じにする設定(テーマ・数字キーの行は、端末ごとに違うので除く) */
-export const SYNCED_KEYS = ['rigs', 'timezone', 'writeBandMode', 'writeRst', 'language', 'hamlog'] as const
+export const SYNCED_KEYS = ['rigs', 'timezone', 'writeBandMode', 'writeRst', 'language', 'hamlog', 'hamlogZone'] as const
 export type SyncedSettings = Pick<Settings, (typeof SYNCED_KEYS)[number]>
 
 /** 同期する内容 */
@@ -58,6 +58,7 @@ export function pickSettings(s: Settings): SyncedSettings {
     writeRst: s.writeRst,
     language: s.language,
     hamlog: s.hamlog,
+    hamlogZone: s.hamlogZone,
   }
 }
 

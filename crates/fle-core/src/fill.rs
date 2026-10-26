@@ -140,6 +140,14 @@ pub fn fill_with(
     // (位置, 同じ位置に入れるときの順序, 修正)。同じ位置の挿入は、順序どおりに1つへまとめる
     let mut parts: Vec<(usize, u8, Edit)> = Vec::new();
 
+    // ログに時間帯がまだなく、これが最初の QSO なら、設定の時間帯を先頭に書く。時刻を自動で入れても、
+    // 手で打っても同じ(書かないと、手で打った時刻は UTC として読まれる)。前に QSO があれば、それは
+    // UTC の意味で書かれているので、途中で変えない
+    let new_zone = || before_tz.is_none() && default_tz != 0 && !has_qso_before(text, line);
+    let write_zone = |parts: &mut Vec<(usize, u8, Edit)>| {
+        parts.push((0, 0, insert_at(0, format!("timezone {:+}\n", default_tz))));
+    };
+
     // --- 時刻 ---
     match shape.time {
         None if scope.no_clock => {}
@@ -147,16 +155,14 @@ pub fn fill_with(
             let Some(now) = DateTime::from_timestamp_millis(now_ms) else {
                 return Vec::new();
             };
-            let (tz, tz_line) = match before_tz {
-                Some(tz) => (tz, None),
-                None if default_tz != 0 && !has_qso_before(text, line) => {
-                    (default_tz, Some(format!("timezone {:+}\n", default_tz)))
+            let tz = match before_tz {
+                Some(tz) => tz,
+                None if new_zone() => {
+                    write_zone(&mut parts);
+                    default_tz
                 }
-                None => (0, None),
+                None => 0,
             };
-            if let Some(tz_line) = tz_line {
-                parts.push((0, 0, insert_at(0, tz_line)));
-            }
             let local = now + Duration::hours(i64::from(tz));
             // 日付が変わっていたら、QSO の行の前に書く(いまの時計で決めるので、推測しない)。
             // 翌日なら `day +`、もっと離れていたり、`date` がまだなければ `date`
@@ -171,6 +177,9 @@ pub fn fill_with(
             parts.push((base, 1, insert_at(base, format!("{hhmm} "))));
         }
         Some(i) => {
+            if new_zone() {
+                write_zone(&mut parts);
+            }
             // 日をまたいだらしい(2358 のあとの 0002 など)なら、`day +` を書く。ほかの戻りは推測しない
             if let (true, Some(rec), Some(prev)) =
                 (scope.day_rollover, record.as_ref(), prev_record.as_ref())
@@ -561,6 +570,28 @@ mod tests {
     fn merges_into_one_edit_at_the_very_start_of_the_text() {
         let edits = fill("ja1xyz", 0, NOW, 9);
         assert_eq!(edits, vec![edit(0, "timezone +9\n1805 ")]);
+    }
+
+    #[test]
+    fn writes_the_timezone_line_for_a_time_typed_by_hand() {
+        // 設定が +9 で、最初の QSO の時刻を手で打った。打った数字は、設定の時間帯の時刻として読む
+        let text = "mycall JA1ABC\ndate 2026-10-25\n40m cw\n1805 ja1aaa";
+        let edits = fill(text, 3, NOW, 9);
+        assert_eq!(edits, vec![edit(0, "timezone +9\n")]);
+        let once = apply(text, &edits);
+        assert!(fill(&once, 4, NOW, 9).is_empty());
+        // 設定が UTC なら、何も書かない
+        assert!(fill(text, 3, NOW, 0).is_empty());
+    }
+
+    #[test]
+    fn a_hand_typed_first_qso_keeps_the_later_clock_in_the_default_zone() {
+        // 手で打った最初の QSO を確定したあと、次の QSO の時刻を自動で入れる。UTC の時刻にしない
+        let text = "mycall JA1ABC\ndate 2026-10-25\n40m cw\n1805 ja1aaa\nja1bbb";
+        let once = apply(text, &fill(text, 3, NOW, 9));
+        let edits = fill(&once, 5, NOW, 9);
+        assert_eq!(edits.len(), 1);
+        assert_eq!(edits[0].insert, "1805 ");
     }
 
     #[test]

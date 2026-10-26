@@ -28,6 +28,22 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('useSettings: HAMLOG の時間帯', () => {
+  it('初めては JST。UTC を選ぶと保存され、端末の間で同期する', () => {
+    const first = renderHook(() => useSettings())
+    expect(first.result.current.settings.hamlogZone).toBe('jst')
+    act(() => first.result.current.update({ hamlogZone: 'utc' }))
+    first.unmount()
+    expect(renderHook(() => useSettings()).result.current.settings.hamlogZone).toBe('utc')
+    expect(SYNCED_KEYS).toContain('hamlogZone')
+  })
+
+  it('知らない値は JST に戻す', () => {
+    localStorage.setItem(KEY, JSON.stringify({ hamlogZone: 'pst' }))
+    expect(renderHook(() => useSettings()).result.current.settings.hamlogZone).toBe('jst')
+  })
+})
+
 describe('useSettings: ログ欄の文字の大きさ', () => {
   it('初めては、中(今の大きさ)', () => {
     const { result } = renderHook(() => useSettings())

@@ -24,6 +24,19 @@ pub type OutputFiles = HashMap<String, Vec<u8>>;
 #[serde(rename_all = "camelCase", default)]
 pub struct OutputOptions {
     pub hamlog: HamlogColumns,
+    /// HAMLOG の CSV の日付・時刻を書く時間帯。ログの `timezone` によらない
+    pub hamlog_zone: HamlogZone,
+}
+
+/// HAMLOG の時刻の時間帯(HAMLOG の記号は `J` と `U` だけ)。既定は JST
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum HamlogZone {
+    /// JST で、時刻に `J`(日付も JST)
+    #[default]
+    Jst,
+    /// UTC で、時刻に `U`
+    Utc,
 }
 
 /// HAMLOG の QTH・Rmks1・Rmks2 の欄に書く内容。差し込める値は次のとおりで、ほかの文字はそのまま書く。
@@ -115,7 +128,7 @@ pub fn generate_fle_output_with(
     let log_name = log_file_stem(result).unwrap_or_else(|| date_str.clone());
 
     // HAMLOG CSV
-    let hamlog_data = generate_hamlog_csv(result, &options.hamlog);
+    let hamlog_data = generate_hamlog_csv(result, &options.hamlog, options.hamlog_zone);
     files.insert(format!("hamlog-{}.csv", log_name), hamlog_data);
 
     // SOTA CSV: UTCの日付ごと。山のあるQSOだけ
@@ -568,27 +581,25 @@ fn adif_band(band: &str) -> String {
 
 /// HAMLOG の日付(`YY/MM/DD`)と時刻(`HH:MMU` か `HH:MMJ`)
 ///
-/// 入力のときの時間帯(`timezone`)に従う。+9(`jst`)は JST で `J`(日付も JST に直す)。
-/// HAMLOG の記号は `J` と `U` だけなので、それ以外(0 を含む)は UTC で `U`。
-fn hamlog_date_time(record: &FleQsoRecord) -> (String, String) {
-    let jst = record.tz == 9;
+/// 設定の時間帯(`zone`)で書く。ログをどの時間帯で書いたか(`timezone`)によらず、QSO の UTC の日時を変換する。
+fn hamlog_date_time(record: &FleQsoRecord, zone: HamlogZone) -> (String, String) {
     let utc = NaiveDate::from_ymd_opt(record.year as i32, record.month as u32, record.day as u32)
         .and_then(|d| d.and_hms_opt(record.hour as u32, record.min as u32, 0));
-    let (at, flag) = match (jst, utc) {
-        (true, Some(t)) => (t + chrono::Duration::hours(9), 'J'),
-        (_, Some(t)) => (t, 'U'),
+    let Some(utc) = utc else {
         // 日時として読めないときは、記録の値のまま(UTC)
-        (_, None) => {
-            return (
-                format!(
-                    "{:02}/{:02}/{:02}",
-                    record.year % 100,
-                    record.month,
-                    record.day
-                ),
-                format!("{:02}:{:02}U", record.hour, record.min),
-            )
-        }
+        return (
+            format!(
+                "{:02}/{:02}/{:02}",
+                record.year % 100,
+                record.month,
+                record.day
+            ),
+            format!("{:02}:{:02}U", record.hour, record.min),
+        );
+    };
+    let (at, flag) = match zone {
+        HamlogZone::Jst => (utc + chrono::Duration::hours(9), 'J'),
+        HamlogZone::Utc => (utc, 'U'),
     };
     (
         format!("{:02}/{:02}/{:02}", at.year() % 100, at.month(), at.day()),
@@ -597,11 +608,15 @@ fn hamlog_date_time(record: &FleQsoRecord) -> (String, String) {
 }
 
 /// HAMLOG CSV形式を生成
-fn generate_hamlog_csv(result: &FleCompileResult, columns: &HamlogColumns) -> Vec<u8> {
+fn generate_hamlog_csv(
+    result: &FleCompileResult,
+    columns: &HamlogColumns,
+    zone: HamlogZone,
+) -> Vec<u8> {
     let mut output = Vec::new();
 
     for record in &result.records {
-        let (date, time) = hamlog_date_time(record);
+        let (date, time) = hamlog_date_time(record, zone);
         // 周波数を書かなかった QSO(`freq` はバンドの名前 `7MHz`)は、バンドの下端の周波数。
         // HAMLOG の周波数の欄は MHz の数値
         let freq = if is_mhz(&record.freq) {
@@ -1372,6 +1387,7 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
                 rmks1: "{rmks}".into(),
                 rmks2: "{memo} {myref}".into(),
             },
+            ..OutputOptions::default()
         };
         let files = zip_files(generate_fle_output_with(&result, test_now(), &options).unwrap());
         let lines = hamlog_lines(&files);
@@ -1462,7 +1478,7 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         assert!(!files.keys().any(|k| k.starts_with("airham-")));
     }
 
-    // ---- HAMLOG の日時(入力の時間帯 timezone に従う)----
+    // ---- HAMLOG の日時(設定の hamlog_zone に従う。ログの timezone によらない)----
 
     /// 同じ2つの交信(UTC の 2026-10-18 15:30 と 08:00)を、時間帯ごとに、その時間帯の時刻で書いたログ
     fn log_in(zone: &str) -> &'static str {
@@ -1476,6 +1492,16 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         }
     }
 
+    fn output_in(fle: &str, hamlog_zone: HamlogZone) -> std::collections::BTreeMap<String, String> {
+        let result = compile_fle(fle);
+        assert!(result.errors.is_empty(), "{:?}", result.errors);
+        let options = OutputOptions {
+            hamlog_zone,
+            ..OutputOptions::default()
+        };
+        zip_files(generate_fle_output_with(&result, test_now(), &options).unwrap())
+    }
+
     fn hamlog_times(files: &std::collections::BTreeMap<String, String>) -> Vec<(String, String)> {
         hamlog_lines(files)
             .iter()
@@ -1486,42 +1512,52 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             .collect()
     }
 
-    #[test]
-    fn hamlog_times_are_utc_when_the_log_has_no_timezone() {
-        let t = hamlog_times(&output_of(log_in("utc")));
-        assert_eq!(
-            t,
-            [
-                ("26/10/18".into(), "15:30U".into()),
-                ("26/10/18".into(), "08:00U".into())
-            ]
-        );
+    /// 2つの交信の、JST の日時
+    fn in_jst() -> [(String, String); 2] {
+        [
+            ("26/10/19".into(), "00:30J".into()),
+            ("26/10/18".into(), "17:00J".into()),
+        ]
+    }
+
+    /// 2つの交信の、UTC の日時
+    fn in_utc() -> [(String, String); 2] {
+        [
+            ("26/10/18".into(), "15:30U".into()),
+            ("26/10/18".into(), "08:00U".into()),
+        ]
     }
 
     #[test]
-    fn hamlog_times_are_jst_when_the_log_is_written_in_jst() {
-        // JST で書いた 10/19 00:30 は、UTC では 10/18 15:30。HAMLOG には、書いたとおりの JST で出る
-        let t = hamlog_times(&output_of(log_in("jst")));
-        assert_eq!(
-            t,
-            [
-                ("26/10/19".into(), "00:30J".into()),
-                ("26/10/18".into(), "17:00J".into())
-            ]
-        );
+    fn hamlog_is_jst_by_default() {
+        assert_eq!(OutputOptions::default().hamlog_zone, HamlogZone::Jst);
+        // 時間帯を書いていない(UTC の)ログでも、HAMLOG には JST で出る
+        assert_eq!(hamlog_times(&output_of(log_in("utc"))), in_jst());
     }
 
     #[test]
-    fn other_time_zones_go_to_hamlog_in_utc() {
-        // +8 の 23:30 は UTC の 15:30(HAMLOG に +8 の記号はない)
-        let t = hamlog_times(&output_of(log_in("+8")));
-        assert_eq!(
-            t,
-            [
-                ("26/10/18".into(), "15:30U".into()),
-                ("26/10/18".into(), "08:00U".into())
-            ]
-        );
+    fn hamlog_follows_the_setting_whatever_zone_the_log_is_written_in() {
+        for zone in ["utc", "jst", "+8"] {
+            assert_eq!(
+                hamlog_times(&output_in(log_in(zone), HamlogZone::Jst)),
+                in_jst(),
+                "{zone}"
+            );
+            assert_eq!(
+                hamlog_times(&output_in(log_in(zone), HamlogZone::Utc)),
+                in_utc(),
+                "{zone}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_hamlog_zone_is_read_from_the_screen_settings() {
+        let o: OutputOptions = serde_json::from_str(r#"{"hamlogZone":"utc"}"#).unwrap();
+        assert_eq!(o.hamlog_zone, HamlogZone::Utc);
+        let o: OutputOptions =
+            serde_json::from_str(r#"{"hamlog":{"qth":"","rmks1":"","rmks2":""}}"#).unwrap();
+        assert_eq!(o.hamlog_zone, HamlogZone::Jst);
     }
 
     #[test]
@@ -1538,10 +1574,16 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
     #[test]
     fn jst_rolls_the_month_and_the_year_back_into_the_utc_values() {
         // JST 2027-01-01 01:00 = UTC 2026-12-31 16:00
-        let t = hamlog_times(&output_of(
-            "mycall JA1ABC\ndate 2027-01-01\ntimezone jst\n40m cw\nmysota JA/TK-001\n0100 ja1aaa",
-        ));
-        assert_eq!(t, [("27/01/01".into(), "01:00J".into())]);
+        let jst =
+            "mycall JA1ABC\ndate 2027-01-01\ntimezone jst\n40m cw\nmysota JA/TK-001\n0100 ja1aaa";
+        assert_eq!(
+            hamlog_times(&output_in(jst, HamlogZone::Jst)),
+            [("27/01/01".into(), "01:00J".into())]
+        );
+        assert_eq!(
+            hamlog_times(&output_in(jst, HamlogZone::Utc)),
+            [("26/12/31".into(), "16:00U".into())]
+        );
     }
 
     #[test]
@@ -1550,10 +1592,11 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         let files = output_of(
             "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n2330 ja1aaa\ntimezone jst\n0845 ja1bbb",
         );
+        // HAMLOG は、どちらの交信も設定の時間帯(既定は JST)
         assert_eq!(
             hamlog_times(&files),
             [
-                ("26/10/18".into(), "23:30U".into()),
+                ("26/10/19".into(), "08:30J".into()),
                 ("26/10/19".into(), "08:45J".into())
             ]
         );

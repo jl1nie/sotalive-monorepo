@@ -34,6 +34,11 @@ const COUNT_OPTIONS: { value: QsoCount; label: MessageKey; hint: MessageKey }[] 
   { value: 'total', label: 'settings.qsoCount.total', hint: 'settings.qsoCount.total.hint' },
 ]
 
+const HAMLOG_ZONE_OPTIONS: { value: Settings['hamlogZone']; label: MessageKey; hint: MessageKey }[] = [
+  { value: 'jst', label: 'settings.hamlogZone.jst', hint: 'settings.hamlogZone.jst.hint' },
+  { value: 'utc', label: 'settings.hamlogZone.utc', hint: 'settings.hamlogZone.utc.hint' },
+]
+
 const CONFIRM_OPTIONS: { key: 'writeBandMode' | 'writeRst'; label: MessageKey; hint: MessageKey }[] = [
   { key: 'writeRst', label: 'settings.confirm.rst', hint: 'settings.confirm.rst.hint' },
   { key: 'writeBandMode', label: 'settings.confirm.bandMode', hint: 'settings.confirm.bandMode.hint' },
@@ -234,6 +239,33 @@ export function SettingsDialog({ open, onClose, settings, onChange, sync }: Prop
           />
           <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{t('settings.rigs.hint')}</p>
         </div>
+
+        <fieldset className="space-y-2">
+          <legend className="label">{t('settings.hamlogZone')}</legend>
+          {HAMLOG_ZONE_OPTIONS.map((opt) => (
+            <label
+              key={opt.value}
+              className={`flex items-start gap-3 p-3 min-h-14 rounded-xl border-2 cursor-pointer ${
+                settings.hamlogZone === opt.value
+                  ? 'border-primary-700 bg-primary-50 dark:border-primary-400 dark:bg-gray-800'
+                  : 'border-gray-300 dark:border-gray-700'
+              }`}
+            >
+              <input
+                type="radio"
+                name="hamlogZone"
+                value={opt.value}
+                checked={settings.hamlogZone === opt.value}
+                onChange={() => onChange({ hamlogZone: opt.value })}
+                className="mt-1 w-5 h-5 accent-primary-700"
+              />
+              <span>
+                <span className="block font-semibold">{t(opt.label)}</span>
+                <span className="block text-sm text-gray-700 dark:text-gray-300">{t(opt.hint)}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
 
         <HamlogColumnsSection value={settings.hamlog} onChange={(hamlog) => onChange({ hamlog })} />
 

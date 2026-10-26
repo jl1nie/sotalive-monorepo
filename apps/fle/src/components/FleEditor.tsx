@@ -85,7 +85,7 @@ import { codeFromText } from '@/lib/sync'
 import { GenerateCheckSheet } from '@/components/GenerateCheckSheet'
 import { Sheet } from '@/components/Sheet'
 import { RetimeSheet } from '@/components/RetimeSheet'
-import { planTzChange } from '@/lib/tzChange'
+import { planTzChange, zoneUnset } from '@/lib/tzChange'
 
 /** 使い方(アプリと同じ場所に置く静的なページ。`public/manual/`) */
 const MANUAL_URL = `${import.meta.env.BASE_URL}manual/`
@@ -670,7 +670,7 @@ function Editor({
   const generateNow = useCallback(
     async (source: string) => {
       try {
-        const zip = await generateFleZip(source, new Date(), settings.hamlog)
+        const zip = await generateFleZip(source, new Date(), settings.hamlog, settings.hamlogZone)
         const name = exportName(await logFileStem(source), new Date(), 'zip')
         download(new Blob([zip as BlobPart], { type: 'application/zip' }), name)
         if (view?.status === 'ERR') {
@@ -680,7 +680,7 @@ function Editor({
         notify(err instanceof Error ? err.message : t('notice.generateFailed'))
       }
     },
-    [view, notify, t, settings.hamlog]
+    [view, notify, t, settings.hamlog, settings.hamlogZone]
   )
 
   /** FLE のログを、そのままテキストで保存する(あとで「FLEログを開く」で読める) */
@@ -691,6 +691,11 @@ function Editor({
 
   /** 生成: 先に、足りない情報(自局のコールサイン・運用場所・グリッド)を調べ、あれば知らせる */
   const handleGenerate = useCallback(async () => {
+    // 時刻をどちらの時間帯で書いたかが決まっていないログは、先に答えてもらう(入力欄の上の案内)
+    if (view && zoneUnset(text, view, settings.timezone)) {
+      notify(t('zoneUnset.beforeGenerate'))
+      return
+    }
     try {
       // 確かめるのは、必須の項目(日付・自局)が抜けているときだけ。グリッドや運用場所(推奨)では止めない
       const warnings = (await checkOutput(text)).filter((w) => w.severity === 'required')
@@ -702,7 +707,14 @@ function Editor({
       // 調べられなくても、生成は止めない
     }
     await generateNow(text)
-  }, [text, generateNow])
+  }, [text, view, settings.timezone, notify, t, generateNow])
+
+  /** `timezone` の行のないログ: 書いた時刻を、設定の時間帯(`local`)か UTC の時刻として読ませる(時刻はそのまま) */
+  const settleZone = async (local: boolean) => {
+    const next = local ? await retimeLog(text, settings.timezone, false) : `timezone utc\n${text}`
+    const zone = local ? zoneLabel(settings.timezone) : 'UTC'
+    if (next !== text) replaceText(next, t('notice.relabeled', { zone }))
+  }
 
   /** 足りない情報を、ログの先頭に書き込んでから生成する(書式の検証と行づくりはコア) */
   const writeAndGenerate = async (values: { mycall: string; grid: string }): Promise<FieldError[]> => {
@@ -855,6 +867,21 @@ function Editor({
             <span className="flex-1">{t('timeBack.hint')}</span>
             <button type="button" onClick={insertDayPlus} {...keepFocus} className="btn-secondary !min-h-10 font-mono">
               day +
+            </button>
+          </div>
+        )}
+        {view && zoneUnset(text, view, settings.timezone) && (
+          <div
+            role="status"
+            {...keepFocus}
+            className="flex-none mb-1 p-2 rounded-xl border-2 border-amber-700 bg-amber-50 text-amber-950 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-100 flex flex-wrap items-center gap-2 text-sm font-semibold"
+          >
+            <span className="flex-1 min-w-48">{t('zoneUnset.hint', { zone: zoneLabel(settings.timezone) })}</span>
+            <button type="button" onClick={() => void settleZone(true)} {...keepFocus} className="btn-secondary !min-h-10">
+              {t('zoneUnset.local', { zone: zoneLabel(settings.timezone) })}
+            </button>
+            <button type="button" onClick={() => void settleZone(false)} {...keepFocus} className="btn-secondary !min-h-10">
+              {t('zoneUnset.utc')}
             </button>
           </div>
         )}

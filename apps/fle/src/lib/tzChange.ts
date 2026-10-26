@@ -25,3 +25,17 @@ function shift(utc: string, tz: number): string {
   const hour = (((h + tz) % 24) + 24) % 24
   return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
+
+/**
+ * ログに QSO があるのに、最初の QSO より前に `timezone` の行がなく、設定の時間帯が UTC でないとき。
+ * このログの時刻は UTC として読まれているので、どちらの時間帯で書いたかを確かめる(貼り付けたログや、
+ * 時間帯を書く前の版で書いたログ)。
+ */
+export function zoneUnset(text: string, view: LogView, tz: number): boolean {
+  if (tz === 0 || view.qsos.length === 0) return false
+  const first = Math.min(...view.qsos.map((q) => q.line))
+  return !text
+    .split('\n')
+    .slice(0, first)
+    .some((l) => /^\s*timezone\b/i.test(l))
+}
