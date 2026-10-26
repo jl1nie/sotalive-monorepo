@@ -351,15 +351,15 @@
     clickQTHButton();
     clock();
     setInterval(clock, 5000);
+
+    // 外から来た値(逆ジオコーダーの結果など)を HTML に入れるときに使う。
+    // 文字列の連結と同じく null・undefined はそのまま文字にする(表示を変えない)
+    function escapeHTML(v) {
+        return String(v).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
 </script>
 </body>
 
-</html
-
-        // 外から来た値(逆ジオコーダーの結果など)を HTML に入れるときに使う。
-        // 文字列の連結と同じく null・undefined はそのまま文字にする(表示を変えない)
-        function escapeHTML(v) {
-            return String(v).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-            });
-        }>
+</html>
