@@ -330,6 +330,7 @@
         if (typeof navigator.geolocation === 'undefined') {
             window.alert('ブラウザが位置情報取得に対応していません');
             map.setView([37.514444, 137.712222], 6);
+            return;
         }
 
         var options = {
