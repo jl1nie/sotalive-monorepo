@@ -534,8 +534,10 @@ function Editor({
     [text, focusAt]
   )
 
-  // その行を打ち始めた時刻(覚えていなければ、いま)
+  // その行を打ち始めた時刻(覚えていなければ、いま)。相手のリファレンスのある行は、設定により、いま
   function startedAtFor(line: number) {
+    // 相手のリファレンスがある行(チェイス・S2S・P2P)は、設定によって OK を押した時刻にする
+    if (settings.okTimeForRef && view?.qsos.some((q) => q.line === line && q.refs.length > 0)) return Date.now()
     return lineStartedAt.current?.line === line ? lineStartedAt.current.ms : Date.now()
   }
 

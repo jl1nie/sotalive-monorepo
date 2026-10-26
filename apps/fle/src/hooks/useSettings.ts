@@ -23,6 +23,8 @@ export interface Settings {
   timezone: number
   /** 時刻のない QSO の行を確定するとき、いまの時刻を入れる(紙ログの打ち込みではオフ)。同期しない(端末ごと) */
   autoTime: boolean
+  /** 相手のリファレンスのある行(チェイス・S2S・P2P)の時刻は、打ち始めでなく、OK を押した時刻にする。同期しない(端末ごと) */
+  okTimeForRef: boolean
   /** 確定ボタンで、バンド・モードも書く */
   writeBandMode: boolean
   /** 確定ボタンで、RSTも書く(省略した 599/59 や、4 のような省略形も) */
@@ -101,6 +103,7 @@ const DEFAULTS: Settings = {
   theme: 'system',
   timezone: 0,
   autoTime: true,
+  okTimeForRef: true,
   writeBandMode: false,
   writeRst: true,
   writeRstCompact: false,
@@ -128,6 +131,7 @@ function load(): Settings {
       theme,
       timezone,
       autoTime: typeof v.autoTime === 'boolean' ? v.autoTime : DEFAULTS.autoTime,
+      okTimeForRef: typeof v.okTimeForRef === 'boolean' ? v.okTimeForRef : DEFAULTS.okTimeForRef,
       writeBandMode: typeof v.writeBandMode === 'boolean' ? v.writeBandMode : DEFAULTS.writeBandMode,
       writeRst: typeof v.writeRst === 'boolean' ? v.writeRst : DEFAULTS.writeRst,
       writeRstCompact: typeof v.writeRstCompact === 'boolean' ? v.writeRstCompact : DEFAULTS.writeRstCompact,
