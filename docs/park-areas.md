@@ -14,7 +14,7 @@ AI に作業させるときは、この文書全体を渡し、次のように�
 | 項目 | 内容 |
 |---|---|
 | 形式 | TopoJSON の `jaffpota` という GeometryCollection 1 つ。各 geometry は Polygon か MultiPolygon で、文字列の `POTA`、`JAFF`、`NAME`、`PID`、`UID` を持つ |
-| 読む側 | 旧版 MyACT(`apps/myact-org/index.html` の `updateGeoJson`。設定の「自然公園の領域を表示」(Cookie `display_area`、既定は表示)で切り替える)。React 版(`apps/myact`)はまだ v22 を読んでいる(下の「未完のこと」) |
+| 読む側 | 旧版 MyACT(`packages/shared/common/js/myact.js` の `updateGeoJson`。設定の「自然公園の領域を表示」(Cookie `display_area`、既定は表示)で切り替える)。React 版(`apps/myact`)はまだ v22 を読んでいる(下の「未完のこと」) |
 | 版 | ファイル名の `-vN` が CDN・ブラウザーのキャッシュの無効化を兼ねる。更新は次の版のファイルを足して参照を差し替える。旧版はロールバック用に残す |
 | 影響しないもの | POTA マーカーの位置・名称・ログ(外部 API から取る) |
 

@@ -57,7 +57,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
 | `logconv` | `apps/logconv/**` | logconv |
 | `myact` | `apps/myact/**` | myact |
 | `legacy` | `apps/myact-org/**`、`apps/myqth-org/**` | deploy-legacy |
-| `parks` | `tools/jaffpota/**`、`apps/myact-org/index.html` | parks |
+| `parks` | `tools/jaffpota/**`、`packages/shared/common/js/myact.js` | parks |
 | `sotalive` | `functions/**`、`wrangler.toml`、`apps/logconv/**`、`apps/myact/**` | deploy-sotalive |
 
 `build` は、`all` か、`rust` 以外のどれかが真のときに走ります。ドキュメントだけの変更では、ビルドもデプロイも走りません。
