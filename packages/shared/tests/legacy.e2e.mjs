@@ -35,8 +35,8 @@ after(async () => {
   await browser?.close();
 });
 
-/** `app`(apps/<app>-org)を開いたページと、起きた JS の例外。`noGeolocation` なら、位置情報のないブラウザー */
-async function openApp(app, { noGeolocation = false } = {}) {
+/** `app`(apps/<app>-org)を開いたページと、起きた JS の例外。`noGeolocation` なら、位置情報のないブラウザー。`failApi` なら、sotaapp2 の API が 500 */
+async function openApp(app, { noGeolocation = false, failApi = false } = {}) {
   const page = await browser.newPage();
   if (noGeolocation) await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'geolocation', { get: () => undefined }));
   // 手元のファイル(このページ)の JS で起きた例外。CDN のライブラリの中だけで起きたものは数えない
@@ -58,6 +58,8 @@ async function openApp(app, { noGeolocation = false } = {}) {
       if (existsSync(file)) return ok(readFileSync(file), TYPES[extname(file)] ?? 'application/octet-stream');
       return route.fulfill({ status: 404, body: '' });
     }
+    // sotaapp2 の API(/propagation・/activation・/search)が落ちているとき
+    if (failApi && /\/(propagation|activation|search)/.test(url.pathname)) return route.fulfill({ status: 500, body: '' });
     for (const [key, body] of Object.entries(STUB)) {
       if (url.pathname.includes(key)) return ok(JSON.stringify(body), 'application/json');
     }
@@ -106,3 +108,10 @@ for (const app of ['myqth', 'myact']) {
     await page.close();
   });
 }
+
+test('myact: 起動で呼ぶ API が 500 を返しても、JS の例外が出ない', async () => {
+  const { page, errors } = await openApp('myact', { failApi: true });
+  await page.waitForTimeout(3000);
+  assert.deepEqual(errors, []);
+  await page.close();
+});

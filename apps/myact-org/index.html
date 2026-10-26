@@ -152,7 +152,7 @@
 		integrity="sha512-GCiwmzA0bNGVsp1otzTJ4LWQT2jjGJENLGyLlerlzckNI30moi2EQT0AfRI7fLYYYDKR+7hnuh35r3y1uJzugw=="
 		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 	<script
-		src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+		src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
 	<!------------------------------------------------------------------------>
 	<!-- plugin -->
@@ -1467,12 +1467,13 @@
 
 		function kp_index() {
 			fetch(sotaapp2 + "/propagation/geomag")
-				.then(res => res.json())
+				.then(res => res.ok ? res.json() : Promise.reject(new Error('geomag ' + res.status)))
 				.then(geomag => {
 					kp = geomag.kIndex[0];
 					ap = geomag.aIndex;
 					geomagindex = 'A:' + ap + ' K:' + kp;
-				});
+				})
+				.catch(e => console.warn('geomag:', e));
 		}
 
 		function clock() {
@@ -1571,7 +1572,7 @@
 					'&min_elev=' + elev + '&min_area=' + level;
 
 			res = fetch(sotaapp2 + '/search?' + query)
-				.then(res => res.json())
+				.then(res => res.ok ? res.json() : Promise.reject(new Error('search ' + res.status)))
 				.then(res => {
 
 					if (z > 11)
@@ -1611,7 +1612,8 @@
 							placeTempleMarker([t['lat'], t['lon']], z, t))
 					}
 							*/
-				});
+				})
+				.catch(e => console.warn('search:', e));
 		}
 
 		function placeSummitMarker(coords, z, elev, actcnt, popupfl) {
@@ -2171,6 +2173,10 @@
 			let api = sotaapp2 + '/activation/aprs/track?pat_ref=JA&hours_ago=' + range;
 
 			let res = await fetch(api);
+			if (!res.ok) {
+				console.warn('aprs/track:', res.status);
+				return;
+			}
 			res = await res.json();
 			let tracks = res['tracks'];
 			for (const track of tracks) {
