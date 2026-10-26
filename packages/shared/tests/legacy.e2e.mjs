@@ -35,13 +35,19 @@ after(async () => {
   await browser?.close();
 });
 
-/** `app`(apps/<app>-org)を開いたページと、起きた JS の例外 */
-async function openApp(app) {
+/** `app`(apps/<app>-org)を開いたページと、起きた JS の例外。`noGeolocation` なら、位置情報のないブラウザー */
+async function openApp(app, { noGeolocation = false } = {}) {
   const page = await browser.newPage();
+  if (noGeolocation) await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'geolocation', { get: () => undefined }));
   // 手元のファイル(このページ)の JS で起きた例外。CDN のライブラリの中だけで起きたものは数えない
   const errors = [];
   page.on('pageerror', (e) => (e.stack ?? '').includes(ORIGIN) && errors.push(e.message));
-  page.on('dialog', (d) => d.dismiss()); // 位置情報が使えないときの alert
+  // alert(位置情報が使えないときなど)は、文面を覚えて閉じる
+  const dialogs = [];
+  page.on('dialog', (d) => {
+    dialogs.push(d.message());
+    void d.dismiss();
+  });
   await page.route('**/*', (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -67,7 +73,7 @@ async function openApp(app) {
   });
   await page.goto(`${ORIGIN}/`);
   await page.waitForFunction(() => typeof window.map === 'object', null, { timeout: 15000 });
-  return { page, errors };
+  return { page, errors, dialogs };
 }
 
 test('myqth: 地図をクリックすると、JCC・住所・標高のポップアップが出る', async () => {
@@ -89,3 +95,14 @@ test('myact: 起動して、JS の例外が出ない', async () => {
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+for (const app of ['myqth', 'myact']) {
+  test(`${app}: 位置情報のないブラウザーでは、知らせて日本全体の地図を出す(例外が出ない)`, async () => {
+    const { page, errors, dialogs } = await openApp(app, { noGeolocation: true });
+    assert.deepEqual(dialogs, ['ブラウザが位置情報取得に対応していません']);
+    assert.equal(await page.evaluate(() => window.map.getZoom()), 6);
+    // 直す前は、alert のあと getCurrentPosition で例外になり、起動の残りの処理が止まっていた
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+}
