@@ -299,6 +299,45 @@ describe('FullKeyboard', () => {
     expect(onKey).toHaveBeenCalledWith(' ')
   })
 
+  it('速く打って指が重なっても、押したキーの文字が入る(J の click が K のあとに来ても JK)', () => {
+    const { onKey } = renderKeys()
+    const j = screen.getByRole('button', { name: 'j' })
+    const k = screen.getByRole('button', { name: 'k' })
+    fireEvent.pointerDown(j, { pointerId: 1 })
+    fireEvent.pointerUp(j, { pointerId: 1 })
+    fireEvent.pointerDown(k, { pointerId: 2 })
+    // click は、ブラウザによって遅れたり、前のキーに向いたりする
+    fireEvent.click(j)
+    fireEvent.pointerUp(k, { pointerId: 2 })
+    fireEvent.click(j)
+    expect(onKey.mock.calls).toEqual([['j'], ['k']])
+  })
+
+  it('同じキーの連打(JJ)は、click が1つ欠けても、2回入る', () => {
+    const { onKey } = renderKeys()
+    const j = screen.getByRole('button', { name: 'j' })
+    for (let i = 0; i < 2; i++) {
+      fireEvent.pointerDown(j, { pointerId: i + 1 })
+      fireEvent.pointerUp(j, { pointerId: i + 1 })
+    }
+    expect(onKey.mock.calls).toEqual([['j'], ['j']])
+  })
+
+  it('指を離さずに別のキーの上で離したら、押し始めたキーの文字も、離したキーの文字も入れない', () => {
+    const { onKey } = renderKeys()
+    const j = screen.getByRole('button', { name: 'j' })
+    const k = screen.getByRole('button', { name: 'k' })
+    fireEvent.pointerDown(j, { pointerId: 1 })
+    fireEvent.pointerUp(k, { pointerId: 1 })
+    expect(onKey).not.toHaveBeenCalled()
+  })
+
+  it('キーボードで押したとき(pointer なしの click)は、打つ', () => {
+    const { onKey } = renderKeys()
+    fireEvent.click(screen.getByRole('button', { name: 'j' }))
+    expect(onKey.mock.calls).toEqual([['j']])
+  })
+
   it('押している間、文字の吹き出しを出し、離すと消す', () => {
     renderKeys()
     const k = screen.getByRole('button', { name: 'k' })
