@@ -152,7 +152,7 @@
 		integrity="sha512-GCiwmzA0bNGVsp1otzTJ4LWQT2jjGJENLGyLlerlzckNI30moi2EQT0AfRI7fLYYYDKR+7hnuh35r3y1uJzugw=="
 		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 	<script
-		src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+		src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
 	<!------------------------------------------------------------------------>
 	<!-- plugin -->
@@ -1155,7 +1155,7 @@
 							else if (res['errors'] != 'OK') {
 								mesg = 'Parameter out of range.';
 							} else {
-								accu = '<small>[' + escapeHTML(res['hsrc'].replace('（', '').replace('）', '')) + ']</small>'
+								accu = res['hsrc'] ? '<small>[' + escapeHTML(res['hsrc'].replace('（', '').replace('）', '')) + ']</small>' : ''
 
 								if (isGPS)
 									pos = '<br>位置:<a href="' + locURI(lat, lng, z) +
@@ -1467,8 +1467,11 @@
 
 		function kp_index() {
 			fetch(sotaapp2 + "/propagation/geomag")
-				.then(res => res.json())
+				.then(res => res.ok ? res.json() : null)
+				.catch(e => console.warn('geomag:', e))
 				.then(geomag => {
+					if (!geomag)
+						return;
 					kp = geomag.kIndex[0];
 					ap = geomag.aIndex;
 					geomagindex = 'A:' + ap + ' K:' + kp;
@@ -1571,8 +1574,11 @@
 					'&min_elev=' + elev + '&min_area=' + level;
 
 			res = fetch(sotaapp2 + '/search?' + query)
-				.then(res => res.json())
+				.then(res => res.ok ? res.json() : null)
+				.catch(e => console.warn('search:', e))
 				.then(res => {
+					if (!res)
+						return;
 
 					if (z > 11)
 						wz = 11
@@ -2171,6 +2177,10 @@
 			let api = sotaapp2 + '/activation/aprs/track?pat_ref=JA&hours_ago=' + range;
 
 			let res = await fetch(api);
+			if (!res.ok) {
+				console.warn('aprs/track:', res.status);
+				return;
+			}
 			res = await res.json();
 			let tracks = res['tracks'];
 			for (const track of tracks) {

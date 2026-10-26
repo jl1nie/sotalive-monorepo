@@ -35,8 +35,8 @@ after(async () => {
   await browser?.close();
 });
 
-/** `app`(apps/<app>-org)を開いたページと、起きた JS の例外。`noGeolocation` なら、位置情報のないブラウザー */
-async function openApp(app, { noGeolocation = false } = {}) {
+/** `app`(apps/<app>-org)を開いたページと、起きた JS の例外。`noGeolocation` なら、位置情報のないブラウザー。`failApi` なら、sotaapp2 の API が 500。`noHsrc` なら、標高の応答に hsrc がない */
+async function openApp(app, { noGeolocation = false, failApi = false, noHsrc = false } = {}) {
   const page = await browser.newPage();
   if (noGeolocation) await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'geolocation', { get: () => undefined }));
   // 手元のファイル(このページ)の JS で起きた例外。CDN のライブラリの中だけで起きたものは数えない
@@ -58,6 +58,9 @@ async function openApp(app, { noGeolocation = false } = {}) {
       if (existsSync(file)) return ok(readFileSync(file), TYPES[extname(file)] ?? 'application/octet-stream');
       return route.fulfill({ status: 404, body: '' });
     }
+    // sotaapp2 の API(/propagation・/activation・/search)が落ちているとき
+    if (failApi && /\/(propagation|activation|search)/.test(url.pathname)) return route.fulfill({ status: 500, body: '' });
+    if (noHsrc && url.pathname.includes('getelevation')) return ok(JSON.stringify({ elevation: 3.2 }), 'application/json');
     for (const [key, body] of Object.entries(STUB)) {
       if (url.pathname.includes(key)) return ok(JSON.stringify(body), 'application/json');
     }
@@ -106,3 +109,20 @@ for (const app of ['myqth', 'myact']) {
     await page.close();
   });
 }
+
+test('myact: 起動で呼ぶ API が 500 を返しても、JS の例外が出ない', async () => {
+  const { page, errors } = await openApp('myact', { failApi: true });
+  await page.waitForTimeout(3000);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('myqth: 標高の応答に hsrc がなくても、ポップアップが出る', async () => {
+  const { page, errors } = await openApp('myqth', { noHsrc: true });
+  await page.evaluate(() => window.map.fire('click', { latlng: window.L.latLng(35.681236, 139.767125) }));
+  const popup = page.locator('.leaflet-popup-content');
+  await popup.waitFor({ timeout: 10000 });
+  assert.match(await popup.innerText(), /JCC100101/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
