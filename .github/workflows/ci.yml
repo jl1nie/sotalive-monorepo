@@ -314,7 +314,7 @@ jobs:
 
   # sotalive: まだ公開していない logconv2・myact2・myqth2(functions/_middleware.ts)
   deploy-sotalive:
-    needs: [changes, build, logconv, myact, myqth, functions]
+    needs: [changes, build, logconv, myact, myqth, geo, functions]
     if: >-
       always() && github.event_name == 'push'
       && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')

@@ -56,6 +56,31 @@ describe('これまでの振り分けは変わらない', () => {
     expect(response.headers.get('x-robots-tag')).toBe('noindex')
   })
 
+  it('myact2 のアプリにないファイルは、共通アセットから(404 のフォールバック)', async () => {
+    const { fetched } = await call('https://myact2.sotalive.net/json/x.json', ['/shared/common/json/x.json'])
+    expect(fetched).toEqual(['/myact2/json/x.json', '/shared/common/json/x.json'])
+  })
+
+  it('サブドメインなし(sotalive.pages.dev)は、そのまま配信する', async () => {
+    const { fetched } = await call('https://sotalive.pages.dev/logconv/', ['/logconv/'])
+    expect(fetched).toEqual(['/logconv/'])
+  })
+
+  it('/api/ はバックエンドへ中継する(X-Forwarded-Host に元のホスト名)', async () => {
+    const seen: { url: string; host: string | null }[] = []
+    const realFetch = globalThis.fetch
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      seen.push({ url: String(input), host: new Headers(init?.headers).get('x-forwarded-host') })
+      return new Response('{}')
+    }) as typeof fetch
+    try {
+      await call('https://myqth2.sotalive.net/api/v2/locator/jcc-jcg?lat=1&lon=2')
+    } finally {
+      globalThis.fetch = realFetch
+    }
+    expect(seen).toEqual([{ url: 'https://sotaapp2.sotalive.net/api/v2/locator/jcc-jcg?lat=1&lon=2', host: 'myqth2.sotalive.net' }])
+  })
+
   it('logconv2 は /logconv。noindex は付けない', async () => {
     const { response, fetched } = await call('https://logconv2.sotalive.net/', ['/logconv/'])
     expect(fetched).toEqual(['/logconv/'])

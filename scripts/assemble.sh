@@ -15,4 +15,11 @@ cp -r apps/myqth/dist/* dist/myqth2/
 cp -r packages/shared/* dist/shared/
 cp -r functions/* dist/functions/
 
+# dist の直下に index.html か 404.html があると、Pages は、ないパスに 200 でそれを返す(SPA モード)。
+# functions/_middleware.ts の「アプリにないファイルは共通アセットへ(404 を見て)」が、黙って効かなくなる
+if [ -e dist/index.html ] || [ -e dist/404.html ]; then
+  echo "dist の直下に index.html か 404.html がある(functions/_middleware.ts の 404 のフォールバックが効かなくなる)" >&2
+  exit 1
+fi
+
 scripts/build-static-projects.sh

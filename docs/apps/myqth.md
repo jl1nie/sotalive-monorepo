@@ -98,7 +98,7 @@ npx serve dist-myqth
 
 ### 配置
 
-`scripts/assemble.sh` が `apps/myqth/dist` を `dist/myqth2/` に置き、プロジェクト sotalive の `functions/_middleware.ts` が、ホスト名 `myqth2` を `/myqth2` に振り分けます(`noindex`)。DNS は、`myqth2` の CNAME を `sotalive.pages.dev` へ。`myqth.sotalive.net`(旧版)は、新版の確認が済むまでそのままです。
+`scripts/assemble.sh` が `apps/myqth/dist` を `dist/myqth2/` に置き、プロジェクト sotalive の `functions/_middleware.ts` が、ホスト名 `myqth2` を `/myqth2` に振り分けます(`noindex`)。DNS は、`myqth2` の CNAME を `sotalive.pages.dev` へ。Pages のプロジェクト sotalive に、カスタムドメイン `myqth2.sotalive.net` も足す([デプロイの手順](../deploy-guide.md)。CNAME だけでは 522 や 404 になる)。プレビューのデプロイ(`feat-….sotalive.pages.dev`)はホスト名で振り分けられないので、確かめるのは、手元の `wrangler pages dev dist`(`Host: myqth2.sotalive.net` を付ける)か、main へのマージのあと。`myqth.sotalive.net`(旧版)は、新版の確認が済むまでそのままです。
 
 ### テスト
 
