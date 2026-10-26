@@ -198,7 +198,7 @@ const ja = {
     '時刻のない QSO の行を確定すると、いまの時刻を入れます。紙ログを打ち込むときはオフに(時刻のない行は、前の行の時刻を引き継ぎます)。この端末だけの設定です。',
   'settings.okTimeForRef': '相手のリファレンスがある行は、OK の時刻にする',
   'settings.okTimeForRef.hint':
-    '時刻は、ふつう、その行の最初の1文字を打った時刻です。この設定をオンにすると、相手の山・公園のある行(チェイス・S2S・P2P)だけ、OK を押した時刻にします。チェイスで最後に呼ぶと、書いている間に20〜30分ずれるためです。アクティベーションの普通の交信は、打ち始めの時刻のままです(その場で記録するので)。この端末だけの設定です。',
+    '時刻は、ふつう、その行の最初の1文字を打った時刻です。この設定をオンにすると、相手の山・公園のある行(チェイス・S2S・P2P)だけ、OK を押した時刻にします。チェイスで最後に呼ぶと、書いている間に20〜30分ずれるためです。アクティベーションの普通の交信は、打ち始めの時刻のままです(その場で記録するので)。CQ を出して S2S の局に呼ばれたときも OK の時刻になりますが、交信は短いので、誤差は小さいはずです。この端末だけの設定です。',
   'settings.digitRow': '数字キーの行',
   'settings.digitRow.hint': 'キーボードの上に 0〜9 と / と - を出します(PC の従来の配置)。JA1ABC/1 や JP-1151 のような、数字と文字・記号が混ざる入力で、キーボードを切り替えずに済みます。',
   'settings.fontSize': 'ログ欄の文字の大きさ',
@@ -513,7 +513,7 @@ const en: Record<MessageKey, string> = {
     'Confirming a QSO line without a time inserts the current time. Turn this off when typing in a paper log (a line without a time takes the time of the line before). This device only.',
   'settings.okTimeForRef': 'Use the OK time for lines with the other station\'s reference',
   'settings.okTimeForRef.hint':
-    'The time is normally when you typed the first character of the line. When on, lines with the other station\'s summit or park (chasing, S2S, P2P) take the time you press OK instead, since a chaser who calls last can drift 20-30 minutes while writing. Ordinary activation contacts keep the time you started typing. This device only.',
+    'The time is normally when you typed the first character of the line. When on, lines with the other station\'s summit or park (chasing, S2S, P2P) take the time you press OK instead, since a chaser who calls last can drift 20-30 minutes while writing. Ordinary activation contacts keep the time you started typing. An S2S station answering your CQ also gets the OK time, but such a contact is short, so the difference is small. This device only.',
   'settings.digitRow': 'Digit key row',
   'settings.digitRow.hint': 'Shows 0-9, / and - above the keyboard (classic layout on a PC), so you can type things like JA1ABC/1 or JP-1151 without switching keyboards.',
   'settings.fontSize': 'Log text size',
