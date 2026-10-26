@@ -733,8 +733,7 @@ function Editor({
     setZoneAsk(false)
     const tz = local ? settings.timezone : 0
     const line = zoneLine(tz)
-    rememberPrev(text)
-    setPrev(text)
+    // 「前の内容」(メニューの元に戻す)は、読み込む前のログのまま。通知の元に戻すは、行を足す前に戻すだけ
     notify(t('notice.relabeled', { zone: zoneLabel(tz) || 'UTC' }), text)
     pendingCaret.current = caret + line.length
     setText(line + text)
@@ -994,9 +993,12 @@ function Editor({
           className="hidden"
           onChange={(e) =>
             readFile(e, async (content) => {
-              // ADIFの読み方(FLEの書式への変換)はコアが知っている
+              // ADIFの読み方(FLEの書式への変換)はコアが知っている。取り込んだ部分は UTC(先頭に timezone utc)
               const fle = await adifToFle(content)
-              setText((prev) => (prev && !prev.endsWith('\n') ? prev + '\n' : prev) + fle)
+              const base = text && !text.endsWith('\n') ? text + '\n' : text
+              // 取り込んだ後ろには、元のログの時間帯を戻す(続けて書く時刻の意味を変えない)
+              const tz = base ? (await lineInfo(text, text.split('\n').length - 1)).timezone : null
+              setText(base + fle + (fle && tz ? zoneLine(tz) : ''))
             })
           }
         />
