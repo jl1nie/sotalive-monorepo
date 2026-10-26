@@ -85,7 +85,8 @@ import { codeFromText } from '@/lib/sync'
 import { GenerateCheckSheet } from '@/components/GenerateCheckSheet'
 import { Sheet } from '@/components/Sheet'
 import { RetimeSheet } from '@/components/RetimeSheet'
-import { planTzChange, zoneUnset } from '@/lib/tzChange'
+import { ZoneSheet } from '@/components/ZoneSheet'
+import { planTzChange, zoneLine, zoneUnset } from '@/lib/tzChange'
 
 /** 使い方(アプリと同じ場所に置く静的なページ。`public/manual/`) */
 const MANUAL_URL = `${import.meta.env.BASE_URL}manual/`
@@ -151,6 +152,8 @@ function Editor({
   const [mapSummit, setMapSummit] = useState<string | null>(null)
   // 時間帯を変えるときの確認(QSO のあるログで、時刻を変換するか)
   const [retime, setRetime] = useState<{ tz: number; from: string; to: string; qsos: number } | null>(null)
+  // 時間帯の行のないログを読み込んだので、時刻をどちらで書いたかを聞く
+  const [zoneAsk, setZoneAsk] = useState(false)
 
   const taRef = useRef<HTMLTextAreaElement>(null)
   const fleInputRef = useRef<HTMLInputElement>(null)
@@ -691,11 +694,6 @@ function Editor({
 
   /** 生成: 先に、足りない情報(自局のコールサイン・運用場所・グリッド)を調べ、あれば知らせる */
   const handleGenerate = useCallback(async () => {
-    // 時刻をどちらの時間帯で書いたかが決まっていないログは、先に答えてもらう(入力欄の上の案内)
-    if (view && zoneUnset(text, view, settings.timezone)) {
-      notify(t('zoneUnset.beforeGenerate'))
-      return
-    }
     try {
       // 確かめるのは、必須の項目(日付・自局)が抜けているときだけ。グリッドや運用場所(推奨)では止めない
       const warnings = (await checkOutput(text)).filter((w) => w.severity === 'required')
@@ -707,18 +705,36 @@ function Editor({
       // 調べられなくても、生成は止めない
     }
     await generateNow(text)
-  }, [text, view, settings.timezone, notify, t, generateNow])
+  }, [text, generateNow])
+
+  /** 読み込んだログ(`content`)に時間帯の行がなければ、時刻をどちらで書いたかを聞く。書いている最中には聞かない */
+  const askZoneOf = useCallback(
+    (content: string) => {
+      void compileLog(content)
+        .then((v) => zoneUnset(content, v, settings.timezone) && setZoneAsk(true))
+        .catch(() => {})
+    },
+    [settings.timezone]
+  )
+
+  // 起動して、保存してあったログを開いたとき(一度だけ)
+  const askedAtStart = useRef(false)
+  useEffect(() => {
+    if (askedAtStart.current) return
+    askedAtStart.current = true
+    askZoneOf(text)
+  }, [askZoneOf, text])
 
   /**
-   * `timezone` の行のないログ: 書いた時刻を、設定の時間帯(`local`)か UTC の時刻として読ませる。先頭に
-   * `timezone` の行を足すだけ(時刻も、ログの途中の `timezone` の行も、そのまま)。カーソルは同じ場所に置く
+   * 読み込んだログの答え: 先頭に時間帯の行(設定の時間帯(`local`)か UTC)を足すだけ(時刻も、ログの途中の
+   * `timezone` の行も、そのまま)。カーソルは同じ場所に置く
    */
   const settleZone = (local: boolean) => {
-    const tz = settings.timezone
-    const line = local ? `timezone ${tz > 0 ? '+' : '-'}${Math.abs(tz)}\n` : 'timezone utc\n'
-    rememberPrev(text)
-    setPrev(text)
-    notify(t('notice.relabeled', { zone: local ? zoneLabel(tz) : 'UTC' }), text)
+    setZoneAsk(false)
+    const tz = local ? settings.timezone : 0
+    const line = zoneLine(tz)
+    // 「前の内容」(メニューの元に戻す)は、読み込む前のログのまま。通知の元に戻すは、行を足す前に戻すだけ
+    notify(t('notice.relabeled', { zone: zoneLabel(tz) || 'UTC' }), text)
     pendingCaret.current = caret + line.length
     setText(line + text)
   }
@@ -877,21 +893,6 @@ function Editor({
             </button>
           </div>
         )}
-        {view && zoneUnset(text, view, settings.timezone, caretLine) && (
-          <div
-            role="status"
-            {...keepFocus}
-            className="flex-none mb-1 p-2 rounded-xl border-2 border-amber-700 bg-amber-50 text-amber-950 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-100 flex flex-wrap items-center gap-2 text-sm font-semibold"
-          >
-            <span className="flex-1 min-w-48">{t('zoneUnset.hint', { zone: zoneLabel(settings.timezone) })}</span>
-            <button type="button" onClick={() => settleZone(true)} {...keepFocus} className="btn-secondary !min-h-10">
-              {t('zoneUnset.local', { zone: zoneLabel(settings.timezone) })}
-            </button>
-            <button type="button" onClick={() => settleZone(false)} {...keepFocus} className="btn-secondary !min-h-10">
-              {t('zoneUnset.utc')}
-            </button>
-          </div>
-        )}
         <div className="relative flex-none">
           <CandidateBar
             view={view}
@@ -979,9 +980,10 @@ function Editor({
           accept=".txt,.fle"
           className="hidden"
           onChange={(e) =>
-            readFile(e, (content) =>
+            readFile(e, (content) => {
               replaceText(content, t('notice.loaded'))
-            )
+              askZoneOf(content)
+            })
           }
         />
         <input
@@ -991,9 +993,12 @@ function Editor({
           className="hidden"
           onChange={(e) =>
             readFile(e, async (content) => {
-              // ADIFの読み方(FLEの書式への変換)はコアが知っている
+              // ADIFの読み方(FLEの書式への変換)はコアが知っている。取り込んだ部分は UTC(先頭に timezone utc)
               const fle = await adifToFle(content)
-              setText((prev) => (prev && !prev.endsWith('\n') ? prev + '\n' : prev) + fle)
+              const base = text && !text.endsWith('\n') ? text + '\n' : text
+              // 取り込んだ後ろには、元のログの時間帯を戻す(続けて書く時刻の意味を変えない)
+              const tz = base ? (await lineInfo(text, text.split('\n').length - 1)).timezone : null
+              setText(base + fle + (fle && tz ? zoneLine(tz) : ''))
             })
           }
         />
@@ -1015,6 +1020,14 @@ function Editor({
           qsos={retime?.qsos ?? 0}
           onConvert={() => void applyRetime(true)}
           onKeep={() => void applyRetime(false)}
+        />
+
+        <ZoneSheet
+          open={zoneAsk}
+          onClose={() => setZoneAsk(false)}
+          zone={zoneLabel(settings.timezone)}
+          onLocal={() => settleZone(true)}
+          onUtc={() => settleZone(false)}
         />
 
         <GenerateCheckSheet

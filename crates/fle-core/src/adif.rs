@@ -61,7 +61,8 @@ fn split_records(adif: &str) -> Vec<Vec<char>> {
 /// ADIFのテキストを、FLE形式のテキストに変換する。
 ///
 /// 日付は変わったときだけ、バンド・モードは変わったときだけ書く。
-/// コールサイン・日付・時刻のないレコードは読み飛ばす。
+/// コールサイン・日付・時刻のないレコードは読み飛ばす。ADIF の時刻は UTC なので、先頭に `timezone utc` を
+/// 書く(JST などで書いたログの後ろに足しても、取り込んだ QSO は UTC として読まれる)。
 pub fn adif_to_fle(adif: &str) -> String {
     let (mut today, mut band, mut mode) = (String::new(), String::new(), String::new());
     let mut out = String::new();
@@ -117,7 +118,11 @@ pub fn adif_to_fle(adif: &str) -> String {
             rst_rcvd
         ));
     }
-    out
+    if out.is_empty() {
+        out
+    } else {
+        format!("timezone utc\n{out}")
+    }
 }
 
 #[cfg(test)]
@@ -136,6 +141,7 @@ mod tests {
         assert_eq!(
             lines(&adif_to_fle(COMPACT)),
             vec![
+                "timezone utc",
                 "date 2024-12-28",
                 "40m CW",
                 "1234 JA1XYZ 599 579",
@@ -156,7 +162,12 @@ mod tests {
             "<CALL:6>JA1XYZ <QSO_DATE:8>20241228 <TIME_ON:6>123456 <MODE:3>SSB <BAND:3>20m <EOR>\n";
         assert_eq!(
             lines(&adif_to_fle(spaced)),
-            vec!["date 2024-12-28", "20m SSB", "1234 JA1XYZ 599 599"]
+            vec![
+                "timezone utc",
+                "date 2024-12-28",
+                "20m SSB",
+                "1234 JA1XYZ 599 599"
+            ]
         );
     }
 
@@ -164,6 +175,20 @@ mod tests {
     fn a_value_containing_angle_brackets_is_skipped_by_its_declared_length() {
         let rec = "<COMMENT:5>a<b>c<CALL:6>JA1XYZ<QSO_DATE:8>20241228<TIME_ON:4>0900<MODE:2>CW<BAND:3>40m<EOR>";
         assert!(adif_to_fle(rec).contains("0900 JA1XYZ"));
+    }
+
+    #[test]
+    fn adif_times_stay_utc_when_added_to_a_log_written_in_jst() {
+        // ADIF の時刻は UTC。JST のログの後ろに足しても、取り込んだ QSO は ADIF の時刻(UTC)のまま
+        let rec = "<CALL:6>JA1XYZ<QSO_DATE:8>20241228<TIME_ON:4>0900<MODE:2>CW<BAND:3>40m<EOR>";
+        let log = format!(
+            "mycall JA1ABC\ntimezone jst\ndate 2024-12-28\n40m cw\n1805 ja1aaa\n{}",
+            adif_to_fle(rec)
+        );
+        let r = crate::compile_fle(&log);
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        let utc: Vec<(u8, u8)> = r.records.iter().map(|q| (q.hour, q.min)).collect();
+        assert_eq!(utc, [(9, 5), (9, 0)]);
     }
 
     #[test]
@@ -178,7 +203,12 @@ mod tests {
         let rec = "<call:6>ja1xyz<qso_date:8>20241228<time_on:4>0900<mode:2>cw<band:3>40m<eor>";
         assert_eq!(
             lines(&adif_to_fle(rec)),
-            vec!["date 2024-12-28", "40m CW", "0900 JA1XYZ 599 599"]
+            vec![
+                "timezone utc",
+                "date 2024-12-28",
+                "40m CW",
+                "0900 JA1XYZ 599 599"
+            ]
         );
     }
 
@@ -188,6 +218,7 @@ mod tests {
         assert_eq!(
             lines(&adif_to_fle(rec)),
             vec![
+                "timezone utc",
                 "date 2024-12-28",
                 "40m CW",
                 "2359 JA1XYZ 599 599",
