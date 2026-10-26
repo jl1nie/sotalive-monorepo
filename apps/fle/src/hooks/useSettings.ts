@@ -103,7 +103,7 @@ const DEFAULTS: Settings = {
   theme: 'system',
   timezone: 0,
   autoTime: true,
-  okTimeForRef: true,
+  okTimeForRef: false,
   writeBandMode: false,
   writeRst: true,
   writeRstCompact: false,
