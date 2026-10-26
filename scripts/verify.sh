@@ -11,7 +11,8 @@
 #   rust      cargo test --workspace
 #   wasm      FLE の wasm のビルド(apps/fle/src/wasm/fle は git に入れない生成物。次の fle の前提)
 #   fle・logconv・myact   各アプリで tsc -b・vitest run・eslint
-#   shared    packages/shared の node --test(旧版が共有するコード)
+#   shared    packages/shared の node --test(旧版が共有するコード。旧版の index.html の構文の検査を含む)
+#   legacy    旧版(myqth・myact)をブラウザーで開く最低限のテスト(Playwright。CDN に届かない手元では LEGACY_CDN_DIR)
 #   parks     tools/jaffpota の unittest(tools/jaffpota を変えたときだけ。変えていなければ、そう言って飛ばす)
 #   clean     コミットした HEAD を、きれいなチェックアウト(git worktree。未追跡・無視のファイルなし)で、
 #             pnpm install --frozen-lockfile → wasm → apps/fle の tsc・vitest・eslint。CI が見るもの。
@@ -136,6 +137,7 @@ run fle app_checks fle
 run logconv app_checks logconv
 run myact app_checks myact
 run shared node --test packages/shared/tests/*.test.mjs
+run legacy node --test packages/shared/tests/legacy.e2e.mjs
 if [ "$ALL" = 1 ] || jaffpota_changed; then
   run parks bash -c 'cd tools/jaffpota && uv run --frozen python -m unittest discover -s tests -t . -v'
 else
