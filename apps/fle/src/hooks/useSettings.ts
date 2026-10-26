@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LangPref, Translate } from '@/lib/i18n'
 import { parseRigs } from '@/lib/rig'
-import { DEFAULT_HAMLOG_COLUMNS, type HamlogColumns } from '@/lib/hamlog'
+import { DEFAULT_HAMLOG_COLUMNS, type HamlogColumns, type HamlogZone } from '@/lib/hamlog'
 
 export type Theme = 'light' | 'dark' | 'system'
 /** ログ欄と情報窓の文字の大きさ。中が今の大きさ */
@@ -59,6 +59,8 @@ export interface Settings {
   rigs: string[]
   /** HAMLOG の QTH・Rmks1・Rmks2 の欄に書く内容(`{memo}` などを差し込む書式) */
   hamlog: HamlogColumns
+  /** HAMLOG の CSV の時刻を、JST(J)と UTC(U)のどちらで書くか。ログの `timezone` によらない */
+  hamlogZone: HamlogZone
 }
 
 /** HAMLOG の欄の書式の長さの上限(同期のサーバーと同じ) */
@@ -111,6 +113,7 @@ const DEFAULTS: Settings = {
   capsLock: false,
   rigs: [],
   hamlog: DEFAULT_HAMLOG_COLUMNS,
+  hamlogZone: 'jst',
 }
 
 function load(): Settings {
@@ -139,6 +142,7 @@ function load(): Settings {
       capsLock: typeof v.capsLock === 'boolean' ? v.capsLock : DEFAULTS.capsLock,
       rigs: Array.isArray(v.rigs) ? parseRigs(v.rigs.filter((r: unknown) => typeof r === 'string').join('\n')) : [],
       hamlog: parseHamlogColumns(v.hamlog),
+      hamlogZone: v.hamlogZone === 'utc' ? 'utc' : 'jst',
     }
     return settings
   } catch {

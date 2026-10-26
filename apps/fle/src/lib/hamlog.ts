@@ -8,6 +8,9 @@
  * - `{qslmsg}`: QSL メッセージ
  * - `{rig}`: `Rig=…`(`rig` がなければ空)
  */
+/** HAMLOG の CSV の日付・時刻を書く時間帯。ログをどの時間帯で書いたかによらない(HAMLOG の記号は J と U だけ) */
+export type HamlogZone = 'jst' | 'utc'
+
 export interface HamlogColumns {
   qth: string
   rmks1: string

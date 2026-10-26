@@ -75,6 +75,11 @@ export function sanitizeSettings(data: unknown): Record<string, unknown> | null 
     if (!isObject(h) || !["qth", "rmks1", "rmks2"].every((k) => text(h[k], MAX_HAMLOG_COLUMN))) return null;
     out.hamlog = { qth: h.qth, rmks1: h.rmks1, rmks2: h.rmks2 };
   }
+  if ("hamlogZone" in data) {
+    // HAMLOG の時刻の時間帯(J か U)
+    if (data.hamlogZone !== "jst" && data.hamlogZone !== "utc") return null;
+    out.hamlogZone = data.hamlogZone;
+  }
   return out;
 }
 

@@ -9,7 +9,7 @@ import { netFetch } from '@/lib/net'
 import { mergePlans, type PlanRecord } from '@/lib/plans'
 
 /** 端末をまたいで同じにする設定(テーマ・数字キーの行は、端末ごとに違うので除く) */
-export const SYNCED_KEYS = ['rigs', 'timezone', 'writeBandMode', 'writeRst', 'language', 'hamlog'] as const
+export const SYNCED_KEYS = ['rigs', 'timezone', 'writeBandMode', 'writeRst', 'language', 'hamlog', 'hamlogZone'] as const
 export type SyncedSettings = Pick<Settings, (typeof SYNCED_KEYS)[number]>
 
 /** 同期する内容 */
@@ -58,6 +58,7 @@ export function pickSettings(s: Settings): SyncedSettings {
     writeRst: s.writeRst,
     language: s.language,
     hamlog: s.hamlog,
+    hamlogZone: s.hamlogZone,
   }
 }
 
@@ -70,7 +71,8 @@ const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.str
 export function mergeSettings(local: SyncedSettings, snapshot: SyncedSettings | null, remote: Partial<SyncedSettings>): SyncedSettings {
   const out: Record<string, unknown> = { ...local }
   for (const key of SYNCED_KEYS) {
-    const changedHere = snapshot !== null && !same(local[key], snapshot[key])
+    // 基準にない項目(前の版で同期したあとに足した設定)は、この端末で変えていないと見なす
+    const changedHere = snapshot !== null && key in snapshot && !same(local[key], snapshot[key])
     if (!changedHere && key in remote) out[key] = remote[key]
   }
   return out as unknown as SyncedSettings

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LogView, QsoView } from './fle'
-import { planTzChange } from './tzChange'
+import { planTzChange, zoneUnset } from './tzChange'
 
 const qso = (time: string, tz: number, localTime: string) => ({ time, tz, localTime }) as QsoView
 const view = (qsos: QsoView[]) => ({ qsos }) as LogView
@@ -23,5 +23,36 @@ describe('planTzChange', () => {
   it('変換した時刻は、0 時をまたいで回る', () => {
     expect(planTzChange('…', view([qso('15:30', 9, '00:30')]), 0)).toMatchObject({ from: '00:30', to: '15:30' })
     expect(planTzChange('…', view([qso('02:00', 0, '02:00')]), -5)).toMatchObject({ to: '21:00' })
+  })
+})
+
+describe('zoneUnset', () => {
+  const at = (line: number) => ({ line, time: '09:05', tz: 0, localTime: '09:05' }) as QsoView
+  const log = 'mycall JA1ABC\ndate 2026-10-25\n40m cw\n1805 ja1aaa'
+
+  it('QSO があって、その前に timezone の行がなく、設定が UTC でなければ、知らせる', () => {
+    expect(zoneUnset(log, view([at(3)]), 9)).toBe(true)
+  })
+
+  it('最初の QSO より前に timezone の行があれば(utc でも)、知らせない', () => {
+    expect(zoneUnset('timezone jst\n' + log, view([at(4)]), 9)).toBe(false)
+    expect(zoneUnset('timezone utc\n' + log, view([at(4)]), 9)).toBe(false)
+    expect(zoneUnset('mycall JA1ABC\n  Timezone +9\n1805 ja1aaa', view([at(2)]), 9)).toBe(false)
+  })
+
+  it('全角で書いた timezone の行も、行として数える', () => {
+    expect(zoneUnset('ｔｉｍｅｚｏｎｅ ｊｓｔ\n' + log, view([at(4)]), 9)).toBe(false)
+  })
+
+  it('QSO が、いま打っている行(カーソルの行)だけなら、知らせない(確定すると timezone の行が入る)', () => {
+    expect(zoneUnset(log, view([at(3)]), 9, 3)).toBe(false)
+    expect(zoneUnset(log + '\n1810 ja1bbb', view([at(3), at(4)]), 9, 4)).toBe(true)
+  })
+
+  it('設定が UTC・QSO がない・timezone が最初の QSO よりあとにあるだけ、のとき', () => {
+    expect(zoneUnset(log, view([at(3)]), 0)).toBe(false)
+    expect(zoneUnset(log, view([]), 9)).toBe(false)
+    // 最初の QSO は UTC の意味で読まれている。知らせる
+    expect(zoneUnset(log + '\ntimezone jst\n1900 ja1bbb', view([at(3), at(5)]), 9)).toBe(true)
   })
 })

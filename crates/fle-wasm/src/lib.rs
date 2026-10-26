@@ -131,7 +131,7 @@ pub fn retime_log(text: &str, tz: i32, convert: bool) -> String {
     retime(text, tz, convert)
 }
 
-/// `options` は出力の設定(`{ hamlog: { qth, rmks1, rmks2 } }`)。省略すると既定
+/// `options` は出力の設定(`{ hamlog: { qth, rmks1, rmks2 }, hamlogZone: "jst" | "utc" }`)。省略すると既定
 #[wasm_bindgen(js_name = generateZip)]
 pub fn generate_zip(text: &str, now_ms: f64, options: JsValue) -> Result<Vec<u8>, JsError> {
     let options: OutputOptions = if options.is_undefined() || options.is_null() {

@@ -34,6 +34,7 @@ const settings = (over: Partial<SyncedSettings> = {}): SyncedSettings => ({
   writeRst: true,
   language: 'auto',
   hamlog: { qth: '{rmks} {hisref}', rmks1: '{myref}', rmks2: '%{qslmsg}%{rig}' },
+  hamlogZone: 'jst',
   ...over,
 })
 const plan = (id: string, over: Partial<Plan> = {}): Plan => ({ ...emptyPlan(id, 1000, 'JA1ABC'), ...over })
@@ -91,6 +92,13 @@ describe('mergeSettings(3者)', () => {
   })
   it('基準がなければ(初めて)、サーバーのもの', () => {
     expect(mergeSettings(settings({ timezone: 0 }), null, settings({ timezone: 9 })).timezone).toBe(9)
+  })
+  it('前の版で同期した基準にない項目(あとから足した設定)は、端末で変えていないと見なす', () => {
+    // 別の端末で UTC を選んで同期した。この端末は更新したばかりで、基準に hamlogZone がない
+    const old = settings() as Partial<SyncedSettings>
+    delete old.hamlogZone
+    const merged = mergeSettings(settings(), old as SyncedSettings, settings({ hamlogZone: 'utc' }))
+    expect(merged.hamlogZone).toBe('utc')
   })
   it('サーバーにない項目は、端末のまま', () => {
     expect(mergeSettings(settings({ rigs: ['a'] }), settings(), {}).rigs).toEqual(['a'])
@@ -204,6 +212,7 @@ describe('サーバーの検査', () => {
     expect((await put(fetchImpl, { base: 0, data: { settings: { timezone: 99 }, plans: [] } })).status).toBe(400)
     expect((await put(fetchImpl, { base: 0, data: { settings: { hamlog: { qth: '', rmks1: 1, rmks2: '' } }, plans: [] } })).status).toBe(400)
     expect((await put(fetchImpl, { base: 0, data: { settings: { hamlog: { qth: 'x'.repeat(101), rmks1: '', rmks2: '' } }, plans: [] } })).status).toBe(400)
+    expect((await put(fetchImpl, { base: 0, data: { settings: { hamlogZone: 'pst' }, plans: [] } })).status).toBe(400)
     expect((await put(fetchImpl, { base: 0, data: { settings: {}, plans: [{ id: 'x' }] } })).status).toBe(400)
     expect((await put(fetchImpl, { base: 'x', data: { settings: {}, plans: [] } })).status).toBe(400)
     const big = { base: 0, data: { settings: {}, plans: [], pad: 'x'.repeat(40_000) } }
@@ -216,6 +225,13 @@ describe('サーバーの検査', () => {
     const res = await put(fetchImpl, { base: 0, data: { settings: { theme: 'dark', rigs: ['a'] }, plans: [] } })
     expect(res.status).toBe(200)
     expect((await pull(code, fetchImpl))!.data.settings).toEqual({ rigs: ['a'] })
+  })
+
+  it('HAMLOG の時間帯を保存する', async () => {
+    const { fetchImpl } = fakeServer()
+    const res = await put(fetchImpl, { base: 0, data: { settings: { hamlogZone: 'utc' }, plans: [] } })
+    expect(res.status).toBe(200)
+    expect((await pull(code, fetchImpl))!.data.settings).toEqual({ hamlogZone: 'utc' })
   })
 
   it('予定のメモを保存する。メモのない(前の版の)予定は、空のメモにする。長すぎるメモは断る', async () => {

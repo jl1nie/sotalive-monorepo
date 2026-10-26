@@ -134,8 +134,8 @@ export interface OutputWarning {
   items?: string[]
 }
 
-import { DEFAULT_HAMLOG_COLUMNS, type HamlogColumns } from '@/lib/hamlog'
-export { DEFAULT_HAMLOG_COLUMNS, type HamlogColumns }
+import { DEFAULT_HAMLOG_COLUMNS, type HamlogColumns, type HamlogZone } from '@/lib/hamlog'
+export { DEFAULT_HAMLOG_COLUMNS, type HamlogColumns, type HamlogZone }
 
 let ready: Promise<unknown> | null = null
 let initialized = false
@@ -311,8 +311,9 @@ export async function retimeLog(text: string, tz: number, convert: boolean): Pro
 export async function generateFleZip(
   text: string,
   now: Date = new Date(),
-  hamlog: HamlogColumns = DEFAULT_HAMLOG_COLUMNS
+  hamlog: HamlogColumns = DEFAULT_HAMLOG_COLUMNS,
+  hamlogZone: HamlogZone = 'jst'
 ): Promise<Uint8Array> {
   await ensureReady()
-  return wasmGenerateZip(text, now.getTime(), { hamlog })
+  return wasmGenerateZip(text, now.getTime(), { hamlog, hamlogZone })
 }
