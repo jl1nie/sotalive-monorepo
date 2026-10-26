@@ -1155,7 +1155,7 @@
 							else if (res['errors'] != 'OK') {
 								mesg = 'Parameter out of range.';
 							} else {
-								accu = '<small>[' + escapeHTML(res['hsrc'].replace('（', '').replace('）', '')) + ']</small>'
+								accu = res['hsrc'] ? '<small>[' + escapeHTML(res['hsrc'].replace('（', '').replace('）', '')) + ']</small>' : ''
 
 								if (isGPS)
 									pos = '<br>位置:<a href="' + locURI(lat, lng, z) +
@@ -1467,13 +1467,15 @@
 
 		function kp_index() {
 			fetch(sotaapp2 + "/propagation/geomag")
-				.then(res => res.ok ? res.json() : Promise.reject(new Error('geomag ' + res.status)))
+				.then(res => res.ok ? res.json() : null)
+				.catch(e => console.warn('geomag:', e))
 				.then(geomag => {
+					if (!geomag)
+						return;
 					kp = geomag.kIndex[0];
 					ap = geomag.aIndex;
 					geomagindex = 'A:' + ap + ' K:' + kp;
-				})
-				.catch(e => console.warn('geomag:', e));
+				});
 		}
 
 		function clock() {
@@ -1572,8 +1574,11 @@
 					'&min_elev=' + elev + '&min_area=' + level;
 
 			res = fetch(sotaapp2 + '/search?' + query)
-				.then(res => res.ok ? res.json() : Promise.reject(new Error('search ' + res.status)))
+				.then(res => res.ok ? res.json() : null)
+				.catch(e => console.warn('search:', e))
 				.then(res => {
+					if (!res)
+						return;
 
 					if (z > 11)
 						wz = 11
@@ -1612,8 +1617,7 @@
 							placeTempleMarker([t['lat'], t['lon']], z, t))
 					}
 							*/
-				})
-				.catch(e => console.warn('search:', e));
+				});
 		}
 
 		function placeSummitMarker(coords, z, elev, actcnt, popupfl) {
