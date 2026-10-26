@@ -11,6 +11,7 @@
 #   rust      cargo test --workspace
 #   wasm      FLE の wasm のビルド(apps/fle/src/wasm/fle は git に入れない生成物。次の fle の前提)
 #   fle・logconv・myact   各アプリで tsc -b・vitest run・eslint
+#   geo       packages/geo(逆ジオコーダーなど)で tsc --noEmit・vitest run・eslint
 #   shared    packages/shared の node --test(旧版が共有するコード。旧版の index.html の構文の検査を含む)
 #   legacy    旧版(myqth・myact)をブラウザーで開く最低限のテスト(Playwright。CDN に届かない手元では LEGACY_CDN_DIR)
 #   parks     tools/jaffpota の unittest(tools/jaffpota を変えたときだけ。変えていなければ、そう言って飛ばす)
@@ -136,6 +137,7 @@ run wasm pnpm --filter @sotalive/fle wasm
 run fle app_checks fle
 run logconv app_checks logconv
 run myact app_checks myact
+run geo bash -c 'cd packages/geo && pnpm exec tsc --noEmit && pnpm exec vitest run && pnpm exec eslint .'
 run shared node --test packages/shared/tests/*.test.mjs
 run legacy node --test packages/shared/tests/legacy.e2e.mjs
 if [ "$ALL" = 1 ] || jaffpota_changed; then

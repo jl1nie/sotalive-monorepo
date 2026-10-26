@@ -36,6 +36,7 @@ jobs:
       fle: ${{ steps.filter.outputs.fle }}
       logconv: ${{ steps.filter.outputs.logconv }}
       myact: ${{ steps.filter.outputs.myact }}
+      geo: ${{ steps.filter.outputs.geo }}
       legacy: ${{ steps.filter.outputs.legacy }}
       parks: ${{ steps.filter.outputs.parks }}
       sotalive: ${{ steps.filter.outputs.sotalive }}
@@ -65,6 +66,8 @@ jobs:
               - 'apps/logconv/**'
             myact:
               - 'apps/myact/**'
+            geo:
+              - 'packages/geo/**'
             legacy:
               - 'apps/myact-org/**'
               - 'apps/myqth-org/**'
@@ -145,6 +148,26 @@ jobs:
         run: |
           pnpm exec tsc -b
           pnpm exec vitest run --passWithNoTests
+          pnpm exec eslint .
+
+  # 逆ジオコーダーなど、フレームワークに依らない共通の TS(packages/geo)
+  geo:
+    needs: changes
+    if: needs.changes.outputs.all == 'true' || needs.changes.outputs.geo == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck, test and lint
+        working-directory: packages/geo
+        run: |
+          pnpm exec tsc --noEmit
+          pnpm exec vitest run
           pnpm exec eslint .
 
   # 旧版(myqth・myact。テストのない jQuery 版)と共通アセット: 共通 JS のテスト、index.html の構文の検査、
