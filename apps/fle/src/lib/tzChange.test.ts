@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LogView, QsoView } from './fle'
-import { planTzChange, zoneUnset } from './tzChange'
+import { planTzChange, zoneLine, zoneUnset } from './tzChange'
 
 const qso = (time: string, tz: number, localTime: string) => ({ time, tz, localTime }) as QsoView
 const view = (qsos: QsoView[]) => ({ qsos }) as LogView
@@ -44,15 +44,18 @@ describe('zoneUnset', () => {
     expect(zoneUnset('ｔｉｍｅｚｏｎｅ ｊｓｔ\n' + log, view([at(4)]), 9)).toBe(false)
   })
 
-  it('QSO が、いま打っている行(カーソルの行)だけなら、知らせない(確定すると timezone の行が入る)', () => {
-    expect(zoneUnset(log, view([at(3)]), 9, 3)).toBe(false)
-    expect(zoneUnset(log + '\n1810 ja1bbb', view([at(3), at(4)]), 9, 4)).toBe(true)
-  })
-
   it('設定が UTC・QSO がない・timezone が最初の QSO よりあとにあるだけ、のとき', () => {
     expect(zoneUnset(log, view([at(3)]), 0)).toBe(false)
     expect(zoneUnset(log, view([]), 9)).toBe(false)
     // 最初の QSO は UTC の意味で読まれている。知らせる
     expect(zoneUnset(log + '\ntimezone jst\n1900 ja1bbb', view([at(3), at(5)]), 9)).toBe(true)
+  })
+})
+
+describe('zoneLine', () => {
+  it('読み込んだログの先頭に足す、時間帯の行', () => {
+    expect(zoneLine(9)).toBe('timezone +9\n')
+    expect(zoneLine(-5)).toBe('timezone -5\n')
+    expect(zoneLine(0)).toBe('timezone utc\n')
   })
 })

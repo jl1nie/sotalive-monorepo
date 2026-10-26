@@ -103,7 +103,8 @@ describe('fle wasm', () => {
   it('adifToFle: ADIFをFLEに変換し、そのまま解釈できる', () => {
     const adif = '<CALL:6>JA1XYZ<QSO_DATE:8>20241228<TIME_ON:4>1234<MODE:2>CW<BAND:3>40m<RST_RCVD:3>579<EOR>'
     const fle = adifToFle(adif)
-    expect(fle).toBe('date 2024-12-28\n40m CW\n1234 JA1XYZ 599 579\n')
+    // ADIF の時刻は UTC なので、先頭に timezone utc
+    expect(fle).toBe('timezone utc\ndate 2024-12-28\n40m CW\n1234 JA1XYZ 599 579\n')
     expect(compile('mycall JA1ABC\n' + fle).status).toBe('OK')
   })
 
