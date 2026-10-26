@@ -1,0 +1,103 @@
+/* Bootstrap 4.5.0 の CSS(main.ts で読む)に、旧版の見た目のうち、myqth で使っているものだけを足す。
+   旧版は MDB(Material Design for Bootstrap)と Semantic UI の CSS も読んでいて、文字の大きさ・書体・見出しは
+   Semantic UI のもの(html 14px・Lato・h4 は太字の約 18px)。ここに、その部分だけを写す */
+html {
+  font-size: 14px;
+}
+body {
+  font-family: Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.4285em;
+  color: rgba(0, 0, 0, 0.87);
+}
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  line-height: 1.28571429em;
+  margin: calc(2rem - 0.14285714em) 0 1rem;
+  font-weight: 700;
+  padding: 0;
+}
+h4 {
+  font-size: 1.07142857rem;
+}
+h4:first-child {
+  margin-top: 0;
+}
+h4:last-child {
+  margin-bottom: 0;
+}
+.bg-dark {
+  background-color: #212121 !important;
+}
+.navbar {
+  font-weight: 300;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+}
+.btn {
+  margin: 0.1rem !important;
+  padding: 0.4rem 0.5rem !important;
+  color: inherit;
+  text-transform: uppercase;
+  white-space: normal;
+  cursor: pointer;
+  border: 0;
+  border-radius: 0.125rem;
+  font-size: 0.81rem;
+  line-height: 1;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.btn-amber {
+  color: #fff;
+  background-color: #ffa000 !important;
+}
+.btn-amber:hover {
+  color: #fff;
+  background-color: #ffaa1a !important;
+}
+.btn .icon {
+  height: 1em;
+  width: 1.25em;
+  vertical-align: -0.125em;
+}
+#clock_time {
+  cursor: default;
+}
+
+/* 地図(--vh は main.ts が設定する。モバイルのアドレスバーの高さを除く) */
+#map {
+  width: auto;
+  height: calc(var(--vh, 1vh) * 100 - 30px);
+  border: 1px solid #aaa;
+}
+@media screen and (min-width: 768px) {
+  #map {
+    height: calc(var(--vh, 1vh) * 100 - 56px);
+  }
+}
+
+/* Leaflet 1.2(旧版)の文字の大きさ。1.9 の既定は rem 基準で、html を 14px にすると小さくなる */
+.leaflet-container {
+  font-size: 12px;
+}
+.leaflet-popup-content {
+  margin: 13px 19px;
+  font-size: inherit;
+  line-height: 1.4;
+}
+.leaflet-container .leaflet-control-zoomlabel {
+  background-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 5px #bbb;
+  padding: 0 5px;
+  margin: 0;
+  color: #333;
+  font: 11px/1.5 'Helvetica Neue', Arial, Helvetica, sans-serif;
+}
+.qth-marker svg {
+  display: block;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+}
