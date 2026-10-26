@@ -38,6 +38,7 @@ jobs:
       myact: ${{ steps.filter.outputs.myact }}
       geo: ${{ steps.filter.outputs.geo }}
       myqth: ${{ steps.filter.outputs.myqth }}
+      functions: ${{ steps.filter.outputs.functions }}
       legacy: ${{ steps.filter.outputs.legacy }}
       parks: ${{ steps.filter.outputs.parks }}
       sotalive: ${{ steps.filter.outputs.sotalive }}
@@ -72,6 +73,9 @@ jobs:
             myqth:
               - 'apps/myqth/**'
               - 'packages/geo/**'
+            functions:
+              - 'functions/**'
+              - 'packages/functions-test/**'
             legacy:
               - 'apps/myact-org/**'
               - 'apps/myqth-org/**'
@@ -83,6 +87,8 @@ jobs:
               - 'wrangler.toml'
               - 'apps/logconv/**'
               - 'apps/myact/**'
+              - 'apps/myqth/**'
+              - 'packages/geo/**'
 
   # ---- テスト(並列) ----
 
@@ -174,6 +180,25 @@ jobs:
           pnpm exec vitest run
           pnpm exec eslint .
 
+  # functions/_middleware.ts の、ホスト名による振り分け(ASSETS を差し替えて確かめる)
+  functions:
+    needs: changes
+    if: needs.changes.outputs.all == 'true' || needs.changes.outputs.functions == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Test and lint
+        working-directory: packages/functions-test
+        run: |
+          pnpm exec vitest run
+          pnpm exec eslint .
+
   # 新しい MyQTH(Vite + 素の TS): 型・単体テスト・lint、ビルドしたものをブラウザーで開くテスト(外部の API は固定の応答)
   myqth:
     needs: changes
@@ -258,7 +283,7 @@ jobs:
       - name: Build apps
         run: |
           pnpm --filter @sotalive/fle run build:web
-          pnpm --filter @sotalive/logconv --filter @sotalive/myact run build
+          pnpm --filter @sotalive/logconv --filter @sotalive/myact --filter @sotalive/myqth run build
       - name: Assemble the outputs for each Pages project
         run: scripts/assemble.sh
       - uses: actions/upload-artifact@v4
@@ -287,9 +312,9 @@ jobs:
   # ---- デプロイ(push のときだけ。プロジェクトごとに並列) ----
   # 待つジョブのどれかが失敗・中止なら、デプロイしない(変更がなくて飛ばしたテストは、待たずに進む)
 
-  # sotalive: まだ公開していない logconv2・myact2(functions/_middleware.ts)
+  # sotalive: まだ公開していない logconv2・myact2・myqth2(functions/_middleware.ts)
   deploy-sotalive:
-    needs: [changes, build, logconv, myact]
+    needs: [changes, build, logconv, myact, myqth, functions]
     if: >-
       always() && github.event_name == 'push'
       && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
