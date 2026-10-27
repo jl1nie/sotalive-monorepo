@@ -1,0 +1,42 @@
+{
+  "clipboard": [
+    "CQ CQ CQ DE JA1ABC POTA JP0118 +"
+  ],
+  "serial": [
+    "{\"wpm\":25,\"to_paddle\":\"CQ CQ CQ DE JA1ABC POTA JP0118 +\",\"reverse\":false}\r"
+  ],
+  "serialRequest": {
+    "filters": [
+      {
+        "usbVendorId": 12346,
+        "usbProductId": 4097
+      },
+      {
+        "usbVendorId": 1027,
+        "usbProductId": 24577
+      },
+      {
+        "usbVendorId": 6790,
+        "usbProductId": 21972
+      },
+      {
+        "usbVendorId": 4292,
+        "usbProductId": 60000
+      }
+    ]
+  },
+  "serialOpen": {
+    "baudRate": 115200
+  },
+  "apiCalls": [
+    "GET /search?min_lat=35.4&min_lon=139.1&max_lat=35.5&max_lon=139.3&min_elev=0&min_area=0",
+    "GET /pota/parks/search?pota_code=JP-0118",
+    "GET /locator/jcc-jcg?lat=35.4105&lon=139.2098&muni_code=14211"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": [
+    "pota_activator_uuid=null",
+    "pota_hunter_uuid=null"
+  ]
+}

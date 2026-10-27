@@ -1,0 +1,30 @@
+{
+  "dialog": {
+    "name": "大山",
+    "values": {
+      "pemu_call": "JA1ABC",
+      "pemu_areacode": "",
+      "pemu_century": "JCC 1115",
+      "pemu_sota": "JA/KN-006",
+      "pemu_pota": "",
+      "pemu_jaff": "",
+      "pemu_mesg1": "CQ CQ CQ DE $CALL SOTA $SOTA +",
+      "pemu_mesg2": "CQ CQ CQ DE $CALL POTA $POTA +",
+      "pemu_mesg3": "CQ CQ CQ DE $CALL JAFF $JAFF +",
+      "pemu_mesg4": "p 1#CQ CQ CQ DE $CALL SOTA $SOTA+",
+      "pemu_wpm": "25"
+    },
+    "checks": {
+      "include_areacode": true,
+      "paddle_reverse": false
+    }
+  },
+  "apiCalls": [
+    "GET /search?min_lat=35.4&min_lon=139.1&max_lat=35.5&max_lon=139.3&min_elev=0&min_area=0",
+    "GET /sota/summits/search?lat=35.4408&lon=139.2312&dist=200",
+    "GET /locator/jcc-jcg?lat=35.4408&lon=139.2312&muni_code=14214"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": []
+}

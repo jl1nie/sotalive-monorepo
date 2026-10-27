@@ -14,12 +14,14 @@ if (!['record', 'verify'].includes(mode)) {
 }
 
 async function runOne(sc) {
-  const h = await openLegacy(sc.setup ?? {});
+  // setup が関数なら、実行ごとに作る(模擬サーバーの状態を、シナリオ間で引き継がない)
+  const h = await openLegacy(typeof sc.setup === 'function' ? sc.setup() : (sc.setup ?? {}));
   try {
     h.resetCalls();
     const out = await sc.run(h.page, h);
     const cookies = (await h.context.cookies(ORIGIN)).filter((c) => c.name.startsWith('my_qth') || c.name.includes('uuid')).map((c) => `${c.name}=${c.value}`).sort();
-    return { ...out, apiCalls: [...h.apiCalls], dialogs: h.dialogs, errors: h.errors, cookies };
+    const external = h.externalCalls.length ? { externalCalls: [...h.externalCalls] } : {};
+    return { ...out, ...external, apiCalls: [...h.apiCalls], dialogs: h.dialogs, errors: h.errors, cookies };
   } finally {
     await h.context.close();
   }

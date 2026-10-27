@@ -1,0 +1,28 @@
+{
+  "ui": {
+    "activator": "2026-10-01(Activator)",
+    "hunter": "----",
+    "exportKey": "XXXXXX",
+    "showPotalog": true,
+    "radioActivator": true,
+    "radioHunter": false,
+    "prefs": {
+      "activator": "act-new",
+      "hunter": null,
+      "show": true,
+      "activatorLog": true
+    },
+    "logIdUsed": "act-new"
+  },
+  "apiCalls": [
+    "POST /pota/log/null/null [multipart: activator.csv]",
+    "GET /pota/log/act-new",
+    "GET /pota/log/act-new"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": [
+    "pota_activator_uuid=act-new",
+    "pota_hunter_uuid=null"
+  ]
+}

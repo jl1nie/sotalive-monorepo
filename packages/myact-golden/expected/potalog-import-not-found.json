@@ -1,0 +1,25 @@
+{
+  "ui": {
+    "activator": "----",
+    "hunter": "----",
+    "exportKey": "XXXXXX",
+    "showPotalog": true,
+    "radioActivator": true,
+    "radioHunter": false,
+    "prefs": {
+      "activator": null,
+      "hunter": null,
+      "show": true,
+      "activatorLog": true
+    },
+    "logIdUsed": null
+  },
+  "apiCalls": [
+    "GET /pota/log-share/ZZZ999"
+  ],
+  "dialogs": [
+    "キーコードが見つかりません"
+  ],
+  "errors": [],
+  "cookies": []
+}

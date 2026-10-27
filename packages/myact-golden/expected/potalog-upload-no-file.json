@@ -1,0 +1,23 @@
+{
+  "ui": {
+    "activator": "----",
+    "hunter": "----",
+    "exportKey": "XXXXXX",
+    "showPotalog": true,
+    "radioActivator": true,
+    "radioHunter": false,
+    "prefs": {
+      "activator": null,
+      "hunter": null,
+      "show": true,
+      "activatorLog": true
+    },
+    "logIdUsed": null
+  },
+  "apiCalls": [],
+  "dialogs": [
+    "ファイルを指定してください"
+  ],
+  "errors": [],
+  "cookies": []
+}

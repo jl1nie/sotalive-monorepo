@@ -1,0 +1,28 @@
+{
+  "ui": {
+    "activator": "2026-09-01(Activator)",
+    "hunter": "----",
+    "exportKey": "XXXXXX",
+    "showPotalog": true,
+    "radioActivator": true,
+    "radioHunter": false,
+    "prefs": {
+      "activator": "act-1",
+      "hunter": null,
+      "show": true,
+      "activatorLog": true
+    },
+    "logIdUsed": "act-1"
+  },
+  "apiCalls": [
+    "DELETE /pota/log/hunt-1",
+    "GET /pota/log/act-1",
+    "GET /pota/log/act-1"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": [
+    "pota_activator_uuid=act-1",
+    "pota_hunter_uuid=null"
+  ]
+}
