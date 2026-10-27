@@ -32,7 +32,7 @@ after(async () => {
  * 新版を開く。cookies: 設定(旧版と同じ名前と値)、state: world.respond に渡す状態(POTA ログのサーバーなど)、
  * search: URL のクエリ、gps: 現在地を返す(なければ、取得が保留のまま)
  */
-async function open({ cookies = {}, state = {}, search = '', gps, mocks = false, external } = {}) {
+async function open({ cookies = {}, state = {}, search = '', gps, mocks = false, external, areas } = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'ja-JP', timezoneId: 'Asia/Tokyo' });
   await context.addCookies(Object.entries(cookies).map(([name, value]) => ({ name, value: String(value), url: ORIGIN })));
   const page = await context.newPage();
@@ -50,7 +50,7 @@ async function open({ cookies = {}, state = {}, search = '', gps, mocks = false,
     const req = route.request();
     const url = new URL(req.url());
     const send = (body, type, status = 200) => route.fulfill({ status, contentType: type, body });
-    if (url.origin === ORIGIN && url.pathname.startsWith('/json/jaffpota-annotated-v')) return send(readFileSync(fileURLToPath(new URL('../../../packages/myact-golden/fixtures/park-areas-small.json', import.meta.url))), 'application/json');
+    if (url.origin === ORIGIN && url.pathname.startsWith('/json/jaffpota-annotated-v')) return send(areas ?? readFileSync(fileURLToPath(new URL('../../../packages/myact-golden/fixtures/park-areas-small.json', import.meta.url))), 'application/json');
     if (url.origin === ORIGIN) {
       const file = join(DIST, url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname));
       if (existsSync(file)) return send(readFileSync(file), TYPES[extname(file)] ?? 'application/octet-stream');
@@ -614,5 +614,43 @@ test('設定: POTA ログのボタンで、設定を閉じて POTA ログのダ�
   await page.getByRole('button', { name: 'POTA ログを開く' }).click();
   await page.waitForSelector('dialog.pl-dialog[open]:not(#settings)');
   assert.equal(await page.locator('dialog#settings[open]').count(), 0);
+  await context.close();
+});
+
+// ---- 公園区域: 実際のマウスのクリック(イベントを直接送るテストでは、手前の Canvas が入力を奪う不具合を見逃した) ----
+test('公園区域を、実際にクリックすると、その公園のポップアップが出る(山の円と同じ Canvas。公開後に見つかった不具合)', async () => {
+  const { page, context, errors } = await open();
+  await page.evaluate(() => window.map.setView([35.42, 139.18], 12, { animate: false }));
+  await page.waitForFunction(() => window.areaLayer.getLayers().length > 0);
+  await page.waitForTimeout(500);
+  const pt = await page.evaluate(() => {
+    const p = window.map.latLngToContainerPoint([35.42, 139.18]);
+    const r = window.map.getContainer().getBoundingClientRect();
+    return { x: r.left + p.x, y: r.top + p.y };
+  });
+  await page.mouse.click(pt.x, pt.y);
+  const lines = await popupLines(page);
+  assert.equal(lines[0], 'JP-0118 /JAFF-0069');
+  assert.equal(lines[1], '丹沢大山国定公園');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('山の円は、公園区域の上でも、実際のクリックで押せる(区域より手前)', async () => {
+  // 区域を、大山(35.4408, 139.2312)まで広げる
+  const big = JSON.parse(readFileSync(fileURLToPath(new URL('../../../packages/myact-golden/fixtures/park-areas-small.json', import.meta.url)), 'utf8'));
+  big.arcs = [[[139.17, 35.39], [139.25, 35.39], [139.25, 35.47], [139.17, 35.47], [139.17, 35.39]]];
+  const { page, context } = await open({ areas: JSON.stringify(big) });
+  await showMarkers(page, POINTS.oyama);
+  await page.waitForFunction(() => window.areaLayer.getLayers().length > 0);
+  await page.waitForTimeout(500);
+  const pt = await page.evaluate(() => {
+    const p = window.map.latLngToContainerPoint([35.4408, 139.2312]);
+    const r = window.map.getContainer().getBoundingClientRect();
+    return { x: r.left + p.x, y: r.top + p.y };
+  });
+  await page.mouse.click(pt.x, pt.y);
+  const lines = await popupLines(page);
+  assert.equal(lines[0], 'JA/KN-006 Ooyama'); // 区域(JP-0118)ではなく、山
   await context.close();
 });

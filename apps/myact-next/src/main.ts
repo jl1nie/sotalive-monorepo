@@ -48,12 +48,14 @@ const popup = L.popup({ maxWidth: 300 })
 const paddle = createPaddleDialog({ prefs })
 document.body.append(paddle.element)
 
+// モバイルは、指で押しやすいように、円の当たり判定を広げる
+const renderer = L.canvas({ tolerance: matchMedia('(pointer: coarse)').matches ? 30 : 5 })
 const markers = createMarkers({
-  map, api, prefs: prefs.get, logId: prefs.logId,
+  map, renderer, api, prefs: prefs.get, logId: prefs.logId,
   onSummit: (s: SotaMarker) => void showPopup({ lat: s.lat, lng: s.lon }, false, 'popup'),
   onPark: (q: PotaMarker) => void showPopup({ lat: q.lat, lng: q.lon }, false, 'popup', { pota: q.pota, jaff: q.wwff, name: q.nameJ }),
 })
-const areas = createAreas({ map, onPick: (latlng, area) => void showPopup(latlng, false, 'popup', area) })
+const areas = createAreas({ map, renderer, onPick: (latlng, area) => void showPopup(latlng, false, 'popup', area) })
 areas.update(prefs.get().display_area)
 ;(window as unknown as { areaLayer: L.GeoJSON }).areaLayer = areas.layer
 prefs.subscribe((p) => {
