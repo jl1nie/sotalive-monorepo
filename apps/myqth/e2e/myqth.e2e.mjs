@@ -35,8 +35,8 @@ after(async () => {
  * failGsi: 国土地理院の API が 500、noHsrc: 標高の応答に hsrc がない、cookies: 前回の位置、
  * init: ページの前に走らせるスクリプト(位置情報の差し替えなど)、fakeClock: 時間を進められるようにする
  */
-async function openApp({ geolocation, noGeolocation = false, failGsi = false, noHsrc = false, cookies = [], init, fakeClock = false } = {}) {
-  const context = await browser.newContext(geolocation ? { geolocation, permissions: ['geolocation'] } : {});
+async function openApp({ geolocation, noGeolocation = false, failGsi = false, noHsrc = false, cookies = [], init, fakeClock = false, viewport } = {}) {
+  const context = await browser.newContext({ ...(geolocation ? { geolocation, permissions: ['geolocation'] } : {}), ...(viewport ? { viewport } : {}) });
   if (cookies.length) await context.addCookies(cookies.map((c) => ({ ...c, url: ORIGIN })));
   const page = await context.newPage();
   const errors = [];
@@ -209,6 +209,43 @@ test('Permissions API がないブラウザーでも、取得中を出して、�
   });
   await banner(page).waitFor({ timeout: 10000 });
   assert.match(await banner(page).innerText(), /現在地を取得中/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+/** ナビバーの下から画面の下まで、地図が隙間なく埋めていて、Leaflet の大きさも入れ物と一致している */
+async function assertMapFillsScreen(page, label) {
+  // ResizeObserver → invalidateSize は、次の描画のあとに走る
+  await page.waitForFunction(() => {
+    const el = document.getElementById('map');
+    const size = window.map.getSize();
+    return size.x === el.clientWidth && size.y === el.clientHeight;
+  }, null, { timeout: 5000 });
+  const m = await page.evaluate(() => {
+    const nav = document.querySelector('nav').getBoundingClientRect();
+    const map = document.getElementById('map').getBoundingClientRect();
+    const doc = document.documentElement;
+    return { navBottom: nav.bottom, mapTop: map.top, mapBottom: map.bottom, innerHeight: window.innerHeight, scrollH: doc.scrollHeight, innerWidth: window.innerWidth, mapRight: map.right, mapLeft: map.left };
+  });
+  assert.ok(Math.abs(m.mapTop - m.navBottom) <= 1, `${label}: 地図がナビバーのすぐ下にない ${JSON.stringify(m)}`);
+  assert.ok(Math.abs(m.mapBottom - m.innerHeight) <= 1, `${label}: 地図の下が画面の下と合わない ${JSON.stringify(m)}`);
+  assert.ok(m.scrollH <= m.innerHeight + 1, `${label}: ページが縦にあふれている ${JSON.stringify(m)}`);
+  assert.ok(m.mapLeft >= 0 && m.mapRight <= m.innerWidth, `${label}: 地図が横にはみ出している ${JSON.stringify(m)}`);
+}
+
+test('レイアウト: どの画面(デスクトップ・iPad の縦横・iPhone)でも、地図がナビバーの下から画面の下まで埋める。回転しても', async () => {
+  const sizes = [
+    ['デスクトップ', { width: 1280, height: 800 }],
+    ['iPad Pro 11 縦', { width: 834, height: 1194 }],
+    ['iPad Pro 11 横', { width: 1194, height: 834 }],
+    ['iPad mini 縦(768 ちょうど)', { width: 768, height: 1024 }],
+    ['iPhone 縦', { width: 390, height: 844 }],
+  ];
+  const { page, context, errors } = await openApp({ viewport: sizes[0][1] });
+  for (const [label, size] of sizes) {
+    await page.setViewportSize(size);
+    await assertMapFillsScreen(page, label);
+  }
   assert.deepEqual(errors, []);
   await context.close();
 });

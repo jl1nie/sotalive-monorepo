@@ -98,6 +98,10 @@ React 版の myact も、`/json/` などの共通アセットを使うため、`
 
 本番(`myqth.sotalive.net`)の `dist-myqth` は、上の「ビルドと配置先」のとおりです。試験用の myqth2 は、`scripts/assemble.sh` が `apps/myqth/dist` を `dist/myqth2/` に置き、プロジェクト sotalive の `functions/_middleware.ts` が、ホスト名 `myqth2` を `/myqth2` に振り分けます(`noindex`)。DNS は、`myqth2` の CNAME を `sotalive.pages.dev` へ。Pages のプロジェクト sotalive に、カスタムドメイン `myqth2.sotalive.net` も足す([デプロイの手順](../deploy-guide.md)。CNAME だけでは 522 や 404 になる)。プレビューのデプロイ(`feat-….sotalive.pages.dev`)はホスト名で振り分けられないので、確かめるのは、手元の `wrangler pages dev dist`(`Host: myqth2.sotalive.net` を付ける)か、main へのマージのあと。本番の `myqth.sotalive.net` は、新版に切り替えました(上の「旧版に戻す」)。
 
+### 画面のレイアウト
+
+ナビバー + 地図(残り全部)の縦の並びを、CSS だけで決めます(`body` を flex の縦、地図の入れ物が残りを取り、高さは `100dvh`)。旧版は、JS で設定した `--vh`(読み込み時の `innerHeight`)から、ナビバーの高さを決め打ち(30px・56px。実際は 42px)で引いていたので、デスクトップや iPad では下に約 14px の隙間があり、iPad の回転・分割表示で `innerHeight` が古いままだと、地図の範囲がずれることがあった。入れ物の大きさが変わったら、`ResizeObserver` で Leaflet に `invalidateSize()` を知らせる(Leaflet は window の resize しか見ない)。e2e で、デスクトップ・iPad(縦横・768px ちょうど)・iPhone の大きさに切り替えても、地図がナビバーの下から画面の下まで隙間なく埋めること、Leaflet の大きさが入れ物と一致することを確かめる。
+
 ### テスト
 
 ```bash
