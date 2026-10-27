@@ -286,6 +286,9 @@ importers:
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
+      topojson-client:
+        specifier: 3.1.0
+        version: 3.1.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.1
@@ -293,6 +296,12 @@ importers:
       '@types/leaflet':
         specifier: ^1.9.21
         version: 1.9.21
+      '@types/topojson-client':
+        specifier: 3.1.5
+        version: 3.1.5
+      '@types/topojson-specification':
+        specifier: 1.0.5
+        version: 1.0.5
       eslint:
         specifier: ^9.39.1
         version: 9.39.2(jiti@2.6.1)

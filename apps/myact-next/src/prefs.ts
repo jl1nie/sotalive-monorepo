@@ -25,6 +25,8 @@ export interface Prefs {
   jaff_ref: boolean
   /** この拡大(ズーム)以上では、全ての公園・山を出す(7〜12) */
   zoom_threshold: number
+  /** 公園区域(ポリゴン)を出す */
+  display_area: boolean
   /** ActPaddle(パドルエミュレータ)のボタンを、ポップアップに出す */
   enable_emulation: boolean
   pemu_call: string
@@ -55,6 +57,7 @@ export const DEFAULTS: Prefs = {
   pota_ref: true,
   jaff_ref: true,
   zoom_threshold: 12,
+  display_area: true,
   enable_emulation: false,
   pemu_call: '',
   pemu_mesg1: 'CQ CQ CQ DE $CALL SOTA $SOTA +',
@@ -75,7 +78,7 @@ export interface CookieIO {
   set(name: string, value: string): void
 }
 
-const BOOLEANS = ['show_potalog', 'show_potaactlog', 'popup_permanent', 'display_mapcode', 'link_googlemap', 'sota_ref', 'pota_ref', 'jaff_ref', 'enable_emulation', 'include_areacode', 'paddle_reverse', 'to_paddle', 'enable_wifi'] as const
+const BOOLEANS = ['show_potalog', 'show_potaactlog', 'popup_permanent', 'display_mapcode', 'link_googlemap', 'sota_ref', 'pota_ref', 'jaff_ref', 'display_area', 'enable_emulation', 'include_areacode', 'paddle_reverse', 'to_paddle', 'enable_wifi'] as const
 const STRINGS = ['pemu_call', 'pemu_mesg1', 'pemu_mesg2', 'pemu_mesg3', 'pemu_mesg4', 'pemu_wpm', 'pemu_host'] as const
 const UUIDS = ['pota_activator_uuid', 'pota_hunter_uuid'] as const
 

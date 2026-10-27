@@ -50,6 +50,7 @@ async function open({ cookies = {}, state = {}, search = '', gps, mocks = false,
     const req = route.request();
     const url = new URL(req.url());
     const send = (body, type, status = 200) => route.fulfill({ status, contentType: type, body });
+    if (url.origin === ORIGIN && url.pathname.startsWith('/json/jaffpota-annotated-v')) return send(readFileSync(fileURLToPath(new URL('../../../packages/myact-golden/fixtures/park-areas-small.json', import.meta.url))), 'application/json');
     if (url.origin === ORIGIN) {
       const file = join(DIST, url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname));
       if (existsSync(file)) return send(readFileSync(file), TYPES[extname(file)] ?? 'application/octet-stream');
@@ -434,5 +435,28 @@ test('ActPaddle: 送ると、CALL・WPM・送り方を旧版と同じ Cookie に
   await sendMesg(page, 1, { pemu_call: 'JH1XYZ', pemu_wpm: '30' });
   const cookies = await cookieMap(context);
   assert.deepEqual([cookies.pemu_call, cookies.pemu_wpm, cookies.enable_wifi, cookies.enable_serial], ['JH1XYZ', '30', 'true', 'false']);
+  await context.close();
+});
+
+// ---- 公園区域(ポリゴン) ----
+const clickArea = async (page, ev) => {
+  await page.waitForFunction(() => window.areaLayer.getLayers().length > 0, null, { timeout: 10000 });
+  await page.evaluate((e) => window.areaLayer.eachLayer((l) => l.fire(e, { latlng: L.latLng(35.41, 139.21) })), ev);
+};
+for (const [name, ev] of [['park-area-left-click', 'click'], ['park-area-right-click-debug', 'contextmenu']]) {
+  test(`公園区域を${ev === 'click' ? '左' : '右'}クリック(${name}): 旧版の記録と同じ行`, async () => {
+    const { page, context, errors } = await open();
+    await clickArea(page, ev);
+    assert.deepEqual(await popupLines(page), expected(name).popup.text);
+    assert.deepEqual(errors, []);
+    await context.close();
+  });
+}
+
+test('公園区域: 設定で出さないなら、読み込まない(旧版と同じ。display_area)', async () => {
+  const { page, context } = await open({ cookies: { display_area: 'false' } });
+  await page.waitForTimeout(500);
+  assert.equal(await page.evaluate(() => window.areaLayer.getLayers().length), 0);
+  assert.equal(await page.evaluate(() => window.map.hasLayer(window.areaLayer)), false);
   await context.close();
 });

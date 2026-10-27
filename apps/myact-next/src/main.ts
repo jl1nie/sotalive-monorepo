@@ -4,6 +4,7 @@ import './style.css'
 import L from 'leaflet'
 import { reverseGeocode } from '@sotalive/geo'
 import { createApi, type PotaMarker, type SotaMarker } from './api.ts'
+import { createAreas } from './areas.ts'
 import { createMarkers } from './markers.ts'
 import { COOKIE_LAT, COOKIE_LNG, getCookie, setCookie } from './cookie.ts'
 import { MESSAGES, StatusBanner, errorMessage, queryPermission, waitingMessage, PENDING_HINT_MS } from './locate-status.ts'
@@ -48,7 +49,13 @@ const markers = createMarkers({
   onSummit: (s: SotaMarker) => void showPopup({ lat: s.lat, lng: s.lon }, false, 'popup'),
   onPark: (q: PotaMarker) => void showPopup({ lat: q.lat, lng: q.lon }, false, 'popup', { pota: q.pota, jaff: q.wwff, name: q.nameJ }),
 })
-prefs.subscribe(() => markers.refresh())
+const areas = createAreas({ map, onPick: (latlng, area) => void showPopup(latlng, false, 'popup', area) })
+areas.update(prefs.get().display_area)
+;(window as unknown as { areaLayer: L.GeoJSON }).areaLayer = areas.layer
+prefs.subscribe((p) => {
+  markers.refresh()
+  areas.update(p.display_area)
+})
 markers.start()
 ;(window as unknown as { markerLayer: L.LayerGroup }).markerLayer = markers.layer
 let qthMarker: L.Marker | null = null

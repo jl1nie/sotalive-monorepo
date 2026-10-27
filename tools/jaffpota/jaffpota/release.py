@@ -17,7 +17,7 @@ from pathlib import Path
 TOOL = Path(__file__).resolve().parent.parent
 ROOT = TOOL.parent.parent
 JSON_DIR = ROOT / "packages/shared/common/json"
-REFERENCES = [ROOT / "packages/shared/common/js/myact.js"]
+REFERENCES = [ROOT / "packages/shared/common/js/myact.js", ROOT / "apps/myact-next/src/areas.ts"]
 PATTERN = re.compile(r"jaffpota-annotated-v(\d+)\.json")
 
 
