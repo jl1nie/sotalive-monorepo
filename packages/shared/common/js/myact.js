@@ -1766,6 +1766,14 @@ onPeriodChange(prefs['spot_period']);
 var aprs_timer_id = null;
 var spot_timer_id = null;
 
+// システム状態の iframe(mackerel.io)は、モーダルを開いたときに読む。
+// HTML に src を書くと、モーダルを開かなくても、起動のたびに 約 3.5MB と、広告・計測のスクリプト(Google・Facebook・Twitter)を読む
+$('#modal-mackerel').on('show.bs.modal', function () {
+	var frame = this.querySelector('iframe[data-src]');
+	if (frame && !frame.getAttribute('src'))
+		frame.setAttribute('src', frame.getAttribute('data-src'));
+});
+
 $('#spots-data').on('show.bs.modal', function (e) {
 	refresh_spots();
 	spot_timer_id = setInterval(refresh_spots, 60000);
