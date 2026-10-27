@@ -33,7 +33,7 @@ Functions を全体にかけているのは、まだ公開していない logcon
 
 ## リクエストの流れ
 
-### 静的ファイル(旧版 myact・myqth)
+### 静的ファイル(myact 旧版・myqth)
 
 1. ブラウザが `myact.sotalive.net` を引くと、CNAME で `sotalive-myact.pages.dev` に着きます。
 2. Pages が `dist-myact` のファイルをそのまま返します。Functions は動きません。
@@ -78,7 +78,7 @@ API はバックエンドの独自ドメイン `sotaapp2.sotalive.net`(Fly.io)�
 |---|---|---|---|
 | `dist` | `scripts/assemble.sh` | `logconv/`、`myact2/`、`myqth2/`、`shared/`、`functions/` | sotalive |
 | `dist-myact` | `scripts/build-static-projects.sh` | 旧版 myact の `index.html`、共通アセット、404.html、`_redirects` | sotalive-myact |
-| `dist-myqth` | 同上 | 旧版 myqth の `index.html`、共通アセット、404.html | sotalive-myqth |
+| `dist-myqth` | 同上 | 新版 myqth(`apps/myqth/dist`)、ファビコン、404.html | sotalive-myqth |
 | `dist-fle` | 同上 | `fle/`(FLE のビルド)、`_redirects` | sotalive-fle |
 
 `assemble.sh` の最後で `build-static-projects.sh` が呼ばれます。
