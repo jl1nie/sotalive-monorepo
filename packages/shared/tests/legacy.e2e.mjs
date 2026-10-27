@@ -35,9 +35,10 @@ after(async () => {
   await browser?.close();
 });
 
-/** `app`(apps/<app>-org)を開いたページと、起きた JS の例外。`noGeolocation` なら、位置情報のないブラウザー。`failApi` なら、sotaapp2 の API が 500。`noHsrc` なら、標高の応答に hsrc がない */
-async function openApp(app, { noGeolocation = false, failApi = false, noHsrc = false } = {}) {
+/** `app`(apps/<app>-org)を開いたページと、起きた JS の例外。`noGeolocation` なら、位置情報のないブラウザー。`pendingGeolocation` なら、許可の確認が保留のまま(コールバックが呼ばれない)。`failApi` なら、sotaapp2 の API が 500。`noHsrc` なら、標高の応答に hsrc がない */
+async function openApp(app, { noGeolocation = false, pendingGeolocation = false, failApi = false, noHsrc = false } = {}) {
   const page = await browser.newPage();
+  if (pendingGeolocation) await page.addInitScript(() => { navigator.geolocation.getCurrentPosition = () => {}; }); // 許可の確認が保留のまま
   if (noGeolocation) await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'geolocation', { get: () => undefined }));
   // 手元のファイル(このページ)の JS で起きた例外。CDN のライブラリの中だけで起きたものは数えない
   const errors = [];
@@ -127,3 +128,14 @@ test('myqth: 標高の応答に hsrc がなくても、ポップアップが出�
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+for (const app of ['myqth', 'myact']) {
+  test(`${app}: 位置情報の許可の確認が保留のままでも、日本全体の地図を出す(ズームの表示が undefined にならない)`, async () => {
+    const { page, errors } = await openApp(app, { pendingGeolocation: true });
+    // 直す前は、表示位置が決まらず、地図が出ずに、ズームの表示が undefined だった(iPhone の Chrome)
+    assert.equal(await page.evaluate(() => window.map.getZoom()), 6);
+    assert.equal(await page.locator('.leaflet-control-zoomlabel').innerText(), '6');
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+}
