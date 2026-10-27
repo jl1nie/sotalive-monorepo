@@ -302,3 +302,28 @@ test('公園の詳細: ログがあれば Activations/Attempts と QSOs。log_id
   assert.ok(apiCalls.some((c) => c.startsWith('GET /pota/parks/search?pota_code=JP-0118') && c.includes('log_id=hunter-1')), apiCalls.join(' | '));
   await context.close();
 });
+
+// ---- 検索ボックス ----
+const briefState = () => ({
+  handlers: [({ path }) => (path.endsWith('/search/brief') ? { status: 200, body: JSON.stringify({ count: 1, candidates: [{ code: 'JP-0118', name: 'Tanzawa', nameJ: '丹沢大山国定公園', lat: 35.4105, lon: 139.2098 }] }) } : null)],
+});
+
+test('検索: 打つと候補が出て、候補を選ぶと、その場所へ動く(公園はポップアップなし)', async () => {
+  const { page, context, apiCalls, errors } = await open({ state: briefState(), search: '?lat=35.68&lon=139.76&z=9' });
+  await page.fill('#ref-search', '丹沢');
+  await page.waitForFunction(() => document.querySelectorAll('#ref-list option').length === 1);
+  assert.equal(await page.locator('#ref-list option').getAttribute('value'), 'JP-0118 丹沢大山国定公園');
+  assert.ok(apiCalls.some((c) => c.startsWith('GET /search/brief?name=')), apiCalls.join(' | '));
+  await page.fill('#ref-search', 'JP-0118 丹沢大山国定公園');
+  await page.waitForFunction(() => Math.abs(window.map.getCenter().lat - 35.4105) < 1e-3 && window.map.getZoom() === 15);
+  assert.equal(await page.inputValue('#ref-search'), '');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('検索: 「緯度,経度」を貼り付けると、その場所へ動く', async () => {
+  const { page, context } = await open(); // URL の位置を付けない(開いたままのポップアップの自動スクロールと競う)
+  await page.fill('#ref-search', '35.410500,139.209800');
+  await page.waitForFunction(() => Math.abs(window.map.getCenter().lng - 139.2098) < 1e-3 && window.map.getZoom() === 15);
+  await context.close();
+});

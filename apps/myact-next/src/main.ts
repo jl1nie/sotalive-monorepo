@@ -8,6 +8,7 @@ import { createMarkers } from './markers.ts'
 import { COOKIE_LAT, COOKIE_LNG, getCookie, setCookie } from './cookie.ts'
 import { MESSAGES, StatusBanner, errorMessage, queryPermission, waitingMessage, PENDING_HINT_MS } from './locate-status.ts'
 import { qthIcon } from './marker.ts'
+import { createRefSearch, isSummitCode } from './ref-search.ts'
 import { createPotaLogDialog } from './potalog.ts'
 import { buildPopup } from './popup.ts'
 import type { Area } from './refs.ts'
@@ -128,6 +129,16 @@ document.getElementById('qth-button')?.addEventListener('click', locate)
 const potaLog = createPotaLogDialog({ prefs, api })
 document.body.append(potaLog.element)
 document.getElementById('potalog-button')?.addEventListener('click', () => potaLog.open())
+
+// ---- 検索(参照・名前・座標)。その場所へ動き、山ならポップアップも開く(旧版 showReference) ----
+const refSearch = createRefSearch({
+  api,
+  done(place) {
+    map.setView(place.coord, 15)
+    if (isSummitCode(place.code)) void showPopup({ lat: place.coord[0], lng: place.coord[1] }, false, 'popup')
+  },
+})
+document.getElementById('search-slot')?.append(refSearch.input, refSearch.list)
 
 // ---- 時計 ----
 function clock() {
