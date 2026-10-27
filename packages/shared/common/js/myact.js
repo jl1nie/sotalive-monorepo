@@ -128,6 +128,9 @@ var map = L.map('map', {
 	renderer: L.canvas({ tolerance: tolerance }),
 	layers: [gsi]
 });
+// 位置情報の許可の確認が保留のまま(iPhone の Chrome など)だと、取得の結果が返らず、表示位置が決まらない。
+// 地図が出ず、ズームの表示が undefined になるので、先に日本全体を出しておく
+map.setView([37.514444, 137.712222], 6);
 
 var baseLayerControls = {
 	'地理院地形図': gsi,
@@ -1363,7 +1366,8 @@ function urlPosition() {
 
 var urlpos = urlPosition();
 if (urlpos) {
-	map.setView(urlpos.latlng, urlpos.zoom);
+	// アニメーションなし: 先に日本全体を出してあるので、付くと、次の行の displayPopup が読む getZoom() が、まだ 6 のまま
+	map.setView(urlpos.latlng, urlpos.zoom, { animate: false });
 	displayPopup({}, urlpos.latlng, false, false);
 } else
 	clickQTHButton();
