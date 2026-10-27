@@ -12,6 +12,7 @@ import { COOKIE_LAT, COOKIE_LNG, getCookie, setCookie } from './cookie.ts'
 import { MESSAGES, StatusBanner, errorMessage, queryPermission, waitingMessage, PENDING_HINT_MS } from './locate-status.ts'
 import { qthIcon } from './marker.ts'
 import { createRefSearch, isSummitCode } from './ref-search.ts'
+import { createSettingsDialog } from './settings.ts'
 import { createSpotPanel } from './spot-panel.ts'
 import { createPaddleDialog } from './paddle.ts'
 import { createPotaLogDialog } from './potalog.ts'
@@ -144,6 +145,11 @@ document.getElementById('qth-button')?.addEventListener('click', locate)
 const potaLog = createPotaLogDialog({ prefs, api })
 document.body.append(potaLog.element)
 document.getElementById('potalog-button')?.addEventListener('click', () => potaLog.open())
+
+// ---- 設定 ----
+const settings = createSettingsDialog({ prefs, openPotaLog: () => potaLog.open() })
+document.body.append(settings.element)
+document.getElementById('settings-button')?.addEventListener('click', () => settings.open())
 
 // ---- 検索(参照・名前・座標)。その場所へ動き、山ならポップアップも開く(旧版 showReference) ----
 const refSearch = createRefSearch({

@@ -576,3 +576,43 @@ test('APRS 軌跡: 設定で出さないなら、取らない(aprs_track)', asyn
   assert.equal(apiCalls.some((c) => c.includes('/activation/aprs/track')), false);
   await context.close();
 });
+
+// ---- 設定の画面 ----
+test('設定: 保存してある値(旧版の Cookie)を入れて開き、変更はすぐ、同じ Cookie に保存・反映する', async () => {
+  const { page, context, errors } = await open({ cookies: { jaff_ref: 'false', zoom_threshold: '9', display_mapcode: 'true' } });
+  await page.click('#settings-button');
+  await page.waitForSelector('dialog#settings[open]');
+  assert.equal(await page.locator('#jaff_ref').isChecked(), false);
+  assert.equal(await page.locator('#pota_ref').isChecked(), true);
+  assert.equal(await page.locator('#display_mapcode').isChecked(), true);
+  assert.equal(await page.inputValue('#zoom_threshold'), '9');
+  await page.locator('#pota_ref').uncheck();
+  await page.locator('#popup_permanent').uncheck();
+  await page.fill('#zoom_threshold', '11');
+  const cookies = await cookieMap(context);
+  assert.deepEqual([cookies.pota_ref, cookies.popup_permanent, cookies.zoom_threshold], ['false', 'false', '11']);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('設定: 公園区域を外すと層が外れ、公園名の常時表示を外すと、マーカーのツールチップが消える', async () => {
+  const { page, context } = await open();
+  await showMarkers(page, POINTS.tanzawa);
+  await page.waitForFunction(() => window.map.hasLayer(window.areaLayer));
+  assert.ok((await page.locator('.leaflet-tooltip.park-name').count()) > 0);
+  await page.click('#settings-button');
+  await page.locator('#display_area').uncheck();
+  await page.locator('#popup_permanent').uncheck();
+  await page.waitForFunction(() => !window.map.hasLayer(window.areaLayer));
+  await page.waitForFunction(() => document.querySelectorAll('.leaflet-tooltip.park-name').length === 0);
+  await context.close();
+});
+
+test('設定: POTA ログのボタンで、設定を閉じて POTA ログのダイアログを開く', async () => {
+  const { page, context } = await open();
+  await page.click('#settings-button');
+  await page.getByRole('button', { name: 'POTA ログを開く' }).click();
+  await page.waitForSelector('dialog.pl-dialog[open]:not(#settings)');
+  assert.equal(await page.locator('dialog#settings[open]').count(), 0);
+  await context.close();
+});

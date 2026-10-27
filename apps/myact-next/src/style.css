@@ -501,3 +501,46 @@ body > nav {
     background: #adb5bd;
   }
 }
+
+/* 設定のダイアログ */
+.st-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  border-top: 1px solid #dee2e6;
+}
+.st-section:first-child {
+  border-top: 0;
+}
+.st-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 32px;
+  margin: 0;
+  padding-top: 4px;
+}
+.st-check input {
+  margin-top: 3px;
+}
+.st-note {
+  display: block;
+  color: #6c757d;
+}
+.st-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+}
+.st-slider label {
+  margin: 0;
+  white-space: nowrap;
+}
+.st-range {
+  flex: 1;
+}
+.st-row {
+  margin: 4px 0;
+}
