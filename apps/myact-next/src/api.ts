@@ -65,6 +65,13 @@ export interface SearchResult {
   sota: SotaMarker[]
   pota: PotaMarker[]
 }
+export interface BriefCandidate {
+  code: string
+  name: string
+  nameJ: string
+  lat: number
+  lon: number
+}
 export interface PotaPark {
   potaCode: string
   wwffCode: string
@@ -136,6 +143,9 @@ export function createApi({ fetch: doFetch = (...a) => fetch(...a), base = DEFAU
       query<SearchResult>('/search', { ...q, log_id: q.log_id ?? undefined }, signal),
     /** 公園の詳細(ログがあれば、Activations/Attempts・QSOs も) */
     parkByCode: (potaCode: string, logId?: string | null) => query<PotaPark[]>('/pota/parks/search', { pota_code: potaCode, log_id: logId ?? undefined }),
+
+    /** 参照の検索(山・公園の名前やコード)。候補が多すぎるときは、呼ぶ側が捨てる */
+    searchBrief: (name: string, signal?: AbortSignal) => query<{ count: number; candidates: BriefCandidate[] | null }>('/search/brief', { name }, signal),
 
     // ---- SOTA ----
     /** 座標の近く(dist m 以内)のサミット。ログ ID があれば付ける(旧版と同じ) */
