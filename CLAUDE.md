@@ -30,7 +30,8 @@ sotalive-monorepoは、SOTA/POTAアマチュア無線アワード支援サービ
 ```
 sotalive-monorepo/
 ├── apps/
-│   ├── myact/          # MyActivation の React 版（移行中。myact2.sotalive.net で試す）→ dist/myact2
+│   ├── myact-next/     # 次期 MyACT（Vite + 素の TS。myact2.sotalive.net で試す。旧版を正解にした記録 packages/myact-golden と比べる）→ dist/myact2
+│   ├── myact/          # MyActivation の React 版（凍結。出さない。次期 MyACT の切り替え後に削除）
 │   ├── myqth/          # MyQTH（Vite + 素の TS。myqth.sotalive.net の本番。myqth2.sotalive.net は本番より先に試す場所）→ dist-myqth・dist/myqth2
 │   ├── myact-org/      # MyActivation の旧版（jQuery。外部CSS・JSに分離済み）→ dist/myact
 │   ├── myqth-org/      # MyQTH の旧版（戻せるように残す。出力なし）
@@ -90,7 +91,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 | myqth.sotalive.net | MyQTH（新版。apps/myqth） | sotalive-myqth | 旧版は apps/myqth-org に残してある。戻すときは `scripts/build-static-projects.sh` の myqth のブロックを旧版の `build` に替える |
 | logconv.sotalive.net / logconv2 | LogConverter | sotalive | logconv は、新しい logconv のテストが済むまで Vercel の旧画面のまま。移すときは www の転送も外す |
 | fleonline.sotalive.net | FLE Online | sotalive-fle | `/fle/`（`/` は転送）。Functions は `/api` の下だけ（`pages/fle`：設定の同期の KV と、バックエンドへの中継） |
-| myact2.sotalive.net | MyActivation（React 版。試験中） | sotalive | `noindex`。React 版は base が `/` なので、このホスト名でだけ動く |
+| myact2.sotalive.net | MyActivation（次期版。apps/myact-next。試験中） | sotalive | `noindex`。base が `/` なので、このホスト名でだけ動く。切り替え前の確認用 |
 | myqth2.sotalive.net | MyQTH（新版を、本番より先に試す場所） | sotalive | `noindex`。逆ジオコーダーは `packages/geo` |
 
 ## Git運用

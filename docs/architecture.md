@@ -55,7 +55,7 @@ Functions を全体にかけているのは、まだ公開していない logcon
 4. myact2・myqth2 には `x-robots-tag: noindex` を付けて、検索エンジンに載せません。
 5. 上のどれでもないホスト名(`sotalive.pages.dev` など)は、そのまま配信します。
 
-React 版 myact と新しい myqth はビルドの base が `/` なので、myact2・myqth2 のホスト名でだけ動きます。この振り分けは `packages/functions-test`(`ASSETS` を差し替えたテスト)で確かめます。
+次期 MyACT(`apps/myact-next`)と新しい myqth はビルドの base が `/` なので、myact2・myqth2 のホスト名でだけ動きます。React 版 myact(`apps/myact`)は凍結で、出しません。この振り分けは `packages/functions-test`(`ASSETS` を差し替えたテスト)で確かめます。
 
 ### 旧版が API を直接呼ぶこと
 

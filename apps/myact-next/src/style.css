@@ -1,0 +1,297 @@
+/* Bootstrap 4.5.0 の CSS(main.ts で読む)に、旧版の見た目のうち、使っているものだけを足す。
+   旧版は MDB(Material Design for Bootstrap)と Semantic UI の CSS も読んでいて、文字の大きさ・書体・見出しは
+   Semantic UI のもの(html 14px・Lato・h4 は太字の約 18px)。ここに、その部分だけを写す */
+html {
+  font-size: 14px;
+}
+body {
+  font-family: Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.4285em;
+  color: rgba(0, 0, 0, 0.87);
+}
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  line-height: 1.28571429em;
+  margin: calc(2rem - 0.14285714em) 0 1rem;
+  font-weight: 700;
+  padding: 0;
+}
+h4 {
+  font-size: 1.07142857rem;
+}
+h4:first-child {
+  margin-top: 0;
+}
+h4:last-child {
+  margin-bottom: 0;
+}
+.bg-dark {
+  background-color: #212121 !important;
+}
+.navbar {
+  font-weight: 300;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+}
+.btn {
+  margin: 0.1rem !important;
+  padding: 0.4rem 0.5rem !important;
+  color: inherit;
+  text-transform: uppercase;
+  white-space: normal;
+  cursor: pointer;
+  border: 0;
+  border-radius: 0.125rem;
+  font-size: 0.81rem;
+  line-height: 1;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.btn-amber {
+  color: #fff;
+  background-color: #ffa000 !important;
+}
+.btn-amber:hover {
+  color: #fff;
+  background-color: #ffaa1a !important;
+}
+.btn .icon {
+  height: 1em;
+  width: 1.25em;
+  vertical-align: -0.125em;
+}
+#clock_time {
+  cursor: default;
+}
+
+/* 画面いっぱいの縦の並び: ナビバー + 地図(残り全部)。高さは CSS だけで決める。
+   旧版は、JS で設定した --vh(読み込み時の innerHeight)から、ナビバーの高さを決め打ちして(30px・56px。実際は 42px)引いていた。
+   iPad の回転・分割表示で innerHeight が古いままになると、地図の範囲がずれた。100dvh は、アドレスバーの出入りに追従する */
+html,
+body {
+  height: 100%;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  overflow: hidden;
+}
+body > nav {
+  flex: 0 0 auto;
+}
+#map-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 15px;
+}
+#map {
+  width: 100%;
+  height: 100%;
+  border: 1px solid #aaa;
+}
+
+/* Leaflet 1.2(旧版)の文字の大きさ。1.9 の既定は rem 基準で、html を 14px にすると小さくなる */
+.leaflet-container {
+  font-size: 12px;
+}
+.leaflet-popup-content {
+  margin: 13px 19px;
+  font-size: inherit;
+  line-height: 1.4;
+}
+.leaflet-container .leaflet-control-zoomlabel {
+  background-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 5px #bbb;
+  padding: 0 5px;
+  margin: 0;
+  color: #333;
+  font: 11px/1.5 'Helvetica Neue', Arial, Helvetica, sans-serif;
+}
+.qth-marker svg {
+  display: block;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+}
+
+/* 現在地の取得の状況(地図の上。タップで消す) */
+.locate-status {
+  position: absolute;
+  z-index: 1000;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 100px);
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: rgba(33, 33, 33, 0.9);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  cursor: pointer;
+}
+.locate-status[hidden] {
+  display: none;
+}
+
+/* 緑のボタン(POTA ログ) */
+.btn-success {
+  background-color: #2e7d32 !important;
+  color: #ffffff;
+}
+.btn-success:hover {
+  background-color: #388e3c !important;
+}
+
+/* ポップアップの中身 */
+.act-popup {
+  min-width: 190px;
+}
+.act-heading {
+  text-align: center;
+}
+.weather-wrap .weather svg {
+  vertical-align: -3px;
+  margin-right: 2px;
+}
+
+/* POTA ログのダイアログ(<dialog>。旧版のモーダルと同じ見た目の考え方) */
+.pl-dialog {
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  color: #212529;
+  font-size: 14px;
+}
+.pl-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+.pl-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #dee2e6;
+}
+.pl-head b {
+  font-size: 16px;
+}
+.pl-note {
+  font-size: 12px;
+  color: #6c757d;
+}
+.pl-close {
+  margin-left: auto;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  color: #6c757d;
+  cursor: pointer;
+}
+.pl-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 18px;
+  overflow: auto;
+}
+.pl-body section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pl-body fieldset {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 3px;
+}
+.pl-body legend {
+  width: auto;
+  padding: 0 4px;
+  margin: 0;
+  font-size: 12px;
+  color: #6c757d;
+}
+.pl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  margin: 0;
+}
+.pl-grow {
+  flex: 1;
+  margin: 0;
+}
+.pl-grow-start {
+  margin-left: auto;
+}
+.pl-updated {
+  color: #6c757d;
+  font-size: 12px;
+}
+.pl-file {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px dashed #adb5bd;
+  border-radius: 3px;
+  background: #f8f9fa;
+  color: #495057;
+  font-size: 12px;
+  cursor: pointer;
+}
+.pl-dialog input[type='file'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.pl-key {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.pl-status {
+  padding: 8px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+.pl-ok {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+.pl-error {
+  background: #f8d7da;
+  color: #842029;
+}
+.pl-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #dee2e6;
+}
+
+/* ダイアログのボタンは、折り返さない(「取り込む」が 2 行にならないように)。旧版の MDB の大文字化も、ここでは使わない */
+.pl-dialog .btn {
+  flex: none;
+  white-space: nowrap;
+  text-transform: none;
+}

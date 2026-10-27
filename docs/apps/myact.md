@@ -120,6 +120,10 @@ pnpm exec vitest run --passWithNoTests
 pnpm exec eslint .
 ```
 
+## 次期 MyACT(`apps/myact-next`)
+
+React 版(`apps/myact`)は、UI の質の基準がなく、ポップアップとスポットの設計で止まった(凍結。次期版の切り替え後に削除)。次期版は、**素の TypeScript + Vite + 旧版の Bootstrap の CSS** で、旧版を正解にした記録(`packages/myact-golden`)と同じ出力を出すことを基準に作る。設計は `docs/myact-next-design.md`、画面案は `docs/mocks/myact/`、いま動くものは `apps/myact-next/README.md`。`myact2.sotalive.net`(`noindex`)で公開している(ホスト名 `myact2` は、次期版が使う)。
+
 ## 移行の計画
 
 CLAUDE.md の「今後の計画」では、次の段階で進めます。

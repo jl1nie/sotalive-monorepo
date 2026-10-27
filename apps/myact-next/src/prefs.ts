@@ -1,0 +1,73 @@
+/**
+ * 設定。保存先は、旧版と同じ Cookie(同じ名前・同じ値の形)。
+ * - 真偽: 'true' / 'false'(Cookie がなければ、既定の値)
+ * - POTA ログの UUID: 文字列。登録していないときは null(Cookie がない・''・'null'・'undefined' はどれも null。保存するときは 'null')
+ * 段階 1 以降、設定が増えたら、ここに足す(旧版の約 35 項目)。
+ */
+export interface Prefs {
+  /** 地図とポップアップに、POTA ログを反映する */
+  show_potalog: boolean
+  /** どのログを使うか: true = Activator、false = Hunter */
+  show_potaactlog: boolean
+  pota_activator_uuid: string | null
+  pota_hunter_uuid: string | null
+}
+
+export const DEFAULTS: Prefs = {
+  show_potalog: false,
+  show_potaactlog: true,
+  pota_activator_uuid: null,
+  pota_hunter_uuid: null,
+}
+
+/** Cookie の入出力(テストでは、差し替える) */
+export interface CookieIO {
+  get(name: string): string | undefined
+  set(name: string, value: string): void
+}
+
+const BOOLEANS = ['show_potalog', 'show_potaactlog'] as const
+const UUIDS = ['pota_activator_uuid', 'pota_hunter_uuid'] as const
+
+export function parseUuid(v: string | undefined): string | null {
+  return v === undefined || v === '' || v === 'null' || v === 'undefined' ? null : v
+}
+
+export function loadPrefs(io: CookieIO): Prefs {
+  const prefs = { ...DEFAULTS }
+  for (const k of BOOLEANS) {
+    const v = io.get(k)
+    if (v !== undefined) prefs[k] = v === 'true'
+  }
+  for (const k of UUIDS) prefs[k] = parseUuid(io.get(k))
+  return prefs
+}
+
+export function savePref<K extends keyof Prefs>(io: CookieIO, key: K, value: Prefs[K]): void {
+  io.set(key, value === null ? 'null' : String(value))
+}
+
+/** 変更を通知できる、設定の入れ物 */
+export function createPrefs(io: CookieIO) {
+  let prefs = loadPrefs(io)
+  const listeners = new Set<(p: Prefs) => void>()
+  return {
+    get: (): Prefs => prefs,
+    set(patch: Partial<Prefs>): void {
+      prefs = { ...prefs, ...patch }
+      for (const k of Object.keys(patch) as (keyof Prefs)[]) savePref(io, k, prefs[k])
+      for (const l of listeners) l(prefs)
+    },
+    subscribe(l: (p: Prefs) => void): () => void {
+      listeners.add(l)
+      return () => listeners.delete(l)
+    },
+    /** 地図・ポップアップの取得に付ける log_id(旧版の getLogID)。ログを出さない設定、または UUID がなければ null */
+    logId(): string | null {
+      if (!prefs.show_potalog) return null
+      return (prefs.show_potaactlog ? prefs.pota_activator_uuid : prefs.pota_hunter_uuid) ?? null
+    },
+  }
+}
+
+export type PrefsStore = ReturnType<typeof createPrefs>

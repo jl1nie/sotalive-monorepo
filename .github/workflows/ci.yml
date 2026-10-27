@@ -38,6 +38,7 @@ jobs:
       myact: ${{ steps.filter.outputs.myact }}
       geo: ${{ steps.filter.outputs.geo }}
       myqth: ${{ steps.filter.outputs.myqth }}
+      myact_next: ${{ steps.filter.outputs.myact_next }}
       functions: ${{ steps.filter.outputs.functions }}
       golden: ${{ steps.filter.outputs.golden }}
       legacy: ${{ steps.filter.outputs.legacy }}
@@ -74,6 +75,10 @@ jobs:
             myqth:
               - 'apps/myqth/**'
               - 'packages/geo/**'
+            myact_next:
+              - 'apps/myact-next/**'
+              - 'packages/geo/**'
+              - 'packages/myact-golden/**'
             functions:
               - 'functions/**'
               - 'packages/functions-test/**'
@@ -92,6 +97,7 @@ jobs:
               - 'wrangler.toml'
               - 'apps/logconv/**'
               - 'apps/myact/**'
+              - 'apps/myact-next/**'
               - 'apps/myqth/**'
               - 'packages/geo/**'
 
@@ -249,6 +255,33 @@ jobs:
       - name: Open the built app in a browser
         run: node --test apps/myqth/e2e/myqth.e2e.mjs
 
+  # 次期 MyACT(Vite + 素の TS。myact2 で公開): 型・単体テスト・lint、ビルドしたものをブラウザーで開くテスト
+  # (外部の API は、旧版の golden master と同じ固定の応答。旧版の記録と、ポップアップの行を比べる)
+  myact-next:
+    needs: changes
+    if: needs.changes.outputs.all == 'true' || needs.changes.outputs.myact_next == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck, test and lint
+        working-directory: apps/myact-next
+        run: |
+          pnpm exec tsc -b
+          pnpm exec vitest run
+          pnpm exec eslint .
+      - name: Build
+        run: pnpm --filter @sotalive/myact-next run build
+      - uses: ./.github/actions/playwright-chromium
+      - name: Open the built app in a browser
+        run: node --test apps/myact-next/e2e/myact-next.e2e.mjs
+
   # 旧版(myqth・myact。テストのない jQuery 版)と共通アセット: 共通 JS のテスト、index.html の構文の検査、
   # ブラウザーで開く最低限のテスト(外部の API は固定の応答。地図のクリックでポップアップが出る・起動で例外が出ない)
   legacy:
@@ -292,7 +325,7 @@ jobs:
       needs.changes.outputs.all == 'true' || needs.changes.outputs.fle == 'true'
       || needs.changes.outputs.logconv == 'true' || needs.changes.outputs.myact == 'true'
       || needs.changes.outputs.legacy == 'true' || needs.changes.outputs.myqth == 'true'
-      || needs.changes.outputs.sotalive == 'true'
+      || needs.changes.outputs.myact_next == 'true' || needs.changes.outputs.sotalive == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -306,7 +339,7 @@ jobs:
       - name: Build apps
         run: |
           pnpm --filter @sotalive/fle run build:web
-          pnpm --filter @sotalive/logconv --filter @sotalive/myact --filter @sotalive/myqth run build
+          pnpm --filter @sotalive/logconv --filter @sotalive/myact-next --filter @sotalive/myqth run build
       - name: Assemble the outputs for each Pages project
         run: scripts/assemble.sh
       - uses: actions/upload-artifact@v4
@@ -335,9 +368,9 @@ jobs:
   # ---- デプロイ(push のときだけ。プロジェクトごとに並列) ----
   # 待つジョブのどれかが失敗・中止なら、デプロイしない(変更がなくて飛ばしたテストは、待たずに進む)
 
-  # sotalive: まだ公開していない logconv2・myact2・myqth2(functions/_middleware.ts)
+  # sotalive: まだ公開していない logconv2・myact2(次期 MyACT)・myqth2(functions/_middleware.ts)
   deploy-sotalive:
-    needs: [changes, build, logconv, myact, myqth, geo, functions]
+    needs: [changes, build, logconv, myact, myact-next, myqth, geo, functions]
     if: >-
       always() && github.event_name == 'push'
       && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
