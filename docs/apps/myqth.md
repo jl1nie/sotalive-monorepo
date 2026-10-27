@@ -86,3 +86,32 @@ npx serve dist-myqth
 本番の配信物と比べてから変更してください。
 
 全体の開発手順は [docs/development.md](../development.md) を参照してください。
+
+## 新版(`apps/myqth`。移行中)
+
+旧版を、Vite + 素の TypeScript に移したものです。React は使いません(軽さが売りで、画面もポップアップと現在地だけなので)。見た目は旧版のままにするため、Bootstrap 4.5.0 の CSS を使い、旧版が MDB・Semantic UI から受けていた文字の大きさ・書体・ボタンの見た目だけを `src/style.css` に写しています。jQuery・Popper・Bootstrap/MDB の JS・Semantic UI・Font Awesome・`leaflet.extra-markers`(PNG のスプライト)は読みません。
+
+- 逆ジオコーダーは `packages/geo`(`@sotalive/geo`)。**国土地理院(住所・標高)は、利用者のブラウザーから直接呼ぶ**。アクセス元を利用者ごとに分散するためで、バックエンド(sotaapp2)にまとめない。バックエンドを通るのは、自治体コード → JCC/JCG の表検索だけ
+- 結果は ok / outside(日本の外)/ error(通信・サーバーの異常)。旧版は、標高の失敗も「圏外」と出していた。error はキャッシュしない
+- 旧版の Yahoo の逆ジオコーダーへの経路(国土地理院のメンテナンス中の予備)は、呼び先が今はないので、移していない
+- 旧版との違い: 取得に失敗したときの文言(`住所を取得できませんでした`)、`JCG` の項目が空のとき `null` と出さない、現在地を最初から日本全体の位置で開く(位置情報を待つあいだも地図が出る)。Cookie(`my_qth_lat`・`my_qth_lng`)は、名前も、ブラウザーを閉じるまでの寿命も、旧版のまま
+
+### テスト
+
+```bash
+pnpm --filter @sotalive/geo test                       # 逆ジオコーダー(fetch を差し替え)
+pnpm --filter @sotalive/myqth test                     # ポップアップの文言
+pnpm --filter @sotalive/myqth build && node --test apps/myqth/e2e/myqth.e2e.mjs   # ビルドして、ブラウザーで開く
+```
+
+e2e は、旧版と同じ固定の応答で、地図のクリックのポップアップ(旧版と同じ文言)・hsrc なし・国土地理院が 500・現在地(Cookie に覚える)・位置情報の拒否(前回の位置)・位置情報のないブラウザーを確かめます。
+
+### 軽さの実測(2026-10-27。初回の読み込み。地図のタイルは除く。キャッシュなし。ローカルの配信分は gzip 換算)
+
+| | リクエスト | 転送量 | DOMContentLoaded |
+|---|---|---|---|
+| 旧版(`apps/myqth-org`) | 34 | 約 610KB | 約 200ms |
+| 新版(`apps/myqth`) | 9 | 約 107KB(JS 47KB・CSS 31KB・フォント(Lato)) | 約 100ms |
+
+見た目は、同じ大きさ(PC 1280×800・スマートフォン 390×844)のスクリーンショットと、`getComputedStyle` の値(文字の大きさ・ナビバーの高さ・ポップアップ)で、旧版と比べました。残る差は、Leaflet のバージョン(1.2 → 1.9)の細かい描画と、現在地のマーカー(PNG → SVG)です。
+

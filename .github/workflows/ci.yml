@@ -37,6 +37,7 @@ jobs:
       logconv: ${{ steps.filter.outputs.logconv }}
       myact: ${{ steps.filter.outputs.myact }}
       geo: ${{ steps.filter.outputs.geo }}
+      myqth: ${{ steps.filter.outputs.myqth }}
       legacy: ${{ steps.filter.outputs.legacy }}
       parks: ${{ steps.filter.outputs.parks }}
       sotalive: ${{ steps.filter.outputs.sotalive }}
@@ -67,6 +68,9 @@ jobs:
             myact:
               - 'apps/myact/**'
             geo:
+              - 'packages/geo/**'
+            myqth:
+              - 'apps/myqth/**'
               - 'packages/geo/**'
             legacy:
               - 'apps/myact-org/**'
@@ -169,6 +173,32 @@ jobs:
           pnpm exec tsc --noEmit
           pnpm exec vitest run
           pnpm exec eslint .
+
+  # 新しい MyQTH(Vite + 素の TS): 型・単体テスト・lint、ビルドしたものをブラウザーで開くテスト(外部の API は固定の応答)
+  myqth:
+    needs: changes
+    if: needs.changes.outputs.all == 'true' || needs.changes.outputs.myqth == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck, test and lint
+        working-directory: apps/myqth
+        run: |
+          pnpm exec tsc -b
+          pnpm exec vitest run
+          pnpm exec eslint .
+      - name: Build
+        run: pnpm --filter @sotalive/myqth run build
+      - name: Install Chromium
+        run: pnpm --filter @sotalive/myqth exec playwright install --with-deps chromium
+      - name: Open the built app in a browser
+        run: node --test apps/myqth/e2e/myqth.e2e.mjs
 
   # 旧版(myqth・myact。テストのない jQuery 版)と共通アセット: 共通 JS のテスト、index.html の構文の検査、
   # ブラウザーで開く最低限のテスト(外部の API は固定の応答。地図のクリックでポップアップが出る・起動で例外が出ない)

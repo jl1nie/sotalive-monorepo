@@ -11,6 +11,7 @@
 #   rust      cargo test --workspace
 #   wasm      FLE の wasm のビルド(apps/fle/src/wasm/fle は git に入れない生成物。次の fle の前提)
 #   fle・logconv・myact   各アプリで tsc -b・vitest run・eslint
+#   myqth     新しい MyQTH(apps/myqth)で tsc -b・vitest run・eslint、ビルドして、ブラウザーで開くテスト(Playwright)
 #   geo       packages/geo(逆ジオコーダーなど)で tsc --noEmit・vitest run・eslint
 #   shared    packages/shared の node --test(旧版が共有するコード。旧版の index.html の構文の検査を含む)
 #   legacy    旧版(myqth・myact)をブラウザーで開く最低限のテスト(Playwright。CDN に届かない手元では LEGACY_CDN_DIR)
@@ -137,6 +138,8 @@ run wasm pnpm --filter @sotalive/fle wasm
 run fle app_checks fle
 run logconv app_checks logconv
 run myact app_checks myact
+run myqth app_checks myqth
+run myqth-e2e bash -c 'pnpm --filter @sotalive/myqth run build && node --test apps/myqth/e2e/myqth.e2e.mjs'
 run geo bash -c 'cd packages/geo && pnpm exec tsc --noEmit && pnpm exec vitest run && pnpm exec eslint .'
 run shared node --test packages/shared/tests/*.test.mjs
 run legacy node --test packages/shared/tests/legacy.e2e.mjs
