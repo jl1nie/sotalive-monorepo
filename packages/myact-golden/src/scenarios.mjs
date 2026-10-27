@@ -4,6 +4,8 @@
 import { POINTS } from './world.mjs';
 import { popup, markers } from './collect.mjs';
 import { clickMap, showMarkers, clickMarker, waitAreas, clickArea } from './actions.mjs';
+import { potalogScenarios } from './scenarios-potalog.mjs';
+import { paddleScenarios } from './scenarios-paddle.mjs';
 
 /** POTA ログのある状態(Hunter のログ hunter-1。JP-0118 を 2 回活動・3 回試行・QSO 40) */
 export const LOGGED = {
@@ -21,7 +23,7 @@ export const LOGGED = {
 
 const near = ([lat, lng], d) => [lat + d, lng + d];
 
-export const scenarios = [
+export const popupScenarios = [
   // ---- 地図の空白をクリック ----
   { name: 'blank-tokyo', run: async (page) => (await clickMap(page, POINTS.tokyo), { popup: await popup(page) }) },
   { name: 'blank-near-summit-oyama', run: async (page) => (await clickMap(page, near(POINTS.oyama, 0.0005)), { popup: await popup(page) }) },
@@ -105,5 +107,7 @@ export const scenarios = [
     run: async (page) => ({ popup: await popup(page), center: await page.evaluate(() => ({ ...map.getCenter(), zoom: map.getZoom() })) }),
   },
 ];
+
+export const scenarios = [...popupScenarios, ...potalogScenarios, ...paddleScenarios];
 
 export { markers };

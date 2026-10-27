@@ -23,7 +23,10 @@ pnpm --filter @sotalive/myact-golden record-fixtures   # 本物の sotaapp2・�
 - 公園区域: 左クリック・右クリック(デバッグ表示)
 - 現在地(GPS)
 
-(段階 0 の続きで、POTA ログの操作と ActPaddle のメッセージを足す。)
+- **POTA ログ**(`src/scenarios-potalog.mjs`。サーバーは、実行ごとに作る小さな模擬): 確認(有効・無効な UUID)・アップロード(Activator・Hunter・不正なファイル・ファイルなし)・削除・共有キーの EXPORT/IMPORT(成功・見つからない)・表示の切り替え・Activator のログで地図に `log_id` が付き、公園のポップアップに Activations/Attempts・QSOs が出る・統計(`/pota/log-stat`)
+- **ActPaddle**(`src/scenarios-paddle.mjs`。クリップボードと Web Serial は差し替え、WiFi の機器は `https://actpaddle.local/play` に答える): ポップアップのボタンからダイアログを開く(公園・山。引き継ぐ値)・WiFi で送る(パドル・ストレートキー・反転)・エリアコードを CALL に付ける/付けない・**`$CALL` などは最初の 1 つしか置き換わらない**(旧版の挙動。新版は全置換)・接続エラーの alert・USB(Web Serial。USB ID 4 種・115200bps)
+
+注意: ActPaddle の「送り方(WiFi か USB)」と「パドルかストレートキーか」は、それぞれ**ラジオボタンの組**で、旧版の既定は組の両方が true(あとの方が選ばれる)。シナリオでは、組の両方を Cookie で指定する。
 
 ## 固定の応答(`fixtures/`)
 `tools/record-fixtures.mjs` が、本物の応答を 1 回だけ記録した(GET のみ)。旧版・新版とも、これだけを読む。本物が変わっても、取り直さない限り、結果は変わらない。

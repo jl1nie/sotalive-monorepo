@@ -1,0 +1,25 @@
+{
+  "clipboard": [
+    "CQ CQ CQ DE JA1ABC SOTA JA/KN006 +"
+  ],
+  "serial": [],
+  "externalCalls": [
+    {
+      "method": "POST",
+      "url": "https://actpaddle.local/play",
+      "contentType": "applicatoin/json",
+      "body": "{\"wpm\":25,\"to_straight\":\"CQ CQ CQ DE JA1ABC SOTA JA/KN006 +\",\"reverse\":false}\r"
+    }
+  ],
+  "apiCalls": [
+    "GET /search?min_lat=35.4&min_lon=139.1&max_lat=35.5&max_lon=139.3&min_elev=0&min_area=0",
+    "GET /sota/summits/search?lat=35.4408&lon=139.2312&dist=200",
+    "GET /locator/jcc-jcg?lat=35.4408&lon=139.2312&muni_code=14214"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": [
+    "pota_activator_uuid=null",
+    "pota_hunter_uuid=null"
+  ]
+}

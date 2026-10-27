@@ -1,0 +1,30 @@
+{
+  "ui": {
+    "activator": "2026-09-01(Activator)",
+    "hunter": "2026-08-01(Hunter)",
+    "exportKey": "XXXXXX",
+    "showPotalog": true,
+    "radioActivator": false,
+    "radioHunter": true,
+    "prefs": {
+      "activator": "act-1",
+      "hunter": "hunt-1",
+      "show": true,
+      "activatorLog": false
+    },
+    "logIdUsed": "hunt-1"
+  },
+  "apiCalls": [
+    "GET /pota/log-share/ABC123",
+    "GET /pota/log/act-1",
+    "GET /pota/log/hunt-1",
+    "GET /pota/log/act-1",
+    "GET /pota/log/hunt-1"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": [
+    "pota_activator_uuid=act-1",
+    "pota_hunter_uuid=hunt-1"
+  ]
+}

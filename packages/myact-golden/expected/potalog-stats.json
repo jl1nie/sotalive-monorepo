@@ -1,0 +1,35 @@
+{
+  "chart": {
+    "labels": [
+      "2026-10-25T00:00:00.000Z",
+      "2026-10-26T00:00:00.000Z",
+      "2026-10-27T00:00:00.000Z"
+    ],
+    "datasets": [
+      {
+        "label": "Uploaded logs",
+        "type": "bar",
+        "data": [
+          10,
+          12,
+          15
+        ]
+      },
+      {
+        "label": "Total log entries",
+        "type": "bar",
+        "data": [
+          1000,
+          1300,
+          1800
+        ]
+      }
+    ]
+  },
+  "apiCalls": [
+    "GET /pota/log-stat"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": []
+}
