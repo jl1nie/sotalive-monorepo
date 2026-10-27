@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>スマホ: 地図と下のシート</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap">
+<style>
+body{margin:0;font-family:Lato,'Helvetica Neue',Arial,Helvetica,sans-serif}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:#ffffff;color:#212529;font-size:14px;line-height:1.4">
+
+  <!-- ナビバー(スマホ。タップしやすい 48px) -->
+  <div style="height:48px;background:#212121;color:#ffffff;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;box-sizing:border-box;box-shadow:0 2px 5px rgba(0,0,0,.3)">
+    <span style="font-size:15px;font-weight:700;margin-right:auto">MyACT</span>
+    <button type="button" aria-label="現在地 QTH" style="width:44px;height:36px;background:#ffa000;color:#ffffff;border:0;border-radius:2px;font-size:11px;font-weight:700;cursor:pointer">QTH</button>
+    <button type="button" aria-label="検索" style="width:44px;height:36px;background:transparent;color:#ffffff;border:1px solid #6c757d;border-radius:2px;cursor:pointer">
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:middle"><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="2"/><line x1="15" y1="15" x2="21" y2="21" stroke="currentColor" stroke-width="2"/></svg>
+    </button>
+    <button type="button" aria-label="POTA ログ" style="width:44px;height:36px;background:#2e7d32;color:#ffffff;border:0;border-radius:2px;font-size:11px;font-weight:700;cursor:pointer">LOG</button>
+    <button type="button" aria-label="設定" style="width:44px;height:36px;background:#007bff;color:#ffffff;border:0;border-radius:2px;cursor:pointer">
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:middle"><circle cx="12" cy="12" r="3.500" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"/></svg>
+    </button>
+  </div>
+
+  <!-- 地図(シートが閉じているとき、画面の残りを使う) -->
+  <div style="position:absolute;left:0;top:48px;width:390px;height:732px;overflow:hidden;background:#e8e4d8">
+    <img src="/_blob/1800bb719d85cc9d54e6d27189dd0b1e" alt="大山のあたりの地理院地図" style="position:absolute;left:0;top:0;width:390px;height:auto;min-height:732px;object-fit:cover">
+    <div style="position:absolute;left:10px;top:10px;display:flex;flex-direction:column;border:2px solid rgba(0,0,0,.2);border-radius:4px;background:#ffffff">
+      <button type="button" aria-label="ズームイン" style="width:44px;height:44px;border:0;border-bottom:1px solid #cccccc;background:#ffffff;font-size:20px;cursor:pointer">+</button>
+      <button type="button" aria-label="ズームアウト" style="width:44px;height:44px;border:0;background:#ffffff;font-size:20px;cursor:pointer">−</button>
+    </div>
+    <div style="position:absolute;left:10px;bottom:70px;background:rgba(255,255,255,.7);padding:0 5px;font-size:11px;color:#333333">14</div>
+
+    <!-- 山のマーカー -->
+    <!-- 旧版と同じ大きさ: ズーム 14 は半径 8 + 縁 2 = 全体 18px。活動回数は円の中に 8px -->
+    <div style="position:absolute;left:186px;top:340px;width:18px;height:18px;border-radius:50%;background:#ef6c00;border:2px solid #4e342e;box-sizing:border-box;opacity:.9;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#ffffff;line-height:1">355</div>
+    <!-- 公園のマーカー(ExtraMarkers と同じ 35×46px のピン。先端が座標) -->
+    <svg width="35" height="46" viewBox="0 0 35 46" style="position:absolute;left:150px;top:480px" role="img" aria-label="丹沢大山国定公園"><path d="M3 1h29a2 2 0 0 1 2 2v29a2 2 0 0 1-2 2H21.500l-4 11-4-11H3a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2z" fill="#f44336" stroke="#b71c1c" stroke-width="1.500"/><path fill="#ffffff" transform="translate(8.500 7.500) scale(.75)" d="M17 8C8 10 5.900 16.200 3.800 21.300L5.700 22l1-2.300c.5.200 1 .3 1.300.3 11 0 14-17 14-17-1 2-8 2.300-13 3.300-5 1-7 5.200-7 7.200 0 1.600 1 3.100 2.500 3.600C8 14 11 10 17 8z"/></svg>
+
+    <!-- ポップアップ(スマホは幅を絞る。長いときは中でスクロール) -->
+    <div style="position:absolute;left:55px;top:105px;width:250px;background:#ffffff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.4);padding:12px 20px 12px 16px;box-sizing:border-box;font-size:13px;line-height:1.4">
+      <div style="text-align:center;font-weight:700"><span style="color:#0078a8;text-decoration:underline">JA/KN-006 Ooyama</span><br>大山</div>
+      <div>神奈川県伊勢原市</div>
+      <div>標高:1252m, 8pts (+3)</div>
+      <div>Activations: 355</div>
+      <div style="margin-top:4px;color:#0078a8">詳細を開く ▸</div>
+      <div style="position:absolute;left:112px;bottom:-9px;width:18px;height:18px;background:#ffffff;transform:rotate(45deg);box-shadow:2px 2px 4px rgba(0,0,0,.2)"></div>
+    </div>
+  </div>
+
+  <!-- 下のシート(閉じた状態。つまみ + 見出しだけ。タップか上へのドラッグで開く) -->
+  <div style="position:absolute;left:0;top:780px;width:390px;height:64px;background:#ffffff;border-radius:14px 14px 0 0;box-shadow:0 -2px 8px rgba(0,0,0,.25);box-sizing:border-box;padding:8px 16px">
+    <div style="width:40px;height:4px;border-radius:2px;background:#adb5bd;margin:0 auto 8px"></div>
+    <button type="button" style="width:100%;height:36px;border:0;background:transparent;display:flex;align-items:center;gap:8px;padding:0;font-size:14px;cursor:pointer;color:#212529">
+      <b>スポット</b><span style="color:#6c757d;font-size:12px">POTA · 最新 6 時間 · 5 件</span>
+      <span style="margin-left:auto;color:#6c757d" aria-hidden="true">▲</span>
+    </button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

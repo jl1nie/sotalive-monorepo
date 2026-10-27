@@ -1,0 +1,24 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-27T11:30:00Z" },
+  "title": "MyACT 次期版 画面案",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 800, "title": "PC: 地図 + 右の側パネル(スポット)" },
+    "Mobile-Main.dc.html": { "x": 1360, "y": 0, "w": 390, "h": 844, "title": "スマホ: 地図 + 下のシート(閉じた状態)" },
+    "Mobile-Sheet.dc.html": { "x": 1830, "y": 0, "w": 390, "h": 844, "title": "スマホ: シートを開いた状態" },
+    "Popups.dc.html": { "x": 0, "y": 960, "w": 1280, "h": 760, "title": "ポップアップの中身(ブロック B1〜B6)" },
+    "PotaLog.dc.html": { "x": 1360, "y": 960, "w": 600, "h": 700, "title": "POTA ログ(必須)" },
+    "ActPaddle.dc.html": { "x": 2040, "y": 960, "w": 640, "h": 780, "title": "ActPaddle(必須)" },
+    "Settings.dc.html": { "x": 0, "y": 1840, "w": 600, "h": 900, "title": "設定" }
+  },
+  "order": ["Main.dc.html", "Mobile-Main.dc.html", "Mobile-Sheet.dc.html", "Popups.dc.html", "PotaLog.dc.html", "ActPaddle.dc.html", "Settings.dc.html"],
+  "notes": {
+    "t1": { "x": 0, "y": -300, "text": "画面の構成(案 A)。旧版の見た目のまま。地図・ポップアップ・スポットの面を、PC とスマホで", "kind": "title1", "maxW": 2220 },
+    "t2": { "x": 0, "y": 660, "text": "ポップアップの中身・POTA ログ・ActPaddle(必須の機能)", "kind": "title1", "maxW": 2680 },
+    "t3": { "x": 0, "y": 1540, "text": "設定", "kind": "title1", "maxW": 600 },
+    "s1": { "x": 700, "y": 1860, "text": "モックの注意: 名前・コールサイン・時刻は、ダミーの例です。地図は地理院タイルのスクリーンショット(大山のあたり)。色・書体・ボタンは、旧版(Bootstrap 4.5 + MDB)に合わせています。", "w": 420, "fill": "orange", "size": "m" }
+  },
+  "designSystems": []
+}

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>スマホ: スポットのシートを開いた状態</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap">
+<style>
+body{margin:0;font-family:Lato,'Helvetica Neue',Arial,Helvetica,sans-serif}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:#ffffff;color:#212529;font-size:14px;line-height:1.4">
+
+  <div style="height:48px;background:#212121;color:#ffffff;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;box-sizing:border-box">
+    <span style="font-size:15px;font-weight:700;margin-right:auto">MyACT</span>
+    <button type="button" aria-label="現在地 QTH" style="width:44px;height:36px;background:#ffa000;color:#ffffff;border:0;border-radius:2px;font-size:11px;font-weight:700">QTH</button>
+    <button type="button" aria-label="POTA ログ" style="width:44px;height:36px;background:#2e7d32;color:#ffffff;border:0;border-radius:2px;font-size:11px;font-weight:700">LOG</button>
+    <button type="button" aria-label="設定" style="width:44px;height:36px;background:#007bff;color:#ffffff;border:0;border-radius:2px">⚙</button>
+  </div>
+
+  <!-- 地図(上の約 3 割。選んだスポットの位置が、見える所に動く) -->
+  <div style="position:absolute;left:0;top:48px;width:390px;height:260px;overflow:hidden;background:#e8e4d8">
+    <img src="/_blob/1800bb719d85cc9d54e6d27189dd0b1e" alt="地図" style="position:absolute;left:0;top:-190px;width:390px;height:auto">
+    <svg width="35" height="46" viewBox="0 0 35 46" style="position:absolute;left:150px;top:86px" role="img" aria-label="選んだ公園(丹沢大山国定公園)"><path d="M3 1h29a2 2 0 0 1 2 2v29a2 2 0 0 1-2 2H21.500l-4 11-4-11H3a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2z" fill="#f44336" stroke="#b71c1c" stroke-width="1.500"/><path fill="#ffffff" transform="translate(8.500 7.500) scale(.75)" d="M17 8C8 10 5.900 16.200 3.800 21.300L5.700 22l1-2.300c.5.200 1 .3 1.300.3 11 0 14-17 14-17-1 2-8 2.300-13 3.300-5 1-7 5.200-7 7.200 0 1.600 1 3.100 2.500 3.600C8 14 11 10 17 8z"/></svg>
+    <div style="position:absolute;left:143px;top:79px;width:49px;height:60px;border-radius:8px;border:3px solid #ffa000;box-sizing:border-box"></div>
+  </div>
+
+  <!-- シート(開いた状態。約 7 割) -->
+  <div style="position:absolute;left:0;top:308px;width:390px;height:536px;background:#ffffff;border-radius:14px 14px 0 0;box-shadow:0 -2px 8px rgba(0,0,0,.25);box-sizing:border-box;display:flex;flex-direction:column">
+    <div style="padding:8px 16px 0">
+      <div style="width:40px;height:4px;border-radius:2px;background:#adb5bd;margin:0 auto 8px"></div>
+      <div style="display:flex;align-items:center;gap:8px;height:36px">
+        <b style="font-size:15px">スポット</b><span style="color:#6c757d;font-size:12px">POTA · 最新 6 時間</span>
+        <span style="margin-left:auto"></span>
+        <button type="button" aria-label="シートを閉じる" style="width:44px;height:44px;border:0;background:transparent;font-size:22px;color:#6c757d">▼</button>
+      </div>
+    </div>
+    <div style="padding:6px 16px 8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #dee2e6">
+      <label for="mprog" style="font-size:12px;color:#6c757d">プログラム</label>
+      <select id="mprog" style="height:44px;border:1px solid #ced4da;border-radius:3px;padding:0 8px;font-family:inherit;font-size:14px"><option>POTA</option><option>SOTA</option></select>
+      <label for="mper" style="font-size:12px;color:#6c757d">期間</label>
+      <select id="mper" style="height:44px;border:1px solid #ced4da;border-radius:3px;padding:0 8px;font-family:inherit;font-size:14px"><option>6 時間</option><option>1 時間</option></select>
+    </div>
+    <div style="padding:10px 16px 0">
+      <svg width="358" height="110" viewBox="0 0 358 110" role="img" aria-label="スポットのチャート">
+        <rect width="358" height="110" fill="#f8f9fa"/>
+        <g stroke="#dee2e6"><line x1="50" y1="0" x2="50" y2="94"/><line x1="140" y1="0" x2="140" y2="94"/><line x1="230" y1="0" x2="230" y2="94"/><line x1="320" y1="0" x2="320" y2="94"/><line x1="0" y1="94" x2="358" y2="94"/></g>
+        <g font-size="10" fill="#6c757d" text-anchor="middle"><text x="50" y="106">05:00</text><text x="140" y="106">07:00</text><text x="230" y="106">09:00</text><text x="320" y="106">11:00</text></g>
+        <g fill="#0d6efd"><circle cx="86" cy="18" r="6"/><circle cx="170" cy="18" r="6"/><circle cx="270" cy="40" r="6"/><circle cx="196" cy="62" r="6"/><circle cx="296" cy="62" r="6"/></g>
+        <circle cx="296" cy="62" r="10" fill="none" stroke="#ffa000" stroke-width="3"/>
+      </svg>
+    </div>
+    <!-- 一覧(各行は、44px 以上のタップ領域) -->
+    <div style="flex:1;overflow:hidden;padding-top:6px">
+      <button type="button" style="display:flex;width:100%;min-height:52px;padding:6px 16px;gap:8px;align-items:center;border:0;border-left:3px solid #ffa000;background:#fff8e1;text-align:left;font-size:14px;color:#212529">
+        <span style="display:flex;flex-direction:column"><b>JA1XYZ</b><span style="font-size:12px;color:#6c757d">JP-0118 丹沢大山国定公園</span></span>
+        <span style="margin-left:auto;font-size:12px;color:#6c757d;text-align:right">7.030 CW<br>10:32</span>
+      </button>
+      <button type="button" style="display:flex;width:100%;min-height:52px;padding:6px 16px;gap:8px;align-items:center;border:0;border-bottom:1px solid #f1f3f5;background:#ffffff;text-align:left;font-size:14px;color:#212529">
+        <span style="display:flex;flex-direction:column"><b>JH0ABC/2</b><span style="font-size:12px;color:#6c757d">JP-0016 富士箱根伊豆国立公園</span></span>
+        <span style="margin-left:auto;font-size:12px;color:#6c757d;text-align:right">14.285 SSB<br>10:21</span>
+      </button>
+      <button type="button" style="display:flex;width:100%;min-height:52px;padding:6px 16px;gap:8px;align-items:center;border:0;border-bottom:1px solid #f1f3f5;background:#ffffff;text-align:left;font-size:14px;color:#212529">
+        <span style="display:flex;flex-direction:column"><b>JA3DEF</b><span style="font-size:12px;color:#6c757d">JP-1309 神奈川県立秦野戸川公園</span></span>
+        <span style="margin-left:auto;font-size:12px;color:#6c757d;text-align:right">7.030 CW<br>09:58</span>
+      </button>
+      <button type="button" style="display:flex;width:100%;min-height:52px;padding:6px 16px;gap:8px;align-items:center;border:0;border-bottom:1px solid #f1f3f5;background:#ffffff;text-align:left;font-size:14px;color:#212529">
+        <span style="display:flex;flex-direction:column"><b>JK1GHI</b><span style="font-size:12px;color:#6c757d">JP-0117 明治の森高尾国定公園</span></span>
+        <span style="margin-left:auto;font-size:12px;color:#6c757d;text-align:right">21.285 SSB<br>09:40</span>
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

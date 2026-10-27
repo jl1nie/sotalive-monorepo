@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>ポップアップの中身</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap">
+<style>
+body{margin:0;font-family:Lato,'Helvetica Neue',Arial,Helvetica,sans-serif}
+</style>
+</helmet>
+<div style="width:1280px;height:760px;box-sizing:border-box;padding:28px 32px;background:#f1f3f5;color:#212529;font-size:14px;line-height:1.4;display:flex;flex-direction:column;gap:20px">
+
+  <div style="display:flex;align-items:baseline;gap:14px">
+    <h1 style="margin:0;font-size:20px">ポップアップの中身</h1>
+    <span style="color:#495057;font-size:13px">左の記号(B1〜B6)は、設計の文書の 6.2 のブロック。どの操作で、どのブロックが出るかを、行ごとに示す。文言は、旧版のまま(記録した golden master と同じ)。</span>
+  </div>
+
+  <div style="display:flex;gap:20px;align-items:flex-start">
+
+    <!-- 凡例 -->
+    <div style="width:230px;background:#ffffff;border-radius:6px;padding:14px 16px;box-sizing:border-box;font-size:12px;display:flex;flex-direction:column;gap:8px;border:1px solid #dee2e6">
+      <b style="font-size:13px">ブロック</b>
+      <div style="display:flex;gap:8px"><span style="background:#e8def8;color:#3b2a66;border-radius:3px;padding:0 5px;font-weight:700;height:18px">B1</span><span>見出し: 参照のリンクと名前(設定 pota_ref・jaff_ref で変わる)</span></div>
+      <div style="display:flex;gap:8px"><span style="background:#d7ecff;color:#0b3a66;border-radius:3px;padding:0 5px;font-weight:700;height:18px">B2</span><span>SOTA の詳細(標高・ポイント・Activations)</span></div>
+      <div style="display:flex;gap:8px"><span style="background:#d9f2d9;color:#14471a;border-radius:3px;padding:0 5px;font-weight:700;height:18px">B3</span><span>POTA ログ(Activations/Attempts・QSOs)</span></div>
+      <div style="display:flex;gap:8px"><span style="background:#ffe9c2;color:#5a3a00;border-radius:3px;padding:0 5px;font-weight:700;height:18px">B4</span><span>位置の情報(JCC/JCG・住所・GL・位置・標高)。圏外は Pos と GL だけ</span></div>
+      <div style="display:flex;gap:8px"><span style="background:#ffd9e0;color:#6b1230;border-radius:3px;padding:0 5px;font-weight:700;height:18px">B5</span><span>リンク(天気・マップコード・地図の種類)</span></div>
+      <div style="display:flex;gap:8px"><span style="background:#dee2e6;color:#212529;border-radius:3px;padding:0 5px;font-weight:700;height:18px">B6</span><span>パドル(ActPaddle のボタン。設定で有効のとき)</span></div>
+      <hr style="border:0;border-top:1px solid #dee2e6;width:100%;margin:4px 0">
+      <span style="color:#495057">ポップアップの下の「詳細を開く」(スマホ)は、新しく足す入口。PC では、側パネルに出す案。</span>
+    </div>
+
+    <!-- カード 1: 山 -->
+    <div style="width:250px;display:flex;flex-direction:column;gap:6px">
+      <b style="font-size:13px">山(SOTA)のマーカー・空白の山の近く</b>
+      <div style="background:#ffffff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.25);padding:12px 14px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;gap:6px"><span style="background:#e8def8;color:#3b2a66;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B1</span><div style="flex:1;text-align:center;font-weight:700"><span style="color:#0078a8;text-decoration:underline">JA/KN-006 Ooyama</span><br>大山</div></div>
+        <div style="display:flex;gap:6px"><span style="background:#d7ecff;color:#0b3a66;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B2</span><div>神奈川県伊勢原市<br>GL:PM95ok75<br>位置:<span style="color:#0078a8;text-decoration:underline">35.4408,139.2312</span><br>標高:1252m, 8pts (+3)</div></div>
+        <div style="display:flex;gap:6px"><span style="background:#ffe9c2;color:#5a3a00;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B4</span><div><b>クリック位置: </b><br>JCC1115<br>神奈川県伊勢原市大山<br>GL:PM95ok75<br>位置:<i style="color:#0078a8">35.4413,139.2317</i><br>標高:1250.8m <small>[1m レーザ]</small></div></div>
+        <div style="display:flex;gap:6px"><span style="background:#d7ecff;color:#0b3a66;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B2</span><div>Activations: 355<br>Last Activation: 21/10/2026 (JA1ABC)</div></div>
+        <div style="display:flex;gap:6px"><span style="background:#ffd9e0;color:#6b1230;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B5</span><div style="color:#0078a8">☀ ☁ ☂ &nbsp; マップコード</div></div>
+        <div style="display:flex;gap:6px"><span style="background:#dee2e6;color:#212529;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B6</span><div style="margin:0 auto"><span style="border:1px solid #007bff;color:#007bff;border-radius:3px;padding:1px 8px;font-size:11px">パドル ▸</span></div></div>
+      </div>
+      <span style="font-size:11px;color:#495057">アクティベーションゾーンを、自動で描く。</span>
+    </div>
+
+    <!-- カード 2: 公園 -->
+    <div style="width:250px;display:flex;flex-direction:column;gap:6px">
+      <b style="font-size:13px">公園(POTA/JAFF)・ログを表示</b>
+      <div style="background:#ffffff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.25);padding:12px 14px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;gap:6px"><span style="background:#e8def8;color:#3b2a66;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B1</span><div style="flex:1;text-align:center;font-weight:700"><span style="color:#0078a8;text-decoration:underline">JP-0118</span> /<span style="color:#0078a8;text-decoration:underline">JAFF-0050</span><br>丹沢大山国定公園</div></div>
+        <div style="display:flex;gap:6px"><span style="background:#ffe9c2;color:#5a3a00;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B4</span><div>JCC1112<br>神奈川県秦野市羽根<br>GL:PM95oj58<br>位置:<i style="color:#0078a8">35.4105,139.2098</i><br>標高:561.7m</div></div>
+        <div style="display:flex;gap:6px"><span style="background:#ffd9e0;color:#6b1230;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B5</span><div style="color:#0078a8">☀ ☁ ☂</div></div>
+        <div style="display:flex;gap:6px"><span style="background:#d9f2d9;color:#14471a;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B3</span><div>Activations/Attempts: 2/3<br>QSOs: 40</div></div>
+        <div style="display:flex;gap:6px"><span style="background:#dee2e6;color:#212529;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B6</span><div style="margin:0 auto"><span style="border:1px solid #007bff;color:#007bff;border-radius:3px;padding:1px 8px;font-size:11px">パドル ▸</span></div></div>
+      </div>
+      <span style="font-size:11px;color:#495057">マーカーの色: 未活動 緑 / 活動済 赤 / 複数 橙 / 試行のみ 黄。公園区域(ポリゴン)の左クリックも、同じ内容。</span>
+    </div>
+
+    <!-- カード 3: 空白・圏外・GPS -->
+    <div style="width:250px;display:flex;flex-direction:column;gap:6px">
+      <b style="font-size:13px">地図の空白(圏内)・現在地</b>
+      <div style="background:#ffffff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.25);padding:12px 14px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;gap:6px"><span style="background:#ffe9c2;color:#5a3a00;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B4</span><div>JCC100101<br>東京都千代田区丸の内一丁目<br>GL:PM95vq23<br>位置:<i style="color:#0078a8">35.681236,139.767125</i><br>標高:3.6m <small>[1m レーザ]</small></div></div>
+        <div style="display:flex;gap:6px"><span style="background:#ffd9e0;color:#6b1230;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B5</span><div style="color:#0078a8">☀ ☁ ☂</div></div>
+      </div>
+      <span style="font-size:11px;color:#495057">現在地(GPS)は、位置を斜体にしない。</span>
+      <b style="font-size:13px;margin-top:6px">圏外(海上など)</b>
+      <div style="background:#ffffff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.25);padding:12px 14px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;gap:6px"><span style="background:#ffe9c2;color:#5a3a00;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B4'</span><div>Pos: 30,150<br>GL: QM50aa00</div></div>
+        <div style="display:flex;gap:6px"><span style="background:#ffd9e0;color:#6b1230;border-radius:3px;padding:0 4px;font-weight:700;height:16px;font-size:11px">B5</span><div style="color:#0078a8">☀ ☁ ☂</div></div>
+      </div>
+    </div>
+
+    <!-- カード 4: 取得に失敗 -->
+    <div style="width:210px;display:flex;flex-direction:column;gap:6px">
+      <b style="font-size:13px">取得に失敗(新しく決める)</b>
+      <div style="background:#ffffff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.25);padding:12px 14px;font-size:12px;line-height:1.5">
+        住所を取得できませんでした<br>GL: PM95vq23<br><span style="color:#0078a8">もう一度試す</span>
+      </div>
+      <span style="font-size:11px;color:#495057">旧版は、API が失敗すると、何も出なかった。新版は、ポップアップに理由を出し、やり直せるようにする(myqth の新版と同じ考え方)。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
