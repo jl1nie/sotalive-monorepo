@@ -31,13 +31,13 @@ sotalive-monorepoは、SOTA/POTAアマチュア無線アワード支援サービ
 sotalive-monorepo/
 ├── apps/
 │   ├── myact/          # MyActivation の React 版（移行中。myact2.sotalive.net で試す）→ dist/myact2
-│   ├── myqth/          # MyQTH の新版（Vite + 素の TS。移行中。myqth2.sotalive.net で試す）→ dist/myqth2
+│   ├── myqth/          # MyQTH（Vite + 素の TS。myqth.sotalive.net の本番。myqth2.sotalive.net は本番より先に試す場所）→ dist-myqth・dist/myqth2
 │   ├── myact-org/      # MyActivation の旧版（jQuery。外部CSS・JSに分離済み）→ dist/myact
-│   ├── myqth-org/      # MyQTH の旧版（index.html だけ。css・js などは共通アセット）→ dist/myqth
+│   ├── myqth-org/      # MyQTH の旧版（戻せるように残す。出力なし）
 │   ├── logconv/        # LogConverter（ログ形式変換。WSPR はタブとして統合）
 │   └── fle/            # FLE Online
 ├── packages/
-│   └── shared/         # 共通アセット（旧版の myact・myqth が共有。Vercel 版の public/common と同じ）
+│   └── shared/         # 共通アセット（旧版の myact が共有。myqth の新版はファビコンと 404.html だけ使う。Vercel 版の public/common と同じ）
 ├── tools/
 │   └── jaffpota/       # 公園区域 TopoJSON の生成・版管理・検証（Python、uv。docs/park-areas.md）
 ├── functions/
@@ -87,11 +87,11 @@ pnpm run pages:deploy:preview # Preview (develop)
 | サブドメイン | アプリ | プロジェクト（CNAME 先） | 備考 |
 |------------|--------|------|------|
 | myact.sotalive.net / www | MyActivation（旧版。apps/myact-org） | sotalive-myact | www の `/logconv` 以下は logconv.sotalive.net へ転送（`_redirects`） |
-| myqth.sotalive.net | MyQTH（旧版。apps/myqth-org） | sotalive-myqth | |
+| myqth.sotalive.net | MyQTH（新版。apps/myqth） | sotalive-myqth | 旧版は apps/myqth-org に残してある。戻すときは `scripts/build-static-projects.sh` の myqth のブロックを旧版の `build` に替える |
 | logconv.sotalive.net / logconv2 | LogConverter | sotalive | logconv は、新しい logconv のテストが済むまで Vercel の旧画面のまま。移すときは www の転送も外す |
 | fleonline.sotalive.net | FLE Online | sotalive-fle | `/fle/`（`/` は転送）。Functions は `/api` の下だけ（`pages/fle`：設定の同期の KV と、バックエンドへの中継） |
 | myact2.sotalive.net | MyActivation（React 版。試験中） | sotalive | `noindex`。React 版は base が `/` なので、このホスト名でだけ動く |
-| myqth2.sotalive.net | MyQTH（新版。Vite + 素の TS。試験中） | sotalive | `noindex`。base が `/` なので、このホスト名でだけ動く。逆ジオコーダーは `packages/geo` |
+| myqth2.sotalive.net | MyQTH（新版を、本番より先に試す場所） | sotalive | `noindex`。逆ジオコーダーは `packages/geo` |
 
 ## Git運用
 

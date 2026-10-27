@@ -42,7 +42,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
 | `parks` | 公園区域 TopoJSON の検証と生成ツールのテスト(`tools/jaffpota`。[park-areas.md](park-areas.md)) |
 | `build` | アプリをビルドし、`scripts/assemble.sh` で出力を作り、artifact に上げる |
 | `deploy-sotalive` | プロジェクト `sotalive` へ(`dist`) |
-| `deploy-legacy` | `sotalive-myact`、`sotalive-myqth` へ(matrix)。`parks` を待つ |
+| `deploy-legacy` | `sotalive-myact`、`sotalive-myqth` へ(matrix)。`parks`・`myqth` を待つ |
 | `deploy-fle` | `sotalive-fle` へ(`pages/fle` で実行) |
 
 ## パスの判定
@@ -56,9 +56,10 @@ push は止めません。続けてマージしたとき、古い内容が後か
 | `fle` | `apps/fle/**`、`crates/**`、`pages/fle/**` | fle、deploy-fle |
 | `logconv` | `apps/logconv/**` | logconv |
 | `myact` | `apps/myact/**` | myact |
+| `myqth` | `apps/myqth/**`、`packages/geo/**` | myqth、deploy-legacy |
 | `legacy` | `apps/myact-org/**`、`apps/myqth-org/**` | deploy-legacy |
 | `parks` | `tools/jaffpota/**`、`packages/shared/common/js/myact.js` | parks |
-| `sotalive` | `functions/**`、`wrangler.toml`、`apps/logconv/**`、`apps/myact/**` | deploy-sotalive |
+| `sotalive` | `functions/**`、`wrangler.toml`、`apps/logconv/**`、`apps/myact/**`、`apps/myqth/**`、`packages/geo/**` | deploy-sotalive |
 
 `build` は、`all` か、`rust` 以外のどれかが真のときに走ります。ドキュメントだけの変更では、ビルドもデプロイも走りません。
 
@@ -70,7 +71,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
 |---|---|---|
 | `dist` | プロジェクト `sotalive` の出力 | deploy-sotalive |
 | `dist-myact` | 旧版 MyActivation | deploy-legacy |
-| `dist-myqth` | 旧版 MyQTH | deploy-legacy |
+| `dist-myqth` | MyQTH(新版) | deploy-legacy |
 | `dist-fle` | FLE Online | deploy-fle |
 
 `dist-myact` と `dist-fle` には `_redirects` などの隠しファイルが入るので、`include-hidden-files: true` を付けています。

@@ -33,7 +33,7 @@ Functions を全体にかけているのは、まだ公開していない logcon
 
 ## リクエストの流れ
 
-### 静的ファイル(旧版 myact・myqth)
+### 静的ファイル(myact 旧版・myqth)
 
 1. ブラウザが `myact.sotalive.net` を引くと、CNAME で `sotalive-myact.pages.dev` に着きます。
 2. Pages が `dist-myact` のファイルをそのまま返します。Functions は動きません。
@@ -50,7 +50,7 @@ Functions を全体にかけているのは、まだ公開していない logcon
 `functions/_middleware.ts` が、すべてのリクエストを次の順で処理します。
 
 1. パスが `/api/` で始まれば、バックエンド(環境変数 `BACKEND_URL`。なければ `https://sotaapp2.sotalive.net`)へ中継します(`X-Forwarded-Host` に元のホスト名を入れます)。
-2. ホスト名が `myact2` で始まれば `/myact2`、`myqth2` で始まれば `/myqth2`、`logconv` で始まれば `/logconv` を、パスの前に付けます(`myqth.sotalive.net`、公開している旧版は別のプロジェクトで、ここを通りません)。
+2. ホスト名が `myact2` で始まれば `/myact2`、`myqth2` で始まれば `/myqth2`、`logconv` で始まれば `/logconv` を、パスの前に付けます(`myqth.sotalive.net`、本番は別のプロジェクトで、ここを通りません)。
 3. そのファイルがなければ(404)、共通アセット(`/shared/common/...`)を探します。
 4. myact2・myqth2 には `x-robots-tag: noindex` を付けて、検索エンジンに載せません。
 5. 上のどれでもないホスト名(`sotalive.pages.dev` など)は、そのまま配信します。
@@ -78,7 +78,7 @@ API はバックエンドの独自ドメイン `sotaapp2.sotalive.net`(Fly.io)�
 |---|---|---|---|
 | `dist` | `scripts/assemble.sh` | `logconv/`、`myact2/`、`myqth2/`、`shared/`、`functions/` | sotalive |
 | `dist-myact` | `scripts/build-static-projects.sh` | 旧版 myact の `index.html`、共通アセット、404.html、`_redirects` | sotalive-myact |
-| `dist-myqth` | 同上 | 旧版 myqth の `index.html`、共通アセット、404.html | sotalive-myqth |
+| `dist-myqth` | 同上 | 新版 myqth(`apps/myqth/dist`)、ファビコン、404.html | sotalive-myqth |
 | `dist-fle` | 同上 | `fle/`(FLE のビルド)、`_redirects` | sotalive-fle |
 
 `assemble.sh` の最後で `build-static-projects.sh` が呼ばれます。

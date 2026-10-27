@@ -11,11 +11,11 @@ SOTA/POTA アマチュア無線アワード支援サービス「sotalive」の�
 | URL | 中身 | Pages プロジェクト | 状態 |
 |---|---|---|---|
 | myact.sotalive.net / www.sotalive.net | MyActivation 旧版(jQuery。`apps/myact-org`) | sotalive-myact | 本番 |
-| myqth.sotalive.net | MyQTH 旧版(`apps/myqth-org`) | sotalive-myqth | 本番 |
+| myqth.sotalive.net | MyQTH(新版。Vite + 素の TS。`apps/myqth`。旧版 `apps/myqth-org` は戻せるように残す) | sotalive-myqth | 本番 |
 | fleonline.sotalive.net | FLE Online(React。`apps/fle`) | sotalive-fle | 本番 |
 | logconv2.sotalive.net | LogConverter 新版(React。`apps/logconv`) | sotalive | テスト中 |
 | myact2.sotalive.net | MyActivation React 版(`apps/myact`) | sotalive | **開発中**(本番は旧版) |
-| myqth2.sotalive.net | MyQTH 新版(Vite + 素の TS。`apps/myqth`) | sotalive | **試験中**(本番は旧版) |
+| myqth2.sotalive.net | MyQTH 新版を、本番より先に試す場所(`apps/myqth`) | sotalive | 試験用(`noindex`) |
 | logconv.sotalive.net | LogConverter 旧版 | Vercel(旧リポジトリ) | 新版のテストが済んだら Pages へ移す |
 
 MyActivation の React 版は開発中です。本番で使われているのは旧版(`apps/myact-org`)です。
@@ -54,9 +54,9 @@ flowchart LR
 ```
 apps/
   myact/        MyActivation の React 版(開発中)        -> dist/myact2
-  myqth/        MyQTH の新版(Vite + 素の TS。試験中)    -> dist/myqth2
+  myqth/        MyQTH(Vite + 素の TS)                    -> dist-myqth・dist/myqth2
   myact-org/    MyActivation の旧版(jQuery)             -> dist-myact
-  myqth-org/    MyQTH の旧版(index.html だけ)            -> dist-myqth
+  myqth-org/    MyQTH の旧版(戻せるように残す。出力なし)
   logconv/      LogConverter 新版(React。WSPR はタブ)    -> dist/logconv
   logconv-org/  LogConverter 旧版の静的ファイル
   fle/          FLE Online(React + Rust 製 wasm)         -> dist-fle/fle

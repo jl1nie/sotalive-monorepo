@@ -43,7 +43,7 @@ describe('myqth2(新しい MyQTH。試験中)', () => {
     expect(response.headers.get('x-robots-tag')).toBe('noindex')
   })
 
-  it('myqth.sotalive.net(公開している旧版。別のプロジェクト)は、振り分けない', async () => {
+  it('myqth.sotalive.net(本番。別のプロジェクト)は、振り分けない', async () => {
     const { fetched } = await call('https://myqth.sotalive.net/', ['/'])
     expect(fetched).toEqual(['/'])
   })
