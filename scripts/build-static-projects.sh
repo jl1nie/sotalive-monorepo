@@ -28,8 +28,6 @@ build() {
 }
 
 build myact css js img font svg json
-# 公園区域の TopoJSON は、ファイル名に版が入っているので、長期キャッシュにする
-scripts/write-immutable-headers.sh dist-myact
 # myqth: 新版のビルド(apps/myqth/dist)をそのまま置く。ファビコンと 404.html は、旧版と同じくルートに足す。
 # 旧版に戻すときは、このブロックを `build myqth css js img font svg` に替える(apps/myqth-org は残してある)
 rm -rf dist-myqth
