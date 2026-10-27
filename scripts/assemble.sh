@@ -9,9 +9,10 @@ cd "$(dirname "$0")/.."
 rm -rf dist
 mkdir -p dist/logconv dist/myact2 dist/myqth2 dist/shared dist/functions
 cp -r apps/logconv/dist/* dist/logconv/
-cp -r apps/myact/dist/* dist/myact2/
+# myact2 は、次期 MyACT(apps/myact-next)。React 版(apps/myact)は凍結で、出さない
+cp -r apps/myact-next/dist/* dist/myact2/
 cp -r apps/myqth/dist/* dist/myqth2/
-# 共通アセット(myact2 の React 版も /json/ などを使う)
+# 共通アセット(myact2 も /json/ などを使う)
 cp -r packages/shared/* dist/shared/
 cp -r functions/* dist/functions/
 

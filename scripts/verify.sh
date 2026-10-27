@@ -11,6 +11,7 @@
 #   rust      cargo test --workspace
 #   wasm      FLE の wasm のビルド(apps/fle/src/wasm/fle は git に入れない生成物。次の fle の前提)
 #   fle・logconv・myact   各アプリで tsc -b・vitest run・eslint
+#   myact-next 次期 MyACT(apps/myact-next)で tsc -b・vitest run・eslint、ビルドして、ブラウザーで開くテスト(Playwright。旧版の golden master と同じ行を比べる)
 #   myqth     新しい MyQTH(apps/myqth)で tsc -b・vitest run・eslint、ビルドして、ブラウザーで開くテスト(Playwright)
 #   golden    旧版 MyACT を固定の応答で動かし、記録(packages/myact-golden/expected)と比べる(Playwright)
 #   functions functions/_middleware.ts の、ホスト名による振り分けのテスト(packages/functions-test)
@@ -140,6 +141,8 @@ run wasm pnpm --filter @sotalive/fle wasm
 run fle app_checks fle
 run logconv app_checks logconv
 run myact app_checks myact
+run myact-next app_checks myact-next
+run myact-next-e2e bash -c 'pnpm --filter @sotalive/myact-next run build && node --test apps/myact-next/e2e/myact-next.e2e.mjs'
 run myqth app_checks myqth
 run myqth-e2e bash -c 'pnpm --filter @sotalive/myqth run build && node --test apps/myqth/e2e/myqth.e2e.mjs'
 run golden pnpm --filter @sotalive/myact-golden verify
