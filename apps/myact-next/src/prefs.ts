@@ -25,6 +25,10 @@ export interface Prefs {
   jaff_ref: boolean
   /** この拡大(ズーム)以上では、全ての公園・山を出す(7〜12) */
   zoom_threshold: number
+  /** スポットを出す期間(時間) */
+  spot_period: number
+  /** スポットを、参照でなくコールサインごとにまとめる */
+  by_call: boolean
   /** 公園区域(ポリゴン)を出す */
   display_area: boolean
   /** ActPaddle(パドルエミュレータ)のボタンを、ポップアップに出す */
@@ -57,6 +61,8 @@ export const DEFAULTS: Prefs = {
   pota_ref: true,
   jaff_ref: true,
   zoom_threshold: 12,
+  spot_period: 6,
+  by_call: false,
   display_area: true,
   enable_emulation: false,
   pemu_call: '',
@@ -78,7 +84,7 @@ export interface CookieIO {
   set(name: string, value: string): void
 }
 
-const BOOLEANS = ['show_potalog', 'show_potaactlog', 'popup_permanent', 'display_mapcode', 'link_googlemap', 'sota_ref', 'pota_ref', 'jaff_ref', 'display_area', 'enable_emulation', 'include_areacode', 'paddle_reverse', 'to_paddle', 'enable_wifi'] as const
+const BOOLEANS = ['show_potalog', 'show_potaactlog', 'popup_permanent', 'display_mapcode', 'link_googlemap', 'sota_ref', 'pota_ref', 'jaff_ref', 'display_area', 'by_call', 'enable_emulation', 'include_areacode', 'paddle_reverse', 'to_paddle', 'enable_wifi'] as const
 const STRINGS = ['pemu_call', 'pemu_mesg1', 'pemu_mesg2', 'pemu_mesg3', 'pemu_mesg4', 'pemu_wpm', 'pemu_host'] as const
 const UUIDS = ['pota_activator_uuid', 'pota_hunter_uuid'] as const
 
@@ -97,8 +103,10 @@ export function loadPrefs(io: CookieIO): Prefs {
     const v = io.get(k)
     if (v !== undefined && v !== '') prefs[k] = v
   }
-  const zt = Number(io.get('zoom_threshold'))
-  if (io.get('zoom_threshold') !== undefined && Number.isFinite(zt)) prefs.zoom_threshold = zt
+  for (const k of ['zoom_threshold', 'spot_period'] as const) {
+    const n = Number(io.get(k))
+    if (io.get(k) !== undefined && Number.isFinite(n)) prefs[k] = n
+  }
   return prefs
 }
 

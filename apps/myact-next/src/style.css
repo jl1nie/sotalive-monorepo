@@ -86,8 +86,15 @@ body {
 body > nav {
   flex: 0 0 auto;
 }
+/* 地図と、スポットの側パネルの横並び(スマホでは、パネルは下からのシート) */
+#main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
 #map-wrap {
   flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
   padding: 0 15px;
 }
@@ -394,4 +401,103 @@ body > nav {
 .pemu-error {
   background: #f8d7da;
   color: #842029;
+}
+
+/* スポットの面 */
+.spot-panel {
+  flex: 0 0 360px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  border-left: 1px solid #dee2e6;
+  background: #fff;
+}
+.spot-panel[hidden] {
+  display: none;
+}
+.spot-grip {
+  display: none;
+}
+.spot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #dee2e6;
+}
+.spot-head .custom-select {
+  width: auto;
+  min-height: 32px;
+}
+.spot-bycall {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+}
+.spot-head .pl-close {
+  margin-left: auto;
+}
+.spot-chart {
+  padding: 8px 12px 0;
+}
+.spot-dot {
+  cursor: pointer;
+}
+.spot-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 16px;
+  border: 0;
+  border-bottom: 1px solid #f1f3f5;
+  border-left: 3px solid transparent;
+  background: #fff;
+  text-align: left;
+  font-size: 14px;
+  color: #212529;
+}
+.spot-row.spot-needed {
+  border-left-color: #ffa000;
+  background: #fff8e1;
+}
+.spot-main {
+  display: flex;
+  flex-direction: column;
+}
+.spot-ref {
+  font-size: 12px;
+  color: #6c757d;
+}
+.spot-meta {
+  margin-left: auto;
+  font-size: 12px;
+  color: #6c757d;
+  text-align: right;
+}
+@media (max-width: 767.98px) {
+  .spot-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1100;
+    height: 62dvh;
+    border: 0;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.25);
+  }
+  .spot-grip {
+    display: block;
+    flex: 0 0 4px;
+    width: 40px;
+    margin: 8px auto 0;
+    border-radius: 2px;
+    background: #adb5bd;
+  }
 }

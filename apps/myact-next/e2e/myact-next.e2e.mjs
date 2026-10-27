@@ -460,3 +460,78 @@ test('公園区域: 設定で出さないなら、読み込まない(旧版と�
   assert.equal(await page.evaluate(() => window.map.hasLayer(window.areaLayer)), false);
   await context.close();
 });
+
+// ---- スポット(PC は右の側パネル、スマホは下のシート) ----
+const iso = (minAgo) => new Date(Date.now() - minAgo * 60_000).toISOString();
+const spotsState = () => {
+  const calls = [];
+  const sp = (program, reference, activator, minAgo, qsos = null) => ({ program, reference, activator, frequency: '7.030', mode: 'CW', comment: 'CQ', spotTime: iso(minAgo), qsos });
+  return {
+    calls,
+    handlers: [
+      ({ path, q }) => {
+        if (path.endsWith('/activation/spots')) {
+          calls.push(q.toString());
+          return { status: 200, body: JSON.stringify([
+            { key: 'JP-0118', values: [sp('POTA', 'JP-0118', 'JA1XYZ', 50), sp('POTA', 'JP-0118', 'JA1XYZ', 10)] },
+            { key: 'JP-1309', values: [sp('POTA', 'JP-1309', 'JH0ABC', 30)] },
+            { key: 'JA/KN-006', values: [sp('SOTA', 'JA/KN-006', 'JA3DEF', 20)] },
+          ]) };
+        }
+        if (path.endsWith('/search/brief')) return { status: 200, body: JSON.stringify({ count: 1, candidates: [{ code: q.get('name'), name: 'x', nameJ: 'x', lat: 35.4105, lon: 139.2098 }] }) };
+        return null;
+      },
+    ],
+  };
+};
+
+test('スポット: ボタンで側パネルが開き、行(新しい順)とチャートの点が出る。SOTA の案内も出る', async () => {
+  const state = spotsState();
+  const { page, context, errors } = await open({ state });
+  await page.click('#spot-button');
+  await page.waitForSelector('.spot-row');
+  assert.equal(await page.getAttribute('#spot-button', 'aria-expanded'), 'true');
+  assert.deepEqual(await page.locator('.spot-row .spot-ref').allInnerTexts(), ['JP-0118', 'JA/KN-006', 'JP-1309']); // 一覧は、最新のスポットが新しい順(10・20・30 分前)
+  assert.equal(await page.locator('svg.spot-svg circle').count(), 4);
+  assert.equal(await page.locator('#spot-panel .alert-warning').isVisible(), true);
+  assert.match(state.calls[0], /pat_ref=%5E%28JA%7CJP-%29/);
+  assert.match(state.calls[0], /by_ref=null/);
+  assert.match(state.calls[0], /hours_ago=6/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('スポット: プログラム・期間を替えると取り直し、期間は旧版と同じ Cookie(spot_period)に保存する', async () => {
+  const state = spotsState();
+  const { page, context } = await open({ state });
+  await page.click('#spot-button');
+  await page.waitForSelector('.spot-row');
+  await page.selectOption('#spot-program', 'POTA');
+  await page.waitForFunction(() => document.querySelectorAll('.spot-row').length === 2);
+  assert.equal(await page.locator('#spot-panel .alert-warning').isVisible(), false);
+  await page.selectOption('#spot-period', '12');
+  await page.waitForFunction(() => document.cookie.includes('spot_period=12'));
+  assert.ok(state.calls.some((c) => c.includes('hours_ago=12')), state.calls.join(' | '));
+  await context.close();
+});
+
+test('スポット: 行を押すと、その参照の場所へ動く', async () => {
+  const { page, context } = await open({ state: spotsState(), search: '?lat=35.68&lon=139.76&z=9' });
+  await page.click('#spot-button');
+  await page.locator('.spot-row', { hasText: 'JP-1309' }).click();
+  await page.waitForFunction(() => Math.abs(window.map.getCenter().lat - 35.4105) < 1e-3 && window.map.getZoom() === 15);
+  await context.close();
+});
+
+test('スポット: スマホの幅では、下からのシートになり、地図を覆わない閉じた状態から開く', async () => {
+  const { page, context } = await open({ state: spotsState() });
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(await page.locator('#spot-panel').isVisible(), false);
+  await page.click('#spot-button');
+  await page.waitForSelector('.spot-row');
+  const box = await page.locator('#spot-panel').boundingBox();
+  assert.ok(box.y > 844 * 0.3 && Math.abs(box.y + box.height - 844) < 2, JSON.stringify(box)); // 下に付き、上の約 3 割は地図
+  await page.click('button[aria-label="スポットを閉じる"]');
+  assert.equal(await page.locator('#spot-panel').isVisible(), false);
+  await context.close();
+});
