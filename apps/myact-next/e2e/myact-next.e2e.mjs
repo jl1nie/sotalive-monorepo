@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { POINTS, respond } from '../../../packages/myact-golden/src/world.mjs';
 import { LOGGED } from '../../../packages/myact-golden/src/scenarios.mjs';
+import { installMocks } from '../../../packages/myact-golden/src/scenarios-paddle.mjs';
 import { logServer } from '../../../packages/myact-golden/src/scenarios-potalog.mjs';
 
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url));
@@ -31,18 +32,20 @@ after(async () => {
  * 新版を開く。cookies: 設定(旧版と同じ名前と値)、state: world.respond に渡す状態(POTA ログのサーバーなど)、
  * search: URL のクエリ、gps: 現在地を返す(なければ、取得が保留のまま)
  */
-async function open({ cookies = {}, state = {}, search = '', gps } = {}) {
+async function open({ cookies = {}, state = {}, search = '', gps, mocks = false, external } = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'ja-JP', timezoneId: 'Asia/Tokyo' });
   await context.addCookies(Object.entries(cookies).map(([name, value]) => ({ name, value: String(value), url: ORIGIN })));
   const page = await context.newPage();
   const errors = [];
   const dialogs = [];
   const apiCalls = [];
+  const externalCalls = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('dialog', (d) => (dialogs.push(d.message()), d.dismiss()));
   await page.addInitScript((g) => {
     navigator.geolocation.getCurrentPosition = (ok) => { if (g) setTimeout(() => ok({ coords: { latitude: g.latitude, longitude: g.longitude } }), 0); };
   }, gps ?? null);
+  if (mocks) await page.addInitScript(installMocks);
   await page.route('**/*', (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -51,6 +54,13 @@ async function open({ cookies = {}, state = {}, search = '', gps } = {}) {
       const file = join(DIST, url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname));
       if (existsSync(file)) return send(readFileSync(file), TYPES[extname(file)] ?? 'application/octet-stream');
       return send('', 'text/plain', 404);
+    }
+    if (external && url.hostname !== 'sotaapp2.sotalive.net' && !url.hostname.endsWith('gsi.go.jp')) {
+      const e = external({ url: req.url() });
+      if (e) {
+        externalCalls.push({ method: req.method(), url: req.url(), contentType: req.headers()['content-type'] ?? null, body: req.postData() });
+        return send(e.body, 'application/json', e.status);
+      }
     }
     const r = respond(req.url(), req.method(), req.postData(), state);
     if (r) {
@@ -63,7 +73,7 @@ async function open({ cookies = {}, state = {}, search = '', gps } = {}) {
   });
   await page.goto(`${ORIGIN}/${search}`);
   await page.waitForFunction(() => typeof window.map === 'object', null, { timeout: 15000 });
-  return { page, context, errors, dialogs, apiCalls };
+  return { page, context, errors, dialogs, apiCalls, externalCalls };
 }
 
 /** ポップアップの行(旧版の golden master と同じ取り出し方) */
@@ -325,5 +335,104 @@ test('検索: 「緯度,経度」を貼り付けると、その場所へ動く',
   const { page, context } = await open(); // URL の位置を付けない(開いたままのポップアップの自動スクロールと競う)
   await page.fill('#ref-search', '35.410500,139.209800');
   await page.waitForFunction(() => Math.abs(window.map.getCenter().lng - 139.2098) < 1e-3 && window.map.getZoom() === 15);
+  await context.close();
+});
+
+// ---- ActPaddle(必須。旧版の golden master pemu-* と比べる) ----
+const wifiCookies = (extra = {}) => ({ enable_emulation: 'true', enable_wifi: 'true', enable_serial: 'false', pemu_call: 'JA1ABC', pemu_host: 'actpaddle.local', pemu_wpm: '25', ...extra });
+const device = (status = 200) => (({ url }) => (url.includes('/play') ? { status, body: '{}' } : null));
+const openPaddle = async (page, kind) => {
+  await showMarkers(page, kind === 'summit' ? POINTS.oyama : POINTS.tanzawa);
+  await clickMarker(page, kind);
+  await popupLines(page);
+  await page.locator('.leaflet-popup-content button[aria-label="ActPaddle を開く"]').click();
+  await page.waitForSelector('#pemuact[open]');
+};
+const dialogFields = (page) =>
+  page.evaluate(() => ({
+    name: document.getElementById('pemu_name').innerText,
+    values: Object.fromEntries([...document.querySelectorAll('#pemuact input[type=text]')].filter((i) => i.id.startsWith('pemu_') && i.id !== 'pemu_host').map((i) => [i.id, i.value])),
+    checks: Object.fromEntries([...document.querySelectorAll('#pemuact input[type=checkbox]')].map((i) => [i.id, i.checked])),
+  }));
+const sendMesg = async (page, n, edits = {}) => {
+  for (const [id, value] of Object.entries(edits)) await page.fill(`#${id}`, value);
+  await page.locator('#pemuact button', { hasText: 'SEND' }).nth(n - 1).click();
+  await page.waitForTimeout(500);
+};
+const outputs = (page) => page.evaluate(() => ({ clipboard: window.__clip, serial: window.__serial }));
+
+for (const [name, kind] of [['pemu-open-from-park-popup', 'park'], ['pemu-open-from-summit-popup', 'summit']]) {
+  test(`ActPaddle: ポップアップのボタンから開くと、場所の値が入る(${name}): 旧版の記録と同じ`, async () => {
+    const { page, context, errors } = await open({ cookies: wifiCookies(), mocks: true });
+    await openPaddle(page, kind);
+    assert.deepEqual(await dialogFields(page), expected(name).dialog);
+    assert.deepEqual(errors, []);
+    await context.close();
+  });
+}
+
+test('ActPaddle: 設定で有効にしなければ、ボタンは出ない', async () => {
+  const { page, context } = await open({ mocks: true });
+  await showMarkers(page, POINTS.tanzawa);
+  await clickMarker(page, 'park');
+  await popupLines(page);
+  assert.equal(await page.locator('.leaflet-popup-content button').count(), 0);
+  await context.close();
+});
+
+for (const [name, setup] of [
+  ['pemu-wifi-send-pota-paddle', { kind: 'park', n: 2 }],
+  ['pemu-wifi-send-sota-straight-key', { kind: 'summit', n: 1, cookies: { to_paddle: 'false', to_key: 'true' } }],
+  ['pemu-wifi-reverse', { kind: 'park', n: 2, cookies: { paddle_reverse: 'true' } }],
+  ['pemu-wifi-areacode-added-to-call', { kind: 'park', n: 2, cookies: { include_areacode: 'true' }, edits: { pemu_areacode: '1' } }],
+  ['pemu-wifi-areacode-not-added', { kind: 'park', n: 2, cookies: { include_areacode: 'false' }, edits: { pemu_areacode: '1' } }],
+]) {
+  test(`ActPaddle: WiFi で送る(${name}): クリップボードと POST の中身が旧版の記録と同じ(Content-Type の誤字だけ直す)`, async () => {
+    const { page, context, externalCalls } = await open({ cookies: wifiCookies(setup.cookies), mocks: true, external: device() });
+    await openPaddle(page, setup.kind);
+    await sendMesg(page, setup.n, setup.edits);
+    const want = expected(name);
+    assert.deepEqual((await outputs(page)).clipboard, want.clipboard);
+    assert.deepEqual(externalCalls.map((c) => ({ ...c, contentType: c.contentType === 'application/json' ? 'applicatoin/json' : c.contentType })), want.externalCalls);
+    assert.equal(externalCalls[0].contentType, 'application/json');
+    await context.close();
+  });
+}
+
+test('ActPaddle: 同じ記号が何度あっても、すべて置き換える(旧版は最初の 1 つだけ。意図した差分)', async () => {
+  const { page, context } = await open({ cookies: wifiCookies(), mocks: true, external: device() });
+  await openPaddle(page, 'park');
+  await sendMesg(page, 1, { pemu_mesg1: 'CQ DE $CALL $CALL POTA $POTA $POTA $JAFF $JAFF $JCC $JCC' });
+  assert.deepEqual((await outputs(page)).clipboard, ['CQ DE JA1ABC JA1ABC POTA JP0118 JP0118 JAFF0050 JAFF0050 JCC 1112 JCC 1112']);
+  await context.close();
+});
+
+test('ActPaddle: 接続エラーは、alert ではなく、ダイアログの中に出す(旧版は alert。意図した差分)', async () => {
+  const { page, context, dialogs } = await open({ cookies: wifiCookies(), mocks: true, external: device(500) });
+  await openPaddle(page, 'park');
+  await sendMesg(page, 2);
+  assert.match(await page.locator('.pemu-status[role=alert]').innerText(), /接続エラー: https:\/\/actpaddle\.local\/play \(Error: Internal Server Error\)/);
+  assert.deepEqual(dialogs, []);
+  await context.close();
+});
+
+test('ActPaddle: USB(Web Serial)に送る: 書く文字列・フィルター・ボーレートが旧版の記録と同じ', async () => {
+  const { page, context } = await open({ cookies: wifiCookies({ enable_wifi: 'false', enable_serial: 'true' }), mocks: true });
+  await openPaddle(page, 'park');
+  await sendMesg(page, 2);
+  const want = expected('pemu-serial-send');
+  const got = await outputs(page);
+  assert.deepEqual(got, { clipboard: want.clipboard, serial: want.serial });
+  assert.deepEqual(await page.evaluate(() => window.__serialRequest), want.serialRequest);
+  assert.deepEqual(await page.evaluate(() => window.__serialOpen), want.serialOpen);
+  await context.close();
+});
+
+test('ActPaddle: 送ると、CALL・WPM・送り方を旧版と同じ Cookie に保存する', async () => {
+  const { page, context } = await open({ cookies: wifiCookies(), mocks: true, external: device() });
+  await openPaddle(page, 'park');
+  await sendMesg(page, 1, { pemu_call: 'JH1XYZ', pemu_wpm: '30' });
+  const cookies = await cookieMap(context);
+  assert.deepEqual([cookies.pemu_call, cookies.pemu_wpm, cookies.enable_wifi, cookies.enable_serial], ['JH1XYZ', '30', 'true', 'false']);
   await context.close();
 });

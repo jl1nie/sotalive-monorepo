@@ -19,6 +19,8 @@ export interface GeoOk {
   /** 市区町村 + 大字(国土地理院の lv01Nm) */
   municipality: string
   maidenhead: string
+  /** 呼出符号のエリア番号(自治体の表にあるときだけ。ActPaddle の既定の値) */
+  areacode?: string
   /** `elevation: true` のときだけ */
   elevation?: number | string
   hsrc?: string
@@ -66,6 +68,8 @@ interface Muni {
   jcgCode?: string | null
   hamlogCode?: string | null
   jcgText?: string | null
+  /** 呼出符号のエリア番号(例: ['1']) */
+  areacode?: string[] | null
   maidenhead?: string
 }
 interface Elevation {
@@ -114,6 +118,7 @@ export function createReverseGeocoder(options: ReverseGeocoderOptions = {}) {
         municipality: (muni.municipality ?? '') + (lv01Nm && lv01Nm !== '−' ? lv01Nm : ''),
         maidenhead: muni.maidenhead || maidenhead(lat, lng),
       }
+      if (muni.areacode?.[0]) result.areacode = muni.areacode[0]
       if (elevationPromise) {
         const elev = await elevationPromise
         if (!elev) throw new Error(`elevation ${gsiElevation}`)

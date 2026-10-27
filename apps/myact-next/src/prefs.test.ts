@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPrefs, loadPrefs, parseUuid, type CookieIO } from './prefs.ts'
+import { DEFAULTS, createPrefs, loadPrefs, parseUuid, type CookieIO } from './prefs.ts'
 
 const memory = (initial: Record<string, string> = {}) => {
   const jar = { ...initial }
@@ -9,9 +9,11 @@ const memory = (initial: Record<string, string> = {}) => {
 
 describe('設定(旧版の Cookie と、同じ名前・同じ値の形)', () => {
   it('Cookie がなければ、既定(ログは出さない・Activator・UUID なし)', () => {
-    expect(loadPrefs(memory().io)).toEqual({
+    expect(loadPrefs(memory().io)).toEqual({ ...DEFAULTS })
+    expect(DEFAULTS).toMatchObject({
       show_potalog: false, show_potaactlog: true, pota_activator_uuid: null, pota_hunter_uuid: null,
       popup_permanent: true, display_mapcode: false, link_googlemap: false, sota_ref: true, pota_ref: true, jaff_ref: true, zoom_threshold: 12,
+      enable_emulation: false, pemu_wpm: '40', pemu_host: 'actpaddle.local', include_areacode: true, to_paddle: true, enable_wifi: false,
     })
   })
 
@@ -46,6 +48,14 @@ describe('設定(旧版の Cookie と、同じ名前・同じ値の形)', () => 
   it('旧版の設定: 真偽 \'false\' は false。zoom_threshold は数値(Cookie は文字列)', () => {
     const p = loadPrefs(memory({ pota_ref: 'false', popup_permanent: 'false', zoom_threshold: '9', link_googlemap: 'true' }).io)
     expect(p).toMatchObject({ pota_ref: false, popup_permanent: false, zoom_threshold: 9, link_googlemap: true, jaff_ref: true })
+  })
+
+  it('ActPaddle: 文字は、そのまま読む。ラジオの組(WiFi か USB・パドルかキー)は、旧版と同じ 2 つの Cookie に書く', () => {
+    const { io, jar } = memory({ pemu_call: 'JA1ABC', pemu_wpm: '25', enable_wifi: 'true', enable_emulation: 'true' })
+    const prefs = createPrefs(io)
+    expect(prefs.get()).toMatchObject({ pemu_call: 'JA1ABC', pemu_wpm: '25', enable_wifi: true, enable_emulation: true })
+    prefs.set({ enable_wifi: false, to_paddle: false })
+    expect(jar).toMatchObject({ enable_wifi: 'false', enable_serial: 'true', to_paddle: 'false', to_key: 'true' })
   })
 
   it('変更を購読できる', () => {
