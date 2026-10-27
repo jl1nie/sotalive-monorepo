@@ -42,6 +42,8 @@ async function openApp(app, { noGeolocation = false, pendingGeolocation = false,
   if (noGeolocation) await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'geolocation', { get: () => undefined }));
   // 手元のファイル(このページ)の JS で起きた例外。CDN のライブラリの中だけで起きたものは数えない
   const errors = [];
+  const requests = []; // 開いたページが出した要求の URL(外部のものも)
+  page.on('request', (r) => requests.push(r.url()));
   page.on('pageerror', (e) => (e.stack ?? '').includes(ORIGIN) && errors.push(e.message));
   // alert(位置情報が使えないときなど)は、文面を覚えて閉じる
   const dialogs = [];
@@ -77,7 +79,7 @@ async function openApp(app, { noGeolocation = false, pendingGeolocation = false,
   });
   await page.goto(`${ORIGIN}/${search}`);
   await page.waitForFunction(() => typeof window.map === 'object', null, { timeout: 15000 });
-  return { page, errors, dialogs };
+  return { page, errors, dialogs, requests };
 }
 
 test('myqth: 地図をクリックすると、JCC・住所・標高のポップアップが出る', async () => {
@@ -147,6 +149,19 @@ test('myact: URL で地点とズームを指定すると、ポップアップの
   // 日本全体(ズーム 6)を先に出しているので、ズームのアニメーションが付くと、リンクのズームが 6 になっていた
   assert.equal(await page.evaluate(() => window.map.getZoom()), 9);
   assert.match(await popup.innerHTML(), /windy\.com[^"]*,9"/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('myact: システム状態の iframe(mackerel.io)は、モーダルを開くまで読まない', async () => {
+  const { page, requests, errors } = await openApp('myact');
+  await page.waitForTimeout(2500);
+  // 直す前は、起動のたびに mackerel.io を読んでいた(約 3.5MB と、広告・計測のスクリプト)
+  assert.deepEqual(requests.filter((u) => u.includes('mackerel.io')), []);
+  await page.evaluate(() => window.$('#modal-mackerel').modal('show'));
+  await page.waitForFunction(() => document.querySelector('#modal-mackerel iframe')?.getAttribute('src')?.includes('mackerel.io'), null, { timeout: 5000 });
+  await page.waitForTimeout(300);
+  assert.ok(requests.some((u) => u.includes('mackerel.io')), '開いたら、読む');
   assert.deepEqual(errors, []);
   await page.close();
 });
