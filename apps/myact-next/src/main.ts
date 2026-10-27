@@ -9,6 +9,7 @@ import { COOKIE_LAT, COOKIE_LNG, getCookie, setCookie } from './cookie.ts'
 import { MESSAGES, StatusBanner, errorMessage, queryPermission, waitingMessage, PENDING_HINT_MS } from './locate-status.ts'
 import { qthIcon } from './marker.ts'
 import { createRefSearch, isSummitCode } from './ref-search.ts'
+import { createPaddleDialog } from './paddle.ts'
 import { createPotaLogDialog } from './potalog.ts'
 import { buildPopup } from './popup.ts'
 import type { Area } from './refs.ts'
@@ -39,6 +40,9 @@ new ResizeObserver(() => map.invalidateSize()).observe(map.getContainer())
 // ---- ポップアップ(地図の空白をクリック) ----
 const popup = L.popup({ maxWidth: 300 })
 
+const paddle = createPaddleDialog({ prefs })
+document.body.append(paddle.element)
+
 const markers = createMarkers({
   map, api, prefs: prefs.get, logId: prefs.logId,
   onSummit: (s: SotaMarker) => void showPopup({ lat: s.lat, lng: s.lon }, false, 'popup'),
@@ -63,6 +67,7 @@ async function showPopup(latlng: L.LatLngLiteral, isGPS: boolean, target: 'popup
     summit: summits?.[0] ?? null, park: parks?.[0] ?? null,
     prefs: p,
     onCopyCoords: copyCoords,
+    onPaddle: (place) => paddle.open(place),
   })
   if (target === 'marker') qthMarker?.bindPopup(content, { maxWidth: 300 }).openPopup()
   else popup.setContent(content).setLatLng(latlng).openOn(map)

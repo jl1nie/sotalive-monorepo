@@ -25,6 +25,22 @@ export interface Prefs {
   jaff_ref: boolean
   /** この拡大(ズーム)以上では、全ての公園・山を出す(7〜12) */
   zoom_threshold: number
+  /** ActPaddle(パドルエミュレータ)のボタンを、ポップアップに出す */
+  enable_emulation: boolean
+  pemu_call: string
+  pemu_mesg1: string
+  pemu_mesg2: string
+  pemu_mesg3: string
+  pemu_mesg4: string
+  pemu_wpm: string
+  pemu_host: string
+  /** エリア番号を CALL に付ける(JA1ABC/1) */
+  include_areacode: boolean
+  paddle_reverse: boolean
+  /** true = パドル、false = ストレートキー(旧版の to_paddle / to_key の組) */
+  to_paddle: boolean
+  /** true = WiFi、false = USB(Web Serial)(旧版の enable_wifi / enable_serial の組) */
+  enable_wifi: boolean
 }
 
 export const DEFAULTS: Prefs = {
@@ -39,6 +55,18 @@ export const DEFAULTS: Prefs = {
   pota_ref: true,
   jaff_ref: true,
   zoom_threshold: 12,
+  enable_emulation: false,
+  pemu_call: '',
+  pemu_mesg1: 'CQ CQ CQ DE $CALL SOTA $SOTA +',
+  pemu_mesg2: 'CQ CQ CQ DE $CALL POTA $POTA +',
+  pemu_mesg3: 'CQ CQ CQ DE $CALL JAFF $JAFF +',
+  pemu_mesg4: 'p 1#CQ CQ CQ DE $CALL SOTA $SOTA+',
+  pemu_wpm: '40',
+  pemu_host: 'actpaddle.local',
+  include_areacode: true,
+  paddle_reverse: false,
+  to_paddle: true,
+  enable_wifi: false,
 }
 
 /** Cookie の入出力(テストでは、差し替える) */
@@ -47,7 +75,8 @@ export interface CookieIO {
   set(name: string, value: string): void
 }
 
-const BOOLEANS = ['show_potalog', 'show_potaactlog', 'popup_permanent', 'display_mapcode', 'link_googlemap', 'sota_ref', 'pota_ref', 'jaff_ref'] as const
+const BOOLEANS = ['show_potalog', 'show_potaactlog', 'popup_permanent', 'display_mapcode', 'link_googlemap', 'sota_ref', 'pota_ref', 'jaff_ref', 'enable_emulation', 'include_areacode', 'paddle_reverse', 'to_paddle', 'enable_wifi'] as const
+const STRINGS = ['pemu_call', 'pemu_mesg1', 'pemu_mesg2', 'pemu_mesg3', 'pemu_mesg4', 'pemu_wpm', 'pemu_host'] as const
 const UUIDS = ['pota_activator_uuid', 'pota_hunter_uuid'] as const
 
 export function parseUuid(v: string | undefined): string | null {
@@ -61,6 +90,10 @@ export function loadPrefs(io: CookieIO): Prefs {
     if (v !== undefined) prefs[k] = v === 'true'
   }
   for (const k of UUIDS) prefs[k] = parseUuid(io.get(k))
+  for (const k of STRINGS) {
+    const v = io.get(k)
+    if (v !== undefined && v !== '') prefs[k] = v
+  }
   const zt = Number(io.get('zoom_threshold'))
   if (io.get('zoom_threshold') !== undefined && Number.isFinite(zt)) prefs.zoom_threshold = zt
   return prefs
@@ -68,6 +101,9 @@ export function loadPrefs(io: CookieIO): Prefs {
 
 export function savePref<K extends keyof Prefs>(io: CookieIO, key: K, value: Prefs[K]): void {
   io.set(key, value === null ? 'null' : String(value))
+  // 旧版は、ラジオボタンの組(WiFi か USB・パドルかストレートキー)を、2 つの Cookie に持つ
+  if (key === 'enable_wifi') io.set('enable_serial', String(!value))
+  if (key === 'to_paddle') io.set('to_key', String(!value))
 }
 
 /** 変更を通知できる、設定の入れ物 */

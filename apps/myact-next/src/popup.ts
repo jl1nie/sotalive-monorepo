@@ -8,11 +8,13 @@ import { h, type Child } from './dom.ts'
 import type { PotaPark, SotaSummit } from './api.ts'
 import { referenceHeading, type Area, type RefPrefs } from './refs.ts'
 import { toWestLon } from './search.ts'
+import type { PaddlePlace } from './paddle.ts'
 
 export interface PopupPrefs extends RefPrefs {
   show_potalog: boolean
   link_googlemap: boolean
   display_mapcode: boolean
+  enable_emulation: boolean
 }
 
 export interface PopupInput {
@@ -31,6 +33,8 @@ export interface PopupInput {
   park: PotaPark | null
   prefs: PopupPrefs
   /** マップコードのリンクを押したとき、座標をコピーする */
+  /** ActPaddle のボタンを押したとき(設定で有効なとき、ボタンを出す) */
+  onPaddle?: (place: PaddlePlace) => void
   onCopyCoords?: (lat: number, lng: number, anchor: HTMLElement) => void
 }
 
@@ -141,5 +145,24 @@ export function buildPopup(input: PopupInput): HTMLElement {
   if (summit) body.push(...summitBlock(summit, zoom, prefs.link_googlemap), h('br'), h('b', {}, isGPS ? '現在地: ' : 'クリック位置: '))
   body.push(...location, weather)
   root.append(h('b', {}, heading), ...body, ...(mapcode ? [mapcode] : []), ...activityLines(input))
+  if (prefs.enable_emulation && input.onPaddle) root.append(paddleButton(area, input))
   return root
+}
+
+/** ActPaddle を開くボタン(旧版: クリップボードの画像のボタン) */
+function paddleButton(area: Area, input: PopupInput): HTMLElement {
+  const { geo } = input
+  const century = geo.kind !== 'ok' ? '' : geo.jccCode != null ? `JCC ${geo.wardCode ?? geo.jccCode}` : `JCG ${geo.jcgCode ?? ''}${geo.hamlogCode ?? ''}`
+  const place: PaddlePlace = {
+    name: area.name ?? '',
+    sota: area.sota_code ?? '',
+    pota: area.pota ?? '',
+    jaff: area.jaff ?? '',
+    areacode: geo.kind === 'ok' ? (geo.areacode ?? '') : '',
+    century,
+  }
+  const button = h('button', { type: 'button', class: 'btn btn-outline-primary btn-sm', 'aria-label': 'ActPaddle を開く' })
+  button.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M8 4h8v3H8zM6 6h12v15H6z"/><path fill="none" stroke="currentColor" stroke-width="2" d="M9 12h6M9 16h6"/></svg>'
+  button.addEventListener('click', () => input.onPaddle?.(place))
+  return h('div', { class: 'act-heading' }, button)
 }
