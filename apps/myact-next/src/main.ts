@@ -10,6 +10,7 @@ import { COOKIE_LAT, COOKIE_LNG, getCookie, setCookie } from './cookie.ts'
 import { MESSAGES, StatusBanner, errorMessage, queryPermission, waitingMessage, PENDING_HINT_MS } from './locate-status.ts'
 import { qthIcon } from './marker.ts'
 import { createRefSearch, isSummitCode } from './ref-search.ts'
+import { createSpotPanel } from './spot-panel.ts'
 import { createPaddleDialog } from './paddle.ts'
 import { createPotaLogDialog } from './potalog.ts'
 import { buildPopup } from './popup.ts'
@@ -151,6 +152,22 @@ const refSearch = createRefSearch({
   },
 })
 document.getElementById('search-slot')?.append(refSearch.input, refSearch.list)
+
+// ---- スポット(PC は右の側パネル、スマホは下のシート) ----
+const spotPanel = createSpotPanel({
+  api, prefs,
+  onChange: (open) => document.getElementById('spot-button')?.setAttribute('aria-expanded', String(open)),
+  // 旧版 locate_ref: コードで検索して、最初の候補へ動く。SOTA のコードなら、山のポップアップも開く
+  async onPick(code) {
+    const res = await api.searchBrief(code)
+    const c = res?.candidates?.[0]
+    if (!c) return
+    map.setView([c.lat, c.lon], 15)
+    if (isSummitCode(c.code)) void showPopup({ lat: c.lat, lng: c.lon }, false, 'popup')
+  },
+})
+document.getElementById('main')?.append(spotPanel.element)
+document.getElementById('spot-button')?.addEventListener('click', () => spotPanel.toggle())
 
 // ---- 時計 ----
 function clock() {
