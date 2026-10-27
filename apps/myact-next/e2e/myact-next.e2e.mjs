@@ -9,6 +9,7 @@ import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { POINTS, respond } from '../../../packages/myact-golden/src/world.mjs';
+import { LOGGED } from '../../../packages/myact-golden/src/scenarios.mjs';
 import { logServer } from '../../../packages/myact-golden/src/scenarios-potalog.mjs';
 
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url));
@@ -224,5 +225,80 @@ test('画面: 地図が、ナビバーの下から画面の下まで埋まる(PC
     const m = await page.evaluate(() => ({ b: document.getElementById('map').getBoundingClientRect().bottom, h: innerHeight, scroll: document.documentElement.scrollHeight }));
     assert.ok(Math.abs(m.b - m.h) <= 1 && m.scroll <= m.h + 1, JSON.stringify({ size, m }));
   }
+  await context.close();
+});
+
+// ---- 山・公園のマーカー(旧版の golden master と比べる) ----
+const showMarkers = async (page, [lat, lng], zoom = 13) => {
+  await page.evaluate(([la, ln, z]) => window.map.setView([la, ln], z, { animate: false }), [lat, lng, zoom]);
+  await page.waitForFunction(() => window.markerLayer.getLayers().length > 0, null, { timeout: 10000 });
+  await page.waitForTimeout(300);
+};
+const markerInfo = (page) =>
+  page.evaluate(() => {
+    const out = [];
+    window.markerLayer.eachLayer((m) => {
+      const ll = m.getLatLng();
+      const tip = m.getTooltip()?.getContent();
+      if (m instanceof L.CircleMarker) out.push({ kind: 'summit', lat: ll.lat, lng: ll.lng, fill: m.options.fillColor, radius: m.getRadius(), tooltip: tip ?? null });
+      else out.push({ kind: 'park', lat: ll.lat, lng: ll.lng, color: m.options.icon.options.className.replace('park-marker park-', ''), tooltip: tip });
+    });
+    return out;
+  });
+const clickMarker = (page, kind) =>
+  page.evaluate((k) => {
+    window.markerLayer.eachLayer((m) => {
+      if (m.__clicked) return;
+      // 旧版の記録は、公園は丹沢大山(JP-0118。緯度 35.4105)をクリックしている
+      const target = k === 'summit' ? m instanceof L.CircleMarker : !(m instanceof L.CircleMarker) && Math.abs(m.getLatLng().lat - 35.4105) < 1e-4;
+      if (target) { m.__clicked = true; m.fire('click', { latlng: m.getLatLng() }); }
+    });
+  }, kind);
+const goldenColor = (icon) => icon.match(/extra-marker-square-([a-z-]+)/)[1];
+const comparable = (name) =>
+  expected(name).markers.map((m) => (m.kind === 'park' ? { kind: 'park', lat: m.lat, lng: m.lng, color: goldenColor(m.icon), tooltip: m.tooltip } : m));
+
+for (const [name, point, kind, setup] of [
+  ['summit-marker-oyama', POINTS.oyama, 'summit', {}],
+  ['park-marker-tanzawa', POINTS.tanzawa, 'park', {}],
+  ['park-marker-tanzawa-pota-ref-off', POINTS.tanzawa, 'park', { cookies: { pota_ref: 'false' } }],
+  ['park-marker-tanzawa-jaff-ref-off', POINTS.tanzawa, 'park', { cookies: { jaff_ref: 'false' } }],
+  ['park-marker-tanzawa-googlemap-mapcode-emulation', POINTS.tanzawa, 'park', { cookies: { link_googlemap: 'true', display_mapcode: 'true' } }],
+]) {
+  test(`マーカーをクリック(${name}): ポップアップの行が、旧版の記録と同じ`, async () => {
+    const { page, context, errors } = await open(setup);
+    await showMarkers(page, point);
+    await clickMarker(page, kind);
+    const lines = await popupLines(page);
+    assert.deepEqual(lines, expected(name).popup.text);
+    assert.deepEqual(errors, []);
+    await context.close();
+  });
+}
+
+for (const name of ['park-marker-tanzawa', 'park-marker-tanzawa-with-log']) {
+  test(`マーカーの色・大きさ・常時表示の文字(${name}): 旧版の記録と同じ`, async () => {
+    const { page, context } = await open(name.endsWith('with-log') ? LOGGED : {});
+    await showMarkers(page, POINTS.tanzawa);
+    const got = await markerInfo(page);
+    assert.deepEqual(got.sort((a, b) => a.lat - b.lat), comparable(name).sort((a, b) => a.lat - b.lat));
+    await context.close();
+  });
+}
+
+test('公園名を常時表示しない設定: ツールチップは、マウスを乗せたときだけ(旧版と同じ)', async () => {
+  const { page, context } = await open({ cookies: { popup_permanent: 'false' } });
+  await showMarkers(page, POINTS.tanzawa);
+  assert.equal(await page.locator('.leaflet-tooltip.park-name').count(), 0);
+  await context.close();
+});
+
+test('公園の詳細: ログがあれば Activations/Attempts と QSOs。log_id が付く', async () => {
+  const { page, context, apiCalls } = await open(LOGGED);
+  await showMarkers(page, POINTS.tanzawa);
+  await clickMarker(page, 'park');
+  assert.deepEqual((await popupLines(page)).slice(-2), expected('park-marker-tanzawa-with-log').popup.text.slice(-2));
+  assert.ok(apiCalls.some((c) => c.startsWith('GET /search') && c.includes('log_id=hunter-1')), apiCalls.join(' | '));
+  assert.ok(apiCalls.some((c) => c.startsWith('GET /pota/parks/search?pota_code=JP-0118') && c.includes('log_id=hunter-1')), apiCalls.join(' | '));
   await context.close();
 });
