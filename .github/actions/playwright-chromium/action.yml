@@ -20,6 +20,38 @@ runs:
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       run: timeout -k 10 300 pnpm --filter @sotalive/shared exec playwright install chromium
-    - name: Install OS dependencies (EXPERIMENT: skipped)
+    - id: apt-cache
+      uses: actions/cache@v4
+      with:
+        # apt のパッケージ(.deb)の置き場を、利用者の書ける場所に移して、キャッシュする。
+        # Ubuntu のミラーが遅い実行では、ダウンロードだけで 10 分(ジョブの上限)かかって落ちた(2026-10-27、3 回)。
+        # キャッシュに当たれば、ダウンロードがなく、止まらない。.deb の版が古ければ、apt が取り直す
+        path: ~/apt-archives
+        key: playwright-apt-${{ runner.os }}-${{ steps.version.outputs.playwright }}
+    - name: Make apt fail fast on a stalled download
       shell: bash
-      run: echo "skipped to see whether the runner image already has what Chromium needs"
+      # ミラーが止まると、apt は何分も待つ。20 秒データが来なければ、apt 自身が切って、3 回までやり直す
+      run: |
+        mkdir -p "$HOME/apt-archives/partial"
+        printf '%s\n' 'Acquire::Retries "3";' 'Acquire::http::Timeout "20";' 'Acquire::https::Timeout "20";' 'DPkg::Lock::Timeout "120";' \
+          "Dir::Cache::Archives \"$HOME/apt-archives\";" \
+          | sudo tee /etc/apt/apt.conf.d/99ci-fast >/dev/null
+    - name: Install OS dependencies (retry)
+      # 上のキャッシュは、この step が成功したときだけ保存される(失敗した実行の、途中のファイルは残さない)
+      shell: bash
+      # timeout で打ち切ると、apt・dpkg が残ってロックを持ったままになり、次の試行が即座に失敗する(終了コード 100)。
+      # 打ち切ったら、残った apt・dpkg を止めて、dpkg の途中の状態を直してから、やり直す
+      run: |
+        for attempt in 1 2 3; do
+          if timeout 200 pnpm --filter @sotalive/shared exec playwright install-deps chromium; then
+            exit 0
+          fi
+          echo "::warning::playwright install-deps の ${attempt} 回目が、失敗か時間切れ。残った apt を止めて、やり直す"
+          sudo pkill -x apt-get || true
+          sudo pkill -x apt || true
+          sudo pkill -x dpkg || true
+          sleep 2
+          sudo dpkg --configure -a || true
+        done
+        echo "::error::playwright install-deps が 3 回とも失敗した"
+        exit 1
