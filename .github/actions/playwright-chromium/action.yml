@@ -9,13 +9,17 @@ runs:
     - id: version
       shell: bash
       run: echo "playwright=$(pnpm --filter @sotalive/shared exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-    - uses: actions/cache@v4
+    - id: cache
+      uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
         key: playwright-chromium-${{ runner.os }}-${{ steps.version.outputs.playwright }}
     - name: Install the browser (skipped from cache)
+      # キャッシュがあれば飛ばす: `playwright install` が、キャッシュに当たったあとも、10 分止まったことがある(2026-10-27、legacy・myact-golden)。
+      # composite の step には timeout-minutes が使えず、timeout は孫の node が出力を握ったままだと終われない
+      if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
-      run: timeout 300 pnpm --filter @sotalive/shared exec playwright install chromium
+      run: timeout -k 10 300 pnpm --filter @sotalive/shared exec playwright install chromium
     - name: Make apt fail fast on a stalled download
       shell: bash
       # ミラーが止まると、apt は何分も待つ。20 秒データが来なければ、apt 自身が切って、3 回までやり直す
