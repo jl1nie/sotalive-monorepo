@@ -4,6 +4,8 @@ import './style.css'
 import L from 'leaflet'
 import { reverseGeocode } from '@sotalive/geo'
 import { createApi, type PotaMarker, type SotaMarker } from './api.ts'
+import { GEOMAG_REFRESH_MS, createAprs } from './aprs.ts'
+import { formatClock, type Geomag } from './clock.ts'
 import { createAreas } from './areas.ts'
 import { createMarkers } from './markers.ts'
 import { COOKIE_LAT, COOKIE_LNG, getCookie, setCookie } from './cookie.ts'
@@ -170,12 +172,25 @@ document.getElementById('main')?.append(spotPanel.element)
 document.getElementById('spot-button')?.addEventListener('click', () => spotPanel.toggle())
 
 // ---- 時計 ----
+let geomag: Geomag | null = null
 function clock() {
   const el = document.getElementById('clock_time')
-  if (el) el.textContent = new Date().toString().replace(/:\d{2} GMT\+.+/, '')
+  if (el) el.textContent = formatClock(new Date(), geomag)
+}
+async function refreshGeomag() {
+  geomag = (await api.geomag()) ?? geomag
+  clock()
 }
 clock()
 setInterval(clock, 5000)
+void refreshGeomag()
+setInterval(() => void refreshGeomag(), GEOMAG_REFRESH_MS)
+
+// ---- APRS 軌跡(SOTA の活動中の局) ----
+const aprs = createAprs({ map, api })
+aprs.update(prefs.get().aprs_track)
+;(window as unknown as { aprs: typeof aprs }).aprs = aprs
+prefs.subscribe((p) => aprs.update(p.aprs_track))
 
 // 旧版と同じ: URL の ?lat=&lon=&z= があれば、その地点のポップアップを開く(z は 5〜18。既定 15)。なければ現在地
 function urlPosition(): { latlng: L.LatLngTuple; zoom: number } | null {

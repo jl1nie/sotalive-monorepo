@@ -29,6 +29,8 @@ export interface Prefs {
   spot_period: number
   /** スポットを、参照でなくコールサインごとにまとめる */
   by_call: boolean
+  /** SOTA の APRS 軌跡を出す */
+  aprs_track: boolean
   /** 公園区域(ポリゴン)を出す */
   display_area: boolean
   /** ActPaddle(パドルエミュレータ)のボタンを、ポップアップに出す */
@@ -63,6 +65,7 @@ export const DEFAULTS: Prefs = {
   zoom_threshold: 12,
   spot_period: 6,
   by_call: false,
+  aprs_track: true,
   display_area: true,
   enable_emulation: false,
   pemu_call: '',
@@ -84,7 +87,7 @@ export interface CookieIO {
   set(name: string, value: string): void
 }
 
-const BOOLEANS = ['show_potalog', 'show_potaactlog', 'popup_permanent', 'display_mapcode', 'link_googlemap', 'sota_ref', 'pota_ref', 'jaff_ref', 'display_area', 'by_call', 'enable_emulation', 'include_areacode', 'paddle_reverse', 'to_paddle', 'enable_wifi'] as const
+const BOOLEANS = ['show_potalog', 'show_potaactlog', 'popup_permanent', 'display_mapcode', 'link_googlemap', 'sota_ref', 'pota_ref', 'jaff_ref', 'display_area', 'aprs_track', 'by_call', 'enable_emulation', 'include_areacode', 'paddle_reverse', 'to_paddle', 'enable_wifi'] as const
 const STRINGS = ['pemu_call', 'pemu_mesg1', 'pemu_mesg2', 'pemu_mesg3', 'pemu_mesg4', 'pemu_wpm', 'pemu_host'] as const
 const UUIDS = ['pota_activator_uuid', 'pota_hunter_uuid'] as const
 

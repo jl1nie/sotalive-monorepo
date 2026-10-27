@@ -3,6 +3,8 @@
  * 旧版 `fetchAPI`(myact.js)と同じ決まり: パスの各部分を URL エンコードし、失敗(通信・ok でない応答)は null を返す(例外にしない)。
  */
 import type { SpotGroup } from './spots.ts'
+import type { AprsTrack } from './aprs.ts'
+import type { Geomag } from './clock.ts'
 
 export const DEFAULT_BASE = 'https://sotaapp2.sotalive.net/api/v2'
 
@@ -151,6 +153,10 @@ export function createApi({ fetch: doFetch = (...a) => fetch(...a), base = DEFAU
 
     /** スポット(path は spots.ts の spotsPath)。失敗は null */
     spots: (path: string, signal?: AbortSignal) => query<SpotGroup[]>(path.split('?')[0], Object.fromEntries(new URLSearchParams(path.split('?')[1] ?? '')), signal),
+
+    /** SOTA の APRS 軌跡(24 時間) */
+    aprsTracks: () => query<{ tracks: AprsTrack[] }>('/activation/aprs/track', { pat_ref: 'JA', hours_ago: 24 }),
+    geomag: () => query<Geomag>('/propagation/geomag', {}),
 
     // ---- SOTA ----
     /** 座標の近く(dist m 以内)のサミット。ログ ID があれば付ける(旧版と同じ) */
