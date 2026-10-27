@@ -1,0 +1,29 @@
+name: Playwright Chromium
+description: >-
+  Playwright の Chromium を用意する(packages/shared の playwright と同じ版)。ブラウザー本体はキャッシュし、
+  OS の依存パッケージ(apt)は、ミラーが遅くて止まることがあるので、1 回ごとに時間を区切って再試行する。
+  先に pnpm install --frozen-lockfile を済ませておく
+runs:
+  using: composite
+  steps:
+    - id: version
+      shell: bash
+      run: echo "playwright=$(pnpm --filter @sotalive/shared exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-chromium-${{ runner.os }}-${{ steps.version.outputs.playwright }}
+    - name: Install the browser (skipped from cache)
+      shell: bash
+      run: timeout 300 pnpm --filter @sotalive/shared exec playwright install chromium
+    - name: Install OS dependencies (retry)
+      shell: bash
+      run: |
+        for attempt in 1 2 3; do
+          if timeout 150 pnpm --filter @sotalive/shared exec playwright install-deps chromium; then
+            exit 0
+          fi
+          echo "::warning::playwright install-deps の ${attempt} 回目が、失敗か時間切れ。やり直す"
+        done
+        echo "::error::playwright install-deps が 3 回とも失敗した"
+        exit 1
