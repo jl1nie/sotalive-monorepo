@@ -204,6 +204,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.all == 'true' || needs.changes.outputs.myqth == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -220,8 +221,7 @@ jobs:
           pnpm exec eslint .
       - name: Build
         run: pnpm --filter @sotalive/myqth run build
-      - name: Install Chromium
-        run: pnpm --filter @sotalive/myqth exec playwright install --with-deps chromium
+      - uses: ./.github/actions/playwright-chromium
       - name: Open the built app in a browser
         run: node --test apps/myqth/e2e/myqth.e2e.mjs
 
@@ -231,8 +231,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.all == 'true' || needs.changes.outputs.legacy == 'true'
     runs-on: ubuntu-latest
-    # ふだんは 1 分ほど。ブラウザーの取得が止まったときに、何時間も待たない
-    timeout-minutes: 10
+    # ふだんは 1 分ほど。ブラウザーの取得が止まったときに、何時間も待たない(依存の apt は、150 秒 × 3 回まで再試行する)
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -243,9 +243,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Test shared legacy JS and the legacy index.html
         run: node --test packages/shared/tests/*.test.mjs
-      - name: Install Chromium for Playwright
-        timeout-minutes: 5
-        run: pnpm --filter @sotalive/shared exec playwright install --with-deps chromium
+      - uses: ./.github/actions/playwright-chromium
       - name: Open the legacy apps in a browser
         run: node --test packages/shared/tests/legacy.e2e.mjs
 
