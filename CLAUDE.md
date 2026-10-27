@@ -31,6 +31,7 @@ sotalive-monorepoは、SOTA/POTAアマチュア無線アワード支援サービ
 sotalive-monorepo/
 ├── apps/
 │   ├── myact/          # MyActivation の React 版（移行中。myact2.sotalive.net で試す）→ dist/myact2
+│   ├── myqth/          # MyQTH の新版（Vite + 素の TS。移行中。myqth2.sotalive.net で試す）→ dist/myqth2
 │   ├── myact-org/      # MyActivation の旧版（jQuery。外部CSS・JSに分離済み）→ dist/myact
 │   ├── myqth-org/      # MyQTH の旧版（index.html だけ。css・js などは共通アセット）→ dist/myqth
 │   ├── logconv/        # LogConverter（ログ形式変換。WSPR はタブとして統合）
@@ -81,7 +82,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 ## サブドメイン構成
 
 公開しているアプリは、それぞれ別の Pages プロジェクト（静的なファイルは Functions の無料枠 1日10万リクエストを使わない）。`scripts/build-static-projects.sh` が、ルートに置いた `dist-myact`・`dist-myqth`・`dist-fle` を作る。
-まだ公開していない logconv2・myact2 だけが、プロジェクト sotalive のホスト名での振り分け（`functions/_middleware.ts`。アプリ自身のファイルがなければ共通アセット）を使う。
+まだ公開していない logconv2・myact2・myqth2 だけが、プロジェクト sotalive のホスト名での振り分け（`functions/_middleware.ts`。アプリ自身のファイルがなければ共通アセット）を使う。
 
 | サブドメイン | アプリ | プロジェクト（CNAME 先） | 備考 |
 |------------|--------|------|------|
@@ -90,6 +91,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 | logconv.sotalive.net / logconv2 | LogConverter | sotalive | logconv は、新しい logconv のテストが済むまで Vercel の旧画面のまま。移すときは www の転送も外す |
 | fleonline.sotalive.net | FLE Online | sotalive-fle | `/fle/`（`/` は転送）。Functions は `/api` の下だけ（`pages/fle`：設定の同期の KV と、バックエンドへの中継） |
 | myact2.sotalive.net | MyActivation（React 版。試験中） | sotalive | `noindex`。React 版は base が `/` なので、このホスト名でだけ動く |
+| myqth2.sotalive.net | MyQTH（新版。Vite + 素の TS。試験中） | sotalive | `noindex`。base が `/` なので、このホスト名でだけ動く。逆ジオコーダーは `packages/geo` |
 
 ## Git運用
 

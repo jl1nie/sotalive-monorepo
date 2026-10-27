@@ -73,8 +73,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (response.status === 404 && shared) {
       response = await fetchAsset(context.env.ASSETS, shared, context.request);
     }
-    // React 版の myact は試験中。検索エンジンに載せない
-    if (appPath === "/myact2") {
+    // React 版の myact・新しい myqth は試験中。検索エンジンに載せない
+    if (appPath === "/myact2" || appPath === "/myqth2") {
       response = new Response(response.body, response);
       response.headers.set("x-robots-tag", "noindex");
     }
@@ -90,10 +90,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
  * 公開しているアプリ(旧版の myact・myqth、FLEonline)は、別のプロジェクト(scripts/build-static-projects.sh)
  *
  * - myact2 は React 版の myact(試験中。ビルドの base が `/` なので、このホスト名でだけ動く)
+ * - myqth2 は新しい myqth(Vite + 素の TS。試験中。base が `/`)。`myqth`(公開している旧版。別のプロジェクト)とは別
  * - logconv2 は新しい logconv
  */
 function appPathFor(hostname: string): string {
   if (hostname.startsWith("myact2")) return "/myact2";
+  if (hostname.startsWith("myqth2")) return "/myqth2";
   if (hostname.startsWith("logconv")) return "/logconv";
   return "";
 }

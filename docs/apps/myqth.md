@@ -96,6 +96,10 @@ npx serve dist-myqth
 - 旧版の Yahoo の逆ジオコーダーへの経路(国土地理院のメンテナンス中の予備)は、呼び先が今はないので、移していない
 - 旧版との違い: 取得に失敗したときの文言(`住所を取得できませんでした`)、`JCG` の項目が空のとき `null` と出さない、現在地を最初から日本全体の位置で開く(位置情報を待つあいだも地図が出る)。Cookie(`my_qth_lat`・`my_qth_lng`)は、名前も、ブラウザーを閉じるまでの寿命も、旧版のまま
 
+### 配置
+
+`scripts/assemble.sh` が `apps/myqth/dist` を `dist/myqth2/` に置き、プロジェクト sotalive の `functions/_middleware.ts` が、ホスト名 `myqth2` を `/myqth2` に振り分けます(`noindex`)。DNS は、`myqth2` の CNAME を `sotalive.pages.dev` へ。Pages のプロジェクト sotalive に、カスタムドメイン `myqth2.sotalive.net` も足す([デプロイの手順](../deploy-guide.md)。CNAME だけでは 522 や 404 になる)。プレビューのデプロイ(`feat-….sotalive.pages.dev`)はホスト名で振り分けられないので、確かめるのは、手元の `wrangler pages dev dist`(`Host: myqth2.sotalive.net` を付ける)か、main へのマージのあと。`myqth.sotalive.net`(旧版)は、新版の確認が済むまでそのままです。
+
 ### テスト
 
 ```bash

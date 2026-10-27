@@ -38,7 +38,7 @@ sotaapp2 の GitHub --(push)--> Actions --> Docker Hub(イメージ) --(手動�
 | myact・www | `sotalive-myact` |
 | myqth | `sotalive-myqth` |
 | fleonline | `sotalive-fle` |
-| logconv2・myact2 | `sotalive` |
+| logconv2・myact2・myqth2 | `sotalive` |
 
 公開するアプリを別プロジェクトにするのは、Functions の無料枠(アカウント全体で1日10万リクエスト)を、静的なファイルの配信で使わないためです。静的なファイルの配信は、無料で回数の制限がありません。
 
@@ -252,9 +252,9 @@ git push origin main
 | CNAME | `myact` | `sotalive-myact.pages.dev` |
 | CNAME | `myqth` | `sotalive-myqth.pages.dev` |
 | CNAME | `fleonline` | `sotalive-fle.pages.dev` |
-| CNAME | `myact2`、`logconv2` | `sotalive.pages.dev` |
+| CNAME | `myact2`、`myqth2`、`logconv2` | `sotalive.pages.dev` |
 
-`sotalive` の `functions/_middleware.ts` は、ホスト名で振り分けます。ホスト名(`myact2`、`logconv2`)を変えるなら、そのファイルも直します。
+`sotalive` の `functions/_middleware.ts` は、ホスト名で振り分けます。ホスト名(`myact2`、`myqth2`、`logconv2`)を変えるなら、そのファイルも直します。
 
 登録の直後は、数分間、522 エラーやドメインの「pending」(確認待ち)になります。しばらく待ちます。
 

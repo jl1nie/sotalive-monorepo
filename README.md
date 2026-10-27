@@ -15,6 +15,7 @@ SOTA/POTA アマチュア無線アワード支援サービス「sotalive」の�
 | fleonline.sotalive.net | FLE Online(React。`apps/fle`) | sotalive-fle | 本番 |
 | logconv2.sotalive.net | LogConverter 新版(React。`apps/logconv`) | sotalive | テスト中 |
 | myact2.sotalive.net | MyActivation React 版(`apps/myact`) | sotalive | **開発中**(本番は旧版) |
+| myqth2.sotalive.net | MyQTH 新版(Vite + 素の TS。`apps/myqth`) | sotalive | **試験中**(本番は旧版) |
 | logconv.sotalive.net | LogConverter 旧版 | Vercel(旧リポジトリ) | 新版のテストが済んだら Pages へ移す |
 
 MyActivation の React 版は開発中です。本番で使われているのは旧版(`apps/myact-org`)です。
@@ -53,6 +54,7 @@ flowchart LR
 ```
 apps/
   myact/        MyActivation の React 版(開発中)        -> dist/myact2
+  myqth/        MyQTH の新版(Vite + 素の TS。試験中)    -> dist/myqth2
   myact-org/    MyActivation の旧版(jQuery)             -> dist-myact
   myqth-org/    MyQTH の旧版(index.html だけ)            -> dist-myqth
   logconv/      LogConverter 新版(React。WSPR はタブ)    -> dist/logconv
