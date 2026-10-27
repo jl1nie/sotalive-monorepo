@@ -267,7 +267,8 @@ jobs:
     if: >-
       needs.changes.outputs.all == 'true' || needs.changes.outputs.fle == 'true'
       || needs.changes.outputs.logconv == 'true' || needs.changes.outputs.myact == 'true'
-      || needs.changes.outputs.legacy == 'true' || needs.changes.outputs.sotalive == 'true'
+      || needs.changes.outputs.legacy == 'true' || needs.changes.outputs.myqth == 'true'
+      || needs.changes.outputs.sotalive == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -338,9 +339,9 @@ jobs:
           BRANCH: ${{ github.ref_name }}
         run: npx --yes "$WRANGLER" pages deploy dist --project-name=sotalive --branch="$BRANCH"
 
-  # 旧版の myact・myqth: Functions なし。出力の中からデプロイする(functions/ と wrangler.toml を拾わない)
+  # myact(旧版)と myqth(新版): Functions なし。出力の中からデプロイする(functions/ と wrangler.toml を拾わない)
   deploy-legacy:
-    needs: [changes, build, parks, legacy, myqth]
+    needs: [changes, build, parks, legacy, myqth, geo]
     if: >-
       always() && github.event_name == 'push'
       && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')

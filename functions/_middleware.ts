@@ -87,10 +87,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
 /**
  * ホスト名から、配信するアプリのパスを決める(なければ空)。このプロジェクト(sotalive)は、まだ公開していないアプリだけ。
- * 公開しているアプリ(旧版の myact・myqth、FLEonline)は、別のプロジェクト(scripts/build-static-projects.sh)
+ * 公開しているアプリ(旧版の myact、新版の myqth、FLEonline)は、別のプロジェクト(scripts/build-static-projects.sh)
  *
  * - myact2 は React 版の myact(試験中。ビルドの base が `/` なので、このホスト名でだけ動く)
- * - myqth2 は新しい myqth(Vite + 素の TS。試験中。base が `/`)。`myqth`(公開している旧版。別のプロジェクト)とは別
+ * - myqth2 は myqth の新版を、本番より先に試す場所(Vite + 素の TS。base が `/`)。`myqth`(本番。別のプロジェクト)とは別
  * - logconv2 は新しい logconv
  */
 function appPathFor(hostname: string): string {

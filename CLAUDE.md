@@ -37,7 +37,7 @@ sotalive-monorepo/
 │   ├── logconv/        # LogConverter（ログ形式変換。WSPR はタブとして統合）
 │   └── fle/            # FLE Online
 ├── packages/
-│   └── shared/         # 共通アセット（旧版の myact・myqth が共有。Vercel 版の public/common と同じ）
+│   └── shared/         # 共通アセット（旧版の myact が共有。myqth の新版はファビコンと 404.html だけ使う。Vercel 版の public/common と同じ）
 ├── tools/
 │   └── jaffpota/       # 公園区域 TopoJSON の生成・版管理・検証（Python、uv。docs/park-areas.md）
 ├── functions/

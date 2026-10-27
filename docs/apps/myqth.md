@@ -21,16 +21,16 @@ MyQTH は、いまいる場所(QTH)を地図に出し、その場所のコード
 - 住所などの引き当ては、ブラウザの中で行います(`revgeocoder.js`)。
   国土地理院の逆ジオコーダーと標高の API、バックエンドの `https://sotaapp2.sotalive.net/api/v2/locator/jcc-jcg` を使います。
 
-## 技術的な特徴
+## 技術的な特徴(旧版 `apps/myqth-org`)
 
 - jQuery + Bootstrap 4 + MDBootstrap + Leaflet 1.2 の、ビルドのない静的なサイトです。ライブラリは CDN から読みます。
 - `apps/myqth-org/` にあるのは `index.html` と `site-qth.webmanifest.json`(ホーム画面に追加するときの設定)だけです。
   CSS・JS・画像・フォントは、共通アセットを使います。
 - バックエンドは直接(`sotaapp2.sotalive.net`)呼びます。Functions はありません。
 
-## 共通アセットの仕組み
+## 共通アセットの仕組み(旧版)
 
-`packages/shared/common` は、MyActivation の旧版と MyQTH が共有するファイルの置き場所です。
+`packages/shared/common` は、MyActivation の旧版と MyQTH の旧版が共有するファイルの置き場所です。新版の MyQTH は、ファビコン(`favicon/`)と `404.html` だけを使います(`dist-myqth` の中身は、下の「ビルドと配置先」)。
 旧 Vercel 版(`sotalive-vercel`)の `public/common` と同じ内容です。旧 Vercel 版ではシンボリックリンクで共有していました。
 
 ```
@@ -46,7 +46,7 @@ Cloudflare Pages は、シンボリックリンクを扱えません。
 | 出力 | コピーする共通アセット |
 |---|---|
 | `dist-myact/` | `css js img font svg json` |
-| `dist-myqth/` | `css js img font svg` |
+| `dist-myqth/`(旧版に戻したとき) | `css js img font svg` |
 
 さらに、次のものを同じ先頭へ置きます。
 
@@ -71,16 +71,9 @@ React 版の myact も、`/json/` などの共通アセットを使うため、`
 
 ## 開発とテストのコマンド
 
-テストはありません。
+新版のテストと、ビルドは、下の「新版」の「テスト」です(単体テスト・e2e)。ローカルで開くには `pnpm --filter @sotalive/myqth dev`、本番と同じ形(`dist-myqth`)で確かめるには、`pnpm --filter @sotalive/myqth run build` のあと `scripts/build-static-projects.sh`(FLE のビルド `apps/fle/dist` も要る)で作って `npx serve dist-myqth` です。
 
-```bash
-# dist-myqth を組み立てて、ローカルで配る
-scripts/build-static-projects.sh
-npx serve dist-myqth
-```
-
-`index.html` を直したときは、この手順で `dist-myqth/` を作り直して確かめてください。
-共通アセットを直したときは、MyActivation の旧版にも効くので、両方を確かめます。
+旧版(`apps/myqth-org`)は、`packages/shared/tests/legacy.e2e.mjs` が開いて確かめます。共通アセットを直したときは、MyActivation の旧版にも効くので、両方を確かめます。
 
 旧版を持ってくる元(`sotalive-vercel`)が古いまま移すと、本番を壊すことがあります。
 本番の配信物と比べてから変更してください。
@@ -103,7 +96,7 @@ npx serve dist-myqth
 
 ### 配置
 
-本番(`myqth.sotalive.net`)の `dist-myqth` は、上の「ビルドと配置先」のとおりです。試験用の myqth2 は、`scripts/assemble.sh` が `apps/myqth/dist` を `dist/myqth2/` に置き、プロジェクト sotalive の `functions/_middleware.ts` が、ホスト名 `myqth2` を `/myqth2` に振り分けます(`noindex`)。DNS は、`myqth2` の CNAME を `sotalive.pages.dev` へ。Pages のプロジェクト sotalive に、カスタムドメイン `myqth2.sotalive.net` も足す([デプロイの手順](../deploy-guide.md)。CNAME だけでは 522 や 404 になる)。プレビューのデプロイ(`feat-….sotalive.pages.dev`)はホスト名で振り分けられないので、確かめるのは、手元の `wrangler pages dev dist`(`Host: myqth2.sotalive.net` を付ける)か、main へのマージのあと。`myqth.sotalive.net`(旧版)は、新版の確認が済むまでそのままです。
+本番(`myqth.sotalive.net`)の `dist-myqth` は、上の「ビルドと配置先」のとおりです。試験用の myqth2 は、`scripts/assemble.sh` が `apps/myqth/dist` を `dist/myqth2/` に置き、プロジェクト sotalive の `functions/_middleware.ts` が、ホスト名 `myqth2` を `/myqth2` に振り分けます(`noindex`)。DNS は、`myqth2` の CNAME を `sotalive.pages.dev` へ。Pages のプロジェクト sotalive に、カスタムドメイン `myqth2.sotalive.net` も足す([デプロイの手順](../deploy-guide.md)。CNAME だけでは 522 や 404 になる)。プレビューのデプロイ(`feat-….sotalive.pages.dev`)はホスト名で振り分けられないので、確かめるのは、手元の `wrangler pages dev dist`(`Host: myqth2.sotalive.net` を付ける)か、main へのマージのあと。本番の `myqth.sotalive.net` は、新版に切り替えました(上の「旧版に戻す」)。
 
 ### テスト
 
