@@ -12,13 +12,6 @@ import { ZoomLabel } from './zoom-label.ts'
 const JAPAN: L.LatLngTuple = [37.514444, 137.712222]
 const JAPAN_ZOOM = 6
 
-// モバイルの高さ(アドレスバーを除く)
-function setVh() {
-  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`)
-}
-setVh()
-window.addEventListener('resize', setVh)
-
 const gsi = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', {
   maxZoom: 18,
   maxNativeZoom: 18,
@@ -31,6 +24,9 @@ L.control
   .addTo(map)
 L.control.scale().addTo(map)
 new ZoomLabel().addTo(map)
+// 地図の入れ物の大きさが変わったら、タイルを描き直す(iPad の回転・分割表示・アドレスバーの出入り)。
+// Leaflet は window の resize だけを見るので、入れ物の大きさの変化を、自分で知らせる
+new ResizeObserver(() => map.invalidateSize()).observe(map.getContainer())
 // e2e から地図を触るため
 ;(window as unknown as { map: L.Map }).map = map
 

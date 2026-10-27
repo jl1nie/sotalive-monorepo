@@ -68,16 +68,33 @@ h4:last-child {
   cursor: default;
 }
 
-/* 地図(--vh は main.ts が設定する。モバイルのアドレスバーの高さを除く) */
-#map {
-  width: auto;
-  height: calc(var(--vh, 1vh) * 100 - 30px);
-  border: 1px solid #aaa;
+/* 画面いっぱいの縦の並び: ナビバー + 地図(残り全部)。高さは CSS だけで決める。
+   旧版は、JS で設定した --vh(読み込み時の innerHeight)から、ナビバーの高さを決め打ちして(30px・56px。実際は 42px)引いていた。
+   iPad の回転・分割表示で innerHeight が古いままになると、地図の範囲がずれた。100dvh は、アドレスバーの出入りに追従する */
+html,
+body {
+  height: 100%;
 }
-@media screen and (min-width: 768px) {
-  #map {
-    height: calc(var(--vh, 1vh) * 100 - 56px);
-  }
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  overflow: hidden;
+}
+body > nav {
+  flex: 0 0 auto;
+}
+#map-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 15px;
+}
+#map {
+  width: 100%;
+  height: 100%;
+  border: 1px solid #aaa;
 }
 
 /* Leaflet 1.2(旧版)の文字の大きさ。1.9 の既定は rem 基準で、html を 14px にすると小さくなる */
