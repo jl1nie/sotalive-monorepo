@@ -35,6 +35,54 @@ export interface SotaSummit {
   activationCall: string | null
 }
 
+export interface SotaMarker {
+  code: string
+  name: string
+  nameJ: string
+  alt: number
+  lat: number
+  lon: number
+  pts: number
+  /** アクティベーションの回数 */
+  count: number
+}
+export interface PotaMarker {
+  pota: string
+  wwff: string
+  name: string
+  nameJ: string
+  locid: string[]
+  area: number
+  lat: number
+  lon: number
+  atmpt: number | null
+  act: number | null
+  /** POTA ログで、活動した日(なければ null) */
+  date: string | null
+  qsos: number | null
+}
+export interface SearchResult {
+  sota: SotaMarker[]
+  pota: PotaMarker[]
+}
+export interface PotaPark {
+  potaCode: string
+  wwffCode: string
+  parkNameJ: string
+  activations?: number | null
+  attempts?: number | null
+  qsos?: number | null
+}
+export interface SearchQuery {
+  min_lat: number
+  min_lon: number
+  max_lat: number
+  max_lon: number
+  min_elev: number
+  min_area: number
+  log_id?: string | null
+}
+
 export interface ApiOptions {
   fetch?: typeof fetch
   base?: string
@@ -56,12 +104,12 @@ export function createApi({ fetch: doFetch = (...a) => fetch(...a), base = DEFAU
     }
   }
 
-  /** クエリ付き(GET)。パスは、エンコードしない(クエリの文字を壊さない) */
-  async function query<T>(path: string, params: Record<string, string | number | undefined>): Promise<T | null> {
+  /** クエリ付き(GET)。パスは、エンコードしない(クエリの文字を壊さない)。signal で、前の取得を中断できる */
+  async function query<T>(path: string, params: Record<string, string | number | undefined>, signal?: AbortSignal): Promise<T | null> {
     const q = new URLSearchParams()
     for (const [k, v] of Object.entries(params)) if (v !== undefined) q.set(k, String(v))
     try {
-      const res = await doFetch(`${base}${path}?${q}`)
+      const res = await doFetch(`${base}${path}?${q}`, { signal })
       return res.ok ? ((await res.json()) as T) : null
     } catch (e) {
       console.warn(`API ${path}:`, e)
@@ -82,6 +130,12 @@ export function createApi({ fetch: doFetch = (...a) => fetch(...a), base = DEFAU
     exportShare: (activator: string | null, hunter: string | null) => call<{ share_id: string }>(`/pota/log-share/${activator}/${hunter}`),
     importShare: (key: string) => call<PotaShareImport>(`/pota/log-share/${key}`),
     logStat: () => query<PotaLogStat>('/pota/log-stat', {}),
+
+    // ---- 地図の範囲の山・公園(旧版の /search)。中断(signal)されたら null ----
+    search: (q: SearchQuery, signal?: AbortSignal) =>
+      query<SearchResult>('/search', { ...q, log_id: q.log_id ?? undefined }, signal),
+    /** 公園の詳細(ログがあれば、Activations/Attempts・QSOs も) */
+    parkByCode: (potaCode: string, logId?: string | null) => query<PotaPark[]>('/pota/parks/search', { pota_code: potaCode, log_id: logId ?? undefined }),
 
     // ---- SOTA ----
     /** 座標の近く(dist m 以内)のサミット。ログ ID があれば付ける(旧版と同じ) */

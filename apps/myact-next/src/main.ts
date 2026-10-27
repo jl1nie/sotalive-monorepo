@@ -3,12 +3,14 @@ import 'leaflet/dist/leaflet.css'
 import './style.css'
 import L from 'leaflet'
 import { reverseGeocode } from '@sotalive/geo'
-import { createApi } from './api.ts'
+import { createApi, type PotaMarker, type SotaMarker } from './api.ts'
+import { createMarkers } from './markers.ts'
 import { COOKIE_LAT, COOKIE_LNG, getCookie, setCookie } from './cookie.ts'
 import { MESSAGES, StatusBanner, errorMessage, queryPermission, waitingMessage, PENDING_HINT_MS } from './locate-status.ts'
 import { qthIcon } from './marker.ts'
 import { createPotaLogDialog } from './potalog.ts'
 import { buildPopup } from './popup.ts'
+import type { Area } from './refs.ts'
 import { createPrefs } from './prefs.ts'
 import { ZoomLabel } from './zoom-label.ts'
 
@@ -35,17 +37,41 @@ new ResizeObserver(() => map.invalidateSize()).observe(map.getContainer())
 
 // ---- ポップアップ(地図の空白をクリック) ----
 const popup = L.popup({ maxWidth: 300 })
+
+const markers = createMarkers({
+  map, api, prefs: prefs.get, logId: prefs.logId,
+  onSummit: (s: SotaMarker) => void showPopup({ lat: s.lat, lng: s.lon }, false, 'popup'),
+  onPark: (q: PotaMarker) => void showPopup({ lat: q.lat, lng: q.lon }, false, 'popup', { pota: q.pota, jaff: q.wwff, name: q.nameJ }),
+})
+prefs.subscribe(() => markers.refresh())
+markers.start()
+;(window as unknown as { markerLayer: L.LayerGroup }).markerLayer = markers.layer
 let qthMarker: L.Marker | null = null
 
-async function showPopup(latlng: L.LatLngLiteral, isGPS: boolean, target: 'popup' | 'marker') {
-  // 近くの山と、住所・標高を、同時に聞く(旧版は、山のあとに住所だった)
-  const [summits, geo] = await Promise.all([
-    api.summitsNear(latlng.lat, latlng.lng, 200, prefs.logId()),
+async function showPopup(latlng: L.LatLngLiteral, isGPS: boolean, target: 'popup' | 'marker', area: Area = {}) {
+  const p = prefs.get()
+  const isPark = area.pota !== undefined
+  // 近くの山(空白のクリックのみ)と、住所・標高を、同時に聞く(旧版は、山のあとに住所だった)。公園なら、その公園の詳細
+  const [summits, geo, parks] = await Promise.all([
+    isPark ? null : api.summitsNear(latlng.lat, latlng.lng, 200, prefs.logId()),
     reverseGeocode(Math.round(latlng.lat * 1e6) / 1e6, Math.round(latlng.lng * 1e6) / 1e6, { elevation: true }),
+    isPark && area.pota ? api.parkByCode(area.pota, prefs.logId()) : null,
   ])
-  const content = buildPopup({ lat: latlng.lat, lng: latlng.lng, zoom: map.getZoom(), isGPS, geo, summit: summits?.[0] ?? null })
+  const content = buildPopup({
+    lat: latlng.lat, lng: latlng.lng, zoom: map.getZoom(), isGPS, geo, area,
+    summit: summits?.[0] ?? null, park: parks?.[0] ?? null,
+    prefs: p,
+    onCopyCoords: copyCoords,
+  })
   if (target === 'marker') qthMarker?.bindPopup(content, { maxWidth: 300 }).openPopup()
   else popup.setContent(content).setLatLng(latlng).openOn(map)
+}
+
+/** マップコードのリンク: 座標をコピーして、押された所に知らせる(旧版 toast) */
+function copyCoords(lat: number, lng: number, anchor: HTMLElement) {
+  void navigator.clipboard?.writeText(`${lat},${lng}`).then(() => {
+    anchor.title = '座標をコピーしました'
+  })
 }
 
 map.on('click', (e: L.LeafletMouseEvent) => {

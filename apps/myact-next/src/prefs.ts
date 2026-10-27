@@ -11,6 +11,20 @@ export interface Prefs {
   show_potaactlog: boolean
   pota_activator_uuid: string | null
   pota_hunter_uuid: string | null
+  /** 公園名を、いつも表示する */
+  popup_permanent: boolean
+  /** ポップアップに、マップコードのリンクを出す */
+  display_mapcode: boolean
+  /** 位置のリンクを、Google マップにする(false = 地理院地図) */
+  link_googlemap: boolean
+  /** SOTA の山を出す */
+  sota_ref: boolean
+  /** ポップアップの見出しに、POTA の参照を出す */
+  pota_ref: boolean
+  /** ポップアップの見出しに、JAFF の参照を出す */
+  jaff_ref: boolean
+  /** この拡大(ズーム)以上では、全ての公園・山を出す(7〜12) */
+  zoom_threshold: number
 }
 
 export const DEFAULTS: Prefs = {
@@ -18,6 +32,13 @@ export const DEFAULTS: Prefs = {
   show_potaactlog: true,
   pota_activator_uuid: null,
   pota_hunter_uuid: null,
+  popup_permanent: true,
+  display_mapcode: false,
+  link_googlemap: false,
+  sota_ref: true,
+  pota_ref: true,
+  jaff_ref: true,
+  zoom_threshold: 12,
 }
 
 /** Cookie の入出力(テストでは、差し替える) */
@@ -26,7 +47,7 @@ export interface CookieIO {
   set(name: string, value: string): void
 }
 
-const BOOLEANS = ['show_potalog', 'show_potaactlog'] as const
+const BOOLEANS = ['show_potalog', 'show_potaactlog', 'popup_permanent', 'display_mapcode', 'link_googlemap', 'sota_ref', 'pota_ref', 'jaff_ref'] as const
 const UUIDS = ['pota_activator_uuid', 'pota_hunter_uuid'] as const
 
 export function parseUuid(v: string | undefined): string | null {
@@ -40,6 +61,8 @@ export function loadPrefs(io: CookieIO): Prefs {
     if (v !== undefined) prefs[k] = v === 'true'
   }
   for (const k of UUIDS) prefs[k] = parseUuid(io.get(k))
+  const zt = Number(io.get('zoom_threshold'))
+  if (io.get('zoom_threshold') !== undefined && Number.isFinite(zt)) prefs.zoom_threshold = zt
   return prefs
 }
 

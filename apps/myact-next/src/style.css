@@ -295,3 +295,32 @@ body > nav {
   white-space: nowrap;
   text-transform: none;
 }
+
+/* 地図のマーカー(旧版 my-tooltip-label と同じ考え方: 枠・影なしの文字) */
+.park-marker {
+  background: transparent;
+  border: 0;
+}
+.park-marker img {
+  pointer-events: none;
+}
+.leaflet-tooltip.park-name,
+.leaflet-tooltip.summit-count {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  font-weight: 700;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 2px #fff;
+  pointer-events: none;
+}
+.leaflet-tooltip.summit-count {
+  font-size: 8px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: none;
+}
+.leaflet-tooltip.summit-count::before,
+.leaflet-tooltip.park-name::before {
+  display: none;
+}
