@@ -33,7 +33,7 @@
     "buttons": []
   },
   "apiCalls": [
-    "GET /search?min_lat=35.3585361961528&min_lon=139.10270690917972&max_lat=35.46234778101838&max_lon=139.31694030761722&min_elev=0&min_area=0",
+    "GET /search?min_lat=35.4&min_lon=139.1&max_lat=35.5&max_lon=139.3&min_elev=0&min_area=0",
     "GET /pota/parks/search?pota_code=JP-0118",
     "GET /locator/jcc-jcg?lat=35.4105&lon=139.2098&muni_code=14211"
   ],

@@ -18,7 +18,7 @@
   "apiCalls": [
     "GET /sota/summits/search?lat=30&lon=150&dist=200",
     "GET /locator/jcc-jcg?lat=30&lon=150",
-    "GET /search?min_lat=29.76437737516313&min_lon=124.10156250000001&max_lat=42.84375132629023&max_lon=151.52343750000003&min_elev=4000&min_area=30"
+    "GET /search?min_lat=29.8&min_lon=124.1&max_lat=42.8&max_lon=151.5&min_elev=4000&min_area=30"
   ],
   "dialogs": [],
   "errors": [],

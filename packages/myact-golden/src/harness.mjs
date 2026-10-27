@@ -11,6 +11,14 @@ const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const COMMON = join(ROOT, 'packages/shared/common');
 const FIXTURES = join(ROOT, 'packages/myact-golden/fixtures');
 export const ORIGIN = 'https://legacy.test';
+
+/**
+ * 記録する要求の URL を、OS による揺れが出ないようにする。地図の範囲(`/search` の min_lat・min_lon・max_lat・max_lon)は、
+ * 画面の大きさ(Linux と macOS で、1 ピクセルほど違う)で、小数の下の桁が変わるので、小数第 1 位に丸める。クリックした座標などは、丸めない。
+ */
+export function normalizeCall(call) {
+  return call.replace(/\b(min|max)_(lat|lon)=(-?[\d.]+)/g, (_m, mm, ll, v) => `${mm}_${ll}=${Number(v).toFixed(1)}`);
+}
 const CDN = ['unpkg.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net'];
 const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg' };
 
@@ -61,11 +69,11 @@ export async function openLegacy({ cookies = {}, state = {}, gps } = {}) {
     }
     const r = respond(req.url(), req.method(), req.postData(), state);
     if (r) {
-      if (url.hostname === 'sotaapp2.sotalive.net') apiCalls.push(`${req.method()} ${url.pathname.replace('/api/v2', '')}${url.search}`);
+      if (url.hostname === 'sotaapp2.sotalive.net') apiCalls.push(normalizeCall(`${req.method()} ${url.pathname.replace('/api/v2', '')}${url.search}`));
       return send(r.body, 'application/json', r.status);
     }
     if (url.hostname === 'sotaapp2.sotalive.net') {
-      apiCalls.push(`${req.method()} ${url.pathname.replace('/api/v2', '')}${url.search} (答えなし: 404)`);
+      apiCalls.push(normalizeCall(`${req.method()} ${url.pathname.replace('/api/v2', '')}${url.search}`) + ' (答えなし: 404)');
       return send('{}', 'application/json', 404);
     }
     if (CDN.includes(url.hostname)) {
