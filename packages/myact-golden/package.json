@@ -1,0 +1,15 @@
+{
+  "name": "@sotalive/myact-golden",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "旧版 MyACT を正解にした記録(golden master)。新版 MyACT(apps/myact-next)が、同じ入力で同じ出力を出すことの基準",
+  "scripts": {
+    "verify": "node src/run.mjs verify",
+    "record": "node src/run.mjs record",
+    "record-fixtures": "node tools/record-fixtures.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

@@ -12,6 +12,7 @@
 #   wasm      FLE の wasm のビルド(apps/fle/src/wasm/fle は git に入れない生成物。次の fle の前提)
 #   fle・logconv・myact   各アプリで tsc -b・vitest run・eslint
 #   myqth     新しい MyQTH(apps/myqth)で tsc -b・vitest run・eslint、ビルドして、ブラウザーで開くテスト(Playwright)
+#   golden    旧版 MyACT を固定の応答で動かし、記録(packages/myact-golden/expected)と比べる(Playwright)
 #   functions functions/_middleware.ts の、ホスト名による振り分けのテスト(packages/functions-test)
 #   geo       packages/geo(逆ジオコーダーなど)で tsc --noEmit・vitest run・eslint
 #   shared    packages/shared の node --test(旧版が共有するコード。旧版の index.html の構文の検査を含む)
@@ -141,6 +142,7 @@ run logconv app_checks logconv
 run myact app_checks myact
 run myqth app_checks myqth
 run myqth-e2e bash -c 'pnpm --filter @sotalive/myqth run build && node --test apps/myqth/e2e/myqth.e2e.mjs'
+run golden pnpm --filter @sotalive/myact-golden verify
 run functions bash -c 'cd packages/functions-test && pnpm exec vitest run && pnpm exec eslint .'
 run geo bash -c 'cd packages/geo && pnpm exec tsc --noEmit && pnpm exec vitest run && pnpm exec eslint .'
 run shared node --test packages/shared/tests/*.test.mjs

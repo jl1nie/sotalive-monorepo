@@ -1,0 +1,32 @@
+{
+  "markers": [
+    {
+      "kind": "summit",
+      "lat": 35.4408,
+      "lng": 139.2312,
+      "fill": "#ef6c00",
+      "radius": 8,
+      "tooltip": "355"
+    },
+    {
+      "kind": "park",
+      "lat": 35.4105,
+      "lng": 139.2098,
+      "icon": "leaflet-marker-icon extra-marker extra-marker-square-green-light leaflet-zoom-animated leaflet-interactive",
+      "tooltip": "JP-0118/JAFF-0050 丹沢大山国定公園"
+    },
+    {
+      "kind": "park",
+      "lat": 35.403,
+      "lng": 139.173,
+      "icon": "leaflet-marker-icon extra-marker extra-marker-square-green-light leaflet-zoom-animated leaflet-interactive",
+      "tooltip": "JP-1309 神奈川県立秦野戸川公園"
+    }
+  ],
+  "apiCalls": [
+    "GET /search?min_lat=35.4&min_lon=139.1&max_lat=35.5&max_lon=139.3&min_elev=0&min_area=0"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": []
+}

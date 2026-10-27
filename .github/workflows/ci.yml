@@ -39,6 +39,7 @@ jobs:
       geo: ${{ steps.filter.outputs.geo }}
       myqth: ${{ steps.filter.outputs.myqth }}
       functions: ${{ steps.filter.outputs.functions }}
+      golden: ${{ steps.filter.outputs.golden }}
       legacy: ${{ steps.filter.outputs.legacy }}
       parks: ${{ steps.filter.outputs.parks }}
       sotalive: ${{ steps.filter.outputs.sotalive }}
@@ -76,6 +77,10 @@ jobs:
             functions:
               - 'functions/**'
               - 'packages/functions-test/**'
+            golden:
+              - 'packages/myact-golden/**'
+              - 'apps/myact-org/**'
+              - 'packages/shared/common/**'
             legacy:
               - 'apps/myact-org/**'
               - 'apps/myqth-org/**'
@@ -179,6 +184,25 @@ jobs:
           pnpm exec tsc --noEmit
           pnpm exec vitest run
           pnpm exec eslint .
+
+  # 旧版 MyACT を固定の応答で動かし、ポップアップ・マーカーなどの出力が、記録(packages/myact-golden/expected)と同じか
+  # (次期 MyACT の基準。旧版を意図して変えたら、record して、差分を見る)
+  myact-golden:
+    needs: changes
+    if: needs.changes.outputs.all == 'true' || needs.changes.outputs.golden == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/playwright-chromium
+      - name: Verify the golden master
+        run: pnpm --filter @sotalive/myact-golden verify
 
   # functions/_middleware.ts の、ホスト名による振り分け(ASSETS を差し替えて確かめる)
   functions:

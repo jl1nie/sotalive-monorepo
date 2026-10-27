@@ -1,0 +1,26 @@
+{
+  "popup": {
+    "text": [
+      "Pos: 30,150",
+      "GL: QM50aa00"
+    ],
+    "html": "Pos: 30,150<br>GL: QM50aa00&nbsp;&nbsp;<a href=\"https://www.windy.com/30/150/meteogram?rain,30,150,6\" target=\"_blank\"><img src=\"svg/sun.svg\"><img src=\"svg/cloud.svg\"><img src=\"svg/rain.svg\"></a>",
+    "links": [
+      {
+        "text": "",
+        "href": "https://www.windy.com/30/150/meteogram?rain,30,150,6",
+        "target": "_blank",
+        "rel": null
+      }
+    ],
+    "buttons": []
+  },
+  "apiCalls": [
+    "GET /sota/summits/search?lat=30&lon=150&dist=200",
+    "GET /locator/jcc-jcg?lat=30&lon=150",
+    "GET /search?min_lat=29.8&min_lon=124.1&max_lat=42.8&max_lon=151.5&min_elev=4000&min_area=30"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": []
+}

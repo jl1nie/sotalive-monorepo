@@ -1,0 +1,25 @@
+[
+  {
+    "summitCode": "JA/KN-006",
+    "associationName": "Japan - Honshu",
+    "regionName": "Kanagawa Prefecture",
+    "summitName": "Ooyama",
+    "summitNameJ": "大山",
+    "city": "Isehara-city<JCC#1115>",
+    "cityJ": "神奈川県伊勢原市<JCC#1115>",
+    "altM": 1252,
+    "altFt": 4108,
+    "gridRef1": "139.2312",
+    "gridRef2": "35.4408",
+    "longitude": 139.2312,
+    "latitude": 35.4408,
+    "maidenhead": "PM95ok75",
+    "points": 8,
+    "bonusPoints": 3,
+    "validFrom": "01/06/2015",
+    "validTo": "31/12/2099",
+    "activationCount": 355,
+    "activationDate": "21/10/2026",
+    "activationCall": "JA1BJT"
+  }
+]

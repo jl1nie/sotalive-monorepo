@@ -1,0 +1,48 @@
+{
+  "popup": {
+    "text": [
+      "JP-0118 /JAFF-0069",
+      "丹沢大山国定公園",
+      "JCC1112",
+      "神奈川県秦野市羽根",
+      "GL:PM95oj58",
+      "位置:35.41,139.21",
+      "標高:561.7m"
+    ],
+    "html": "<b><div style=\"text-align:center\"><a target=\"_blank\" rel=\"noopener\" href=\"https://pota.app/#/park/JP-0118\">JP-0118</a> /<a target=\"_blank\" rel=\"noopener\" href=\"https://wwff.co/directory/?showRef=JAFF-0069\">JAFF-0069</a> <br>丹沢大山国定公園</div></b>JCC1112<br>神奈川県秦野市羽根<br>GL:PM95oj58<i><br>位置:<a href=\"https://maps.gsi.go.jp/#6/35.41/139.21\" target=\"_blank\">35.41,139.21</a></i><br> 標高:561.7m&nbsp;&nbsp;<a href=\"https://www.windy.com/35.41/139.21/meteogram?rain,35.41,139.21,6\" target=\"_blank\"><img src=\"svg/sun.svg\"><img src=\"svg/cloud.svg\"><img src=\"svg/rain.svg\"></a>",
+    "links": [
+      {
+        "text": "JP-0118",
+        "href": "https://pota.app/#/park/JP-0118",
+        "target": "_blank",
+        "rel": "noopener"
+      },
+      {
+        "text": "JAFF-0069",
+        "href": "https://wwff.co/directory/?showRef=JAFF-0069",
+        "target": "_blank",
+        "rel": "noopener"
+      },
+      {
+        "text": "35.41,139.21",
+        "href": "https://maps.gsi.go.jp/#6/35.41/139.21",
+        "target": "_blank",
+        "rel": null
+      },
+      {
+        "text": "",
+        "href": "https://www.windy.com/35.41/139.21/meteogram?rain,35.41,139.21,6",
+        "target": "_blank",
+        "rel": null
+      }
+    ],
+    "buttons": []
+  },
+  "apiCalls": [
+    "GET /pota/parks/search?pota_code=JP-0118",
+    "GET /locator/jcc-jcg?lat=35.41&lon=139.21&muni_code=14211"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": []
+}

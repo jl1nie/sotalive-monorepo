@@ -1,0 +1,16 @@
+{
+  "type": "Topology",
+  "objects": {
+    "jaffpota": {
+      "type": "GeometryCollection",
+      "geometries": [
+        {
+          "type": "Polygon",
+          "arcs": [[0]],
+          "properties": { "POTA": "JP-0118", "JAFF": "JAFF-0069", "NAME": "丹沢大山国定公園", "PID": 118, "UID": 1180 }
+        }
+      ]
+    }
+  },
+  "arcs": [[[139.17, 35.39], [139.25, 35.39], [139.25, 35.44], [139.17, 35.44], [139.17, 35.39]]]
+}
