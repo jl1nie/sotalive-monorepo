@@ -4,6 +4,7 @@ import './style.css'
 import L from 'leaflet'
 import { reverseGeocode } from '@sotalive/geo'
 import { COOKIE_LAT, COOKIE_LNG, getCookie, setCookie } from './cookie.ts'
+import { PENDING_HINT_MS, MESSAGES, StatusBanner, errorMessage, queryPermission, waitingMessage } from './locate-status.ts'
 import { qthIcon } from './marker.ts'
 import { popupHtml, round6 } from './popup.ts'
 import { ZoomLabel } from './zoom-label.ts'
@@ -34,6 +35,9 @@ new ZoomLabel().addTo(map)
 ;(window as unknown as { map: L.Map }).map = map
 
 const popup = L.popup()
+const banner = new StatusBanner(map.getContainer())
+// 位置の取得の 1 回ごとの、保留を知らせるタイマー
+let pendingTimer: ReturnType<typeof setTimeout> | undefined
 let qthMarker: L.Marker | null = null
 
 async function displayPopup(latlng: L.LatLngLiteral, isMarker: boolean, isGPS: boolean) {
@@ -57,6 +61,8 @@ map.on('click', (e: L.LeafletMouseEvent) => {
 })
 
 function onLocated(pos: GeolocationPosition) {
+  clearTimeout(pendingTimer)
+  banner.hide()
   const latlng: L.LatLngTuple = [pos.coords.latitude, pos.coords.longitude]
   map.setView(latlng, 15)
   qthMarker?.remove()
@@ -70,6 +76,8 @@ function onLocated(pos: GeolocationPosition) {
 }
 
 function onLocateError(err: GeolocationPositionError) {
+  clearTimeout(pendingTimer)
+  banner.show(errorMessage(err.code))
   const messages: Record<number, string> = {
     1: '位置情報の利用が許可されていません',
     2: '端末位置がわかりませんでした',
@@ -88,11 +96,32 @@ function locate() {
     map.setView(JAPAN, JAPAN_ZOOM)
     return
   }
-  navigator.geolocation.getCurrentPosition(onLocated, onLocateError, {
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 0,
+  clearTimeout(pendingTimer)
+  banner.show(MESSAGES.waiting)
+  let settled = false
+  const done = () => {
+    settled = true
+    clearTimeout(pendingTimer)
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      done()
+      onLocated(pos)
+    },
+    (err) => {
+      done()
+      onLocateError(err)
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+  )
+  // 許可の状態は、取得の開始を待たせずに調べ、まだ待っているときだけ、文言を替える
+  void queryPermission().then((state) => {
+    if (!settled) banner.show(waitingMessage(state))
   })
+  // 許可の確認が保留のままだと、コールバックが呼ばれない。画面で気づけるようにする
+  pendingTimer = setTimeout(() => {
+    if (!settled) banner.show(MESSAGES.pending)
+  }, PENDING_HINT_MS)
 }
 document.getElementById('qth-button')?.addEventListener('click', locate)
 
