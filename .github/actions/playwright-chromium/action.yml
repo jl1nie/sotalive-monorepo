@@ -55,3 +55,7 @@ runs:
         done
         echo "::error::playwright install-deps が 3 回とも失敗した"
         exit 1
+    - name: Make the apt cache savable
+      shell: bash
+      # apt は root で動くので、lock・partial が root だけのものになり、キャッシュの保存(tar)が権限で失敗した
+      run: sudo chown -R "$(id -u):$(id -g)" "$HOME/apt-archives"
