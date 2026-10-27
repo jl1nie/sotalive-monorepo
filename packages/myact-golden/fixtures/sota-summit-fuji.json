@@ -1,0 +1,25 @@
+[
+  {
+    "summitCode": "JA/SO-001",
+    "associationName": "Japan - Honshu",
+    "regionName": "Shizuoka Prefecture",
+    "summitName": "FujisanKengamine",
+    "summitNameJ": "富士山剣ヶ峰",
+    "city": "Fujinomiya-city<JCC#1807>",
+    "cityJ": "静岡県富士宮市<JCC#1807>",
+    "altM": 3776,
+    "altFt": 12388,
+    "gridRef1": "138.7274",
+    "gridRef2": "35.3606",
+    "longitude": 138.7274,
+    "latitude": 35.3606,
+    "maidenhead": "PM95ii76",
+    "points": 10,
+    "bonusPoints": 3,
+    "validFrom": "01/06/2015",
+    "validTo": "31/12/2099",
+    "activationCount": 76,
+    "activationDate": "26/08/2026",
+    "activationCall": "JJ1TUE/2"
+  }
+]

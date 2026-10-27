@@ -1,0 +1,45 @@
+{
+  "popup": {
+    "text": [
+      "JA/SO-001 FujisanKengamine",
+      "富士山剣ヶ峰",
+      "静岡県富士宮市<JCC#1807>",
+      "GL:PM95ii76",
+      "位置:35.3606,138.7274",
+      "標高:3776m,10pts (+3)",
+      "クリック位置: Pos: 35.3606,138.7274",
+      "GL: PM95ii76",
+      "Activations: 76",
+      "Last Activation: 26/08/2026(JJ1TUE/2)"
+    ],
+    "html": "<b><div style=\"text-align:center\"><a target=\"_blank\" rel=\"noopener\" href=\"https://summits.sota.org.uk/summit/JA%2FSO-001\">JA/SO-001 FujisanKengamine</a><br>富士山剣ヶ峰</div></b>静岡県富士宮市&lt;JCC#1807&gt;<br>GL:PM95ii76<br>位置:<a href=\"https://maps.gsi.go.jp/#6/35.3606/138.7274\" target=\"_blank\" rel=\"noopener\">35.3606,138.7274</a><br>標高:3776m,10pts (+3)<br><b>クリック位置: </b>Pos: 35.3606,138.7274<br>GL: PM95ii76&nbsp;&nbsp;<a href=\"https://www.windy.com/35.3606/138.7274/meteogram?rain,35.3606,138.7274,6\" target=\"_blank\"><img src=\"svg/sun.svg\"><img src=\"svg/cloud.svg\"><img src=\"svg/rain.svg\"></a><br>Activations: 76<br>Last Activation: 26/08/2026(JJ1TUE/2)",
+    "links": [
+      {
+        "text": "JA/SO-001 FujisanKengamine",
+        "href": "https://summits.sota.org.uk/summit/JA%2FSO-001",
+        "target": "_blank",
+        "rel": "noopener"
+      },
+      {
+        "text": "35.3606,138.7274",
+        "href": "https://maps.gsi.go.jp/#6/35.3606/138.7274",
+        "target": "_blank",
+        "rel": "noopener"
+      },
+      {
+        "text": "",
+        "href": "https://www.windy.com/35.3606/138.7274/meteogram?rain,35.3606,138.7274,6",
+        "target": "_blank",
+        "rel": null
+      }
+    ],
+    "buttons": []
+  },
+  "apiCalls": [
+    "GET /sota/summits/search?lat=35.3606&lon=138.7274&dist=200",
+    "GET /locator/jcc-jcg?lat=35.3606&lon=138.7274"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": []
+}

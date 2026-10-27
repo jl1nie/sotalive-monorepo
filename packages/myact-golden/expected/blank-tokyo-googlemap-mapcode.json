@@ -1,0 +1,40 @@
+{
+  "popup": {
+    "text": [
+      "JCC100101",
+      "東京都千代田区丸の内一丁目",
+      "GL:PM95vq23",
+      "位置:35.681236,139.767125",
+      "標高:3.6m"
+    ],
+    "html": "JCC100101<br>東京都千代田区丸の内一丁目<br>GL:PM95vq23<i><br>位置:<a href=\"https://www.google.com/maps/search/?api=1&amp;query=35.681236%2C139.767125\" target=\"_blank\">35.681236,139.767125</a></i><br> 標高:3.6m&nbsp;&nbsp;<a href=\"https://www.windy.com/35.681236/139.767125/meteogram?rain,35.681236,139.767125,6\" target=\"_blank\"><img src=\"svg/sun.svg\"><img src=\"svg/cloud.svg\"><img src=\"svg/rain.svg\"></a><div style=\"text-align:center\"><a href=\"https://japanmapcode.com/en\" target=\"_blank\" onclick=\"mapcode_copy_coords(event, 35.681236,139.767125);\"><img src=\"img/mc_long.jpg\" height=\"14px\"></a></div>",
+    "links": [
+      {
+        "text": "35.681236,139.767125",
+        "href": "https://www.google.com/maps/search/?api=1&query=35.681236%2C139.767125",
+        "target": "_blank",
+        "rel": null
+      },
+      {
+        "text": "",
+        "href": "https://www.windy.com/35.681236/139.767125/meteogram?rain,35.681236,139.767125,6",
+        "target": "_blank",
+        "rel": null
+      },
+      {
+        "text": "",
+        "href": "https://japanmapcode.com/en",
+        "target": "_blank",
+        "rel": null
+      }
+    ],
+    "buttons": []
+  },
+  "apiCalls": [
+    "GET /sota/summits/search?lat=35.681236&lon=139.767125&dist=200",
+    "GET /locator/jcc-jcg?lat=35.681236&lon=139.767125&muni_code=13101"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": []
+}

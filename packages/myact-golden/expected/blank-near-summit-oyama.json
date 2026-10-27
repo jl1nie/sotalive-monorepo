@@ -1,0 +1,54 @@
+{
+  "popup": {
+    "text": [
+      "JA/KN-006 Ooyama",
+      "大山",
+      "神奈川県伊勢原市<JCC#1115>",
+      "GL:PM95ok75",
+      "位置:35.4408,139.2312",
+      "標高:1252m,8pts (+3)",
+      "クリック位置: JCC1115",
+      "神奈川県伊勢原市大山",
+      "GL:PM95ok75",
+      "位置:35.4413,139.2317",
+      "標高:1250.8m",
+      "Activations: 355",
+      "Last Activation: 21/10/2026(JA1BJT)"
+    ],
+    "html": "<b><div style=\"text-align:center\"><a target=\"_blank\" rel=\"noopener\" href=\"https://summits.sota.org.uk/summit/JA%2FKN-006\">JA/KN-006 Ooyama</a><br>大山</div></b>神奈川県伊勢原市&lt;JCC#1115&gt;<br>GL:PM95ok75<br>位置:<a href=\"https://maps.gsi.go.jp/#6/35.4408/139.2312\" target=\"_blank\" rel=\"noopener\">35.4408,139.2312</a><br>標高:1252m,8pts (+3)<br><b>クリック位置: </b>JCC1115<br>神奈川県伊勢原市大山<br>GL:PM95ok75<i><br>位置:<a href=\"https://maps.gsi.go.jp/#6/35.4413/139.2317\" target=\"_blank\">35.4413,139.2317</a></i><br> 標高:1250.8m&nbsp;&nbsp;<a href=\"https://www.windy.com/35.441300000000005/139.2317/meteogram?rain,35.441300000000005,139.2317,6\" target=\"_blank\"><img src=\"svg/sun.svg\"><img src=\"svg/cloud.svg\"><img src=\"svg/rain.svg\"></a><br>Activations: 355<br>Last Activation: 21/10/2026(JA1BJT)",
+    "links": [
+      {
+        "text": "JA/KN-006 Ooyama",
+        "href": "https://summits.sota.org.uk/summit/JA%2FKN-006",
+        "target": "_blank",
+        "rel": "noopener"
+      },
+      {
+        "text": "35.4408,139.2312",
+        "href": "https://maps.gsi.go.jp/#6/35.4408/139.2312",
+        "target": "_blank",
+        "rel": "noopener"
+      },
+      {
+        "text": "35.4413,139.2317",
+        "href": "https://maps.gsi.go.jp/#6/35.4413/139.2317",
+        "target": "_blank",
+        "rel": null
+      },
+      {
+        "text": "",
+        "href": "https://www.windy.com/35.441300000000005/139.2317/meteogram?rain,35.441300000000005,139.2317,6",
+        "target": "_blank",
+        "rel": null
+      }
+    ],
+    "buttons": []
+  },
+  "apiCalls": [
+    "GET /sota/summits/search?lat=35.441300000000005&lon=139.2317&dist=200",
+    "GET /locator/jcc-jcg?lat=35.441300000000005&lon=139.2317&muni_code=14214"
+  ],
+  "dialogs": [],
+  "errors": [],
+  "cookies": []
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "potaCode": "JP-0118",
+    "wwffCode": "JAFF-0050",
+    "parkName": "Tanzawa-Oyama",
+    "parkNameJ": "丹沢大山国定公園",
+    "parkLocation": "Kanagawa",
+    "parkLocid": "JP-KN",
+    "parkType": " Quasi-National Park",
+    "parkInactive": false,
+    "parkArea": 27,
+    "longitude": 139.2098,
+    "latitude": 35.4105,
+    "maidenhead": "PM95oj58",
+    "attempts": null,
+    "activations": null,
+    "firstQsoDate": null,
+    "qsos": null
+  }
+]

@@ -1,0 +1,48 @@
+{
+  "sota": [
+    {
+      "code": "JA/KN-006",
+      "name": "Ooyama",
+      "nameJ": "大山",
+      "alt": 1252,
+      "lon": 139.2312,
+      "lat": 35.4408,
+      "pts": 8,
+      "count": 355
+    }
+  ],
+  "pota": [
+    {
+      "pota": "JP-0118",
+      "wwff": "JAFF-0050",
+      "name": "Tanzawa-Oyama",
+      "nameJ": "丹沢大山国定公園",
+      "locid": [
+        "JP-KN"
+      ],
+      "area": 27,
+      "lon": 139.2098,
+      "lat": 35.4105,
+      "atmpt": null,
+      "act": null,
+      "date": null,
+      "qsos": null
+    },
+    {
+      "pota": "JP-1309",
+      "wwff": "",
+      "name": "Hadano Tokawa",
+      "nameJ": "神奈川県立秦野戸川公園",
+      "locid": [
+        "JP-KN"
+      ],
+      "area": 0,
+      "lon": 139.173,
+      "lat": 35.403,
+      "atmpt": null,
+      "act": null,
+      "date": null,
+      "qsos": null
+    }
+  ]
+}
