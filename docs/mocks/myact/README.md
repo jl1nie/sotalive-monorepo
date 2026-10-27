@@ -5,6 +5,7 @@
 - 見る: Artifact「MyACT 次期版 画面案」(https://claude.ai/artifact/LXe2nVC7N8gjRXJTuJLCV4。非公開。共有された人だけ)。ここのファイルは、そのソース(Design タイプの `.dc.html`)
 - 7 面: PC の地図 + 右の側パネル(`Main`)/ スマホの地図 + 下のシート(閉じた状態 `Mobile-Main`・開いた状態 `Mobile-Sheet`)/ ポップアップの中身(`Popups`)/ POTA ログ(`PotaLog`)/ ActPaddle(`ActPaddle`)/ 設定(`Settings`)
 - 見た目は旧版(Bootstrap 4.5 + MDB)に合わせた: ナビバー `#212121`・QTH ボタン `#ffa000`・書体 Lato・ポップアップは白・角丸 12px・リンク `#0078a8`
+- **公園マーカーの色は、旧版と同じ画像**(`pin-*.png`。`packages/shared/common/img/markers_default.png` の square の行から、未活動 `green-light`・活動済 `red`・複数 `orange`・試行のみ `yellow` の 4 つを切り出した)。木のアイコンは、白を重ねている
 - **マーカーは旧版の大きさ**: 山の円はズーム 13〜14 で半径 8 + 縁 2 = 全体 18px(活動回数は円の中に 8px)。公園は ExtraMarkers の 35×46px のピン(先端が座標)。色は旧版と同じ(標高 6 色・POTA ログの状態の 4 色)
 - 地図は、地理院タイルのスクリーンショット(大山のあたり。`map-pc.jpg`・`map-mobile.jpg`)
 - 名前・コールサイン・時刻・スポットの件数は、**ダミーの例**
