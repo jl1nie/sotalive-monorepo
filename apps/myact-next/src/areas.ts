@@ -24,16 +24,17 @@ interface AreaProps {
 
 export interface AreasOptions {
   map: L.Map
+  /** 山の円と共有する Canvas。SVG にすると、手前の Canvas が入力を受けて、区域を押せない */
+  renderer: L.Canvas
   /** 区域を押したとき(クリックした位置と、公園) */
   onPick: (latlng: L.LatLng, area: Area) => void
   fetch?: typeof fetch
 }
 
-export function createAreas({ map, onPick, fetch: doFetch = (...a) => fetch(...a) }: AreasOptions) {
-  // 山・公園のマーカーより下(overlayPane 400 の下)。マーカーを押せるように
-  map.createPane('areas').style.zIndex = '390'
+export function createAreas({ map, renderer, onPick, fetch: doFetch = (...a) => fetch(...a) }: AreasOptions) {
+  // renderer は、GeoJSON の options には型がないが、各ポリゴンに引き継がれる
   const layer = L.geoJSON(undefined, {
-    pane: 'areas',
+    renderer,
     attribution: ATTRIBUTION,
     style: () => ({ color: '#000', opacity: 1, weight: 1, fillColor: '#9fa8da', fillOpacity: 0.3 }),
     onEachFeature(f, l) {
@@ -47,7 +48,7 @@ export function createAreas({ map, onPick, fetch: doFetch = (...a) => fetch(...a
         L.DomEvent.stop(e)
       })
     },
-  })
+  } as L.GeoJSONOptions & { renderer: L.Canvas })
   let loaded = false
 
   async function load() {
@@ -58,6 +59,8 @@ export function createAreas({ map, onPick, fetch: doFetch = (...a) => fetch(...a
       if (!res.ok) throw new Error(String(res.status))
       const topo = (await res.json()) as Topology
       for (const obj of Object.values(topo.objects)) layer.addData(feature(topo, obj) as unknown as GeoJSON.FeatureCollection)
+      // 山の円より下に描き、当たり判定も、円が先(Canvas は、あとから足したものが上)
+      layer.eachLayer((l) => (l as L.Path).bringToBack())
     } catch (e) {
       loaded = false // 次に表示にしたとき、もう一度読む
       console.warn('公園区域:', e)

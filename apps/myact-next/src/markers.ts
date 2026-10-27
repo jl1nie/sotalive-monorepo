@@ -48,6 +48,8 @@ function parkLabel(p: PotaMarker, prefs: Prefs): string {
 
 export interface MarkersOptions {
   map: L.Map
+  /** 山の円と公園区域で共有する Canvas(別々だと、手前の Canvas が入力を受けて、下の区域に届かない) */
+  renderer: L.Canvas
   api: Api
   prefs: () => Prefs
   logId: () => string | null
@@ -55,10 +57,7 @@ export interface MarkersOptions {
   onPark: (p: PotaMarker) => void
 }
 
-export function createMarkers({ map, api, prefs, logId, onSummit, onPark }: MarkersOptions) {
-  // モバイルは、指で押しやすいように、円の当たり判定を広げる
-  const tolerance = matchMedia('(pointer: coarse)').matches ? 30 : 5
-  const renderer = L.canvas({ tolerance })
+export function createMarkers({ map, renderer, api, prefs, logId, onSummit, onPark }: MarkersOptions) {
   const layer = L.layerGroup().addTo(map)
   let generation = 0
   let controller: AbortController | null = null
