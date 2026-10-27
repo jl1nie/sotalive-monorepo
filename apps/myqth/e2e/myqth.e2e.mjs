@@ -32,9 +32,10 @@ after(async () => {
 /**
  * 新版を開いたページと、起きた JS の例外・alert の文面。
  * geolocation: 現在地(なければ、位置情報は許可しない)、noGeolocation: 位置情報のないブラウザー、
- * failGsi: 国土地理院の API が 500、noHsrc: 標高の応答に hsrc がない、cookies: 前回の位置
+ * failGsi: 国土地理院の API が 500、noHsrc: 標高の応答に hsrc がない、cookies: 前回の位置、
+ * init: ページの前に走らせるスクリプト(位置情報の差し替えなど)、fakeClock: 時間を進められるようにする
  */
-async function openApp({ geolocation, noGeolocation = false, failGsi = false, noHsrc = false, cookies = [] } = {}) {
+async function openApp({ geolocation, noGeolocation = false, failGsi = false, noHsrc = false, cookies = [], init, fakeClock = false } = {}) {
   const context = await browser.newContext(geolocation ? { geolocation, permissions: ['geolocation'] } : {});
   if (cookies.length) await context.addCookies(cookies.map((c) => ({ ...c, url: ORIGIN })));
   const page = await context.newPage();
@@ -45,6 +46,8 @@ async function openApp({ geolocation, noGeolocation = false, failGsi = false, no
     dialogs.push(d.message());
     d.dismiss();
   });
+  if (fakeClock) await page.clock.install();
+  if (init) await page.addInitScript(init);
   if (noGeolocation) await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'geolocation', { get: () => undefined }));
   await page.route('**/*', (route) => {
     const req = route.request();
@@ -148,6 +151,64 @@ test('位置情報のないブラウザーでは、知らせて日本全体の�
   const { page, context, errors, dialogs } = await openApp({ noGeolocation: true });
   assert.deepEqual(dialogs, ['ブラウザが位置情報取得に対応していません']);
   assert.equal(await page.evaluate(() => window.map.getZoom()), 6);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+const banner = (page) => page.locator('.locate-status');
+
+test('現在地が取れたら、取得中の帯は消える', async () => {
+  const { page, context } = await openApp({ geolocation: TOKYO });
+  await page.locator('.leaflet-popup-content h4').waitFor({ timeout: 10000 });
+  assert.equal(await banner(page).isVisible(), false);
+  await context.close();
+});
+
+test('許可の確認が保留のまま(コールバックが呼ばれない)だと、取得中を出し、15 秒で「QTH を押し直す」案内に替わる', async () => {
+  const { page, context } = await openApp({
+    fakeClock: true,
+    init: () => {
+      navigator.geolocation.getCurrentPosition = () => {}; // 許可の確認が保留のまま
+      Object.defineProperty(navigator, 'permissions', { value: { query: async () => ({ state: 'prompt' }) } });
+    },
+  });
+  await banner(page).waitFor({ timeout: 10000 });
+  await page.waitForFunction(() => document.querySelector('.locate-status')?.textContent?.includes('「許可」を選んでください'));
+  await page.clock.fastForward(16000);
+  assert.match(await banner(page).innerText(), /保留のまま/);
+  assert.match(await banner(page).innerText(), /QTH/);
+  // タップで消える
+  await banner(page).click();
+  assert.equal(await banner(page).isVisible(), false);
+  await context.close();
+});
+
+test('許可が拒否されているときは、設定の場所を案内する(アラートの文言は旧版のまま)', async () => {
+  const { page, context, dialogs, errors } = await openApp({
+    init: () => {
+      navigator.geolocation.getCurrentPosition = (_ok, ng) => setTimeout(() => ng({ code: 1 }), 50);
+      Object.defineProperty(navigator, 'permissions', { value: { query: async () => ({ state: 'denied' }) } });
+    },
+  });
+  // 許可の状態(denied)がすぐ帯に出て、少しあとに、位置の取得の失敗のアラート(旧版と同じ文言)が出る
+  await page.waitForFunction(() => document.querySelector('.locate-status')?.textContent?.includes('設定'));
+  assert.match(await banner(page).innerText(), /位置情報が許可されていません/);
+  for (let i = 0; i < 50 && dialogs.length === 0; i++) await page.waitForTimeout(100);
+  assert.deepEqual(dialogs, ['位置情報の利用が許可されていません']);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('Permissions API がないブラウザーでも、取得中を出して、例外にならない', async () => {
+  const { page, context, errors } = await openApp({
+    fakeClock: true,
+    init: () => {
+      navigator.geolocation.getCurrentPosition = () => {};
+      Object.defineProperty(navigator, 'permissions', { value: undefined });
+    },
+  });
+  await banner(page).waitFor({ timeout: 10000 });
+  assert.match(await banner(page).innerText(), /現在地を取得中/);
   assert.deepEqual(errors, []);
   await context.close();
 });
