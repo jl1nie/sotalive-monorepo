@@ -1366,7 +1366,8 @@ function urlPosition() {
 
 var urlpos = urlPosition();
 if (urlpos) {
-	map.setView(urlpos.latlng, urlpos.zoom);
+	// アニメーションなし: 先に日本全体を出してあるので、付くと、次の行の displayPopup が読む getZoom() が、まだ 6 のまま
+	map.setView(urlpos.latlng, urlpos.zoom, { animate: false });
 	displayPopup({}, urlpos.latlng, false, false);
 } else
 	clickQTHButton();
