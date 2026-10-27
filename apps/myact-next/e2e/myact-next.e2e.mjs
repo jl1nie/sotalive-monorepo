@@ -535,3 +535,44 @@ test('スポット: スマホの幅では、下からのシートになり、地
   assert.equal(await page.locator('#spot-panel').isVisible(), false);
   await context.close();
 });
+
+// ---- APRS 軌跡・地磁気の指数 ----
+const aprsState = (props = {}) => ({
+  handlers: [({ path }) => (path.endsWith('/activation/aprs/track')
+    ? { status: 200, body: JSON.stringify({ tracks: [{
+        properties: { ssid: '7', callsign: 'JA1XYZ-7', lastseen: '2026-10-27T01:00:00Z', distance: 120, summit: 'JA/KN-006', spot_summit: 'JA/KN-006', spot_time: '2026-10-27T00:50:00Z', spot_freq: '7.030', spot_mode: 'CW', spot_comment: '<img src=x onerror=alert(1)>', ...props },
+        geometry: { coordinates: [[35.40, 139.20], [35.42, 139.22], [35.44, 139.23]] },
+      }] }) }
+    : null)],
+});
+
+test('時計: 旧版と同じ形(YY/MM/DD HH:mm)に、地磁気の指数(A・K)を添える', async () => {
+  const { page, context } = await open();
+  await page.waitForFunction(() => /^\d\d\/\d\d\/\d\d \d\d:\d\d A:\d+ K:\d+$/.test(document.getElementById('clock_time').textContent));
+  await context.close();
+});
+
+test('APRS 軌跡: 線・点・最後の位置のマーカー。ポップアップの文字は、HTML として解釈しない', async () => {
+  const { page, context, errors, dialogs } = await open({ state: aprsState() });
+  await page.waitForFunction(() => window.aprs.layer?.getLayers().length > 0);
+  const counts = await page.evaluate(() => {
+    const out = { line: 0, dots: 0, marker: 0 };
+    window.aprs.layer.eachLayer((l) => { if (l instanceof L.Polyline && !(l instanceof L.CircleMarker)) out.line++; else if (l instanceof L.CircleMarker) out.dots++; else if (l instanceof L.Marker) out.marker++; });
+    return out;
+  });
+  assert.deepEqual(counts, { line: 1, dots: 3, marker: 1 });
+  await page.evaluate(() => window.aprs.layer.eachLayer((l) => { if (!(l instanceof L.Path)) l.openPopup(); }));
+  const text = await page.locator('.leaflet-popup-content').innerText();
+  assert.match(text, /JA1XYZ-7 \(120m from JA\/KN-006\)/);
+  assert.match(text, /7\.030 CW JA\/KN-006/);
+  assert.equal(await page.locator('.leaflet-popup-content img').count(), 0);
+  assert.deepEqual([errors, dialogs], [[], []]);
+  await context.close();
+});
+
+test('APRS 軌跡: 設定で出さないなら、取らない(aprs_track)', async () => {
+  const { page, context, apiCalls } = await open({ state: aprsState(), cookies: { aprs_track: 'false' } });
+  await page.waitForTimeout(600);
+  assert.equal(apiCalls.some((c) => c.includes('/activation/aprs/track')), false);
+  await context.close();
+});
