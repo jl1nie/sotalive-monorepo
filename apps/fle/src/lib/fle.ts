@@ -312,8 +312,10 @@ export async function generateFleZip(
   text: string,
   now: Date = new Date(),
   hamlog: HamlogColumns = DEFAULT_HAMLOG_COLUMNS,
-  hamlogZone: HamlogZone = 'jst'
+  hamlogZone: HamlogZone = 'jst',
+  /** zip に入れる FLE ログ(`text`)の名前。省くと、ログから決める */
+  logName?: string
 ): Promise<Uint8Array> {
   await ensureReady()
-  return wasmGenerateZip(text, now.getTime(), { hamlog, hamlogZone })
+  return wasmGenerateZip(text, now.getTime(), { hamlog, hamlogZone, logName })
 }

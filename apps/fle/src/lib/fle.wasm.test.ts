@@ -199,6 +199,11 @@ describe('fle wasm', () => {
     expect(() => generateZip('', 0, undefined)).toThrow()
   })
 
+  it('generateZip: 元の FLE ログを、渡した名前で入れる', () => {
+    const zip = generateZip(SAMPLE, Date.UTC(2026, 9, 18, 9, 30, 45), { logName: 'fle-20240115@JA-TK-001-1843.txt' })
+    expect(new TextDecoder().decode(zip)).toContain('fle-20240115@JA-TK-001-1843.txt')
+  })
+
   it('generateZip: HAMLOG の欄の書式を渡せる(省略すると既定)', () => {
     const at = Date.UTC(2026, 9, 18, 9, 30, 45)
     const a = generateZip(SAMPLE, at, undefined)

@@ -38,7 +38,7 @@
 | `adifToFle(adif)` | ADIFのテキスト | FLEのテキスト | ADIFを追加するとき |
 | `sampleLog(date)` | 日付(`YYYY-MM-DD`) | 見本のFLEログ | 見本を入れるとき |
 | `fill(text, line, nowMs, defaultTz, options?)` | テキスト全体、行、いまの時刻、既定のタイムゾーン、確定の範囲(省略可) | 直す箇所 `Edit[]` | Enter(`options` なし)、確定ボタン(設定に従う) |
-| `generateZip(text, nowMs)` | テキスト全体、いまの時刻 | ZIP | 生成ボタン |
+| `generateZip(text, nowMs, options)` | テキスト全体、いまの時刻、出力の設定(HAMLOG の欄・時刻、zip に入れる FLE ログの名前 `logName`) | ZIP(元の FLE ログも入る。誤りのあるログでも) | 生成ボタン |
 
 ### `complete`
 - 返すのは**キーワードだけ**(コマンド、バンド、モード、`day` の `+` / `++`)。

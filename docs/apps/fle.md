@@ -46,7 +46,7 @@ HAMLOG の QTH・Rmks1・Rmks2 の欄は、プリセットか、欄ごとの項�
 
 ### 出力する形式
 
-`crates/fle-core/src/output.rs` の `generate_fle_output` が、zip の中に次のファイルを作ります。
+`crates/fle-core/src/output.rs` の `generate_fle_output_with_log` が、zip の中に次のファイルを作ります。
 
 | ファイル | 内容 |
 |---|---|
@@ -54,8 +54,9 @@ HAMLOG の QTH・Rmks1・Rmks2 の欄は、プリセットか、欄ごとの項�
 | `コールサイン@場所-日付.adi` | POTA の ADIF(公園ごと)。WWFF・SOTA(山ごと。`/` は `-`)も同様 |
 | `hamlog-….csv` | HAMLOG の取り込み用 CSV |
 | `contest-日付.txt` | ZLOG 形式(コンテストのログのとき) |
+| `fle-日付@場所-時刻.txt` | 元の FLE ログ。名前は「FLEログを保存」と同じ(画面が、書き出した時刻を付けて渡す) |
 
-エラーのある行があると、これらは作られず、エラーを書いたテキストだけが出ます。
+エラーのある行があると、これらは作られず、エラーを書いたテキストと、元の FLE ログだけが出ます(直して書き出し直せるように)。
 ほかのログソフトの形式を変換したいときは [logconv](logconv.md) を使います。
 FLE のログそのものは、「FLEログを保存」でテキストにできます。
 ADIF を FLE の行へ戻す機能(`adifToFle`)もあり、メニューの「ADIFを追加」から使います。

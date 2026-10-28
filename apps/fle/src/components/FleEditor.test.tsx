@@ -569,6 +569,26 @@ describe('H. 書き出し', () => {
     expect(screen.queryByText(t('check.title'))).toBeNull()
   })
 
+  it('H4: zip には、元の FLE ログも「FLEログを保存」と同じ名前(拡張子 .txt)で入れる', async () => {
+    const names = captureDownloads()
+    let blob: Blob | null = null
+    URL.createObjectURL = (b: Blob) => {
+      blob = b
+      return 'blob:x'
+    }
+    await open(HEADER + '1000 ja1xyz')
+    await menu(t('menu.export'))
+    await waitFor(() => expect(names).toHaveLength(1))
+    // zip の中のファイル名は、圧縮せずに入っている
+    // jsdom の Blob には arrayBuffer がないので、FileReader で読む
+    const bytes = await new Promise<string>((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.readAsText(blob!)
+    })
+    expect(bytes).toContain(names[0].replace(/\.zip$/, '.txt'))
+  })
+
   it('H1: 日付がなければ、確認のシートを開く(生成しない)', async () => {
     const names = captureDownloads()
     await open('mycall JA1ABC\nmysota JA/TK-001\n40m cw\n1000 ja1xyz')

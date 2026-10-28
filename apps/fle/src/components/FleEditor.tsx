@@ -702,9 +702,11 @@ function Editor({
   const generateNow = useCallback(
     async (source: string) => {
       try {
-        const zip = await generateFleZip(source, new Date(), settings.hamlog, settings.hamlogZone)
-        const name = exportName(await logFileStem(source), new Date(), 'zip')
-        download(new Blob([zip as BlobPart], { type: 'application/zip' }), name)
+        // zip の中には、元の FLE ログも「FLEログを保存」と同じ名前で入れる(書き出したファイルと一緒に残る)
+        const now = new Date()
+        const stem = await logFileStem(source)
+        const zip = await generateFleZip(source, now, settings.hamlog, settings.hamlogZone, exportName(stem, now, 'txt'))
+        download(new Blob([zip as BlobPart], { type: 'application/zip' }), exportName(stem, now, 'zip'))
         if (view?.status === 'ERR') {
           notify(t('notice.errorsFile'))
         }

@@ -5,8 +5,8 @@
 use chrono::DateTime;
 use fle_core::{
     adif_to_fle, check_log, compile_fle, compile_log, complete_at, fill_with,
-    generate_fle_output_with, grid_locator, line_info, retime, sample_log, select_part, station_at,
-    station_plan, FillScope, OutputOptions, Part, Station,
+    generate_fle_output_with_log, grid_locator, line_info, retime, sample_log, select_part,
+    station_at, station_plan, FillScope, OutputOptions, Part, Station,
 };
 use wasm_bindgen::prelude::*;
 
@@ -131,7 +131,8 @@ pub fn retime_log(text: &str, tz: i32, convert: bool) -> String {
     retime(text, tz, convert)
 }
 
-/// `options` は出力の設定(`{ hamlog: { qth, rmks1, rmks2 }, hamlogZone: "jst" | "utc" }`)。省略すると既定
+/// `options` は出力の設定(`{ hamlog: { qth, rmks1, rmks2 }, hamlogZone: "jst" | "utc", logName }`)。省略すると既定。
+/// zip には、元の FLE ログ(`text`)も `logName` の名前で入れる
 #[wasm_bindgen(js_name = generateZip)]
 pub fn generate_zip(text: &str, now_ms: f64, options: JsValue) -> Result<Vec<u8>, JsError> {
     let options: OutputOptions = if options.is_undefined() || options.is_null() {
@@ -146,7 +147,7 @@ fn generate_zip_bytes(text: &str, now_ms: f64, options: &OutputOptions) -> Resul
     let now = DateTime::from_timestamp_millis(now_ms as i64)
         .ok_or_else(|| "invalid timestamp".to_string())?
         .naive_utc();
-    generate_fle_output_with(&compile_fle(text), now, options)
+    generate_fle_output_with_log(&compile_fle(text), now, options, text)
 }
 
 #[cfg(test)]
@@ -169,11 +170,28 @@ mod tests {
         // 2026-10-18T09:30:45Z
         let zip =
             generate_zip_bytes("mycall\n", 1_792_315_845_000.0, &OutputOptions::default()).unwrap();
-        let mut archive = zip::ZipArchive::new(Cursor::new(zip)).unwrap();
+        let archive = zip::ZipArchive::new(Cursor::new(zip)).unwrap();
+        // 誤りの記録と、元の FLE ログ(名前がなければ、QSO がないので書き出した日付)
+        let mut names: Vec<&str> = archive.file_names().collect();
+        names.sort();
         assert_eq!(
-            archive.by_index(0).unwrap().name(),
-            "fle-error-2026-10-18-09-30.txt"
+            names,
+            ["fle-20261018.txt", "fle-error-2026-10-18-09-30.txt"]
         );
+    }
+
+    #[test]
+    fn zip_holds_the_fle_log_under_the_given_name() {
+        let options = OutputOptions {
+            log_name: Some("fle-log.txt".to_string()),
+            ..OutputOptions::default()
+        };
+        let zip = generate_zip_bytes(SAMPLE, 0.0, &options).unwrap();
+        let mut archive = zip::ZipArchive::new(Cursor::new(zip)).unwrap();
+        let mut log = String::new();
+        std::io::Read::read_to_string(&mut archive.by_name("fle-log.txt").unwrap(), &mut log)
+            .unwrap();
+        assert_eq!(log, SAMPLE);
     }
 
     #[test]
