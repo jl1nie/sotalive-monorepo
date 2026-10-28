@@ -1130,6 +1130,67 @@ describe('G. 場所のシート', () => {
     expect(lines[lines.length - 1]).toMatch(/^40m cw$/i)
   })
 
+  it('G12: 予定を選んで書き込むと、予定の日付・リグ・QSL メッセージも指令の行にする。ログに同じ行があれば書かない', async () => {
+    const plan = {
+      id: 'p1',
+      title: '高尾山',
+      date: '2026-10-25',
+      mycall: 'JA1ABC',
+      sota: 'JA/TK-001',
+      pota: [],
+      wwff: '',
+      grid: '',
+      rig: 'KX2',
+      qslmsg: 'TNX $mysota',
+      updatedAt: 1,
+    }
+    localStorage.setItem('fle.plans', JSON.stringify([plan]))
+    const ta = await open('rig KX2\n')
+    await menu(t('menu.place'))
+    const s = placeSheet()
+    await act(async () => {
+      fireEvent.click(within(s.getByRole('region', { name: t('plans.use') })).getByRole('button', { name: /高尾山/ }))
+    })
+    await write(s)
+    await waitFor(() => expect(ta.value).toMatch(/mysota JA\/TK-001/i))
+    const lines = ta.value.split('\n')
+    expect(lines).toContain('date 2026-10-25')
+    expect(lines).toContain('qslmsg TNX $mysota')
+    // 新しいログは空のログに書くので、置き換える前のログの rig の行は数えない(予定の rig を 1 行書く)
+    expect(lines.filter((l) => l === 'rig KX2')).toHaveLength(1)
+  })
+
+  it('G12: 場所の変更で予定を選んだとき、ログにすでにある同じ行は書かない', async () => {
+    const plan = {
+      id: 'p1',
+      title: '高尾山',
+      date: '2026-10-27',
+      mycall: 'JA1ABC',
+      sota: 'JA/TK-002',
+      pota: [],
+      wwff: '',
+      grid: '',
+      rig: 'KX2',
+      qslmsg: '',
+      updatedAt: 1,
+    }
+    localStorage.setItem('fle.plans', JSON.stringify([plan]))
+    const log = HEADER + 'rig KX2\n1000 ja1xyz\n1010 ja2xyz'
+    const ta = await open(log)
+    await moveTo(ta, log.length)
+    await menu(t('menu.change'))
+    const s = placeSheet()
+    await act(async () => {
+      fireEvent.click(within(s.getByRole('region', { name: t('plans.use') })).getByRole('button', { name: /高尾山/ }))
+    })
+    await write(s)
+    await waitFor(() => expect(ta.value).toMatch(/TK-002/))
+    const lines = ta.value.split('\n')
+    // HEADER の date 2026-10-27 と rig KX2 は、もうあるので足さない
+    expect(lines.filter((l) => l === 'date 2026-10-27')).toHaveLength(1)
+    expect(lines.filter((l) => l === 'rig KX2')).toHaveLength(1)
+  })
+
   it('G8: 山頂の地域の地図を新しく端末に入れたら、通知する', async () => {
     vi.mocked(refreshRegionOf).mockResolvedValue('updated')
     // 山の候補の検索が失敗すると、オフラインとみなす。通信はできる(何も見つからない)ことにする
