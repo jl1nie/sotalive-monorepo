@@ -96,7 +96,7 @@ function media(coarse = false) {
 beforeEach(() => {
   localStorage.clear()
   hooks.failCompile = false
-  vi.mocked(refreshRegionOf).mockReset().mockResolvedValue('unchanged')
+  vi.mocked(refreshRegionOf).mockReset().mockResolvedValue('current')
   vi.mocked(alignToBottom).mockClear()
   resetNet()
   vi.stubGlobal('fetch', () => Promise.reject(new TypeError('offline')))
@@ -1287,6 +1287,11 @@ describe('K. 表示と配置(続き)', () => {
     expect(screen.getAllByText('JA/TK-001').length).toBeGreaterThan(0)
     cleanup()
     await open(HEADER, { showClock: false })
+    expect(screen.queryByText('JA/TK-001')).toBeNull()
+  })
+
+  it('K5: 従来の配置では、設定がオンでも出さない', async () => {
+    await open(HEADER, { showClock: true })
     expect(screen.queryByText('JA/TK-001')).toBeNull()
   })
 
