@@ -37,275 +37,419 @@
 <body>
 <main>
 <div class="top"><h1>FLEonline Manual</h1><span><a href="../">日本語</a> · <a href="/fle/">← Back to the app</a></span></div>
-<p>FLEonline is an app for writing your SOTA/POTA operating log on a phone in the field and turning it into files for SOTA, POTA and HAMLOG. This manual follows an ordinary SOTA activation, from preparation to generating the ADIF and other files. A reference of the FLE log syntax is at the end.</p>
 <nav aria-label="Contents"><ol>
-  <li><a href="#start">First: add to the home screen</a></li>
-  <li><a href="#prep">Before you leave (PC): settings and plans</a></li>
-  <li><a href="#sync">Sync the PC and the phone</a></li>
-  <li><a href="#field">On the summit: write the log</a></li>
-  <li><a href="#out">After operating: make the files</a></li>
-  <li><a href="#ref">FLE syntax (reference)</a></li>
+  <li><a href="#about">About this app</a></li>
+  <li><a href="#setup">First-time setup</a></li>
+  <li><a href="#before">The day before: prepare</a></li>
+  <li><a href="#day">On the day: write the log</a></li>
+  <li><a href="#after">Afterwards: make the files</a></li>
+  <li><a href="#ref">Reference</a>
+    <ol>
+      <li><a href="#screen">Reading the screen</a></li>
+      <li><a href="#fullkey">The phone keyboard (full keys)</a></li>
+      <li><a href="#pc">Using a PC</a></li>
+      <li><a href="#fix">Fixing a QSO</a></li>
+      <li><a href="#swipe">Moving the cursor by swiping</a></li>
+      <li><a href="#undo">Undo</a></li>
+      <li><a href="#menu">Menu</a></li>
+      <li><a href="#settings">Settings</a></li>
+      <li><a href="#plans">Plans</a></li>
+      <li><a href="#place">The location screen and memos</a></li>
+      <li><a href="#sync">Syncing a PC and a phone</a></li>
+      <li><a href="#map">Summit map</a></li>
+      <li><a href="#files">Exported files</a></li>
+      <li><a href="#fle">FLE syntax</a></li>
+    </ol>
+  </li>
 </ol></nav>
 
-<h2 id="start">1. First: add to the home screen</h2>
-<p>So it works on a summit without signal, <b>open it once beforehand while you are online</b> and add it to the home screen.</p>
-<ul>
-  <li><b>iPhone</b>: open in Safari, then Share → "Add to Home Screen".</li>
-  <li><b>Android</b>: Chrome menu → "Add to Home screen" (or "Add to home screen" in the app menu).</li>
-</ul>
-<p>After the first visit it works offline, and your log is saved on the device automatically. Only the summit/park suggestions and sync need a connection.</p>
+<h2 id="about">1. About this app</h2>
+<p>FLEonline lets you write your operating log on a summit or in a park, <b>on the spot, with just a phone</b>. The log uses a short notation called FLE (Fast Log Entry): after <code>40m cw</code> you write <code>0230 ja1abc</code>, then <code>35 ja2xyz</code>, leaving out whatever is the same as the line before. You can write without a signal on the summit, and when you are back you can make the SOTA, POTA, WWFF and HAMLOG files in one go.</p>
 
-<h2 id="prep">2. Before you leave (PC): settings and plans</h2>
-<p>Open <code>https://fleonline.sotalive.net/</code> in a PC browser.</p>
-
-<h3>Settings</h3>
-<p>The gear at the top right opens the settings.</p>
-<ul>
-  <li><b>Frequently used rigs</b>: one rig/antenna per line. When you type <code>rig </code> in the log, these appear as suggestions (e.g. <code>KX2+EFHW</code>). If you use HAMLOG, write the names you defined in HAMLOG.</li>
-  <li><b>Time zone</b>: the time zone the times in the log are written in (UTC, JST, ...). One log uses one time zone, and a <code>timezone</code> line goes at the top of the log (none for UTC).
-    <ul>
-      <li>If you change it when the log has QSOs, you are asked whether to convert the times. <b>Convert</b> rewrites each time as the same moment in the new zone (fixing the date when a time crosses midnight). <b>Keep the times</b> only rewrites the <code>timezone</code> line (when you wrote in JST but forgot the <code>timezone</code> line). <b>Cancel</b> changes nothing. After a rewrite, "Undo" in the notice brings the log back.</li>
-      <li>SOTA, POTA and WWFF files are always in UTC. The HAMLOG file follows the log's time zone (<code>J</code> for JST; any other zone goes out in UTC as <code>U</code>).</li>
-    </ul>
-  </li>
-  <li><b>Insert the current time</b>: confirming a QSO line without a time inserts the current time (on by default). Turn it off when typing in a paper log; a line without a time then takes the time of the line before. This is set per device and is not synced.</li>
-  <li><b>What confirming writes</b>: whether confirming with the green bar also writes band/mode and RST. Band/mode is off at first. RST is kept separately for a PC (classic layout) and a phone (full keys): on at first on a PC, off at first on a phone (the log stays as you typed it, and the green bar shows the filled-in values). The settings screen shows whether the RST setting is for a PC or a phone.</li>
-  <li><b>Screen layout</b>: there is no setting; the device decides. Touch devices such as phones use the <a href="#fullkey">Full keys layout</a> (it keeps the line you are typing and the green bar together, and shows an on-screen keyboard instead of the phone's). A PC uses the classic layout (you type on the physical keyboard).</li>
-  <li><b>Show the time and location</b>: on a phone (full keys), shows the time and your location (and memo) in large type above the log (on by default). It appears only on a phone. This is set per device and is not synced.</li>
-  <li><b>Digit key row</b>: in the classic layout on a PC, a row of digit keys above the keyboard (off at first). Not used with full keys on a phone (the keyboard has digits).</li>
-  <li><b>QSO count</b>: the number on the left shows "Day / total" or only the "Total".</li>
-  <li><b>Log text size</b>: Small, Medium or Large (Medium is the standard; Small is 0.85 times, Large 1.2 times). It changes the log and the time and location above it. The type is always a heavy monospace. This is set per device and is not synced.</li>
-  <li><b>HAMLOG output</b>: what goes into the QTH, Rmks1 and Rmks2 columns of HAMLOG. Choose a preset ("Classic" is the same as the old HamLogConv; "Memo in Rmks1, your place in Rmks2") or tick the items for each column (remarks, other station, your place, memo, QSL message, Rig). With neither a QSL message nor a rig, Rmks2 is left empty. This setting is synced (it follows you to another device).</li>
-  <li><b>Theme</b>: light / dark / follow the device. <b>Language</b>: the language of the screen and error messages (日本語 / English / follow the device).</li>
-</ul>
-
-<h3>Plans (destinations)</h3>
-<p>Menu ("…") → "Plans" → "Add a plan" to register the summit you are going to in advance.</p>
+<h3>What you can do</h3>
 <table>
-<tr><th>Name</th><td>e.g. Mt. Takao 10/25 (your own label)</td></tr>
-<tr><th>Date</th><td>Optional. The day of the activation</td></tr>
-<tr><th>My callsign</th><td>e.g. <code>JL1NIE/1</code></td></tr>
-<tr><th>SOTA / POTA / WWFF</th><td>Type a name or number and suggestions appear (<code>TK-0</code>, ...). Just pick the summit or park</td></tr>
-<tr><th>Grid</th><td>Optional. The "Here" button fills it in too</td></tr>
-<tr><th>Rig, QSL message</th><td>Optional. The rig goes to HAMLOG's <code>Rig=</code>. The QSL message can use <code>$mysota</code> and <code>$rig</code></td></tr>
+<tr><th>Write</th><td>One QSO per line in FLE. The candidate bar below the log area shows the line with the omitted time, band, mode and RST filled in. On a phone you type on an on-screen keyboard with only the keys FLE needs (full keys)</td></tr>
+<tr><th>Without a signal</th><td>Once you have opened the app, you can write without a signal. The log is saved on the device automatically</td></tr>
+<tr><th>Prepare</th><td>Register where you are going as a "plan", and just choose it on the day. The summit map shows the activation zone, the municipality (JCC/JCG) and the POTA parks</td></tr>
+<tr><th>Sync with a PC</th><td>Settings and plans can be synced between a PC and a phone</td></tr>
+<tr><th>Make the files</th><td>Makes the SOTA CSV, the POTA, WWFF and SOTA ADIF files and the HAMLOG CSV in one zip. You can also add an ADIF file from other logging software to the log</td></tr>
 </table>
-<p>You can register up to 50 plans. On the day, you only pick one.</p>
-<p><b>Summit map</b>: "Map" next to the SOTA field shows the activation zone, municipal borders and the POTA parks you get in each municipality. On a summit on a border, use it to decide which side to operate from (the JCC/JCG memo and POTA). <b>Maps of the summits in your plans are saved on the device automatically while you have signal</b>, so you can see them at the summit without signal. "Map: saved" in the plan list means you are ready; if it says "not saved yet", open the app where you have signal.</p>
 
-<h2 id="sync">3. Sync the PC and the phone</h2>
-<p>Settings and plans entered on the PC can be synced to your phone. <b>The log text is not synced</b> (a log written on the phone stays on the phone).</p>
-
-<h3>On the PC</h3>
-<ol>
-  <li>Gear → "Sync settings and plans" → "Start syncing (make a code)".</li>
-  <li>A QR code and a 26-character sync code appear.</li>
-</ol>
-
-<h3>On the phone</h3>
+<h3>What you cannot do, and notes</h3>
 <ul>
-  <li><b>Android</b>: scan the QR with the camera (e.g. Google Lens) and press "Join" on the page that opens.</li>
-  <li><b>iPhone</b>: Safari and the home-screen app have <b>separate storage</b>. Open the <b>home-screen app</b>, then Gear → "Scan QR" and scan the PC's QR, or type the sync code and press "Join".</li>
+  <li><b>The log itself is not synced</b>. A log written on the phone exists only on the phone.</li>
+  <li>The app does not upload anything to SOTA, POTA or other sites. You upload the files it makes yourself.</li>
+  <li>Searching for summits and parks, looking up JCC/JCG, and syncing need a signal.</li>
 </ul>
-<p>After joining once, syncing is automatic. Plans you add on the PC arrive the next time you open the phone app with a connection. On the summit, synced plans are available even without signal.</p>
-<p class="note">Anyone who has the sync code can read and write your settings and plans, so do not share the QR or the code. To stop, use "Stop syncing" in the settings (you can also erase the server's copy).</p>
 
-<h2 id="field">4. On the summit: write the log</h2>
+<h2 id="setup">2. First-time setup</h2>
 
-<h3>First: choose a plan</h3>
+<h3>Add the app to the home screen</h3>
+<p>So that you can use it on a summit without a signal, <b>open it once where you have a signal</b> and add it to the home screen.</p>
+<ul>
+  <li><b>iPhone</b>: open <code>https://fleonline.sotalive.net/</code> in Safari, then the share button → "Add to Home Screen".</li>
+  <li><b>Android</b>: the Chrome menu → "Add to Home screen" (or "Add to home screen" in this app's menu).</li>
+</ul>
+<p>From then on, open it from the home screen icon. On an iPhone, Safari and the home-screen app keep their data separately. Use the home-screen app for your log, settings and plans.</p>
+
+<h3>Settings to decide first</h3>
+<p>The gear at the top right opens the settings. Most can stay as they are. Check just these three first (for all settings, see "<a href="#settings">Settings</a>").</p>
+<table>
+<tr><th>Time zone</th><td>The time zone you write the log's times in. It starts as UTC. To write in Japan time, choose JST. When it is not UTC, a <code>timezone</code> line is written at the top of the log</td></tr>
+<tr><th>Frequently used rigs</th><td>One per line (e.g. <code>KX2+EFHW</code>). They are offered as candidates when you type <code>rig </code> in the log. If you use HAMLOG, write the names defined in HAMLOG</td></tr>
+<tr><th>HAMLOG time / output</th><td>Only if you use HAMLOG. Whether the CSV times are written in JST (<code>J</code>, the default) or UTC (<code>U</code>), and what goes into QTH, Rmks1 and Rmks2</td></tr>
+</table>
+
+<h3>If you also use a PC</h3>
+<p>Registering plans is easier on a PC's large screen. Settings and plans entered on a PC can be copied to the phone by <a href="#sync">syncing</a>. Everything can also be done on the phone alone.</p>
+
+<h2 id="before">3. The day before: prepare</h2>
+<p>This manual follows an ordinary SOTA activation. Differences for POTA and WWFF are noted where they come up.</p>
+
+<h3>Register a plan</h3>
+<p>Menu ("…") → "Plans" → "Add a plan" to register where you are going.</p>
+<table>
+<tr><th>Name</th><td>e.g. Mt. Jimba 10/25 (a name for yourself)</td></tr>
+<tr><th>Date</th><td>Optional. The day you operate</td></tr>
+<tr><th>Callsign</th><td>Your callsign (e.g. <code>JL1NIE/1</code>)</td></tr>
+<tr><th>SOTA / POTA / WWFF</th><td>Type a name or a number to get candidates (<code>陣馬</code>, <code>KN-02</code>, …). Just choose one</td></tr>
+<tr><th>Grid</th><td>Optional. The "Here" button fills it in too</td></tr>
+<tr><th>Rig / QSL message</th><td>Optional. The rig goes into HAMLOG's <code>Rig=</code>. The QSL message can use <code>$mysota</code>, <code>$rig</code> and so on</td></tr>
+<tr><th>Memo</th><td>Optional. JCC/JCG and the like. When you choose a summit or park, it is looked up if you have a signal</td></tr>
+</table>
+<p class="note">POTA: where parks overlap, list them in the POTA field (<code>JP-1151 JP-1164</code>).</p>
+
+<h3>Check the summit map</h3>
+<p>The "Map" button next to the plan's SOTA field shows the summit's activation zone, municipal borders and the POTA parks in each municipality. For a summit on a prefecture border, decide here which side you will operate from (the JCC/JCG for the memo and the POTA park). See "<a href="#map">Summit map</a>" for details.</p>
+
+<h3>Check before you leave</h3>
+<ul>
+  <li><b>Is the map saved on the device?</b> The maps of summits in your plans are saved automatically while you have a signal. If the plan list shows "Map: saved", you can see it on the summit without a signal. If it shows "not saved yet", open the app where you have a signal.</li>
+  <li><b>If you entered the plan on a PC</b>: open the app on the phone where you have a signal and check that the plan has arrived (syncing happens when you open the app).</li>
+  <li>It is reassuring to check that the app opens from the home screen.</li>
+</ul>
+
+<h2 id="day">4. On the day: write the log</h2>
+
+<h3>Start a new log</h3>
 <ol>
-  <li>Menu → "New log". The log you are writing is closed and you start from an empty log (Undo in the menu brings it back). Your callsign is filled in from last time.</li>
-  <li>Under "Choose a plan", tap today's plan. Your callsign, summit, grid and so on are filled in.</li>
-  <li>Press "Write to log". Lines like these are written at the top of the log:</li>
+  <li>Menu → "New log". Your callsign is filled in with the one you used last.</li>
+  <li>Under "Choose a plan", tap today's plan. The callsign, summit, grid, memo and so on are filled in.</li>
+  <li>If you like, also enter the band (or frequency) and mode.</li>
+  <li>Tap "Write to log". The log you were writing is replaced by a new log that starts with lines like these.</li>
 </ol>
 <pre><code>mycall JL1NIE/1
-mysota JA/TK-001
+mysota JA/KN-028
 date 2026-10-25
 rig KX2+EFHW
 qslmsg $mysota $rig
-# JCC 1307 秩父市</code></pre>
-<p>You can also skip plans and type your callsign and summit on the spot (suggestions appear as you type a name).</p>
-<p><b>The last <code>#</code> line is the memo field (JCC/JCG etc.).</b> The location screen and plans have a "Memo" field. Choose a summit or park from the suggestions (typing the same reference works too), or find your position with the "Here" button, and JCC/JCG is looked up while online (Japan only; from the Geospatial Information Authority of Japan and the backend; a memo you typed yourself is not replaced just by typing a reference). You can check and fix it before writing (for example when the summit is on a border). If you write with the field empty, it is looked up from the summit or park. Plans keep a memo too, so look it up at home and it works without signal on the summit.</p>
-<p>The memo is written as a <code>#</code> line (a comment), so it is not output. When the screen opens, the field shows the memo in effect at that point. Change it and write, and a new <code>#</code> line is added (the old memo stays). A <code>#</code> line you write yourself is a memo too.</p>
+# JCC#111001 相模原市緑区
+40m cw</code></pre>
+<p>The log you replaced can be brought back with "Undo" in the menu. A line starting with <code>#</code> is a memo (JCC/JCG and the like) and does not go into the exported files. You can also enter your callsign and summit on the spot without a plan.</p>
+
+<h3>Check that you are in the activation zone</h3>
+<p>Before you start making QSOs, open Menu → "Summit map". If your position (GPS) is in the activation zone, the summit's code is shown in green below the map. If you are in a park, the park's code is shown too. In the list below it, the municipality you are in (the JCC/JCG for the memo) is marked with ▶. On a summit on a border, like Mt. Jimba, check here which side you are on.</p>
 
 <h3>Write QSOs</h3>
-<p>Write one QSO per line. First write the band and mode on one line.</p>
+<p>Write one QSO per line.</p>
 <pre><code>40m cw
 0230 ja1abc
 35 ja2xyz 579
-41 jr1qrp/1 ja/st-012
+41 jr1qrp/1 st-012
 ssb
-52 ja3pqr
-20m ssb
-58 ja8abc</code></pre>
+52 ja3pqr</code></pre>
 <ul>
-  <li><code>0230 ja1abc</code>: JA1ABC at 02:30. <b>The time carries over from the previous line</b>, so afterwards you only write the minutes (<code>35</code> → 02:35).</li>
-  <li>Band and mode stay until you change them. To change only the mode write <code>ssb</code>; to change the band too, write <code>20m ssb</code> on its own line.</li>
-  <li><code>579</code>: the report you sent. If omitted, the mode's default is used (CW 599 / SSB 59). Write two numbers (<code>5 7</code>) to add the report you received. In CW, <code>5 44</code> means 559 449 (the missing digits are filled in).</li>
-  <li><code>ja/st-012</code>: the other station is on a summit (S2S). <b>You can leave out the association</b> (<code>st-012</code>; only when you are on a summit (<code>mysota</code>), and it is taken to be the same as your summit's. Without your own summit, write the association). Their park (<code>jp-1234</code>) is written the same way.</li>
-  <li><code>pm85rl</code>: the other station's grid, written after the callsign. It goes to GL in HAMLOG and GRIDSQUARE in ADIF.</li>
-  <li>Add a message or remark with <code>&lt;Yamada-san&gt;</code> or <code>{QRP}</code>.</li>
+  <li><code>0230 ja1abc</code>: JA1ABC at 02:30. The hour carries over from the line before, so after that you only need the minutes (<code>35</code> → 02:35).</li>
+  <li><b>The time is filled in automatically</b> (the setting "Insert the current time", on by default). If you type only the callsign and press OK, the time you typed the line's first character is written.</li>
+  <li><code>579</code>: the report you sent. If you leave it out, the mode's standard report (CW 599 / SSB 59) is used.</li>
+  <li><code>st-012</code>: the other station is on a summit (S2S). The association (<code>ja/</code>) can be left out when it is the same as your summit's. Write the other station's park (<code>jp-1234</code>, P2P) the same way.</li>
+  <li>The band and mode stay until you change them (<code>ssb</code>, <code>20m ssb</code>).</li>
+</ul>
+<p>For the full syntax, see "<a href="#fle">FLE syntax</a>".</p>
+
+<h3>Confirm and go to the next line (OK)</h3>
+<p>When the candidate bar below the log area turns <span class="ok">green</span>, the line has been read as a QSO. <b>Press the ✓ OK at the right end</b> to add the time and so on, and go to the next line.</p>
+<ul>
+  <li>A QSO is in the log as soon as it is written correctly, even without pressing OK. But a line without a time takes the time of the line before. To write the current time, press OK.</li>
+  <li>The keyboard's ↵ only starts a new line; it does not write the time.</li>
+  <li>An <span class="draft">orange</span> candidate bar means the line is still being typed; <span class="err">red</span> means something needs fixing ("<a href="#screen">Reading the screen</a>").</li>
 </ul>
 
-<h3>Reading the screen</h3>
-<p>The candidate bar under the editor shows how the current line is understood.</p>
+<h3>Fix on the spot</h3>
+<p>If the other station repeats a report or callsign, <b>tap the part to fix (call, RST or time)</b> on the candidate bar. The cursor in the log area moves to the end of that part, so delete with ⌫ and type it again. Tapping RST once moves to the report you received; tapping it again moves to the report you sent. If you delete too much with ⌫, the keyboard's ↶ brings it back. See "<a href="#fix">Fixing a QSO</a>" for details.</p>
+
+<h3>Watch the QSO count</h3>
+<p>The number at the left of the candidate bar is the day's QSO count. The small number below it is the QSO count needed for a valid activation (SOTA <code>/4</code>, POTA <code>/10</code>), and it turns green when you reach it.</p>
+
+<h3>When you move to another location</h3>
+<p>When you move to another summit or park, put the cursor on the line where you will write the first QSO at the new place, and open Menu → "Change location". The location of the QSOs from that line on changes (it stays the same log).</p>
+
+<h3>When you pass midnight</h3>
+<p>If the time is being filled in automatically and the date changes, a <code>day +</code> line is added automatically when you press OK, and a notice appears at the bottom of the screen.</p>
+<p>If you type the times yourself, and the previous QSO is at 21:00 or later and this line's time is before 03:00 (0002 after 2358, for example), pressing OK adds <code>day +</code> and shows "New day" above the log for about 3 seconds.</p>
+<p>In both cases, pressing "Undo" while it is shown cancels it.</p>
+
+<h3>When you go around calling other activators</h3>
+<p>When you call stations operating from other summits or parks from your summit (S2S, P2P), also write the other station's summit or park, as in <code>ja1abc tk-001</code>.</p>
+<p>A line with the other station's summit or park takes <b>the time you press OK</b>, not the time you started typing the line. You start writing after hearing the other station and then wait your turn to call, so the time you started typing can be far from the actual QSO (the setting "Chase, S2S and P2P lines take the time you press OK", on by default).</p>
+<p>A line where an S2S station calls you while you are calling CQ also takes the time you press OK, because you write the other station's summit. Such QSOs are short, so the difference stays small.</p>
+
+<h2 id="after">5. Afterwards: make the files</h2>
+<ol>
+  <li>Menu → "Export (ADIF etc.)".</li>
+  <li>If the date, your callsign or the location is missing, a check screen appears. Choose "Write to log and export" to write the missing items before exporting, or "Export anyway" (the grid is optional, so a missing grid does not bring up the screen).</li>
+  <li>A zip file is downloaded.</li>
+</ol>
+<p>Upload the files in the zip to each site or program.</p>
 <table>
-<tr><th class="draft">Orange</th><td>You are still typing. The callsign etc. is not yet in a form that can be confirmed. Pause, and the bar tells you what is missing.</td></tr>
-<tr><th class="ok">Green</th><td>Understood. The bar shows the line with band, mode, time and report filled in. <b>Tap OK at the right end</b> to move to the next line (after filling in the time etc.). On the last line it adds a new line; in the middle of the log it just moves to the next line (no line is added). To add a QSO in the middle of the log, break the line at the end of a line. <b>A QSO is recorded as soon as its line is valid, whether you tap OK or not.</b> <b>Tap the callsign, RST or time to move the cursor to its end</b> in the editor, then fix it with ⌫ (each tap on the RST switches between received and sent; an RST or time that is not written is written first). To reach a character in the middle, swipe to move the cursor (see <a href="#fix">Fix a QSO</a>).</td></tr>
-<tr><th class="err">Red</th><td>Something must be fixed, e.g. a missing band or mode.</td></tr>
-<tr><th>(empty line)</th><td>Shows the current time and the band and mode at that line. The next QSO gets these values.</td></tr>
-<tr><th>(settings line)</th><td>Shows what the line itself does not: the date after <code>day +</code> (with the weekday), the name of the summit or park for <code>mysota</code> etc. (when online), the message of <code>qslmsg</code> with its variables replaced, or the rig for <code>rig</code> ("No rig" for <code>rig -</code>). Lines with nothing to add (<code>mycall</code>, comments, ...) look like an empty line.</td></tr>
+<tr><th>sotaYYYYMMDD.csv</th><td>Upload to the SOTA database</td></tr>
+<tr><th>callsign@park-date.adi</th><td>Upload to the POTA site (one per park). WWFF and SOTA ADIF files have the same form</td></tr>
+<tr><th>hamlog-….csv</th><td>Import into HAMLOG</td></tr>
+<tr><th>fle-….txt</th><td>The original FLE log, the same as "Save FLE log". Keep it</td></tr>
 </table>
-<p>The number on the left is the QSOs on the day at the cursor (UTC), with the total (such as <code>/10</code>) under it. Choose "Total" under "QSO count" in the settings to show only the total. In the classic layout, tap it to see the QSO list and errors; tapping an error jumps to that line (for the full keys layout, see <a href="#fullkey">Full keys layout</a>).</p>
+<p>For what the files contain, see "<a href="#files">Exported files</a>". If some lines have errors, the files are not made; the zip holds only a text describing the errors and the original FLE log. Fix them and export again.</p>
+
+<h3>Save the FLE log</h3>
+<p>The FLE log itself can be saved as a text file with Menu → "Save FLE log". You can read it back later with "Open FLE log". The exported zip also holds the same file.</p>
+
+<h3>Add ADIF from other logging software</h3>
+<p>If part of the same operation was logged in other software, Menu → "Add ADIF" turns that ADIF into FLE lines and adds them to the end of the log. The log before adding can be brought back with "Undo".</p>
+
+<h3>If you used the wrong time zone</h3>
+<p>If, for example, you wrote in JST but the setting was UTC, change the time zone in the settings. For a log with QSOs, the app asks whether to <b>Convert</b> (rewrite the times to the same moments in the new time zone) or <b>Keep the times</b> (rewrite only the <code>timezone</code> line). If you wrote in JST but forgot the <code>timezone</code> line, choose "Keep the times".</p>
+
+<h2 id="ref">6. Reference</h2>
+
+<h3 id="screen">Reading the screen</h3>
+<p>The candidate bar below the log area shows how the line at the cursor is read. Its colour shows the state.</p>
+<table>
+<tr><th class="draft">Orange</th><td>Still being typed. The callsign or another part is not yet in a form that can be confirmed. When you stop typing, what is missing is shown.</td></tr>
+<tr><th class="ok">Green</th><td>Read successfully. The line is shown with the time, band, mode and reports filled in. The ✓ OK at the right adds the time and so on, and goes to the next line. On the last line it adds a new line; in the middle of the log it just moves to the next line (no line is added). Tapping the call, RST or time moves the cursor in the log area to the end of that part ("<a href="#fix">Fixing a QSO</a>").</td></tr>
+<tr><th class="err">Red</th><td>Something needs fixing, such as a missing band or mode.</td></tr>
+<tr><th>(empty line)</th><td>Shows the current time and the band and mode at that line. The next QSO takes these values.</td></tr>
+<tr><th>(directive line)</th><td>Shows what the line does not show by itself: for <code>day +</code>, the date it moves to (with the weekday); for <code>mysota</code> and the like, the name of the summit or park (when you have a signal); for <code>qslmsg</code>, the message with the variables filled in; for <code>rig</code>, the rig (<code>rig -</code> shows "no rig").</td></tr>
+</table>
 <ul>
-  <li>Tap a <b>suggestion</b> shown at the bottom of the editor to insert a keyword, band or mode (with full keys, suggestions appear over the green bar).</li>
-  <li>In the classic layout on a PC, with "Digit key row" on in the settings, a row of digits appears above the keyboard (handy for callsigns such as JA1ABC/1). <b>Swipe the digit row left or right to move the cursor</b> one character at a time (tap the editor to get near first).</li>
-  <li>If you move, use Menu → "Change location" to switch the location for the QSOs from the cursor line on (in the same log).</li>
-  <li>The QSO list can also be opened from Menu → "QSO list".</li>
-  <li>On a PC, <b>Ctrl+Z (⌘Z on a Mac) undoes the last edit</b>, in any layout, the same way as ↶ in full keys (including changes made by confirming or picking a suggestion).</li>
+  <li><b>QSO count</b>: at the left of the candidate bar, the QSO count for the day at the cursor (UTC date) is shown large and the total small. For SOTA and POTA, the small number becomes the QSO count needed for a valid activation (SOTA <code>/4</code>, POTA <code>/10</code>) and turns green when reached. If some lines have errors it turns red and shows the number of errors, like <code>⚠2</code>. The "QSO count" setting can show only the total.</li>
+  <li><b>Time and location</b>: above the log area, the time, your callsign and the summit, WWFF and parks valid at the cursor's line are shown large. Below them is the memo valid at the cursor's line (the last <code>#</code> line before it). The time is shown in the same time zone as the times written to the log, with UTC added when it is not UTC. When the screen is too narrow (for example, while the phone's keyboard is shown), it is not shown.</li>
+  <li><b>Candidates</b>: while you type, candidates for keywords, bands, modes and so on appear over the candidate bar. Tap one to enter it.</li>
+  <li>The <b>log</b> is aligned to the bottom, so the line you are typing sits just above the candidate bar.</li>
+  <li>If you turn the phone sideways, "Please turn your phone upright" is shown (the log stays as it is).</li>
 </ul>
-<h3 id="fullkey">Full keys layout (trial)</h3>
-<p>On touch devices such as phones, the line you are typing and the green bar are kept together, with an on-screen keyboard that has just the keys needed to write FLE, instead of the phone's keyboard. No more switching the phone's keyboard between input modes (a PC uses the classic layout).</p>
+
+<h3 id="fullkey">The phone keyboard (full keys)</h3>
+<p>On a phone or another touch device, instead of the phone's own keyboard, an on-screen keyboard with only the keys FLE needs (full keys) appears. You do not need to switch from kana input to letters.</p>
 <pre><code>      10:05:12 JST  UTC 01:05
-       JA1ABC  JA/TK-001
+       JA1ABC  JA/KN-028
 │ 1111 jj0pic         │
-│ 2107 ja1xyz 7▌      │ (typing)
-[3/10][JA1XYZ 579/599   ]
+│ 2107 ja1xyz 7▌      │ (the line you are typing)
+[3/10][JA1XYZ 579/599   ][✓]
 [1][2][3][4][5][6][7][8][9][0]
 [Q][W][E][R][T][Y][U][I][O][P]
 [A][S][D][F][G][H][J][K][L][-]
-[a][Z][X][C][V][B][N][M][/][⌫]
-[🌐][↶][←][             ][→][ ↵ ]</code></pre>
-<h4>The log and the green bar</h4>
+[↑][Z][X][C][V][B][N][M][/][⌫]
+[🌐][↶][←][            ][→][ ↵ ]</code></pre>
 <ul>
-  <li><b>The log sits at the bottom</b> of the editor, so the line you are typing is right above the green bar. The log text is the same size as the callsign in the green bar.</li>
-  <li><b>The time and your location</b> (your callsign and the summit, WWFF and parks in effect at the cursor) show large above the log, easy to read while calling CQ. Below them, the <b>memo</b> in effect at the cursor (the last line starting with <code>#</code> before it, such as JCC/JCG) shows on one line. The time is in the same time zone as the times that go into the log, with UTC added when that is not UTC. When there is no room (for example, with the phone's keyboard open), only the log shows. To hide them, turn off "Show the time and location" in the settings (set per device).</li>
-  <li>Turning a phone sideways shows "Please turn your phone upright" (your log stays). Opened from the home screen, Android keeps it upright.</li>
-  <li><b>The green bar is shorter</b>: the callsign and RST in the same large text on the first row, and the time, band, mode etc. small on the second. ✓ OK is always to the right of the bar. It turns green and can be tapped only when the line can be confirmed (a green line), and it moves to the next line (it works even while suggestions are shown).</li>
-  <li><b>Suggestions appear over the green bar.</b> They never cover the QSO count on the left.</li>
-  <li><b>The QSO count on the left is display only</b> (tapping it does not open the list; use Menu → "QSO list"). When activating POTA or SOTA, the lower number is the QSOs needed for an activation (<code>/10</code> for POTA, <code>/4</code> for SOTA), and it turns green once the activation is complete. It turns red when there are errors, with a count such as <code>⚠2</code>.</li>
-  <li><b>Confirming keeps the log as you typed it</b> (writing the RST is off at first). Type <code>7</code> and the green bar shows the filled-in value such as <code>579/599</code>. To write it into the log, turn on RST under "What confirming writes" in the settings <b>on the phone</b> (this setting is kept separately from the PC, and the settings screen says whether it is for a PC or a phone).</li>
-  <li>While the keyboard is shown, there is no gap between the keys and the keyboard.</li>
-</ul>
-<h4>The keyboard</h4>
-<ul>
-  <li>Tapping the editor does not bring up the phone's keyboard (the cursor still shows).</li>
-  <li>The keys start square (change the height with the handle below) and letters go into the log in lowercase (FLE does not care about case). <code>-</code> is right of L and <code>/</code> is right of M, as on a PC keyboard.</li>
-  <li>Tap <code>/</code> twice quickly for <code>.</code> (for frequencies such as <code>7.0295</code>), and <code>-</code> twice for <code>,</code>. Both are shown small at the bottom right of the key.</li>
-  <li><b>Hold a key (about half a second) for a symbol</b>: <code>3</code> for <code>#</code> (memo lines, <code>JCC#</code>), <code>0</code> for <code>+</code> (<code>day +</code>), <code>7</code> for <code>?</code> (a character you could not copy; type <code>JA1AB?</code> and you are reminded before export). It is not shown on the key, but the balloon changes to the symbol while you hold it; let go to type it. A quick tap types the digit as usual.</li>
-  <li>The space and ↵ keys have no text on them (space is the widest key in the bottom row, ↵ is at the bottom right). Space, the key you type most, is wide.</li>
-  <li><b>The key left of Z is Caps.</b> It shows an up arrow: tap it and the arrow turns solid and letters are typed in capitals; tap again and it goes back to an outline arrow and lowercase. While it is on, the letter keys show capitals too. Handy in the evening, when lowercase m and n are hard to tell apart. FLE does not care about case, so the log reads the same either way (letters in names and remarks are output as typed). Each device remembers it.</li>
-  <li><b>↶ undoes the last edit.</b> If you deleted too much with ⌫, one tap brings back everything from before you started deleting (even across lines). Typing is undone one line at a time. Each tap goes further back.</li>
-  <li><b>↵ at the bottom right breaks the line at the cursor, like Enter in an editor</b>. In the middle of a line, it splits the line there (you can add line breaks to a log you have already typed). At the end of a line, it adds a new line below. Press it in the middle of the log to add a QSO there.</li>
-  <li><b>↵ only breaks the line; it does not confirm</b> (it writes no time etc.). To confirm, tap ✓ OK to the right of the green bar: it fills in the time and what is set under "What confirming writes" (the RST etc.), then moves to the next line. A QSO you leave with ↵ alone gets no time written and takes the time of the line before. The time that is filled in is the time of the QSO, so do not delete it.</li>
-  <li>The key you are pressing shows in a balloon above your finger. Tapping the gap between keys still types the nearest key.</li>
-  <li><b>Drag the handle on the top edge of the keyboard up or down to change the key height</b> (from square up to 1.5 times). Taller keys are easier to hit, for example with gloves. The log and the display above it use the rest of the height. Each device remembers it.</li>
-  <li>Hold ⌫ to keep deleting. Swipe left or right <b>from space, ← or →</b> to move the cursor one character at a time (see <a href="#swipe">Swipe</a>). Letter keys never turn into a swipe, even if your finger slides while typing fast.</li>
-  <li>For <b>Japanese</b> text (messages such as <code>&lt;Yamada-san&gt;</code>, remarks, <code>qslmsg</code>), tap 🌐 to switch to the phone's keyboard. When done, tap "Back to full keys" at the bottom. Enter on the phone's keyboard works the same as ↵.</li>
-  <li>On screens such as "New log", "Change location" and "Plans", <b>the callsign, SOTA, POTA, WWFF, grid and memo fields are typed with the same on-screen keyboard</b> (letters start in capitals). ↵ moves to the next field and closes the keyboard on the last one. For Japanese in the memo, tap 🌐 to switch to the phone's keyboard. Other fields for Japanese text, such as plan names, use the phone's keyboard.</li>
+  <li>Tapping the log area does not bring up the phone's keyboard (the cursor does appear).</li>
+  <li>Letters go into the log in lower case (FLE does not distinguish upper and lower case). <code>-</code> is to the right of L, and <code>/</code> to the right of M.</li>
+  <li><b>Pressing a key twice in a row</b> gives another character: <code>/</code> twice gives <code>.</code> (for frequencies like <code>7.0295</code>), and <code>-</code> twice gives <code>,</code>. They are shown small at the bottom right of the key.</li>
+  <li><b>A long press (about 0.5 s)</b> enters another symbol: <code>3</code> gives <code>#</code> (for memo lines and <code>JCC#</code>), <code>0</code> gives <code>+</code> (for <code>day +</code>), and <code>7</code> gives <code>?</code> (for characters you could not copy; type <code>JA1AB?</code> and the app reminds you before exporting). The bubble while you press changes to the symbol, and it is entered when you release.</li>
+  <li><b>The key left of Z is Caps</b> (↑). Pressing it fills in the ↑, and letters are entered in capitals. Useful when lower-case m and n are hard to tell apart. The state is remembered on each device.</li>
+  <li>The widest key in the bottom row is the space, and the bottom right is ↵ (they have no labels).</li>
+  <li><b>↵ only starts a new line</b> and does not confirm (it does not write the time). In the middle of a line, it splits the line there. In the middle of the log, it lets you add a QSO in between. To confirm, use the ✓ OK on the candidate bar.</li>
+  <li><b>↶</b> undoes the last edit ("<a href="#undo">Undo</a>").</li>
+  <li>Holding ⌫ keeps deleting.</li>
+  <li><b>Swiping left or right on the space key or the ← → keys</b> moves the cursor one character at a time ("<a href="#swipe">Moving the cursor by swiping</a>").</li>
+  <li><b>The key height</b> can be changed by dragging the handle on the keyboard's top edge up or down (from the height where the keys are square, up to 1.5 times that). Useful when wearing gloves. It is remembered on each device.</li>
+  <li><b>Japanese</b> (messages like <code>&lt;山田さん&gt;</code> or <code>qslmsg</code>) is typed by switching to the phone's keyboard with 🌐. When you are done, press "Back to full keys" at the bottom.</li>
+  <li>On screens such as "New log", "Change location" and "Plans", the callsign, SOTA, POTA, WWFF, grid and memo fields are typed with the same keyboard (letters in capitals from the start). ↵ moves to the next field. To write Japanese in the memo (such as a municipality name), switch to the phone's keyboard with 🌐. The plan name uses the phone's keyboard from the start.</li>
 </ul>
 
-<h3 id="map">Summit map</h3>
-<p>Menu → "Summit map" shows the map of the summit at the cursor with your GPS position, and tells you <b>whether you are inside the activation zone, which municipality you are in (the JCC/JCG for your log), and whether you are inside the POTA parks there</b>. Near a boundary (within the GPS error and the error of the area data) it says "near" instead. A park marked "partly" covers only part of the zone in that municipality (the hatched area).</p>
+<h3 id="pc">Using a PC</h3>
+<p>On a PC you type on the physical keyboard (the full keys do not appear). The differences from a phone are:</p>
+<ul>
+  <li><b>Ctrl+Z (⌘Z on a Mac)</b> undoes the last edit, the same way as ↶ on the full keys.</li>
+  <li>Candidates appear over the bottom edge of the log area.</li>
+  <li>Clicking the QSO count at the left of the candidate bar shows a list of QSOs and errors. Clicking an error moves to that line (on a phone, use Menu → "QSO list").</li>
+  <li>Turning on the "Digit key row" setting shows digit keys below the log area (making it easier to type the digits of callsigns and <code>/</code> <code>-</code>). Swiping on them moves the cursor.</li>
+  <li>Whether confirming writes the RST is set separately for the PC and the phone (on a PC it is written from the start; on a phone it is not written at first).</li>
+</ul>
 
-<h3 id="fix">Fix a QSO</h3>
-<p>If the other station corrects a report or a callsign during the QSO, <b>tap that part in the green candidate bar</b>. The cursor in the editor moves to the <b>end</b> of that part, so delete from the end with ⌫ and type again (nothing is selected, so typing never erases other text).</p>
+<h3 id="fix">Fixing a QSO</h3>
+<p>Tap the part you want to fix on the candidate bar. The cursor in the log area moves to the <b>end</b> of that part, so delete from the end with ⌫ and type it again (nothing is selected, so typing does not erase other characters).</p>
 <table>
-<tr><th>Tap</th><th>Where the cursor goes (<code>|</code>)</th></tr>
-<tr><td>Callsign</td><td><code>1005 ja1xyz| 57 599</code></td></tr>
-<tr><td>RST (first tap)</td><td><code>1005 ja1xyz 57 599|</code> the report you received (the one usually corrected)</td></tr>
-<tr><td>RST (tap again right away)</td><td><code>1005 ja1xyz 57| 599</code> the report you sent</td></tr>
+<tr><th>What you tap</th><th>Where the cursor goes (<code>|</code>)</th></tr>
+<tr><td>Call</td><td><code>1005 ja1xyz| 57 599</code></td></tr>
+<tr><td>RST (first tap)</td><td><code>1005 ja1xyz 57 599|</code> the report you received (usually the one repeated)</td></tr>
+<tr><td>RST (tap again)</td><td><code>1005 ja1xyz 57| 599</code> the report you sent</td></tr>
 <tr><td>Time</td><td><code>1005| ja1xyz 57 599</code></td></tr>
 </table>
 <ul>
-  <li><b>Example: you received 579, not 599</b> → tap the RST → ⌫ ⌫ → <code>79</code>.</li>
-  <li><b>Example: it was JA1XYW, not JA1XYZ</b> → tap the callsign → ⌫ → <code>w</code>.</li>
-  <li>If the RST or time was left out (the bar shows the filled-in value), tapping it writes that value into the line first, then moves to its end. On the line <code>ja1xyz</code>, tapping the RST gives <code>ja1xyz 599 599|</code>.</li>
-  <li>To fix a character <b>in the middle</b>, tap the part to get to its end, then <b>swipe the digit row left or right</b> to move the cursor (with full keys, swipe from space, ← or →; <a href="#swipe">next section</a>).</li>
-  <li>To fix an earlier QSO, tap its line in the editor. The line appears in the green bar and can be fixed the same way. For lines with errors, tap the QSO count on the left to see the list and tap an error to jump to its line (with full keys, use Menu → "QSO list").</li>
-  <li>Only ✓ OK at the right end of the green bar confirms and moves to the next line (↵ and Enter only break the line). Tapping a part never does.</li>
+  <li><b>Example: the report you received was 579, not 599</b> → tap RST → ⌫ ⌫ → <code>79</code>.</li>
+  <li><b>Example: it was JA1XYW, not JA1XYZ</b> → tap the call → ⌫ → <code>w</code>.</li>
+  <li>Tapping an RST or time you left out (the bar shows the filled-in value) writes that value into the line first and then moves to its end. Tapping RST on the line <code>ja1xyz</code> gives <code>ja1xyz 599 599|</code>.</li>
+  <li>For a character <b>in the middle</b>, tap the part to move to its end, then <a href="#swipe">swipe</a> to position the cursor.</li>
+  <li>To fix an earlier QSO, tap that line in the log area. The line appears on the candidate bar, and you can fix it the same way.</li>
+  <li>Tapping a part does not move to the next line.</li>
 </ul>
 
-<h3 id="swipe">Swipe the digit row to move the cursor</h3>
-<p>You can move the cursor one character at a time without aiming your finger between characters. <b>Lines other than QSOs (<code>date</code>, <code>mysota</code>, <code>qslmsg</code>, comments, ...) have no parts to tap in the green bar, so this is the main way to fix them.</b> On QSO lines, use it to fix a character in the middle of a part.</p>
-<pre><code>[1][2][3][4][5][6][7][8][9][0][/][-]
- ← keep your finger down, slide →</code></pre>
-<p>With full keys, <b>swipe from space, ← or →</b> (letter keys never turn into a swipe). You can also tap ← or → for a single character.</p>
+<h3 id="swipe">Moving the cursor by swiping</h3>
+<p>You can move the cursor one character at a time without aiming your finger between characters. Lines that are not QSOs, such as <code>date</code>, <code>mysota</code> and <code>qslmsg</code>, cannot be fixed by tapping parts of the candidate bar, so this is the main way to fix them.</p>
 <ol>
-  <li>Put a finger anywhere on the digit row (any key will do).</li>
-  <li>Without lifting it, slide left or right. The cursor moves <b>one character per about 20px</b> in that direction, across parts and lines.</li>
-  <li>Lift the finger to stop. A swipe never types a digit.</li>
+  <li>Put your finger on the space key or the ← → keys on a phone, or on the digit row on a PC.</li>
+  <li>Without lifting it, swipe left or right. The cursor moves one character for about every 20 px, in the direction you swipe. It moves across lines and parts too.</li>
+  <li>Lift your finger to stop. When you swipe, the character of the key you started on (space or digit) is not entered.</li>
 </ol>
 <ul>
-  <li>If you lift almost without moving (less than 10px), it is a normal tap and types that digit.</li>
-  <li><b>Example: change 1151 to 1152 in <code>mypota jp-1151 jp-1164</code></b> → tap near <code>1151</code> in the editor → swipe the digit row to <code>1151|</code> → ⌫ → <code>2</code>.</li>
-  <li><b>Example: change <code>date 2026-10-19</code> to the 18th</b> → tap the end of the line (<code>19|</code>) → ⌫ → <code>8</code>. No swipe is needed at the end of a line.</li>
-  <li><b>Example: change the middle 5 of the sent report 559 to 7</b> → tap the RST twice for <code>559|</code> → swipe the digit row left by one character for <code>55|9</code> → ⌫ → <code>7</code>, giving <code>579</code>.</li>
-  <li>Tap the editor to get near, then swipe for the fine position.</li>
-  <li>Show the digit row with "Digit key row" in the settings (classic layout on a PC).</li>
+  <li>For a single character, pressing ← or → also moves the cursor.</li>
+  <li><b>Example: change 1151 to 1152 in <code>mypota jp-1151 jp-1164</code></b> → tap around <code>1151</code> → swipe to <code>1151|</code> → ⌫ → <code>2</code>.</li>
+  <li><b>Example: change the middle 5 of the sent report 559 to 7</b> → tap RST twice to get <code>559|</code> → swipe left one character to <code>55|9</code> → ⌫ → <code>7</code>.</li>
+  <li>It is easiest to tap the log area to get near the spot and then swipe for the fine positioning.</li>
 </ul>
 
-<h2 id="out">5. After operating: make the files</h2>
+<h3 id="undo">Undo</h3>
+<table>
+<tr><th>↶ / Ctrl+Z</th><td>Undoes the last edit. What you deleted with ⌫ in a row comes back in one step, to the state before you started deleting (even if you deleted into the previous line). What you typed in a row goes back one line per step. Each press goes back further. Changes made by OK or by candidates can also be undone</td></tr>
+<tr><th>"Undo" in a notice</th><td>After "Clear all", "New log", "Open FLE log", "Sample", "Add ADIF", converting times and so on, the notice at the bottom of the screen lets you go back to the log before (for about 8 seconds). It also appears when OK adds <code>day +</code> or the like</td></tr>
+<tr><th>"Undo" in the menu</th><td>Remembers one log from before the whole log was replaced, and can bring it back later</td></tr>
+</table>
+
+<h3 id="menu">Menu</h3>
+<p>The "…" at the top right of the screen (left of the gear) is the menu.</p>
+<table>
+<tr><th>New log</th><td>Starts from an empty log. Enter your callsign and location on the location screen and write them ("<a href="#place">The location screen and memos</a>")</td></tr>
+<tr><th>Change location</th><td>Changes your callsign and location for the QSOs from the cursor's line on (only when the log has text)</td></tr>
+<tr><th>Summit map</th><td>Shows the map of the summit valid at the cursor ("<a href="#map">Summit map</a>")</td></tr>
+<tr><th>Plans</th><td>The list of plans and adding plans ("<a href="#plans">Plans</a>")</td></tr>
+<tr><th>QSO list</th><td>The list of QSOs and errors. Tap one to move to that line (phone only; on a PC, click the QSO count)</td></tr>
+<tr><th>Export (ADIF etc.)</th><td>Makes the files in a zip ("<a href="#after">Afterwards</a>")</td></tr>
+<tr><th>Save FLE log</th><td>Saves the log as it is in a text file</td></tr>
+<tr><th>Open FLE log</th><td>Reads a saved text file (it replaces the current log). If the log has no <code>timezone</code> line, the app asks once which time zone it was written in</td></tr>
+<tr><th>Add ADIF</th><td>Turns an ADIF file from other logging software into FLE lines and adds them to the end of the log. ADIF times are UTC, so a <code>timezone utc</code> line is put before the added part, and the original log's <code>timezone</code> line is put back after it</td></tr>
+<tr><th>Undo</th><td>Brings back the log from before it was replaced</td></tr>
+<tr><th>Clear all</th><td>Empties the log</td></tr>
+<tr><th>Manual</th><td>Opens this page</td></tr>
+<tr><th>Sample</th><td>Shows a sample log (the current log can be brought back with "Undo")</td></tr>
+<tr><th>Add to home screen</th><td>Adds the app to the home screen (only on devices that support it)</td></tr>
+</table>
+
+<h3 id="settings">Settings</h3>
+<p>Open them with the gear at the top right. Settings marked "yes" in the "Synced" column are kept the same on the PC and the phone by <a href="#sync">syncing</a>. Those marked "no" are per device.</p>
+<table>
+<tr><th>Setting</th><th>What it does</th><th>Synced</th></tr>
+<tr><td>Theme</td><td>Match device / Light (easy to read outdoors in sunlight) / Dark</td><td>no</td></tr>
+<tr><td>言語 / Language</td><td>The language of the screen and the error messages (Auto / 日本語 / English)</td><td>yes</td></tr>
+<tr><td>Time zone</td><td>The time zone the log's times are written in. Starts as UTC. A <code>timezone</code> line is written at the top of the log (not for UTC). Changing it for a log with QSOs asks whether to <b>Convert</b> the times, <b>Keep the times</b> (rewrite only the <code>timezone</code> line) or <b>Cancel</b>. SOTA, POTA and WWFF files are always in UTC</td><td>yes</td></tr>
+<tr><td>Insert the current time</td><td>Confirming a QSO line without a time writes the time (on by default). Turn it off when typing in a paper log afterwards (lines without a time take the time of the line before)</td><td>no</td></tr>
+<tr><td>Chase, S2S and P2P lines take the time you press OK</td><td>Only lines with the other station's summit or park take the time you press OK (on by default). Ordinary QSOs always take the time you started typing. When off, every line takes the time you started typing</td><td>no</td></tr>
+<tr><td>What confirming writes</td><td>Whether confirming with OK also writes the band and mode or the RST, besides the time. Leaving them out means the same (the bar always shows the filled-in values). The band and mode are not written at first. The RST is set separately for the PC and the phone: written from the start on a PC, not written at first on a phone</td><td>yes for the band/mode and the PC's RST; no for the phone's RST</td></tr>
+<tr><td>Frequently used rigs</td><td>One per line. Offered as candidates when you type <code>rig </code> in the log</td><td>yes</td></tr>
+<tr><td>Show the time and location</td><td>On a phone, shows the time and location (and the memo) above the log area (on by default)</td><td>no</td></tr>
+<tr><td>Digit key row</td><td>On a PC, shows digit keys below the log area (off by default)</td><td>no</td></tr>
+<tr><td>QSO count</td><td>"Day / total" or "Total" only</td><td>no</td></tr>
+<tr><td>Log text size</td><td>Small, medium or large (0.85, 1 and 1.2 times). Changes the size of the log area and of the time and location above it</td><td>no</td></tr>
+<tr><td>HAMLOG time</td><td>Writes the HAMLOG CSV's dates and times in JST (<code>J</code>, the default) or UTC (<code>U</code>), regardless of the time zone the log is written in</td><td>yes</td></tr>
+<tr><td>HAMLOG output (QTH / Rmks1 / Rmks2)</td><td>What goes into HAMLOG's QTH, Rmks1 and Rmks2. Choose a preset ("Classic (default)", "Memo in Rmks1, your place in Rmks2"), or choose items per column (your references, the other station's references, memo, remarks, QSL message, Rig). "Classic" is the same as the earlier conversion tool (HamLogConv)</td><td>yes</td></tr>
+<tr><td>Sync settings and plans</td><td>Start syncing, join or stop ("<a href="#sync">Syncing a PC and a phone</a>")</td><td>—</td></tr>
+</table>
+<p>The key height and Caps are changed on the keyboard and remembered on each device.</p>
+
+<h3 id="plans">Plans</h3>
+<p>Menu → "Plans". You can register up to 50 places you are going to. The fields are as in the table in "<a href="#before">The day before: prepare</a>".</p>
+<ul>
+  <li>Use them with "Choose a plan" on the "New log" and "Change location" screens. The plan's callsign, summit, parks, grid and memo are filled in, and when you write, the plan's date, rig and QSL message also become directive lines (not written if the same lines are already in the log).</li>
+  <li>The maps of summits in plans are saved on the device automatically while you have a signal. The list shows "Map: saved" or "not saved yet".</li>
+  <li>Plans are synced.</li>
+</ul>
+
+<h3 id="place">The location screen and memos</h3>
+<p>This screen opens from "New log" and "Change location". Enter your callsign, SOTA, POTA, WWFF, grid and memo, and "Write to log" writes the directive lines (<code>mycall</code>, <code>mysota</code> and so on).</p>
+<ul>
+  <li>SOTA, POTA and WWFF offer candidates when you type a name or number (a signal is needed). "Map" opens the summit map. The grid can also be filled in with "Here".</li>
+  <li>If something is not in a valid form, the screen stays open and the problem is shown below the field.</li>
+  <li>A <b>memo</b> is written as a line starting with <code>#</code>, so it does not go into the exported files (it can go into HAMLOG's columns by setting). Write JCC/JCG and the like. When you choose a summit or park from the candidates, or get your position with "Here", JCC/JCG is looked up and filled in if you have a signal (using data from the Geospatial Information Authority of Japan and this app's server). A memo you typed yourself is not overwritten.</li>
+  <li>If you write with the memo field left empty, it is looked up from the summit (or the first park) and written. If it cannot be looked up, nothing is written.</li>
+  <li>When the screen opens, the memo field holds the memo valid at that point. If you change it and write, a new <code>#</code> line is added (the earlier memo is not removed). If it is the same, nothing is written.</li>
+  <li>On "New log", you can also enter the band (or frequency) and mode. They are written after the directive lines, before the first QSO.</li>
+  <li>When you write a location, your callsign is remembered and becomes the initial value for the next "New log".</li>
+</ul>
+
+<h3 id="sync">Syncing a PC and a phone</h3>
+<p>Settings (those marked "yes" in the <a href="#settings">Settings</a> table) and plans are synced between devices. <b>The log itself is not synced</b>.</p>
 <ol>
-  <li>Menu ("…") → "Export (ADIF etc.)".</li>
-  <li>If something is missing (callsign, date or location), a check screen appears (the grid is optional, so a missing grid does not stop the export). Choose to write the missing items to the log and export, or export anyway.</li>
-  <li>A zip file is downloaded. Its name has the date of the first QSO, the locations and the time of export (such as <code>fle-20261019@JA-ST-012-JP-1151-1543.zip</code>), so exporting again never overwrites it. "Save FLE log" uses the same name with <code>.txt</code>.</li>
+  <li><b>On the first device, such as a PC</b>: gear → "Sync settings and plans" → "Start syncing (make a code)". A QR code and a 26-character sync code appear.</li>
+  <li><b>On the phone</b>:
+    <ul>
+      <li>Android: scan the QR with the camera (Google Lens or similar) → "Join" on the screen that opens.</li>
+      <li>iPhone: <b>open the home-screen app</b>, then gear → "Scan QR" to scan the QR, or enter the sync code and tap "Join" (scanning with the camera opens Safari, which does not reach the home-screen app).</li>
+    </ul>
+  </li>
 </ol>
+<ul>
+  <li>When you join, the device's settings are replaced by the synced settings. The device's plans stay and are merged with the synced plans. The log does not change.</li>
+  <li>Once you have joined, syncing happens automatically when you open the app (where you have a signal). On the summit, synced plans work without a signal.</li>
+  <li>To stop, use "Stop syncing" (you can also delete the settings and plans on the server).</li>
+</ul>
+<p class="note">Anyone who knows the sync code can read and write your settings and plans. Do not show the QR or the code to others.</p>
+
+<h3 id="map">Summit map</h3>
+<p>Open it with Menu → "Summit map" (for the summit valid at the cursor), or with "Map" on the plan and location screens.</p>
+<ul>
+  <li>Shows the summit's activation zone, municipal borders and the POTA parks in each municipality.</li>
+  <li>Overlays your position (GPS) on the map. Below the map, <b>the references that apply where you are</b> (the summit's code if you are in the activation zone, a park's code if you are in the park) are shown in green. Near a border (within the GPS error and the error of the area data), it does not commit and shows them in orange. Outside the zone, it shows the distance to the summit. The GPS accuracy is shown too.</li>
+  <li>Below that, so you can read them out when asked during a QSO, it lists the summit's code, name and height, and for each municipality the zone touches, its JCC/JCG and the POTA parks there. The municipality you are in is marked with ▶ and listed first.</li>
+  <li>A park marked "(partly)" covers only part of the zone within that municipality (the hatched area on the map; the list shows a mark in the same colour).</li>
+  <li>Maps of summits in plans and of summits you wrote as your location are saved on the device while you have a signal, and can be seen without a signal.</li>
+</ul>
+
+<h3 id="files">Exported files</h3>
+<p>The zip is named after the first QSO's date, the location and the time you exported (such as <code>fle-20261019@JA-ST-012-JP-1151-1543.zip</code>; each export gets a different name, so nothing is overwritten). "Save FLE log" uses the same name with <code>.txt</code>.</p>
 <table>
-<tr><th>sotaYYYYMMDD.csv</th><td>SOTA log (QSOs from a summit, per day). <code>sota-s2s-….csv</code> too if there are S2S contacts</td></tr>
-<tr><th>CALLSIGN@PARK-DATE.adi</th><td>POTA ADIF (one file per park, even across UTC midnight; the date is that of the first QSO). WWFF is the same. FREQ is included when you wrote a frequency, and MY_SOTA_REF (yours) and SOTA_REF (theirs) when there is a summit</td></tr>
-<tr><th>hamlog-….csv</th><td>CSV for importing into HAMLOG (with QSL message and rig)</td></tr>
+<tr><th>sotaYYYYMMDD.csv</th><td>The SOTA log (QSOs on a summit, one file per UTC date). With S2S QSOs, also <code>sota-s2s-…csv</code></td></tr>
+<tr><th>callsign@park-date.adi</th><td>The POTA ADIF (one per park; a single file even across dates, named after the first QSO's date). WWFF and SOTA (one per summit; <code>/</code> in the name becomes <code>-</code>) have the same form. FREQ is included when you wrote a frequency, and MY_SOTA_REF (yours) and SOTA_REF (the other station's) when there is a summit</td></tr>
+<tr><th>hamlog-….csv</th><td>A CSV for importing into HAMLOG (times per the "HAMLOG time" setting; QTH, Rmks1 and Rmks2 per the "HAMLOG output" setting)</td></tr>
+<tr><th>contest-date.txt</th><td>A file in ZLOG format, made for contest logs</td></tr>
+<tr><th>fle-date@location-time.txt</th><td>The original FLE log. Its name and contents are the same as "Save FLE log"</td></tr>
 </table>
-<p>Import the sota….csv into the SOTA database, the .adi file into the POTA site, and the hamlog….csv into HAMLOG. If any line has an error, no files are made; only a text file listing the errors is produced (fix them and export again).</p>
-<p>To convert files from other logging software, use <a href="https://logconv2.sotalive.net/">logconv2</a>.</p>
-<p>To keep the FLE log itself, use Menu → "Save FLE log" to save it as a text file. "Open FLE log" reads it back.</p>
+<ul>
+  <li>SOTA, POTA and WWFF files are always in UTC.</li>
+  <li>If some lines have errors, these files are not made; the zip holds only a text describing the errors and the original FLE log.</li>
+  <li>If the date, your callsign or the location is missing, or a callsign contains <code>?</code> for a character you could not copy, a check screen appears before exporting.</li>
+</ul>
 
-<h3 id="menu">Other menu items</h3>
-<table>
-<tr><th>Add ADIF</th><td>Turns an ADIF file from other logging software into FLE lines and adds them to the end of the log (Undo brings back the log as it was before)</td></tr>
-<tr><th>Undo</th><td>Brings back the log from before it was replaced by "Clear all", "Open FLE log", "Sample" and so on</td></tr>
-<tr><th>Clear all</th><td>Empties the log (right after, "Undo" in the notice or the menu brings it back)</td></tr>
-<tr><th>Sample</th><td>Shows a sample log to learn the format from (your log comes back with "Undo")</td></tr>
-<tr><th>Manual / Add to home screen</th><td>Opens this page / adds the app to the home screen (on devices that offer it)</td></tr>
-</table>
+<h3 id="fle">FLE syntax</h3>
+<p>The log is line-based. Empty lines are ignored. Everything from <code>#</code> to the end of the line is a memo and does not go into the output.</p>
 
-<h2 id="ref">6. FLE syntax (reference)</h2>
-<p>The log is line-based. Blank lines are ignored, and <code>#</code> starts a comment to the end of the line.</p>
-
-<h3>Directive lines (effective from that line on)</h3>
+<h4>Directive lines (valid from that line on)</h4>
 <table>
 <tr><th><code>mycall JL1NIE/1</code></th><td>Your callsign</td></tr>
-<tr><th><code>operator JL1NIE</code></th><td>The operator (defaults to your callsign)</td></tr>
-<tr><th><code>mysota JA/TK-001</code></th><td>Your summit. <code>-</code> clears it</td></tr>
-<tr><th><code>mypota JP-0001 JP-0002</code></th><td>Your parks (list overlapping parks). <code>-</code> clears it</td></tr>
+<tr><th><code>operator JL1NIE</code></th><td>Operator (taken from your callsign if omitted)</td></tr>
+<tr><th><code>mysota JA/KN-028</code></th><td>Your summit. <code>-</code> clears it</td></tr>
+<tr><th><code>mypota JP-0001 JP-0002</code></th><td>Your parks (list overlapping parks). <code>-</code> clears them</td></tr>
 <tr><th><code>mywwff JAFF-0001</code></th><td>Your WWFF reference</td></tr>
-<tr><th><code>mygrid PM95uq</code></th><td>Your grid (4, 6 or 8 characters)</td></tr>
-<tr><th><code>date 2026-10-25</code></th><td>The date (<code>10/25</code> also works). Resets the time to 00:00</td></tr>
-<tr><th><code>day +</code> / <code>day ++</code></th><td>Advance the date by 1 / 2 days (when crossing midnight). When a time you typed goes back past midnight (the previous QSO at 21:00 or later, this one before 03:00, such as 0002 after 2358), confirming (OK) adds <code>day +</code> automatically and shows "New day" above the log for about 3 seconds (you can tap Undo). Other times that go back (such as 0930 after 1030) only get a warning</td></tr>
-<tr><th><code>timezone jst</code></th><td>Time zone of the times: <code>jst</code>, <code>utc</code>, or a number such as <code>+9</code>. Default UTC. Normally the "Time zone" setting writes it at the top. Changed in the middle of a log, the last time carries over as the same moment in the new zone (after UTC 23:30, <code>timezone jst</code> continues from 08:30 the next day)</td></tr>
-<tr><th><code>rig KX2+EFHW</code></th><td>The rig (HAMLOG's <code>Rig=</code>). <code>-</code> clears it</td></tr>
+<tr><th><code>mygrid PM95uq</code></th><td>Your grid locator (4, 6 or 8 characters)</td></tr>
+<tr><th><code>date 2026-10-25</code></th><td>Date (<code>10/25</code> also works). The time goes back to 00:00</td></tr>
+<tr><th><code>day +</code> / <code>day ++</code></th><td>Moves the date forward 1 / 2 days (when passing midnight). For when it is added automatically, see "<a href="#day">When you pass midnight</a>"</td></tr>
+<tr><th><code>timezone jst</code></th><td>The time zone of the times: <code>jst</code>, <code>utc</code>, or a number like <code>+9</code>. UTC if omitted. Usually the "Time zone" setting writes it at the top. Changing it in the middle of the log reads the previous time as the same moment in the new time zone (<code>timezone jst</code> after UTC 23:30 continues from 08:30 the next day)</td></tr>
+<tr><th><code>rig KX2+EFHW</code></th><td>Rig (HAMLOG's <code>Rig=</code>). <code>-</code> clears it</td></tr>
 <tr><th><code>qslmsg …</code></th><td>QSL message. Can use <code>$mysota</code> <code>$mypota</code> <code>$mywwff</code> <code>$rig</code></td></tr>
 </table>
 
-<h3>QSO lines</h3>
-<p>List these words in any order.</p>
+<h4>QSO lines</h4>
+<p>Put the following words in any order.</p>
 <table>
-<tr><th>Time</th><td>1–4 digits. 1 digit = minute units, 2 = minutes, 3 = H:MM, 4 = HH:MM. Carries over from the previous line</td></tr>
-<tr><th>Band</th><td><code>40m</code> <code>2m</code> <code>70cm</code> etc. Stays until the next band</td></tr>
+<tr><th>Time</th><td>1 to 4 digits: 1 digit = the last digit of the minutes, 2 = minutes, 3 = H:MM, 4 = HH:MM. The omitted upper digits carry over from the line before</td></tr>
+<tr><th>Band</th><td><code>40m</code> <code>2m</code> <code>70cm</code> and so on. Stays until the next band</td></tr>
 <tr><th>Frequency</th><td><code>7.030</code> (MHz). Also sets the band</td></tr>
-<tr><th>Mode</th><td><code>cw</code> <code>ssb</code> <code>fm</code> <code>am</code> <code>ft8</code> etc. Stays until the next mode</td></tr>
-<tr><th>Callsign</th><td>One per line. This is what creates the QSO</td></tr>
-<tr><th>Report</th><td>Numbers after the callsign. One = sent, two = sent and received. Short forms are completed to suit the mode. CW etc.: 1 digit = 5□9 (<code>7</code> → 579), 2 digits = □□9 (<code>44</code> → 449). SSB/FM/AM: 1 digit = 5□ (<code>7</code> → 57), 2 digits as written. 3 digits are kept in any mode. For FT8 etc., an SNR such as <code>-18</code></td></tr>
-<tr><th>Their summit/park</th><td><code>ja/st-012</code> or <code>st-012</code> (SOTA), <code>jp-1234</code> (POTA), <code>jaff-0001</code> (WWFF)</td></tr>
-<tr><th>Messages</th><td><code>&lt;…&gt;</code> QSO message, <code>[…]</code> QSL message, <code>{…}</code> remark</td></tr>
+<tr><th>Mode</th><td><code>cw</code> <code>ssb</code> <code>fm</code> <code>am</code> <code>ft8</code> and so on. Stays until the next mode</td></tr>
+<tr><th>Callsign</th><td>One per line. Each makes one QSO. A character you could not copy is <code>?</code> (<code>JA1AB?</code>)</td></tr>
+<tr><th>Report</th><td>Numbers after the callsign. One number is the report you sent; two are the report you sent and the report you received.<br>Omitted digits are filled in according to the mode (□ is the digit you typed).<br>CW etc.: 1 digit = 5□9 (<code>7</code>→579), 2 digits = □□9 (<code>44</code>→449)<br>SSB, FM, AM: 1 digit = 5□ (<code>7</code>→57), 2 digits = as typed<br>3 digits are used as typed in any mode. FT8 and similar use an SNR like <code>-18</code></td></tr>
+<tr><th>Other station's summit / park</th><td><code>ja/st-012</code> or <code>st-012</code> (SOTA; the association can be omitted only when you have your own summit), <code>jp-1234</code> (POTA), <code>jaff-0001</code> (WWFF)</td></tr>
+<tr><th>Other station's grid</th><td><code>pm85rl</code>, written after the callsign. Goes into HAMLOG's GL and ADIF's GRIDSQUARE</td></tr>
+<tr><th>Messages</th><td><code>&lt;…&gt;</code> QSO message, <code>[…]</code> QSL message, <code>{…}</code> remarks</td></tr>
 </table>
 
-<h3>Common errors</h3>
-<ul>
-  <li>Missing band / mode: write a line such as <code>40m cw</code> before the callsign.</li>
-  <li>"rigset was replaced by rig": rewrite an old <code>rigset</code> line as <code>rig KX2+EFHW</code>.</li>
-  <li>Callsign shape: write it in the international form, including ones that start with a digit (<code>7K1ABC</code>).</li>
-</ul>
-<p>The detailed specification is in <a href="https://github.com/jl1nie/sotalive-monorepo/blob/main/docs/fle-grammar.md">docs/fle-grammar.md</a> (Japanese). The original idea of FLE (Fast Log Entry) is described in <a href="https://jl1nie.wordpress.com/2019/08/21/2019-08-21-203013/">this article</a> (Japanese).</p>
+<p>The detailed specification of the syntax is in <a href="https://github.com/jl1nie/sotalive-monorepo/blob/main/docs/fle-grammar.md">docs/fle-grammar.md</a>. The ideas behind the original FLE (Fast Log Entry) are described in <a href="https://jl1nie.wordpress.com/2019/08/21/2019-08-21-203013/">this article</a> (in Japanese).</p>
 </main>
 </body>
 </html>
