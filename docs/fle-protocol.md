@@ -123,12 +123,12 @@
 | コード | 項目 | 重さ | 条件 | 影響 |
 |---|---|---|---|---|
 | `missing_mycall` | `mycall` | 必須 | 自局のコールサインのないQSOがある | ADIF の `STATION_CALLSIGN`、SOTA CSV の自局が空になる |
-| `missing_place` | `place` | 推奨 | どのQSOにも、運用場所(SOTA・POTA・WWFF)がない | POTA・WWFF の ADIF は作られない |
+| `missing_place` | `place` | 必須 | どのQSOにも、運用場所(SOTA・POTA・WWFF)がない | POTA・WWFF の ADIF は作られない |
 | `missing_grid` | `grid` | 推奨 | ADIF に入るQSO(POTA・WWFF)に、グリッドがない | ADIF の `MY_GRIDSQUARE` が出ない(SOTA の CSV には列がないので対象外) |
 
 - 誤りのあるログ(誤りの記録だけを出す)と、QSOのないログは、何も返さない。
 - 順序は固定(`missing_mycall`、`missing_place`、`missing_grid`)。
-- **画面の約束**: 「生成」で、警告があれば確認のシートを開く(なければ、そのまま生成)。シートは、足りない項目の入力欄だけを出す
+- **画面の約束**: 「生成」で、必須の警告があれば確認のシートを開く(推奨だけ・なければ、そのまま生成)。シートは、足りない項目の入力欄だけを出す
   (自局のコールサインは前回のものが初期値、グリッドは「現在地」で求められる。運用場所は、場所のシートへ誘導する)。
   操作は「ログに書き込んで生成」(`stationPlan(text, 0, …)` で、ログの先頭に指令を書いてから生成)、「このまま生成」、「閉じる」。
   足りなくても、生成は止めない(警告)。

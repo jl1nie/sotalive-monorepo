@@ -267,8 +267,7 @@ describe('C. OK(確定)', () => {
       expect(ta.value).toBe(before)
     })
 
-    // Q4 で決めた。コードは未対応(戻したログでカーソルを置き直さない)。直したら it に戻す
-    it.fails('C3(Q4): 「元に戻す」のあと、カーソルは OK を押す前の位置で、フォーカスする', async () => {
+    it('C3(Q4): 「元に戻す」のあと、カーソルは OK を押す前の位置で、フォーカスする', async () => {
       const ta = await open(before)
       await moveTo(ta, before.length - 2)
       await confirm()
@@ -287,7 +286,6 @@ describe('C. OK(確定)', () => {
     it('C4: day + を入れたことを通知し、「元に戻す」は OK を押す前のログに戻す', async () => {
       at('2026-10-28T00:10:00Z')
       const ta = await open(before)
-      await type(ta, before)
       await confirm()
       expect(ta.value).toBe(HEADER + '2350 ja1xyz\nday +\n0010 ja2xyz\n')
       const notice = noticeOf(t('notice.dateInserted', { directive: 'day +' }))!
@@ -297,10 +295,10 @@ describe('C. OK(確定)', () => {
       expect(ta.value).toBe(before)
     })
 
-    it.fails('C4(Q4): 「元に戻す」のあと、カーソルは OK を押す前の位置で、フォーカスする', async () => {
+    it('C4(Q4): 「元に戻す」のあと、カーソルは OK を押す前の位置で、フォーカスする', async () => {
       at('2026-10-28T00:10:00Z')
       const ta = await open(before)
-      await type(ta, before, before.length - 2)
+      await moveTo(ta, before.length - 2)
       await confirm()
       await act(async () => ta.blur())
       const notice = noticeOf(t('notice.dateInserted', { directive: 'day +' }))!
@@ -511,8 +509,7 @@ describe('H. 書き出し', () => {
     expect(names).toHaveLength(0)
   })
 
-  // Q2 で決めた。コードは未対応(運用場所では止めない)
-  it.fails('H1・H3(Q2): 運用場所がなければ、確認のシートを開き、運用場所のボタンを出す', async () => {
+  it('H1・H3(Q2): 運用場所がなければ、確認のシートを開き、運用場所のボタンを出す', async () => {
     const names = captureDownloads()
     await open('mycall JA1ABC\ndate 2026-10-27\n40m cw\n1000 ja1xyz')
     await menu(t('menu.export'))
@@ -520,22 +517,21 @@ describe('H. 書き出し', () => {
     expect(names).toHaveLength(0)
   })
 
-  // Q3 で決めた。コードは未対応(端末の日付を書く)
-  it.fails('H2(Q3): 書き込んで生成で足す日付は、ログのタイムゾーンでの今日', async () => {
-    captureDownloads()
+  it('H2(Q3): 書き込んで生成で足す日付は、最初の QSO の前に、ログのタイムゾーンでの今日', async () => {
+    const names = captureDownloads()
     // UTC では 10/27 の夜、JST では 10/28 の朝
     at('2026-10-27T22:00:00Z')
     const log = 'timezone +9\nmycall JA1ABC\nmysota JA/TK-001\n40m cw\n0700 ja1xyz'
     const ta = await open(log, { timezone: 9 })
-    // 端末の時間帯は、ログと違う(UTC の 10/27)ものとする
-    vi.spyOn(Date.prototype, 'getDate').mockImplementation(function (this: Date) {
-      return this.getUTCDate()
-    })
+    await moveTo(ta, log.length)
     await menu(t('menu.export'))
     await act(async () => {
       fireEvent.click(await screen.findByRole('button', { name: t('check.write') }))
     })
-    await waitFor(() => expect(ta.value).toContain('date 2026-10-28'))
+    await waitFor(() => expect(names).toHaveLength(1))
+    expect(ta.value).toBe('timezone +9\nmycall JA1ABC\nmysota JA/TK-001\n40m cw\ndate 2026-10-28\n0700 ja1xyz')
+    // カーソルは同じ文字の上(末尾)
+    expect(ta.selectionStart).toBe(ta.value.length)
   })
 
   it('H5: 誤りのあるログでも生成し、誤りがあったことを通知する', async () => {
@@ -585,13 +581,13 @@ describe('I. 読み込み', () => {
     expect(ta.value).toMatch(/ja1xyz/i)
   })
 
-  // Q1 で決めた。コードは未対応(取り込みは「元に戻す」の対象でない)
-  it.fails('I2(Q1): ADIF の取り込みは、通知の「元に戻す」で取り込む前に戻せる', async () => {
+  it('I2(Q1): ADIF の取り込みは、通知の「元に戻す」で取り込む前に戻せる', async () => {
     const before = HEADER + '1000 ja2xyz'
     const ta = await open(before)
     await choose(fileInput('.adi,.adif'), 'log.adi', ADIF)
     await waitFor(() => expect(ta.value).not.toBe(before))
-    const notice = screen.getAllByRole('status').find((el) => within(el).queryByRole('button', { name: t('notice.undo') }))!
+    expect(localStorage.getItem('fle.log.prev')).toBe(before)
+    const notice = noticeOf(t('notice.adifAdded'))!
     await act(async () => {
       fireEvent.click(within(notice).getByRole('button', { name: t('notice.undo') }))
     })

@@ -208,8 +208,24 @@ function Editor({
     setCaret(snap.caret)
   }
 
+  /**
+   * 「元に戻す」で戻す先。`caret` があれば、OK などで書き足す前の位置へ戻し、続けて打てるようフォーカスする。
+   * なければ、ログを置き換える前に戻すので、カーソルは末尾(置き換えたときと同じ。フォーカスはしない)
+   */
+  type Restore = { text: string; caret?: number }
+  const restore = (to: Restore) => {
+    if (to.caret === undefined) {
+      setText(to.text)
+      setCaret(to.text.length)
+      return
+    }
+    pendingCaret.current = to.caret
+    setText(to.text)
+    setCaret(to.caret)
+  }
+
   /** 日またぎの `day +` を自動で入れた知らせ(その行と、元に戻す先)。ログの上に、約 3 秒出す */
-  const [newDay, setNewDay] = useState<{ line: number; undoTo: string } | null>(null)
+  const [newDay, setNewDay] = useState<{ line: number; undoTo: Restore } | null>(null)
   const [newDayTop, setNewDayTop] = useState(0)
   const newDayTimer = useRef<number>(0)
   useLayoutEffect(() => {
@@ -220,8 +236,8 @@ function Editor({
   }, [newDay, text])
 
   /** 取り消せる操作のあとは、通知に「元に戻す」を添える(戻す先の内容を持つ) */
-  const [undoTo, setUndoTo] = useState<string | null>(null)
-  const notify = useCallback((message: string, undo?: string) => {
+  const [undoTo, setUndoTo] = useState<Restore | null>(null)
+  const notify = useCallback((message: string, undo?: Restore) => {
     setNotice(message)
     setUndoTo(undo ?? null)
     window.clearTimeout(noticeTimer.current)
@@ -242,7 +258,7 @@ function Editor({
       if (text.trim()) {
         rememberPrev(text)
         setPrev(text)
-        if (message) notify(message, text)
+        if (message) notify(message, { text })
       }
       setText(next)
       setCaret(next.length)
@@ -559,10 +575,10 @@ function Editor({
       // 時刻を手で打った行の `day +`(いまの時刻は入れていない)は、ログの上にそっと知らせる
       if (dir === 'day +' && !edits.some((e) => /\d{4} $/.test(e.insert))) {
         window.clearTimeout(newDayTimer.current)
-        setNewDay({ line: done - 1, undoTo: text })
+        setNewDay({ line: done - 1, undoTo: { text, caret } })
         newDayTimer.current = window.setTimeout(() => setNewDay(null), NEW_DAY_MS)
       } else {
-        notify(t('notice.dateInserted', { directive: dir }), text)
+        notify(t('notice.dateInserted', { directive: dir }), { text, caret })
       }
     }
     lineStartedAt.current = null
@@ -736,7 +752,7 @@ function Editor({
     const tz = local ? settings.timezone : 0
     const line = zoneLine(tz)
     // 「前の内容」(メニューの元に戻す)は、読み込む前のログのまま。通知の元に戻すは、行を足す前に戻すだけ
-    notify(t('notice.relabeled', { zone: zoneLabel(tz) || 'UTC' }), text)
+    notify(t('notice.relabeled', { zone: zoneLabel(tz) || 'UTC' }), { text })
     pendingCaret.current = caret + line.length
     setText(line + text)
   }
@@ -757,13 +773,16 @@ function Editor({
       next = applyEdits(text, plan.edits)
       nextCaret = mapCaret(caret, plan.edits)
     }
-    // 日付がないログは、今日の日付(端末の日付)を先頭に書く。書式はコアの文法どおり(date YYYY-MM-DD)
+    // 日付がないログは、最初の QSO の前に、その QSO の時間帯(ログのタイムゾーン)での今日の日付を書く
+    // (端末の時間帯ではない。先頭の `timezone` の行より前に書くと、日付を UTC で読んでしまう)。
+    // 書式はコアの文法どおり(date YYYY-MM-DD)
     if (check?.some((w) => w.field === 'date')) {
-      const d = new Date()
-      const pad = (n: number) => String(n).padStart(2, '0')
-      const line = `date ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}\n`
-      next = line + next
-      nextCaret += line.length
+      const first = (await compileLog(next)).qsos[0]
+      const at = first ? lineRange(next, first.line)[0] : 0
+      const today = new Date(Date.now() + (first?.tz ?? 0) * 3_600_000).toISOString().slice(0, 10)
+      const line = `date ${today}\n`
+      next = next.slice(0, at) + line + next.slice(at)
+      if (nextCaret >= at) nextCaret += line.length
     }
     if (next !== text) {
       setText(next)
@@ -843,7 +862,7 @@ function Editor({
                 type="button"
                 className="ml-3 underline font-bold"
                 onClick={() => {
-                  setText(newDay.undoTo)
+                  restore(newDay.undoTo)
                   setNewDay(null)
                 }}
                 {...keepFocus}
@@ -966,7 +985,7 @@ function Editor({
                 type="button"
                 className="ml-3 underline font-bold"
                 onClick={() => {
-                  setText(undoTo)
+                  restore(undoTo)
                   setNotice(null)
                 }}
               >
@@ -1000,7 +1019,9 @@ function Editor({
               const base = text && !text.endsWith('\n') ? text + '\n' : text
               // 取り込んだ後ろには、元のログの時間帯を戻す(続けて書く時刻の意味を変えない)
               const tz = base ? (await lineInfo(text, text.split('\n').length - 1)).timezone : null
-              setText(base + fle + (fle && tz ? zoneLine(tz) : ''))
+              const next = base + fle + (fle && tz ? zoneLine(tz) : '')
+              // 取り込む前のログは、メニューと通知の「元に戻す」で戻せる
+              if (next !== text) replaceText(next, t('notice.adifAdded'))
             })
           }
         />
