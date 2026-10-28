@@ -36,7 +36,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
 |---|---|
 | `changes` | `dorny/paths-filter` で変わったパスを判定 |
 | `rust` | `cargo test --workspace` |
-| `fle` | wasm を用意し、`tsc -b`、`vitest run`、`eslint` |
+| `fle` | wasm を用意し、`tsc -b`、Vitest(PR では関係分だけ。下の「fle のテストの範囲」)、`eslint` |
 | `logconv` | `tsc -b`、`vitest run`、`eslint` |
 | `myact` | `tsc -b`、`vitest run --passWithNoTests`、`eslint` |
 | `parks` | 公園区域 TopoJSON の検証と生成ツールのテスト(`tools/jaffpota`。[park-areas.md](park-areas.md)) |
@@ -76,6 +76,21 @@ push は止めません。続けてマージしたとき、古い内容が後か
 
 `dist-myact` と `dist-fle` には `_redirects` などの隠しファイルが入るので、`include-hidden-files: true` を付けています。
 出力は `scripts/assemble.sh` と `scripts/build-static-projects.sh` が作ります。
+
+## fle のテストの範囲
+
+`fle` のジョブの Vitest は、`scripts/fle-test.sh` が、変わった箇所に応じて範囲を決めます。FLE のテスト(特に `FleEditor.test.tsx`、約 40 秒)は、関係のない変更では走らせません。
+
+| 場面 | 範囲 |
+|---|---|
+| `main`・`develop` などへの push(デプロイの前) | 全部 |
+| PR で、wasm の元(`crates/`・`Cargo.*`)、`apps/fle` の設定(`package.json`・`vite.config.ts`・`tsconfig*`・`eslint.config.js`)、lock ファイル・ワークスペース、`.github/`、`scripts/` が変わった | 全部。wasm は生成物(git に入れない)なので、変わったファイルから、どのテストが関係するかをたどれない |
+| PR で、`apps/fle/src` が変わった | 変わったファイルを読み込むテストだけ(`vitest run --changed <PR の元のコミット>`。Vitest が import をたどる) |
+| PR で、それ以外(`pages/fle`・説明書・docs だけなど) | なし |
+
+- 型検査(`tsc -b`)と lint は、速いので、いつも全部です。型だけを使う import(`import type`)はたどられないので、型の誤りは `tsc -b` で見つけます。
+- どの範囲で走ったかは、ログの `fle-test:` の行に出ます。
+- 手元では `pnpm --filter @sotalive/fle run test:changed`(`origin/main` から変わった分。まだコミットしていない分も含む)。`scripts/verify.sh` は、今までどおり全部を走らせます。
 
 ## キャッシュ
 

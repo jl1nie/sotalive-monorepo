@@ -99,7 +99,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 - `main` ブランチ → Production deploy
 - `develop` ブランチ → Preview deploy
 - PRマージで自動デプロイ（GitHub Actions）
-- CI（`.github/workflows/ci.yml`）: PR と push で走る。変わったパスに関係するテストだけを並列に走らせ（Rust・fle・logconv・myact・parks・legacy。legacy は旧版の index.html の構文の検査と、ブラウザーで開く最低限のテスト `packages/shared/tests/legacy.e2e.mjs`）、ビルドは1回（artifact でプロジェクトごとの出力を渡す）。デプロイは push のときだけで、Pages のプロジェクトごとに並列、関係するテストが通ってから。共通の部分（ワークフロー・lock ファイル・`packages/shared`・`scripts`）が変わったら、すべて走る。手元では `pnpm run test` / `pnpm run lint:apps`
+- CI（`.github/workflows/ci.yml`）: PR と push で走る。変わったパスに関係するテストだけを並列に走らせ（fle の Vitest は、PR では変わったファイルを読み込むテストだけ。範囲は `scripts/fle-test.sh`、`docs/ci-cd.md`。Rust・fle・logconv・myact・parks・legacy。legacy は旧版の index.html の構文の検査と、ブラウザーで開く最低限のテスト `packages/shared/tests/legacy.e2e.mjs`）、ビルドは1回（artifact でプロジェクトごとの出力を渡す）。デプロイは push のときだけで、Pages のプロジェクトごとに並列、関係するテストが通ってから。共通の部分（ワークフロー・lock ファイル・`packages/shared`・`scripts`）が変わったら、すべて走る。手元では `pnpm run test` / `pnpm run lint:apps`
 - ビルド: `pnpm run build`（`build:apps` → `scripts/assemble.sh`）。FLE の wasm は CI でキャッシュする（`.github/actions/fle-wasm`。`crates/` が変わったときだけビルド）
 
 ## エージェントの進め方

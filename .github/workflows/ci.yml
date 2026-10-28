@@ -127,11 +127,18 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      # PR では、変わった箇所に関係するテストだけ(scripts/fle-test.sh)。push(デプロイの前)は全部。
+      # 型検査と lint は速いので、いつも全部
+      - name: Fetch the PR base
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags --depth=1 origin ${{ github.event.pull_request.base.sha }}
       - name: Typecheck, test and lint
         working-directory: apps/fle
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
         run: |
           pnpm exec tsc -b
-          pnpm exec vitest run
+          ../../scripts/fle-test.sh "$BASE"
           pnpm exec eslint .
 
   logconv:
