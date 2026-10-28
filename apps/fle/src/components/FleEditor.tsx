@@ -710,10 +710,10 @@ function Editor({
     download(new Blob([text], { type: 'text/plain;charset=utf-8' }), name)
   }
 
-  /** 生成: 先に、足りない情報(自局のコールサイン・運用場所・グリッド)を調べ、あれば知らせる */
+  /** 生成: 先に、足りない情報(日付・自局のコールサイン・運用場所など)を調べ、あれば知らせる */
   const handleGenerate = useCallback(async () => {
     try {
-      // 確かめるのは、必須の項目(日付・自局)が抜けているときだけ。グリッドや運用場所(推奨)では止めない
+      // 確かめるのは、コアが必須とする警告(日付・自局・運用場所の不足、`?` のコールサイン)があるときだけ。グリッド(推奨)では止めない
       const warnings = (await checkOutput(text)).filter((w) => w.severity === 'required')
       if (warnings.length > 0) {
         setCheck(warnings)
@@ -1021,7 +1021,8 @@ function Editor({
               const tz = base ? (await lineInfo(text, text.split('\n').length - 1)).timezone : null
               const next = base + fle + (fle && tz ? zoneLine(tz) : '')
               // 取り込む前のログは、メニューと通知の「元に戻す」で戻せる
-              if (next !== text) replaceText(next, t('notice.adifAdded'))
+              // 取り込む QSO がなければ、何もしない(末尾の改行だけを足して、通知と「前の内容」を出さない)
+              if (fle && next !== text) replaceText(next, t('notice.adifAdded'))
             })
           }
         />

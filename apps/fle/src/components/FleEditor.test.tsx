@@ -594,6 +594,16 @@ describe('I. 読み込み', () => {
     expect(ta.value).toBe(before)
   })
 
+  it('I2: 取り込む QSO のない ADIF では、ログも「前の内容」も変えず、通知しない', async () => {
+    const before = HEADER + '1000 ja2xyz'
+    const ta = await open(before)
+    await choose(fileInput('.adi,.adif'), 'empty.adi', 'ADIF export\n<EOH>\n')
+    await act(async () => {})
+    expect(ta.value).toBe(before)
+    expect(localStorage.getItem('fle.log.prev')).toBeNull()
+    expect(noticeOf(t('notice.adifAdded'))).toBeNull()
+  })
+
   it('I4: ファイルを選んだら、選択を空に戻す', async () => {
     await open()
     const input = fileInput('.txt,.fle')
