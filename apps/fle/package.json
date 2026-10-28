@@ -10,7 +10,8 @@
     "build:web": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "test:changed": "../../scripts/fle-test.sh origin/main"
   },
   "dependencies": {
     "@fontsource-variable/roboto-mono": "^5.3.0",
