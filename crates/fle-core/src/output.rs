@@ -26,6 +26,9 @@ pub struct OutputOptions {
     pub hamlog: HamlogColumns,
     /// HAMLOG の CSV の日付・時刻を書く時間帯。ログの `timezone` によらない
     pub hamlog_zone: HamlogZone,
+    /// zip に入れる FLE ログの名前(画面の「FLEログを保存」と同じ名前。書き出した時刻は端末の時計なので、画面が決める)。
+    /// なければ `fle-<最初の QSO の日付@運用場所>.txt`
+    pub log_name: Option<String>,
 }
 
 /// HAMLOG の時刻の時間帯(HAMLOG の記号は `J` と `U` だけ)。既定は JST
@@ -106,9 +109,38 @@ pub fn generate_fle_output_with(
     now: chrono::NaiveDateTime,
     options: &OutputOptions,
 ) -> Result<Vec<u8>, String> {
-    let mut files: OutputFiles = HashMap::new();
+    generate(result, now, options, None)
+}
 
-    // エラーがある場合はエラーログのみ
+/// [`generate_fle_output_with`] に、元の FLE ログ(`text`)も入れる。誤りのあるログでも、誤りの記録と一緒に入れる
+/// (書き出したファイルと元のログが一緒に残り、誤りを直して書き出し直せる)
+pub fn generate_fle_output_with_log(
+    result: &FleCompileResult,
+    now: chrono::NaiveDateTime,
+    options: &OutputOptions,
+    text: &str,
+) -> Result<Vec<u8>, String> {
+    generate(result, now, options, Some(text))
+}
+
+fn generate(
+    result: &FleCompileResult,
+    now: chrono::NaiveDateTime,
+    options: &OutputOptions,
+    log: Option<&str>,
+) -> Result<Vec<u8>, String> {
+    let mut files: OutputFiles = HashMap::new();
+    if let Some(text) = log {
+        let name = options.log_name.clone().unwrap_or_else(|| {
+            format!(
+                "fle-{}.txt",
+                log_file_stem(result).unwrap_or_else(|| now.format("%Y%m%d").to_string())
+            )
+        });
+        files.insert(name, text.as_bytes().to_vec());
+    }
+
+    // エラーがある場合はエラーログのみ(と、元の FLE ログ)
     if !result.errors.is_empty() {
         let error_log = format_error_log(result);
         let timestamp = now.format("%Y-%m-%d-%H-%M");
@@ -1637,5 +1669,79 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             .1;
         let dates: Vec<&str> = csv.lines().map(|l| l.split(',').nth(3).unwrap()).collect();
         assert_eq!(dates, ["18/10/26", "18/10/26"], "{csv}");
+    }
+
+    // ---- zip に FLE ログを入れる ----
+
+    const LOG: &str = "mycall JA1ABC\ndate 2026-10-18\n40m cw\nmypota JP-0117\nmygrid PM95pp\n0900 ja1aaa\n0910 ja1bbb";
+
+    #[test]
+    fn the_zip_also_holds_the_fle_log_under_the_given_name() {
+        let options = OutputOptions {
+            log_name: Some("fle-20261018@JP-0117-1843.txt".to_string()),
+            ..OutputOptions::default()
+        };
+        let files = zip_files(
+            generate_fle_output_with_log(&crate::compile_fle(LOG), test_now(), &options, LOG)
+                .unwrap(),
+        );
+        assert_eq!(
+            files
+                .get("fle-20261018@JP-0117-1843.txt")
+                .map(String::as_str),
+            Some(LOG)
+        );
+        // ほかのファイルは、今までどおり
+        assert!(
+            files.keys().any(|k| k.starts_with("hamlog-")),
+            "{:?}",
+            files.keys()
+        );
+    }
+
+    #[test]
+    fn without_a_name_the_fle_log_is_named_from_the_log() {
+        let files = zip_files(
+            generate_fle_output_with_log(
+                &crate::compile_fle(LOG),
+                test_now(),
+                &OutputOptions::default(),
+                LOG,
+            )
+            .unwrap(),
+        );
+        assert_eq!(
+            files.get("fle-20261018@JP-0117.txt").map(String::as_str),
+            Some(LOG)
+        );
+    }
+
+    #[test]
+    fn a_log_with_errors_keeps_the_fle_log_next_to_the_errors() {
+        let log = "mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1aaa\n9999 ja1bbb";
+        let options = OutputOptions {
+            log_name: Some("fle-20261018-1843.txt".to_string()),
+            ..OutputOptions::default()
+        };
+        let files = zip_files(
+            generate_fle_output_with_log(&crate::compile_fle(log), test_now(), &options, log)
+                .unwrap(),
+        );
+        assert_eq!(files.len(), 2, "{:?}", files.keys());
+        assert!(files.contains_key("fle-error-2026-10-18-09-30.txt"));
+        assert_eq!(
+            files.get("fle-20261018-1843.txt").map(String::as_str),
+            Some(log)
+        );
+    }
+
+    #[test]
+    fn without_the_log_text_the_zip_is_as_before() {
+        let files = zip_files(generate_fle_output(&crate::compile_fle(LOG), test_now()).unwrap());
+        assert!(
+            !files.keys().any(|k| k.ends_with(".txt")),
+            "{:?}",
+            files.keys()
+        );
     }
 }
