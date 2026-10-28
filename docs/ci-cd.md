@@ -85,11 +85,12 @@ push は止めません。続けてマージしたとき、古い内容が後か
 |---|---|
 | `main`・`develop` などへの push(デプロイの前) | 全部 |
 | PR で、wasm の元(`crates/`・`Cargo.*`)、`apps/fle` の設定(`package.json`・`vite.config.ts`・`tsconfig*`・`eslint.config.js`)、lock ファイル・ワークスペース、`.github/`、`scripts/` が変わった | 全部。wasm は生成物(git に入れない)なので、変わったファイルから、どのテストが関係するかをたどれない |
-| PR で、`apps/fle/src` が変わった | 変わったファイルを読み込むテストだけ(`vitest run --changed <PR の元のコミット>`。Vitest が import をたどる) |
+| PR で、`apps/fle/src` が変わった | 変わったファイルを読み込むテストだけ(`vitest related <変わったファイル>`。Vitest が import をたどる)。`apps/fle/src` のファイルを消したときは、読み込んでいたテストをたどれないので全部 |
 | PR で、それ以外(`pages/fle`・説明書・docs だけなど) | なし |
 
 - 型検査(`tsc -b`)と lint は、速いので、いつも全部です。型だけを使う import(`import type`)はたどられないので、型の誤りは `tsc -b` で見つけます。
-- どの範囲で走ったかは、ログの `fle-test:` の行に出ます。
+- どの範囲で走ったかは、ログの `fle-test:` の行に出ます(関係分なら、変わったファイルも出ます)。
+- 変わったファイルは、スクリプトが 2 点の形(`git diff <PR の元のコミット>`)で取ります。Vitest の `--changed` は使いません。`--changed` は 3 点の形(`<元>...HEAD`)で共通の祖先が要り、CI の取得は履歴が 1 つ(shallow)なので git が失敗します。Vitest はその失敗を「変わったファイルなし」として、テストを走らせずに成功で終わっていました(#182〜#183)。
 - 手元では `pnpm --filter @sotalive/fle run test:changed`(`origin/main` から変わった分。まだコミットしていない分も含む)。`scripts/verify.sh` は、今までどおり全部を走らせます。
 
 ## キャッシュ
