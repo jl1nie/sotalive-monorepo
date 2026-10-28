@@ -363,7 +363,7 @@ pub enum Severity {
 ///
 /// - 日付(`date`): ないと、QSOの日付が 2000-01-01 になる(必須)。
 /// - 自局のコールサイン(`mycall`): ないと、ADIF の `STATION_CALLSIGN` や SOTA CSV の自局が空になる(必須)。
-/// - 運用場所(`mysota` / `mypota` / `mywwff`): 1つもないと、ADIF(POTA / WWFF)は作られない(推奨)。
+/// - 運用場所(`mysota` / `mypota` / `mywwff`): 1つもないと、ADIF(POTA / WWFF)は作られない(必須)。
 /// - グリッド(`mygrid`): ADIF に入るQSOに、ないと `MY_GRIDSQUARE` が出ない(推奨)。
 ///
 /// 誤りがあるログ(誤りの記録だけを出す)や、QSOがないログは、何も返さない。
@@ -403,7 +403,7 @@ pub fn check_output(result: &FleCompileResult) -> Vec<OutputWarning> {
         warnings.push(OutputWarning {
             code: "missing_place",
             field: "place",
-            severity: Severity::Recommended,
+            severity: Severity::Required,
             qsos: result.records.len(),
             items: Vec::new(),
         });
@@ -1288,10 +1288,13 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
 
     #[test]
     fn a_log_without_any_place_warns_that_no_adif_is_made() {
+        let w = check_log("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1aaa");
         assert_eq!(
-            codes("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1aaa"),
-            vec![("missing_place", 1)]
+            (w[0].code, w[0].field, w[0].qsos),
+            ("missing_place", "place", 1)
         );
+        // 運用場所は、生成の時点で要る(画面は、必須の警告で生成を止める)
+        assert_eq!(w[0].severity, Severity::Required);
     }
 
     #[test]
