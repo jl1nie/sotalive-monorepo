@@ -209,20 +209,31 @@ function Editor({
   }
 
   /**
-   * 「元に戻す」で戻す先。`caret` があれば、OK などで書き足す前の位置へ戻し、続けて打てるようフォーカスする。
+   * 「元に戻す」で戻す先。`caret` があれば、OK などで書き足す前の位置へ戻し、続けて打てるようフォーカスする
+   * (`focus: false` なら、位置だけ戻す。開いたときの時間帯の答えなど、打っている途中でない操作)。
    * なければ、ログを置き換える前に戻すので、カーソルは末尾(置き換えたときと同じ。フォーカスはしない)
    */
-  type Restore = { text: string; caret?: number }
+  type Restore = { text: string; caret?: number; focus?: boolean }
+  // フォーカスせずに置くキャレット(キーボードを出さない)。描画の直後に反映する
+  const quietCaret = useRef<number | null>(null)
   const restore = (to: Restore) => {
     if (to.caret === undefined) {
       setText(to.text)
       setCaret(to.text.length)
       return
     }
-    pendingCaret.current = to.caret
+    if (to.focus === false) quietCaret.current = to.caret
+    else pendingCaret.current = to.caret
     setText(to.text)
     setCaret(to.caret)
   }
+  useLayoutEffect(() => {
+    const pos = quietCaret.current
+    const ta = taRef.current
+    if (pos === null || !ta) return
+    quietCaret.current = null
+    ta.setSelectionRange(pos, pos)
+  }, [text])
 
   /** 日またぎの `day +` を自動で入れた知らせ(その行と、元に戻す先)。ログの上に、約 3 秒出す */
   const [newDay, setNewDay] = useState<{ line: number; undoTo: Restore } | null>(null)
@@ -752,7 +763,7 @@ function Editor({
     const tz = local ? settings.timezone : 0
     const line = zoneLine(tz)
     // 「前の内容」(メニューの元に戻す)は、読み込む前のログのまま。通知の元に戻すは、行を足す前に戻すだけ
-    notify(t('notice.relabeled', { zone: zoneLabel(tz) || 'UTC' }), { text })
+    notify(t('notice.relabeled', { zone: zoneLabel(tz) || 'UTC' }), { text, caret, focus: false })
     pendingCaret.current = caret + line.length
     setText(line + text)
   }
@@ -773,14 +784,19 @@ function Editor({
       next = applyEdits(text, plan.edits)
       nextCaret = mapCaret(caret, plan.edits)
     }
-    // 日付がないログは、最初の QSO の前に、その QSO の時間帯(ログのタイムゾーン)での今日の日付を書く
-    // (端末の時間帯ではない。先頭の `timezone` の行より前に書くと、日付を UTC で読んでしまう)。
-    // 書式はコアの文法どおり(date YYYY-MM-DD)
+    // 日付がないログは、最初の QSO の前に日付を書く。ログの途中に `date` の行があれば、それを写す
+    // (利用者が書いた日付は、端末の時計より確か。後で書き出しても日がずれない)。なければ、その QSO の
+    // 時間帯(ログのタイムゾーン)での今日(端末の時間帯ではない。先頭の `timezone` の行より前に書くと、
+    // 日付を UTC で読んでしまう)。書式はコアの文法どおり(date YYYY-MM-DD)
     if (check?.some((w) => w.field === 'date')) {
       const first = (await compileLog(next)).qsos[0]
       const at = first ? lineRange(next, first.line)[0] : 0
+      const later = next
+        .slice(at)
+        .split('\n')
+        .find((l) => /^\s*date\b/i.test(l.normalize('NFKC')))
       const today = new Date(Date.now() + (first?.tz ?? 0) * 3_600_000).toISOString().slice(0, 10)
-      const line = `date ${today}\n`
+      const line = later ? `${later.trim()}\n` : `date ${today}\n`
       next = next.slice(0, at) + line + next.slice(at)
       if (nextCaret >= at) nextCaret += line.length
     }

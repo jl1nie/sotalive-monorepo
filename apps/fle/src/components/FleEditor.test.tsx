@@ -162,6 +162,23 @@ describe('A. 起動と保存', () => {
     expect(ta.value).toBe(log)
   })
 
+  it('I3(Q6): 時間帯の答えを「元に戻す」で取り消すと、カーソルは答える前の位置。フォーカスはしない', async () => {
+    const log = HEADER + '1000 ja1xyz'
+    const ta = await open(log, { timezone: 9 })
+    await waitFor(() => expect(screen.getByRole('button', { name: t('zoneAsk.utc') })).toBeInTheDocument())
+    await moveTo(ta, 3)
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: t('zoneAsk.utc') }))
+    })
+    await act(async () => ta.blur())
+    await act(async () => {
+      fireEvent.click(within(noticeOf(t('notice.relabeled', { zone: 'UTC' }))!).getByRole('button', { name: t('notice.undo') }))
+    })
+    expect(ta.value).toBe(log)
+    expect(ta.selectionStart).toBe(3)
+    expect(document.activeElement).not.toBe(ta)
+  })
+
   it('A3: 設定が UTC なら、聞かない', async () => {
     await open(HEADER + '1000 ja1xyz', { timezone: 0 })
     expect(screen.queryByRole('button', { name: t('zoneAsk.utc') })).toBeNull()
@@ -517,6 +534,19 @@ describe('H. 書き出し', () => {
     expect(names).toHaveLength(0)
   })
 
+  it('H2(Q8): ログの途中に date があれば、その行を写して、最初の QSO の前に書く', async () => {
+    const names = captureDownloads()
+    at('2026-10-28T03:00:00Z')
+    const log = 'mycall JA1ABC\nmysota JA/TK-001\n40m cw\n0900 ja1aaa\ndate 10/25\n1000 ja1bbb'
+    const ta = await open(log)
+    await menu(t('menu.export'))
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: t('check.write') }))
+    })
+    await waitFor(() => expect(names).toHaveLength(1))
+    expect(ta.value).toBe('mycall JA1ABC\nmysota JA/TK-001\n40m cw\ndate 10/25\n0900 ja1aaa\ndate 10/25\n1000 ja1bbb')
+  })
+
   it('H2(Q3): 書き込んで生成で足す日付は、最初の QSO の前に、ログのタイムゾーンでの今日', async () => {
     const names = captureDownloads()
     // UTC では 10/27 の夜、JST では 10/28 の朝
@@ -579,6 +609,14 @@ describe('I. 読み込み', () => {
     expect(ta.value.startsWith(before + '\ntimezone utc\n')).toBe(true)
     expect(ta.value.endsWith('timezone +9\n')).toBe(true)
     expect(ta.value).toMatch(/ja1xyz/i)
+  })
+
+  it('I2(Q7): 空のログに足したときは、通知を出さない(戻す先がない。取り込んだ行が知らせになる)', async () => {
+    const ta = await open('')
+    await choose(fileInput('.adi,.adif'), 'log.adi', ADIF)
+    await waitFor(() => expect(ta.value).toMatch(/ja1xyz/i))
+    expect(noticeOf(t('notice.adifAdded'))).toBeNull()
+    expect(localStorage.getItem('fle.log.prev')).toBeNull()
   })
 
   it('I2(Q1): ADIF の取り込みは、通知の「元に戻す」で取り込む前に戻せる', async () => {
