@@ -124,12 +124,13 @@
 |---|---|---|---|---|
 | `missing_date` | `date` | 必須 | 日付のないQSOがある | QSO の日付が 2000-01-01 になる |
 | `missing_mycall` | `mycall` | 必須 | 自局のコールサインのないQSOがある | ADIF の `STATION_CALLSIGN`、SOTA CSV の自局が空になる |
-| `missing_place` | `place` | 必須 | どのQSOにも、運用場所(SOTA・POTA・WWFF)がない | POTA・WWFF の ADIF は作られない |
+| `missing_place` | `place` | 必須 | どのQSOにも、運用場所(SOTA・POTA・WWFF)がない | SOTA・POTA・WWFF の ADIF は作られない |
+| `unplaced_qsos` | `place` | 必須 | 運用場所のあるQSOとないQSOが混ざっている(`mysota` などの行が最初のQSOより後ろ、`-` で消したあとも書いた) | 運用場所のないQSOは、ADIF と SOTA の CSV に入らない |
 | `missing_grid` | `grid` | 推奨 | ADIF に入るQSO(POTA・WWFF)に、グリッドがない | ADIF の `MY_GRIDSQUARE` が出ない(SOTA の CSV には列がないので対象外) |
 | `unsure_call` | `call` | 必須 | 聞き取れなかった文字 `?` のあるコールサインがある(`items` にそのコールサイン) | SOTA・POTA に上げる前に直してもらう |
 
 - 誤りのあるログ(誤りの記録だけを出す)と、QSOのないログは、何も返さない。
-- 順序は固定(`missing_date`、`missing_mycall`、`missing_place`、`missing_grid`、`unsure_call`)。
+- 順序は固定(`missing_date`、`missing_mycall`、`missing_place`、`unplaced_qsos`、`missing_grid`、`unsure_call`)。
 - **画面の約束**: 「生成」で、必須の警告があれば確認のシートを開く(推奨だけ・なければ、そのまま生成。グリッドは任意)。シートは、必須の警告と、足りない項目の入力欄だけを出す
   (自局のコールサインは前回のものが初期値。運用場所は、場所のシートへ誘導する)。
   操作は「ログに書き込んで生成」(`stationPlan(text, 0, …)` で、ログの先頭に指令を書き、日付がなければ最初の QSO の前に `date` を書いてから生成。ログの途中に `date` の行があればそれを写し、なければログのタイムゾーンでの今日)、「このまま生成」、「閉じる」。

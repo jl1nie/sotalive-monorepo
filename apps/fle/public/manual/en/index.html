@@ -54,7 +54,7 @@
       <li><a href="#menu">Menu</a></li>
       <li><a href="#settings">Settings</a></li>
       <li><a href="#plans">Plans</a></li>
-      <li><a href="#place">The location screen and memos</a></li>
+      <li><a href="#place">The location screen and # remarks</a></li>
       <li><a href="#sync">Syncing a PC and a phone</a></li>
       <li><a href="#map">Summit map</a></li>
       <li><a href="#files">Exported files</a></li>
@@ -115,12 +115,12 @@
 <tr><th>SOTA / POTA / WWFF</th><td>Type a name or a number to get candidates (<code>陣馬</code>, <code>KN-02</code>, …). Just choose one</td></tr>
 <tr><th>Grid</th><td>Optional. The "Here" button fills it in too</td></tr>
 <tr><th>Rig / QSL message</th><td>Optional. The rig goes into HAMLOG's <code>Rig=</code>. The QSL message can use <code>$mysota</code>, <code>$rig</code> and so on</td></tr>
-<tr><th>Memo</th><td>Optional. JCC/JCG and the like. When you choose a summit or park, it is looked up if you have a signal</td></tr>
+<tr><th># remark</th><td>Optional. JCC/JCG and the like. When you choose a summit or park, it is looked up if you have a signal</td></tr>
 </table>
 <p class="note">POTA: where parks overlap, list them in the POTA field (<code>JP-1151 JP-1164</code>).</p>
 
 <h3>Check the summit map</h3>
-<p>The "Map" button next to the plan's SOTA field shows the summit's activation zone, municipal borders and the POTA parks in each municipality. For a summit on a prefecture border, decide here which side you will operate from (the JCC/JCG for the memo and the POTA park). See "<a href="#map">Summit map</a>" for details.</p>
+<p>The "Map" button next to the plan's SOTA field shows the summit's activation zone, municipal borders and the POTA parks in each municipality. For a summit on a prefecture border, decide here which side you will operate from (the JCC/JCG for the # remark and the POTA park). See "<a href="#map">Summit map</a>" for details.</p>
 
 <h3>Check before you leave</h3>
 <ul>
@@ -134,7 +134,7 @@
 <h3>Start a new log</h3>
 <ol>
   <li>Menu → "New log". Your callsign is filled in with the one you used last.</li>
-  <li>Under "Choose a plan", tap today's plan. The callsign, summit, grid, memo and so on are filled in.</li>
+  <li>Under "Choose a plan", tap today's plan. The callsign, summit, grid, # remark and so on are filled in.</li>
   <li>If you like, also enter the band (or frequency) and mode.</li>
   <li>Tap "Write to log". The log you were writing is replaced by a new log that starts with lines like these.</li>
 </ol>
@@ -145,10 +145,10 @@ rig KX2+EFHW
 qslmsg $mysota $rig
 # JCC#111001 相模原市緑区
 40m cw</code></pre>
-<p>The log you replaced can be brought back with "Undo" in the menu. A line starting with <code>#</code> is a memo (JCC/JCG and the like) and does not go into the exported files. You can also enter your callsign and summit on the spot without a plan.</p>
+<p>The log you replaced can be brought back with "Undo" in the menu. A line starting with <code>#</code> is a # remark (JCC/JCG and the like) and does not go into the exported files. You can also enter your callsign and summit on the spot without a plan.</p>
 
 <h3>Check that you are in the activation zone</h3>
-<p>Before you start making QSOs, open Menu → "Summit map". If your position (GPS) is in the activation zone, the summit's code is shown in green below the map. If you are in a park, the park's code is shown too. In the list below it, the municipality you are in (the JCC/JCG for the memo) is marked with ▶. On a summit on a border, like Mt. Jimba, check here which side you are on.</p>
+<p>Before you start making QSOs, open Menu → "Summit map". If your position (GPS) is in the activation zone, the summit's code is shown in green below the map. If you are in a park, the park's code is shown too. In the list below it, the municipality you are in (the JCC/JCG for the # remark) is marked with ▶. On a summit on a border, like Mt. Jimba, check here which side you are on.</p>
 
 <h3>Write QSOs</h3>
 <p>Write one QSO per line.</p>
@@ -241,7 +241,7 @@ ssb
 </table>
 <ul>
   <li><b>QSO count</b>: at the left of the candidate bar, the QSO count for the day at the cursor (UTC date) is shown large and the total small. For SOTA and POTA, the small number becomes the QSO count needed for a valid activation (SOTA <code>/4</code>, POTA <code>/10</code>) and turns green when reached. If some lines have errors it turns red and shows the number of errors, like <code>⚠2</code>. The "QSO count" setting can show only the total.</li>
-  <li><b>Time and location</b>: above the log area, the time, your callsign and the summit, WWFF and parks valid at the cursor's line are shown large. Below them is the memo valid at the cursor's line (the last <code>#</code> line before it). The time is shown in the same time zone as the times written to the log, with UTC added when it is not UTC. When the screen is too narrow (for example, while the phone's keyboard is shown), it is not shown.</li>
+  <li><b>Time and location</b>: above the log area, the time, your callsign and the summit, WWFF and parks valid at the cursor's line are shown large. Below them is the # remark valid at the cursor's line (the last <code>#</code> line before it). The time is shown in the same time zone as the times written to the log, with UTC added when it is not UTC. When the screen is too narrow (for example, while the phone's keyboard is shown), it is not shown.</li>
   <li><b>Candidates</b>: while you type, candidates for keywords, bands, modes and so on appear over the candidate bar. Tap one to enter it.</li>
   <li>The <b>log</b> is aligned to the bottom, so the line you are typing sits just above the candidate bar.</li>
   <li>If you turn the phone sideways, "Please turn your phone upright" is shown (the log stays as it is).</li>
@@ -263,7 +263,7 @@ ssb
   <li>Tapping the log area does not bring up the phone's keyboard (the cursor does appear).</li>
   <li>Letters go into the log in lower case (FLE does not distinguish upper and lower case). <code>-</code> is to the right of L, and <code>/</code> to the right of M.</li>
   <li><b>Pressing a key twice in a row</b> gives another character: <code>/</code> twice gives <code>.</code> (for frequencies like <code>7.0295</code>), and <code>-</code> twice gives <code>,</code>. They are shown small at the bottom right of the key.</li>
-  <li><b>A long press (about 0.5 s)</b> enters another symbol: <code>3</code> gives <code>#</code> (for memo lines and <code>JCC#</code>), <code>0</code> gives <code>+</code> (for <code>day +</code>), and <code>7</code> gives <code>?</code> (for characters you could not copy; type <code>JA1AB?</code> and the app reminds you before exporting). The bubble while you press changes to the symbol, and it is entered when you release.</li>
+  <li><b>A long press (about 0.5 s)</b> enters another symbol: <code>3</code> gives <code>#</code> (for # remark lines and <code>JCC#</code>), <code>0</code> gives <code>+</code> (for <code>day +</code>), and <code>7</code> gives <code>?</code> (for characters you could not copy; type <code>JA1AB?</code> and the app reminds you before exporting). The bubble while you press changes to the symbol, and it is entered when you release.</li>
   <li><b>The key left of Z is Caps</b> (↑). Pressing it fills in the ↑, and letters are entered in capitals. Useful when lower-case m and n are hard to tell apart. The state is remembered on each device.</li>
   <li>The widest key in the bottom row is the space, and the bottom right is ↵ (they have no labels).</li>
   <li><b>↵ only starts a new line</b> and does not confirm (it does not write the time). In the middle of a line, it splits the line there. In the middle of the log, it lets you add a QSO in between. To confirm, use the ✓ OK on the candidate bar.</li>
@@ -272,7 +272,7 @@ ssb
   <li><b>Swiping left or right on the space key or the ← → keys</b> moves the cursor one character at a time ("<a href="#swipe">Moving the cursor by swiping</a>").</li>
   <li><b>The key height</b> can be changed by dragging the handle on the keyboard's top edge up or down (from the height where the keys are square, up to 1.5 times that). Useful when wearing gloves. It is remembered on each device.</li>
   <li><b>Japanese</b> (messages like <code>&lt;山田さん&gt;</code> or <code>qslmsg</code>) is typed by switching to the phone's keyboard with 🌐. When you are done, press "Back to full keys" at the bottom.</li>
-  <li>On screens such as "New log", "Change location" and "Plans", the callsign, SOTA, POTA, WWFF, grid and memo fields are typed with the same keyboard (letters in capitals from the start). ↵ moves to the next field. To write Japanese in the memo (such as a municipality name), switch to the phone's keyboard with 🌐. The plan name uses the phone's keyboard from the start.</li>
+  <li>On screens such as "New log", "Change location" and "Plans", the callsign, SOTA, POTA, WWFF, grid and # remark fields are typed with the same keyboard (letters in capitals from the start). ↵ moves to the next field. To write Japanese in the # remark (such as a municipality name), switch to the phone's keyboard with 🌐. The plan name uses the phone's keyboard from the start.</li>
 </ul>
 
 <h3 id="pc">Using a PC</h3>
@@ -327,7 +327,7 @@ ssb
 <h3 id="menu">Menu</h3>
 <p>The "…" at the top right of the screen (left of the gear) is the menu.</p>
 <table>
-<tr><th>New log</th><td>Starts from an empty log. Enter your callsign and location on the location screen and write them ("<a href="#place">The location screen and memos</a>")</td></tr>
+<tr><th>New log</th><td>Starts from an empty log. Enter your callsign and location on the location screen and write them ("<a href="#place">The location screen and # remarks</a>")</td></tr>
 <tr><th>Change location</th><td>Changes your callsign and location for the QSOs from the cursor's line on (only when the log has text)</td></tr>
 <tr><th>Summit map</th><td>Shows the map of the summit valid at the cursor ("<a href="#map">Summit map</a>")</td></tr>
 <tr><th>Plans</th><td>The list of plans and adding plans ("<a href="#plans">Plans</a>")</td></tr>
@@ -354,12 +354,12 @@ ssb
 <tr><td>Chase, S2S and P2P lines take the time you press OK</td><td>Only lines with the other station's summit or park take the time you press OK (on by default). Ordinary QSOs always take the time you started typing. When off, every line takes the time you started typing</td><td>no</td></tr>
 <tr><td>What confirming writes</td><td>Whether confirming with OK also writes the band and mode or the RST, besides the time. Leaving them out means the same (the bar always shows the filled-in values). The band and mode are not written at first. The RST is set separately for the PC and the phone: written from the start on a PC, not written at first on a phone</td><td>yes for the band/mode and the PC's RST; no for the phone's RST</td></tr>
 <tr><td>Frequently used rigs</td><td>One per line. Offered as candidates when you type <code>rig </code> in the log</td><td>yes</td></tr>
-<tr><td>Show the time and location</td><td>On a phone, shows the time and location (and the memo) above the log area (on by default)</td><td>no</td></tr>
+<tr><td>Show the time and location</td><td>On a phone, shows the time and location (and the # remark) above the log area (on by default)</td><td>no</td></tr>
 <tr><td>Digit key row</td><td>On a PC, shows digit keys below the log area (off by default)</td><td>no</td></tr>
 <tr><td>QSO count</td><td>"Day / total" or "Total" only</td><td>no</td></tr>
 <tr><td>Log text size</td><td>Small, medium or large (0.85, 1 and 1.2 times). Changes the size of the log area and of the time and location above it</td><td>no</td></tr>
 <tr><td>HAMLOG time</td><td>Writes the HAMLOG CSV's dates and times in JST (<code>J</code>, the default) or UTC (<code>U</code>), regardless of the time zone the log is written in</td><td>yes</td></tr>
-<tr><td>HAMLOG output (QTH / Rmks1 / Rmks2)</td><td>What goes into HAMLOG's QTH, Rmks1 and Rmks2. Choose a preset ("Classic (default)", "Memo in Rmks1, your place in Rmks2"), or choose items per column (your summit/park, the other station's summit/park, memo, remarks, QSL message, Rig). A <b>memo</b> is a <code>#</code> line (a note for the whole operation, such as JCC/JCG); <b>remarks</b> are the <code>{…}</code> in a QSO line (a note on that one QSO). See "<a href="#place">The location screen and memos</a>". "Classic" is the same as the earlier conversion tool (HamLogConv)</td><td>yes</td></tr>
+<tr><td>HAMLOG output (QTH / Rmks1 / Rmks2)</td><td>What goes into HAMLOG's QTH, Rmks1 and Rmks2. Choose a preset ("Classic (default)", "# remark in Rmks1, your place in Rmks2"), or choose items per column (your summit/park, the other station's summit/park, # remark, {} remarks, QSL message, Rig). A <b># remark</b> is a <code>#</code> line (a note for the whole operation, such as JCC/JCG); <b>{} remarks</b> are the <code>{…}</code> in a QSO line (a note on that one QSO). See "<a href="#place">The location screen and # remarks</a>". "Classic" is the same as the earlier conversion tool (HamLogConv)</td><td>yes</td></tr>
 <tr><td>Sync settings and plans</td><td>Start syncing, join or stop ("<a href="#sync">Syncing a PC and a phone</a>")</td><td>—</td></tr>
 </table>
 <p>The key height and Caps are changed on the keyboard and remembered on each device.</p>
@@ -367,20 +367,32 @@ ssb
 <h3 id="plans">Plans</h3>
 <p>Menu → "Plans". You can register up to 50 places you are going to. The fields are as in the table in "<a href="#before">The day before: prepare</a>".</p>
 <ul>
-  <li>Use them with "Choose a plan" on the "New log" and "Change location" screens. The plan's callsign, summit, parks, grid and memo are filled in, and when you write, the plan's date, rig and QSL message also become directive lines (not written if the same lines are already in the log).</li>
+  <li>Use them with "Choose a plan" on the "New log" and "Change location" screens. The plan's callsign, summit, parks, grid and # remark are filled in, and when you write, the plan's date, rig and QSL message also become directive lines (not written if the same lines are already in the log).</li>
   <li>The maps of summits in plans are saved on the device automatically while you have a signal. The list shows "Map: saved" or "not saved yet".</li>
   <li>Plans are synced.</li>
 </ul>
 
-<h3 id="place">The location screen and memos</h3>
-<p><b>A memo and remarks are different things.</b> A <b>memo</b> is a <b>line</b> starting with <code>#</code>; it is a note that applies to the rest of the operation after that line (JCC/JCG and the like; it does not go into the exported files). <b>Remarks</b> are written as <code>{…}</code> inside a QSO line and apply to <b>that one QSO only</b> (the other station's name, "a neighbour" and so on; they go into the remarks of the ADIF and HAMLOG).</p>
-<p>This screen opens from "New log" and "Change location". Enter your callsign, SOTA, POTA, WWFF, grid and memo, and "Write to log" writes the directive lines (<code>mycall</code>, <code>mysota</code> and so on).</p>
+<h3 id="place">The location screen and # remarks</h3>
+<p>There are two ways to write remarks. They are both "remarks", but they differ in where you write them and how far they reach.</p>
+<pre><code>mycall JA1ABC
+mysota JA/ST-012
+# JCC 1234 north side
+40m cw
+0900 ja1abc 59 {Yamada}
+0905 ja2xyz 59
+0910 ja3def 59 {neighbour}</code></pre>
+<table>
+<tr><th># remark</th><td><code># JCC 1234 north side</code> in the example. Start the line with <code>#</code>. It applies to <b>all QSOs after it</b> (all three in the example). Use it for notes on the whole operation, such as JCC/JCG.</td></tr>
+<tr><th>{} remark</th><td><code>{Yamada}</code> in the example. Write <code>{…}</code> inside a QSO line. It applies to <b>that QSO only</b> (only ja1abc at 0900 in the example). Use it for a note on one station, such as the name.</td></tr>
+</table>
+<p>Neither goes into the SOTA, POTA or WWFF files. They can go into HAMLOG's QTH, Rmks1 and Rmks2 by setting.</p>
+<p>This screen opens from "New log" and "Change location". Enter your callsign, SOTA, POTA, WWFF, grid and # remark, and "Write to log" writes the directive lines (<code>mycall</code>, <code>mysota</code> and so on).</p>
 <ul>
   <li>SOTA, POTA and WWFF offer candidates when you type a name or number (a signal is needed). "Map" opens the summit map. The grid can also be filled in with "Here".</li>
   <li>If something is not in a valid form, the screen stays open and the problem is shown below the field.</li>
-  <li>A <b>memo</b> is written as a line starting with <code>#</code>, so it does not go into the exported files (it can go into HAMLOG's columns by setting). Write JCC/JCG and the like. When you choose a summit or park from the candidates, or get your position with "Here", JCC/JCG is looked up and filled in if you have a signal (using data from the Geospatial Information Authority of Japan and this app's server). A memo you typed yourself is not overwritten.</li>
-  <li>If you write with the memo field left empty, it is looked up from the summit (or the first park) and written. If it cannot be looked up, nothing is written.</li>
-  <li>When the screen opens, the memo field holds the memo valid at that point. If you change it and write, a new <code>#</code> line is added (the earlier memo is not removed). If it is the same, nothing is written.</li>
+  <li>A <b># remark</b> is written as a line starting with <code>#</code>, so it does not go into the exported files (it can go into HAMLOG's columns by setting). Write JCC/JCG and the like. When you choose a summit or park from the candidates, or get your position with "Here", JCC/JCG is looked up and filled in if you have a signal (using data from the Geospatial Information Authority of Japan and this app's server). A # remark you typed yourself is not overwritten.</li>
+  <li>If you write with the # remark field left empty, it is looked up from the summit (or the first park) and written. If it cannot be looked up, nothing is written.</li>
+  <li>When the screen opens, the # remark field holds the # remark valid at that point. If you change it and write, a new <code>#</code> line is added (the earlier # remark is not removed). If it is the same, nothing is written.</li>
   <li>On "New log", you can also enter the band (or frequency) and mode. They are written after the directive lines, before the first QSO.</li>
   <li>When you write a location, your callsign is remembered and becomes the initial value for the next "New log".</li>
 </ul>
@@ -429,7 +441,7 @@ ssb
 </ul>
 
 <h3 id="fle">FLE syntax</h3>
-<p>The log is line-based. Empty lines are ignored. Everything from <code>#</code> to the end of the line is a memo and does not go into the output.</p>
+<p>The log is line-based. Empty lines are ignored. Everything from <code>#</code> to the end of the line is a # remark and does not go into the output.</p>
 
 <h4>Directive lines (valid from that line on)</h4>
 <table>
@@ -457,7 +469,7 @@ ssb
 <tr><th>Report</th><td>Numbers after the callsign. One number is the report you sent; two are the report you sent and the report you received.<br>Omitted digits are filled in according to the mode (□ is the digit you typed).<br>CW etc.: 1 digit = 5□9 (<code>7</code>→579), 2 digits = □□9 (<code>44</code>→449)<br>SSB, FM, AM: 1 digit = 5□ (<code>7</code>→57), 2 digits = as typed<br>3 digits are used as typed in any mode. FT8 and similar use an SNR like <code>-18</code></td></tr>
 <tr><th>Other station's summit / park</th><td><code>ja/st-012</code> or <code>st-012</code> (SOTA; the association can be omitted only when you have your own summit), <code>jp-1234</code> (POTA), <code>jaff-0001</code> (WWFF)</td></tr>
 <tr><th>Other station's grid</th><td><code>pm85rl</code>, written after the callsign. Goes into HAMLOG's GL and ADIF's GRIDSQUARE</td></tr>
-<tr><th>Messages</th><td><code>&lt;…&gt;</code> QSO message, <code>[…]</code> QSL message, <code>{…}</code> remarks</td></tr>
+<tr><th>Messages</th><td><code>&lt;…&gt;</code> QSO message, <code>[…]</code> QSL message, <code>{…}</code> {} remarks</td></tr>
 </table>
 
 <p>The detailed specification of the syntax is in <a href="https://github.com/jl1nie/sotalive-monorepo/blob/main/docs/fle-grammar.md">docs/fle-grammar.md</a>. The ideas behind the original FLE (Fast Log Entry) are described in <a href="https://jl1nie.wordpress.com/2019/08/21/2019-08-21-203013/">this article</a> (in Japanese).</p>

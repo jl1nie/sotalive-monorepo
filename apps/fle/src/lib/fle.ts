@@ -123,7 +123,7 @@ export interface StationPlan {
 
 /** 出力する前に知らせる、ログの不足。文面は画面が作る(コードで区別する) */
 export interface OutputWarning {
-  code: 'missing_date' | 'missing_mycall' | 'missing_place' | 'missing_grid' | 'unsure_call'
+  code: 'missing_date' | 'missing_mycall' | 'missing_place' | 'unplaced_qsos' | 'missing_grid' | 'unsure_call'
   /** 入力する項目(`call` は、ログの中で直してもらう) */
   field: 'date' | 'mycall' | 'place' | 'grid' | 'call'
   /** required: ないと出力が不完全。recommended: あったほうがよい */

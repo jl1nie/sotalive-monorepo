@@ -371,7 +371,7 @@ fn generate_adif(records: &[&FleQsoRecord], sig: &str, sig_info: &str) -> Vec<u8
 /// 出力の前に知らせる、ログの不足(警告)。足りなくても生成はできる。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct OutputWarning {
-    /// `missing_mycall` / `missing_place` / `missing_grid`。文面は、画面が言語設定で作る
+    /// `missing_mycall` / `missing_place` / `unplaced_qsos` / `missing_grid`。文面は、画面が言語設定で作る
     pub code: &'static str,
     /// 入力する項目(`mycall` / `place` / `grid`)
     pub field: &'static str,
@@ -395,7 +395,8 @@ pub enum Severity {
 ///
 /// - 日付(`date`): ないと、QSOの日付が 2000-01-01 になる(必須)。
 /// - 自局のコールサイン(`mycall`): ないと、ADIF の `STATION_CALLSIGN` や SOTA CSV の自局が空になる(必須)。
-/// - 運用場所(`mysota` / `mypota` / `mywwff`): 1つもないと、ADIF(POTA / WWFF)は作られない(必須)。
+/// - 運用場所(`mysota` / `mypota` / `mywwff`): 1つもないと、ADIF(SOTA / POTA / WWFF)は作られない(必須)。
+///   運用場所のないQSOが混ざっているときも、そのQSOは ADIF に入らない(必須)。
 /// - グリッド(`mygrid`): ADIF に入るQSOに、ないと `MY_GRIDSQUARE` が出ない(推奨)。
 ///
 /// 誤りがあるログ(誤りの記録だけを出す)や、QSOがないログは、何も返さない。
@@ -437,6 +438,19 @@ pub fn check_output(result: &FleCompileResult) -> Vec<OutputWarning> {
             field: "place",
             severity: Severity::Required,
             qsos: result.records.len(),
+            items: Vec::new(),
+        });
+    }
+
+    // 運用場所のあるQSOとないQSOが混ざっていると、ないQSOは SOTA の CSV・ADIF、POTA・WWFF の ADIF に入らない
+    // (`mysota` の行を最初のQSOより後ろに書いた、`-` で消したまま書き続けた、など)
+    let unplaced = count(&|r| !has_place(r));
+    if unplaced > 0 && unplaced < result.records.len() {
+        warnings.push(OutputWarning {
+            code: "unplaced_qsos",
+            field: "place",
+            severity: Severity::Required,
+            qsos: unplaced,
             items: Vec::new(),
         });
     }
@@ -1743,5 +1757,121 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             "{:?}",
             files.keys()
         );
+    }
+
+    // ---- SOTA の ADIF が出る/出ないパターン(テスターの「ZIP に .adi がない」への検査) ----
+
+    fn adi_names(fle: &str) -> Vec<String> {
+        output_of(fle)
+            .keys()
+            .filter(|k| k.ends_with(".adi"))
+            .cloned()
+            .collect()
+    }
+
+    const SOTA_HEAD: &str = "mycall JA1ABC\ndate 2026-10-18\n";
+
+    #[test]
+    fn a_sota_log_always_has_its_adi() {
+        // 1つの山・小文字・S2S・日またぎ・ポータブルの自局・`?` のコール、のどれでも山ごとに 1 つ出る
+        let cases: [(&str, String, &str); 7] = [
+            (
+                "one summit",
+                format!("{SOTA_HEAD}mysota JA/ST-012\n40m cw\n0900 ja1aaa"),
+                "JA1ABC@JA-ST-012-20261018.adi",
+            ),
+            (
+                "lowercase",
+                format!("{SOTA_HEAD}mysota ja/st-012\n40m cw\n0900 ja1aaa"),
+                "JA1ABC@JA-ST-012-20261018.adi",
+            ),
+            (
+                "s2s",
+                format!("{SOTA_HEAD}mysota JA/ST-012\n40m cw\n0900 ja1aaa ja/tk-001"),
+                "JA1ABC@JA-ST-012-20261018.adi",
+            ),
+            (
+                "day change",
+                format!("{SOTA_HEAD}mysota JA/ST-012\n40m cw\n2350 ja1aaa\nday +\n0010 ja1bbb"),
+                "JA1ABC@JA-ST-012-20261018.adi",
+            ),
+            (
+                "portable",
+                "mycall JA1ABC/1\ndate 2026-10-18\nmysota JA/ST-012\n40m cw\n0900 ja1aaa"
+                    .to_string(),
+                "JA1ABC-1@JA-ST-012-20261018.adi",
+            ),
+            (
+                "summit before date",
+                "mycall JA1ABC\nmysota JA/ST-012\ndate 2026-10-18\n40m cw\n0900 ja1aaa".to_string(),
+                "JA1ABC@JA-ST-012-20261018.adi",
+            ),
+            (
+                "unsure call",
+                format!("{SOTA_HEAD}mysota JA/ST-012\n40m cw\n0900 ja1aa?"),
+                "JA1ABC@JA-ST-012-20261018.adi",
+            ),
+        ];
+        for (name, fle, expected) in cases {
+            assert_eq!(adi_names(&fle), vec![expected.to_string()], "{name}");
+        }
+    }
+
+    #[test]
+    fn two_summits_make_two_adi_files() {
+        let fle = format!(
+            "{SOTA_HEAD}mysota JA/ST-012\n40m cw\n0900 ja1aaa\nmysota JA/ST-013\n0910 ja1bbb"
+        );
+        let mut names = adi_names(&fle);
+        names.sort();
+        assert_eq!(
+            names,
+            vec![
+                "JA1ABC@JA-ST-012-20261018.adi",
+                "JA1ABC@JA-ST-013-20261018.adi"
+            ]
+        );
+    }
+
+    #[test]
+    fn qsos_before_the_mysota_line_are_left_out_of_the_adi_and_warned() {
+        let fle = format!("{SOTA_HEAD}40m cw\n0900 ja1aaa\nmysota JA/ST-012\n0910 ja1bbb");
+        let files = output_of(&fle);
+        assert_eq!(
+            calls_in(&files["JA1ABC@JA-ST-012-20261018.adi"]),
+            vec!["JA1BBB"]
+        );
+        let w = check_log(&fle);
+        assert_eq!(
+            (w[0].code, w[0].qsos, w[0].severity),
+            ("unplaced_qsos", 1, Severity::Required)
+        );
+    }
+
+    #[test]
+    fn a_log_without_a_place_makes_no_adi_and_warns() {
+        // 山を書かなかった・`mysota -` で消した、のいずれでも ADIF は出ない。生成の前に必須の警告で止まる
+        for fle in [
+            format!("{SOTA_HEAD}40m cw\n0900 ja1aaa ja/tk-001"),
+            format!("{SOTA_HEAD}mysota JA/ST-012\nmysota -\n40m cw\n0900 ja1aaa"),
+        ] {
+            assert!(adi_names(&fle).is_empty());
+            let w = check_log(&fle);
+            assert_eq!(
+                (w[0].code, w[0].severity),
+                ("missing_place", Severity::Required)
+            );
+        }
+    }
+
+    #[test]
+    fn a_log_with_errors_makes_no_adi() {
+        // 誤りのあるログ(バンド・モードの書き忘れなど)は、誤りの記録と元のログだけ。警告ではなく誤りとして出る
+        let r = compile_fle(&format!("{SOTA_HEAD}mysota JA/ST-012\n0900 ja1aaa"));
+        assert!(!r.errors.is_empty());
+        let files = zip_files(generate_fle_output(&r, test_now()).unwrap());
+        assert!(files
+            .keys()
+            .all(|k| !k.ends_with(".adi") && !k.starts_with("sota")));
     }
 }
