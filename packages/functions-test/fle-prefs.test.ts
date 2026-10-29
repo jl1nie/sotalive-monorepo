@@ -87,9 +87,9 @@ describe('FLE の同期(KV)', () => {
     expect(second.body.updatedAt).toBe(2_001)
   })
 
-  it('32KB を超える内容は 413、JSON でなければ 400、形が違えば 400(base がない・予定が配列でない)', async () => {
+  it('64KB を超える内容は 413、JSON でなければ 400、形が違えば 400(base がない・予定が配列でない)', async () => {
     const { kv } = fakeKv()
-    expect((await call('PUT', { kv, body: 'x'.repeat(32 * 1024 + 1) })).status).toBe(413)
+    expect((await call('PUT', { kv, body: 'x'.repeat(64 * 1024 + 1) })).status).toBe(413)
     expect((await call('PUT', { kv, body: '{' })).status).toBe(400)
     expect((await call('PUT', { kv, body: JSON.stringify({ data: DOC }) })).status).toBe(400)
     expect((await call('PUT', { kv, body: JSON.stringify({ base: 0, data: { settings: {}, plans: {} } }) })).status).toBe(400)
@@ -107,6 +107,21 @@ describe('FLE の同期(KV)', () => {
     for (const data of bad) {
       expect((await call('PUT', { kv, body: JSON.stringify({ base: 0, data }) })).status, JSON.stringify(data)).toBe(400)
     }
+  })
+
+  it('件数の上限: 生きている予定 60・消した印 200・POTA の公園 10(超えると 400)', async () => {
+    const id = (i: number) => `plan${String(i).padStart(8, '0')}`
+    const live = (i: number, pota: string[] = []) => ({ id: id(i), updatedAt: 1, title: '', date: '', mycall: '', sota: '', pota, wwff: '', grid: '', rig: '', qslmsg: '' })
+    const dead = (i: number) => ({ id: id(1000 + i), updatedAt: 1, deleted: true })
+    const put = async (plans: unknown[]) => (await call('PUT', { kv: fakeKv().kv, body: JSON.stringify({ base: 0, data: { settings: {}, plans } }) })).status
+    const lives = (n: number) => Array.from({ length: n }, (_, i) => live(i))
+    const deads = (n: number) => Array.from({ length: n }, (_, i) => dead(i))
+    const parks = (n: number) => Array.from({ length: n }, (_, i) => `JP-${String(i + 1).padStart(4, '0')}`)
+    expect(await put([...lives(60), ...deads(200)])).toBe(200)
+    expect(await put(lives(61))).toBe(400)
+    expect(await put([...lives(60), ...deads(201)])).toBe(400)
+    expect(await put([live(0, parks(10))])).toBe(200)
+    expect(await put([live(0, parks(11))])).toBe(400)
   })
 
   it('消した予定の印は、番号と時刻だけを残す', async () => {

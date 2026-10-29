@@ -15,12 +15,14 @@ interface Env {
 }
 
 const CODE = /^[A-Z2-7]{26}$/;
-const MAX_BODY = 32 * 1024;
+const MAX_BODY = 64 * 1024;
 /** 使われなくなったものを消すまで(PUT のたびに延びる。クライアントは、月に1回は PUT する) */
 const TTL_SECONDS = 400 * 24 * 60 * 60;
 const MAX_RIGS = 20;
 const MAX_HAMLOG_COLUMN = 100;
-const MAX_PLANS = 60; // 消した予定(deleted)も数える
+const MAX_PLANS = 60; // 生きている予定
+const MAX_TOMBSTONES = 200; // 消した予定の印(deleted。90 日残る)
+const MAX_PLAN_POTA = 10;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const PLAN_ID = /^[A-Za-z0-9_-]{8,24}$/;
 
@@ -94,7 +96,7 @@ export function sanitizePlan(plan: unknown): Record<string, unknown> | null {
   if (!text(plan.grid, 8) || !text(plan.rig, 60) || !text(plan.qslmsg, 200)) return null;
   if ((plan.rig as string).includes("%")) return null;
   if (typeof plan.date !== "string" || (plan.date !== "" && !DATE.test(plan.date))) return null;
-  if (!textList(plan.pota, 6, 12)) return null;
+  if (!textList(plan.pota, MAX_PLAN_POTA, 12)) return null;
   // メモは、あとから足した項目(前の版の予定にはない)
   if (plan.memo !== undefined && !text(plan.memo, 200)) return null;
   return {
@@ -118,13 +120,16 @@ export function sanitize(data: unknown): Doc | null {
   if (!isObject(data)) return null;
   const settings = sanitizeSettings(data.settings ?? {});
   if (!settings) return null;
-  if (!Array.isArray(data.plans) || data.plans.length > MAX_PLANS) return null;
+  if (!Array.isArray(data.plans) || data.plans.length > MAX_PLANS + MAX_TOMBSTONES) return null;
   const plans: Record<string, unknown>[] = [];
+  let live = 0;
   for (const p of data.plans) {
     const clean = sanitizePlan(p);
     if (!clean) return null;
+    if (!clean.deleted) live++;
     plans.push(clean);
   }
+  if (live > MAX_PLANS || plans.length - live > MAX_TOMBSTONES) return null;
   return { settings, plans };
 }
 

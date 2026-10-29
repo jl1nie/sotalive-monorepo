@@ -4,8 +4,8 @@
 import { describe, expect, it } from 'vitest'
 import { onRequest, sanitize } from '../../pages/fle/functions/api/fle/prefs/[code].ts'
 import { pickSettings, SYNCED_KEYS, type SyncDoc } from '@/lib/sync'
-import { MAX_PLANS, newPlanId, type Plan, type PlanRecord } from '@/lib/plans'
-import { MAX_RIGS } from '@/lib/rig'
+import { MAX_PLANS, MAX_PLAN_POTA, newPlanId, type Plan, type PlanRecord } from '@/lib/plans'
+import { MAX_RIGS, MAX_RIG_LENGTH, parseRigs } from '@/lib/rig'
 import { HAMLOG_COLUMN_MAX, TIMEZONE_MAX, TIMEZONE_MIN, type Settings } from '@/hooks/useSettings'
 import { HAMLOG_PRESETS } from '@/lib/hamlog'
 
@@ -99,31 +99,29 @@ describe('FLE の同期: アプリが送る設定', () => {
     expect(sanitize(doc)).toEqual(doc)
   })
 
-  // 食い違い(アプリとサーバーのどちらに合わせるか、決める前)。直したら it に戻す
-  it.fails('よく使うリグは、長い名前でも受け取る(アプリは 1 件の長さに上限がない)', () => {
-    const doc: SyncDoc = { settings: pickSettings(settings({ rigs: ['IC-705 + 2 段 GP(自作)+ 10m ケーブル + 予備の EFHW 40m 用'.padEnd(80, '.')] })), plans: [] }
+  it('よく使うリグは、長い名前を入れても(アプリが上限で切るので)受け取る', () => {
+    const rigs = parseRigs('IC-705 + 2 段 GP(自作)+ 10m ケーブル + 予備の EFHW 40m 用'.padEnd(200, '.'))
+    expect(rigs[0]).toHaveLength(MAX_RIG_LENGTH)
+    const doc: SyncDoc = { settings: pickSettings(settings({ rigs })), plans: [] }
     expect(sanitize(doc)).toEqual(doc)
   })
 })
 
 describe('FLE の同期: アプリが送る予定', () => {
-  // 食い違い(アプリとサーバーのどちらに合わせるか、決める前)。直したら it に戻す
-  it.fails('予定の画面で作れるいちばん大きい予定を、上限の数(50 件)まで、まるごと受け取る(32KB に収まる)', async () => {
+  it('予定の画面で作れるいちばん大きい予定を、上限の数(50 件)まで、まるごと受け取る(サイズの上限に収まる)', async () => {
     const plans = Array.from({ length: MAX_PLANS }, (_, i) => bigPlan(i))
     const doc: SyncDoc = { settings: pickSettings(settings()), plans }
     expect(sanitize(doc)).toEqual(doc)
     expect((await put(doc)).status).toBe(200)
   })
 
-  // 食い違い(アプリとサーバーのどちらに合わせるか、決める前)。直したら it に戻す
-  it.fails('公園が重なるところでは、POTA の公園をいくつでも並べられる(アプリは数に上限がない)', () => {
-    const plan = { ...bigPlan(0), pota: ['JP-0001', 'JP-0002', 'JP-0003', 'JP-0004', 'JP-0005', 'JP-0006', 'JP-0007'] }
+  it('POTA の公園は、アプリの上限の数まで受け取る', () => {
+    const plan = { ...bigPlan(0), pota: Array.from({ length: MAX_PLAN_POTA }, (_, i) => `JP-${String(i + 1).padStart(4, '0')}`) }
     const doc: SyncDoc = { settings: pickSettings(settings()), plans: [plan] }
     expect(sanitize(doc)).toEqual(doc)
   })
 
-  // 食い違い(アプリとサーバーのどちらに合わせるか、決める前)。直したら it に戻す
-  it.fails('消した予定の印(90 日残る)を含めても、受け取る(生きている予定 50 件 + 消した印)', async () => {
+  it('消した予定の印(90 日残る)を含めても、受け取る(生きている予定 50 件 + 消した印)', async () => {
     const live: PlanRecord[] = Array.from({ length: MAX_PLANS }, (_, i) => ({ ...bigPlan(i), title: `p${i}`, qslmsg: '', memo: '', rig: '' }))
     const deleted: PlanRecord[] = Array.from({ length: 30 }, (_, i) => ({ id: newPlanId(), updatedAt: 1_800_000_000_000 + i, deleted: true }))
     const doc: SyncDoc = { settings: pickSettings(settings()), plans: [...live, ...deleted] }

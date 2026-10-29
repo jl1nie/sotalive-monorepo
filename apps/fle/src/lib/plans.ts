@@ -32,6 +32,8 @@ export interface Tombstone {
 export type PlanRecord = Plan | Tombstone
 
 export const MAX_PLANS = 50
+/** 1 つの予定に並べられる POTA の公園の数(同期するサーバーの上限と同じ) */
+export const MAX_PLAN_POTA = 10
 /** 消した印を残す期間(ms)。ほかの端末が、これより長く同期しないと、消した予定が戻ることがある */
 const TOMBSTONE_TTL = 90 * 24 * 60 * 60 * 1000
 

@@ -4,7 +4,7 @@ import { StationFields } from '@/components/StationFields'
 import { MemoField } from '@/components/MemoField'
 import { useMemoDraft } from '@/hooks/useMemoDraft'
 import { stationPlan, type FieldError } from '@/lib/fle'
-import { MAX_PLANS, emptyPlan, newPlanId, planLabel, sortPlans, type Plan } from '@/lib/plans'
+import { MAX_PLANS, MAX_PLAN_POTA, emptyPlan, newPlanId, planLabel, sortPlans, type Plan } from '@/lib/plans'
 import type { MapStatus } from '@/lib/mapStore'
 import { toStation, toValues, type Values } from '@/lib/stationValues'
 import { useT } from '@/lib/i18n'
@@ -138,16 +138,18 @@ function PlanForm({
   const save = async () => {
     // 自局と場所は、ログに書くときと同じ規則で確かめる(空の項目は、書かないだけ)
     const checked = await stationPlan('', 0, toStation(values))
-    setErrors(checked.errors)
-    if (checked.errors.length > 0) return
     const s = toStation(values)
+    const pota = s.pota.join(' ').split(/[\s,]+/).filter(Boolean).map((x) => x.toUpperCase())
+    const errors = pota.length > MAX_PLAN_POTA ? [...checked.errors, { field: 'pota' as const, message: t('plans.potaMax', { n: MAX_PLAN_POTA }) }] : checked.errors
+    setErrors(errors)
+    if (errors.length > 0) return
     onSave({
       id: plan.id,
       title: title.trim(),
       date,
       mycall: s.mycall.trim().toUpperCase(),
       sota: s.sota.trim().toUpperCase(),
-      pota: s.pota.join(' ').split(/[\s,]+/).filter(Boolean).map((x) => x.toUpperCase()),
+      pota,
       wwff: s.wwff.trim().toUpperCase(),
       grid: s.grid.trim().toUpperCase(),
       rig: rig.trim().replace(/%/g, ''),

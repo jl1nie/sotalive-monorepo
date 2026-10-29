@@ -2,6 +2,8 @@ import type { Completion } from '@/lib/fle'
 
 /** 設定に持つ、よく使う `rig` の値の最大数 */
 export const MAX_RIGS = 20
+/** 1 件の長さの上限(同期するサーバーの上限と同じ。予定の rig の欄も 60 文字) */
+export const MAX_RIG_LENGTH = 60
 
 /**
  * 設定の「よく使うリグ」を整える: 前後の空白を除き、空・重複を除く。
@@ -11,7 +13,7 @@ export function parseRigs(text: string): string[] {
   const seen = new Set<string>()
   const rigs: string[] = []
   for (const raw of text.split('\n')) {
-    const rig = raw.trim().replace(/%/g, '')
+    const rig = raw.trim().replace(/%/g, '').slice(0, MAX_RIG_LENGTH).trim()
     if (rig && !seen.has(rig)) {
       seen.add(rig)
       rigs.push(rig)
