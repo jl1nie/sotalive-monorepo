@@ -43,7 +43,7 @@
   <li><a href="#before">The day before: prepare</a></li>
   <li><a href="#day">On the day: write the log</a></li>
   <li><a href="#after">Afterwards: make the files</a></li>
-  <li><a href="#ref">Reference</a>
+  <li><a href="#ref">Screens, settings and syntax</a>
     <ol>
       <li><a href="#screen">Reading the screen</a></li>
       <li><a href="#fullkey">The phone keyboard (full keys)</a></li>
@@ -84,8 +84,8 @@
 
 <h2 id="setup">2. First-time setup</h2>
 
-<h3>Add the app to the home screen</h3>
-<p>So that you can use it on a summit without a signal, <b>open it once where you have a signal</b> and add it to the home screen.</p>
+<h3>Add the app to the home screen (optional)</h3>
+<p>Adding it to the home screen is <b>not required</b>. You can keep using it in a browser tab (if you close the tab, reopen it from the history and the log is still there). Adding it lets you open it from an icon and gives you more screen space. Either way, if you will use it on a summit without a signal, <b>open it once where you have a signal</b>. To add it:</p>
 <ul>
   <li><b>iPhone</b>: open <code>https://fleonline.sotalive.net/</code> in Safari, then the share button → "Add to Home Screen".</li>
   <li><b>Android</b>: the Chrome menu → "Add to Home screen" (or "Add to home screen" in this app's menu).</li>
@@ -203,11 +203,21 @@ ssb
 <p>Upload the files in the zip to each site or program.</p>
 <table>
 <tr><th>sotaYYYYMMDD.csv</th><td>Upload to the SOTA database</td></tr>
-<tr><th>callsign@park-date.adi</th><td>Upload to the POTA site (one per park). WWFF and SOTA ADIF files have the same form</td></tr>
+<tr><th>callsign@park-date.adi</th><td>Upload to the POTA site (one per park)</td></tr>
+<tr><th>callsign@summit-date.adi</th><td>The SOTA ADIF (one per summit; <code>/</code> in the name becomes <code>-</code>). Use it when you upload to SOTA as ADIF (the CSV also works). The WWFF ADIF has the same form</td></tr>
 <tr><th>hamlog-….csv</th><td>Import into HAMLOG</td></tr>
 <tr><th>fle-….txt</th><td>The original FLE log, the same as "Save FLE log". Keep it</td></tr>
 </table>
 <p>For what the files contain, see "<a href="#files">Exported files</a>". If some lines have errors, the files are not made; the zip holds only a text describing the errors and the original FLE log. Fix them and export again.</p>
+
+<h3 id="backup">If the device freezes while you are logging</h3>
+<p>The log is <b>saved automatically inside the device (the browser's storage) as you type</b>: about 0.4 s after your last keystroke, and when you close the app or switch to another app. You do not need to do anything.</p>
+<ul>
+  <li>If the phone or PC freezes or the battery dies, <b>everything up to the last save</b> remains. Characters typed in the last 0.4 s or so may be lost. If the device stops suddenly before the browser has finished writing, a few earlier lines may be lost too.</li>
+  <li>When you reopen the browser, the previous log is there. <b>It remains when you reopen from the history, too</b>, in the same browser, and a closed tab is the same.</li>
+  <li>If you clear the browser's browsing data or site data, the log is deleted too. On an iPhone, Safari and the home-screen app keep separate storage (see "<a href="#setup">Initial setup</a>").</li>
+  <li>To be safe, save the log to a file with Menu → "Save FLE log" at a good stopping point, even on the summit.</li>
+</ul>
 
 <h3>Save the FLE log</h3>
 <p>The FLE log itself can be saved as a text file with Menu → "Save FLE log". You can read it back later with "Open FLE log". The exported zip also holds the same file.</p>
@@ -218,7 +228,7 @@ ssb
 <h3>If you used the wrong time zone</h3>
 <p>If, for example, you wrote in JST but the setting was UTC, change the time zone in the settings. For a log with QSOs, the app asks whether to <b>Convert</b> (rewrite the times to the same moments in the new time zone) or <b>Keep the times</b> (rewrite only the <code>timezone</code> line). If you wrote in JST but forgot the <code>timezone</code> line, choose "Keep the times".</p>
 
-<h2 id="ref">6. Reference</h2>
+<h2 id="ref">6. Screens, settings and syntax</h2>
 
 <h3 id="screen">Reading the screen</h3>
 <p>The candidate bar below the log area shows how the line at the cursor is read. Its colour shows the state.</p>
@@ -349,7 +359,7 @@ ssb
 <tr><td>QSO count</td><td>"Day / total" or "Total" only</td><td>no</td></tr>
 <tr><td>Log text size</td><td>Small, medium or large (0.85, 1 and 1.2 times). Changes the size of the log area and of the time and location above it</td><td>no</td></tr>
 <tr><td>HAMLOG time</td><td>Writes the HAMLOG CSV's dates and times in JST (<code>J</code>, the default) or UTC (<code>U</code>), regardless of the time zone the log is written in</td><td>yes</td></tr>
-<tr><td>HAMLOG output (QTH / Rmks1 / Rmks2)</td><td>What goes into HAMLOG's QTH, Rmks1 and Rmks2. Choose a preset ("Classic (default)", "Memo in Rmks1, your place in Rmks2"), or choose items per column (your references, the other station's references, memo, remarks, QSL message, Rig). "Classic" is the same as the earlier conversion tool (HamLogConv)</td><td>yes</td></tr>
+<tr><td>HAMLOG output (QTH / Rmks1 / Rmks2)</td><td>What goes into HAMLOG's QTH, Rmks1 and Rmks2. Choose a preset ("Classic (default)", "Memo in Rmks1, your place in Rmks2"), or choose items per column (your summit/park, the other station's summit/park, memo, remarks, QSL message, Rig). A <b>memo</b> is a <code>#</code> line (a note for the whole operation, such as JCC/JCG); <b>remarks</b> are the <code>{…}</code> in a QSO line (a note on that one QSO). See "<a href="#place">The location screen and memos</a>". "Classic" is the same as the earlier conversion tool (HamLogConv)</td><td>yes</td></tr>
 <tr><td>Sync settings and plans</td><td>Start syncing, join or stop ("<a href="#sync">Syncing a PC and a phone</a>")</td><td>—</td></tr>
 </table>
 <p>The key height and Caps are changed on the keyboard and remembered on each device.</p>
@@ -363,6 +373,7 @@ ssb
 </ul>
 
 <h3 id="place">The location screen and memos</h3>
+<p><b>A memo and remarks are different things.</b> A <b>memo</b> is a <b>line</b> starting with <code>#</code>; it is a note that applies to the rest of the operation after that line (JCC/JCG and the like; it does not go into the exported files). <b>Remarks</b> are written as <code>{…}</code> inside a QSO line and apply to <b>that one QSO only</b> (the other station's name, "a neighbour" and so on; they go into the remarks of the ADIF and HAMLOG).</p>
 <p>This screen opens from "New log" and "Change location". Enter your callsign, SOTA, POTA, WWFF, grid and memo, and "Write to log" writes the directive lines (<code>mycall</code>, <code>mysota</code> and so on).</p>
 <ul>
   <li>SOTA, POTA and WWFF offer candidates when you type a name or number (a signal is needed). "Map" opens the summit map. The grid can also be filled in with "Here".</li>
@@ -396,7 +407,7 @@ ssb
 <p>Open it with Menu → "Summit map" (for the summit valid at the cursor), or with "Map" on the plan and location screens.</p>
 <ul>
   <li>Shows the summit's activation zone, municipal borders and the POTA parks in each municipality.</li>
-  <li>Overlays your position (GPS) on the map. Below the map, <b>the references that apply where you are</b> (the summit's code if you are in the activation zone, a park's code if you are in the park) are shown in green. Near a border (within the GPS error and the error of the area data), it does not commit and shows them in orange. Outside the zone, it shows the distance to the summit. The GPS accuracy is shown too.</li>
+  <li>Overlays your position (GPS) on the map. Below the map, <b>the summit or park codes that apply where you are</b> (the summit's code if you are in the activation zone, a park's code if you are in the park) are shown in green. Near a border (within the GPS error and the error of the area data), it does not commit and shows them in orange. Outside the zone, it shows the distance to the summit. The GPS accuracy is shown too.</li>
   <li>Below that, so you can read them out when asked during a QSO, it lists the summit's code, name and height, and for each municipality the zone touches, its JCC/JCG and the POTA parks there. The municipality you are in is marked with ▶ and listed first.</li>
   <li>A park marked "(partly)" covers only part of the zone within that municipality (the hatched area on the map; the list shows a mark in the same colour).</li>
   <li>Maps of summits in plans and of summits you wrote as your location are saved on the device while you have a signal, and can be seen without a signal.</li>

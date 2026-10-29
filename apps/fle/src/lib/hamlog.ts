@@ -1,8 +1,8 @@
 /**
  * HAMLOG の QTH・Rmks1・Rmks2 の欄に書く内容。書式の中の値はコア(出力)が差し込む。
  *
- * - `{myref}`: 自局のリファレンス(SOTA・WWFF・POTA)
- * - `{hisref}`: 相手局のリファレンス
+ * - `{myref}`: 自局の山・公園(SOTA・WWFF・POTA)
+ * - `{hisref}`: 相手局の山・公園
  * - `{memo}`: そのQSOの時点で有効なメモ(最後の `#` の行)
  * - `{rmks}`: QSO の行の備考(`{…}`)
  * - `{qslmsg}`: QSL メッセージ
