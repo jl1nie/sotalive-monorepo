@@ -83,6 +83,9 @@ jobs:
             functions:
               - 'functions/**'
               - 'packages/functions-test/**'
+              # FLE の同期(KV)と中継。同期の約束のテストは、アプリの設定・予定のコードも読む
+              - 'pages/fle/functions/**'
+              - 'apps/fle/src/**'
             golden:
               - 'packages/myact-golden/**'
               - 'apps/myact-org/**'
@@ -218,7 +221,8 @@ jobs:
       - name: Verify the golden master
         run: pnpm --filter @sotalive/myact-golden verify
 
-  # functions/_middleware.ts の、ホスト名による振り分け(ASSETS を差し替えて確かめる)
+  # functions/_middleware.ts の、ホスト名による振り分け(ASSETS を差し替えて確かめる)と、
+  # FLE の Pages Functions(pages/fle/functions: 同期の KV・バックエンドへの中継・アプリとの約束)
   functions:
     needs: changes
     if: needs.changes.outputs.all == 'true' || needs.changes.outputs.functions == 'true'
@@ -434,7 +438,7 @@ jobs:
 
   # FLEonline: Functions は /api の下だけ(pages/fle の wrangler.toml と functions/。KV の束縛もそこ)
   deploy-fle:
-    needs: [changes, build, rust, fle]
+    needs: [changes, build, rust, fle, functions]
     if: >-
       always() && github.event_name == 'push'
       && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
