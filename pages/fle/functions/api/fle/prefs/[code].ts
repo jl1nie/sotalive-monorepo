@@ -15,7 +15,8 @@ interface Env {
 }
 
 const CODE = /^[A-Z2-7]{26}$/;
-const MAX_BODY = 64 * 1024;
+/** 文字数(UTF-16)。件数の上限(予定 60 + 印 200)を各項目の上限いっぱいで並べても、約 68K 文字で収まる */
+const MAX_BODY = 80 * 1024;
 /** 使われなくなったものを消すまで(PUT のたびに延びる。クライアントは、月に1回は PUT する) */
 const TTL_SECONDS = 400 * 24 * 60 * 60;
 const MAX_RIGS = 20;

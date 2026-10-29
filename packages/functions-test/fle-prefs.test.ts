@@ -87,9 +87,9 @@ describe('FLE の同期(KV)', () => {
     expect(second.body.updatedAt).toBe(2_001)
   })
 
-  it('64KB を超える内容は 413、JSON でなければ 400、形が違えば 400(base がない・予定が配列でない)', async () => {
+  it('80K 文字を超える内容は 413、JSON でなければ 400、形が違えば 400(base がない・予定が配列でない)', async () => {
     const { kv } = fakeKv()
-    expect((await call('PUT', { kv, body: 'x'.repeat(64 * 1024 + 1) })).status).toBe(413)
+    expect((await call('PUT', { kv, body: 'x'.repeat(80 * 1024 + 1) })).status).toBe(413)
     expect((await call('PUT', { kv, body: '{' })).status).toBe(400)
     expect((await call('PUT', { kv, body: JSON.stringify({ data: DOC }) })).status).toBe(400)
     expect((await call('PUT', { kv, body: JSON.stringify({ base: 0, data: { settings: {}, plans: {} } }) })).status).toBe(400)
