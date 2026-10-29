@@ -21,22 +21,55 @@ function isStandalone() {
   )
 }
 
+/** 開いたままのタブが、新しい版を取りに行く間隔 */
+const UPDATE_CHECK_MS = 60 * 60 * 1000
+
 /**
  * Service Worker(オフライン)とインストールの状態。
- * 画面はネットワーク優先で取るので、更新の適用を利用者に尋ねる必要はない(開き直せば最新)。
+ * 画面はネットワーク優先で取るので、開き直せば最新になる。タブを開いたままの人のために、
+ * 新しい版を定期的に調べ、見つけたら知らせて、タブに戻ってきたときに再読み込みする(ログは自動保存されている)。
  */
-export function usePwa(onOfflineReady: () => void) {
+export function usePwa(onOfflineReady: () => void, onUpdated: () => void = () => {}) {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null)
 
   // 登録は1回だけ。通知は、そのときの言語で出す(最新の関数を参照する)
   const latest = useRef(onOfflineReady)
+  const latestUpdated = useRef(onUpdated)
   useEffect(() => {
     latest.current = onOfflineReady
+    latestUpdated.current = onUpdated
   })
   useEffect(() => {
     // 開発サーバーでは Service Worker を使わない
     if (!import.meta.env.PROD) return
+    // 新しい Service Worker が引き継いだら(最初の1回の登録は除く)、古い画面は作り直す必要がある
+    const sw = navigator.serviceWorker
+    const hadController = sw?.controller != null
+    let updated = false
+    const onControllerChange = () => {
+      if (!hadController || updated) return
+      updated = true
+      latestUpdated.current()
+    }
+    const onVisible = () => {
+      // 画面を離れるときにログは保存済み。戻ってきたところで、新しい版にする
+      if (document.visibilityState === 'visible' && updated) window.location.reload()
+    }
+    sw?.addEventListener('controllerchange', onControllerChange)
+    document.addEventListener('visibilitychange', onVisible)
+    let stopChecking = () => {}
     registerSW({
+      onRegisteredSW(_url, registration) {
+        if (!registration) return
+        const check = () => void registration.update().catch(() => {})
+        const onShown = () => document.visibilityState === 'visible' && check()
+        const timer = window.setInterval(check, UPDATE_CHECK_MS)
+        document.addEventListener('visibilitychange', onShown)
+        stopChecking = () => {
+          window.clearInterval(timer)
+          document.removeEventListener('visibilitychange', onShown)
+        }
+      },
       onOfflineReady() {
         // 「使えます」は、この端末で最初の1回だけ知らせる(毎回出ると、画面の下の候補を隠す)
         try {
@@ -49,6 +82,11 @@ export function usePwa(onOfflineReady: () => void) {
         latest.current()
       },
     })
+    return () => {
+      sw?.removeEventListener('controllerchange', onControllerChange)
+      document.removeEventListener('visibilitychange', onVisible)
+      stopChecking()
+    }
   }, [])
 
   useEffect(() => {

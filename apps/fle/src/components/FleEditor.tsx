@@ -259,7 +259,10 @@ function Editor({
     text,
     useCallback(() => notify(t('notice.autosaveFailed')), [notify, t])
   )
-  const pwa = usePwa(useCallback(() => notify(t('notice.offlineReady')), [notify, t]))
+  const pwa = usePwa(
+    useCallback(() => notify(t('notice.offlineReady')), [notify, t]),
+    useCallback(() => notify(t('notice.updated')), [notify, t])
+  )
 
   // 内容を置き換える前に、今の内容を取っておく(メニューから戻せる)。
   // カーソルは末尾に置く(前の内容での位置のままだと、場所のシートなどが別の行を基準にしてしまう)。
