@@ -32,8 +32,12 @@ export interface Tombstone {
 export type PlanRecord = Plan | Tombstone
 
 export const MAX_PLANS = 50
+/** 1 つの予定に並べられる POTA の公園の数(同期するサーバーの上限と同じ) */
+export const MAX_PLAN_POTA = 10
 /** 消した印を残す期間(ms)。ほかの端末が、これより長く同期しないと、消した予定が戻ることがある */
 const TOMBSTONE_TTL = 90 * 24 * 60 * 60 * 1000
+/** 残す消した印の数(新しい順。同期するサーバーの上限と同じ) */
+export const MAX_TOMBSTONES = 200
 
 export const isDeleted = (r: PlanRecord): r is Tombstone => 'deleted' in r && r.deleted === true
 
@@ -56,9 +60,15 @@ export function mergePlans(local: PlanRecord[], remote: PlanRecord[], now = Date
     const r = byId.get(l.id)
     if (!r || l.updatedAt > r.updatedAt) byId.set(l.id, l)
   }
-  return [...byId.values()]
-    .filter((r) => !isDeleted(r) || now - r.updatedAt < TOMBSTONE_TTL)
-    .sort((a, b) => a.id.localeCompare(b.id))
+  const kept = [...byId.values()].filter((r) => !isDeleted(r) || now - r.updatedAt < TOMBSTONE_TTL)
+  const newest = new Set(
+    kept
+      .filter(isDeleted)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, MAX_TOMBSTONES)
+      .map((r) => r.id),
+  )
+  return kept.filter((r) => !isDeleted(r) || newest.has(r.id)).sort((a, b) => a.id.localeCompare(b.id))
 }
 
 /** 消していない予定 */

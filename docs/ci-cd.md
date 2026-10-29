@@ -40,10 +40,11 @@ push は止めません。続けてマージしたとき、古い内容が後か
 | `logconv` | `tsc -b`、`vitest run`、`eslint` |
 | `myact` | `tsc -b`、`vitest run --passWithNoTests`、`eslint` |
 | `parks` | 公園区域 TopoJSON の検証と生成ツールのテスト(`tools/jaffpota`。[park-areas.md](park-areas.md)) |
+| `functions` | Pages Functions のテスト(`packages/functions-test`): `functions/_middleware.ts` の振り分けと、FLE の同期(KV)・中継・アプリとの約束(アプリが送る設定・予定を、サーバーが受け取れるか) |
 | `build` | アプリをビルドし、`scripts/assemble.sh` で出力を作り、artifact に上げる |
 | `deploy-sotalive` | プロジェクト `sotalive` へ(`dist`) |
 | `deploy-legacy` | `sotalive-myact`、`sotalive-myqth` へ(matrix)。`parks`・`myqth` を待つ |
-| `deploy-fle` | `sotalive-fle` へ(`pages/fle` で実行) |
+| `deploy-fle` | `sotalive-fle` へ(`pages/fle` で実行)。`fle`・`functions` を待つ |
 
 ## パスの判定
 
@@ -56,6 +57,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
 | `fle` | `apps/fle/**`、`crates/**`、`pages/fle/**` | fle、deploy-fle |
 | `logconv` | `apps/logconv/**` | logconv |
 | `myact` | `apps/myact/**` | myact |
+| `functions` | `functions/**`、`packages/functions-test/**`、`pages/fle/functions/**`、`apps/fle/src/**` | functions(deploy-sotalive・deploy-fle が待つ) |
 | `myqth` | `apps/myqth/**`、`packages/geo/**` | myqth、deploy-legacy |
 | `legacy` | `apps/myact-org/**`、`apps/myqth-org/**` | deploy-legacy |
 | `parks` | `tools/jaffpota/**`、`packages/shared/common/js/myact.js` | parks |

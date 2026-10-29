@@ -80,3 +80,14 @@ describe('planLabel', () => {
     expect(planLabel(plan('a'))).toBe('JA1ABC')
   })
 })
+
+describe('mergePlans: 消した印の数', () => {
+  it('新しい順に 200 件だけ残す', () => {
+    const now = 1_800_000_000_000
+    const dead = Array.from({ length: 205 }, (_, i) => ({ id: `dead${String(i).padStart(8, '0')}`, updatedAt: now - i, deleted: true as const }))
+    const merged = mergePlans(dead, [], now)
+    expect(merged).toHaveLength(200)
+    expect(merged.some((r) => r.id === 'dead00000204')).toBe(false)
+    expect(merged.some((r) => r.id === 'dead00000000')).toBe(true)
+  })
+})
