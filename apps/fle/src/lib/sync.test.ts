@@ -215,7 +215,7 @@ describe('サーバーの検査', () => {
     expect((await put(fetchImpl, { base: 0, data: { settings: { hamlogZone: 'pst' }, plans: [] } })).status).toBe(400)
     expect((await put(fetchImpl, { base: 0, data: { settings: {}, plans: [{ id: 'x' }] } })).status).toBe(400)
     expect((await put(fetchImpl, { base: 'x', data: { settings: {}, plans: [] } })).status).toBe(400)
-    const big = { base: 0, data: { settings: {}, plans: [], pad: 'x'.repeat(40_000) } }
+    const big = { base: 0, data: { settings: {}, plans: [], pad: 'x'.repeat(90_000) } }
     expect((await put(fetchImpl, big)).status).toBe(413)
     expect((await fetchImpl('/api/fle/prefs/short')).status).toBe(400)
   })
