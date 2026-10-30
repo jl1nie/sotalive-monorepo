@@ -53,7 +53,7 @@ pnpm run pages:dev     # build してから wrangler pages dev dist --port 8788
 ```
 
 ホスト名での振り分けは、ブラウザで `localhost:8788` を開いても効きません(ホスト名が `localhost` のため)。
-`curl -H "Host: myact2.sotalive.net" http://localhost:8788/` のようにホストを指定して確かめます(この手順は、ここでは動作確認していません)。
+`curl -H "Host: myqth2.sotalive.net" http://localhost:8788/` のようにホストを指定して確かめます(この手順は、ここでは動作確認していません)。
 
 FLE の Functions(`pages/fle`)は、`pages/fle/wrangler.toml` を使って、そのディレクトリで `wrangler pages dev` を実行します。KV の束縛が必要です。
 

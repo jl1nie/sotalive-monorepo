@@ -25,7 +25,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
      |         |           |
      +----+----+-----------+--------------> deploy-fle   (rust, fle, build)
           |
-          +------------------------------> deploy-legacy (build, parks。myact・myqth を matrix で)
+          +------------------------------> deploy-legacy (build, parks。myact・myact2・myqth を matrix で)
 ```
 
 - テストの5つ(`rust`、`fle`、`logconv`、`myact`、`parks`)と `build` は並列です。
@@ -43,7 +43,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
 | `functions` | Pages Functions のテスト(`packages/functions-test`): `functions/_middleware.ts` の振り分けと、FLE の同期(KV)・中継・アプリとの約束(アプリが送る設定・予定を、サーバーが受け取れるか) |
 | `build` | アプリをビルドし、`scripts/assemble.sh` で出力を作り、artifact に上げる |
 | `deploy-sotalive` | プロジェクト `sotalive` へ(`dist`) |
-| `deploy-legacy` | `sotalive-myact`、`sotalive-myqth` へ(matrix)。`parks`・`myqth` を待つ |
+| `deploy-legacy` | `sotalive-myact`、`sotalive-myact2`、`sotalive-myqth` へ(matrix)。`parks`・`myqth`・`myact-next` を待つ |
 | `deploy-fle` | `sotalive-fle` へ(`pages/fle` で実行)。`fle`・`functions` を待つ |
 
 ## パスの判定
@@ -73,6 +73,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
 |---|---|---|
 | `dist` | プロジェクト `sotalive` の出力 | deploy-sotalive |
 | `dist-myact` | 旧版 MyActivation | deploy-legacy |
+| `dist-myact2` | 次期 MyACT(試験中) | deploy-legacy |
 | `dist-myqth` | MyQTH(新版) | deploy-legacy |
 | `dist-fle` | FLE Online | deploy-fle |
 

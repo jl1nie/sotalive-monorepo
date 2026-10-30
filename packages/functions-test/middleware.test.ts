@@ -1,4 +1,4 @@
-// functions/_middleware.ts の、ホスト名による振り分け(プロジェクト sotalive: まだ公開していない myact2・myqth2)。
+// functions/_middleware.ts の、ホスト名による振り分け(プロジェクト sotalive: まだ公開していない myqth2)。
 // ASSETS(Pages の静的ファイル)を差し替えて、どのパスを取りに行くかを確かめる。
 import { describe, expect, it } from 'vitest'
 import { onRequest } from '../../functions/_middleware.ts'
@@ -50,20 +50,19 @@ describe('myqth2(新しい MyQTH。試験中)', () => {
 })
 
 describe('これまでの振り分けは変わらない', () => {
-  it('myact2 は /myact2。noindex', async () => {
-    const { response, fetched } = await call('https://myact2.sotalive.net/', ['/myact2/'])
-    expect(fetched).toEqual(['/myact2/'])
-    expect(response.headers.get('x-robots-tag')).toBe('noindex')
+  it('myact2 は、専用のプロジェクトへ移した。ここでは振り分けない', async () => {
+    const { fetched } = await call('https://myact2.sotalive.net/', ['/'])
+    expect(fetched).toEqual(['/'])
   })
 
-  it('myact2 のアプリにないファイルは、共通アセットから(404 のフォールバック)', async () => {
-    const { fetched } = await call('https://myact2.sotalive.net/json/x.json', ['/shared/common/json/x.json'])
-    expect(fetched).toEqual(['/myact2/json/x.json', '/shared/common/json/x.json'])
+  it('myqth2 のアプリにないファイルは、共通アセットから(404 のフォールバック)', async () => {
+    const { fetched } = await call('https://myqth2.sotalive.net/json/x.json', ['/shared/common/json/x.json'])
+    expect(fetched).toEqual(['/myqth2/json/x.json', '/shared/common/json/x.json'])
   })
 
   it('サブドメインなし(sotalive.pages.dev)は、そのまま配信する', async () => {
-    const { fetched } = await call('https://sotalive.pages.dev/myact2/', ['/myact2/'])
-    expect(fetched).toEqual(['/myact2/'])
+    const { fetched } = await call('https://sotalive.pages.dev/myqth2/', ['/myqth2/'])
+    expect(fetched).toEqual(['/myqth2/'])
   })
 
   it('/api/ はバックエンドへ中継する(X-Forwarded-Host に元のホスト名)', async () => {

@@ -73,8 +73,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (response.status === 404 && shared) {
       response = await fetchAsset(context.env.ASSETS, shared, context.request);
     }
-    // React 版の myact・新しい myqth は試験中。検索エンジンに載せない
-    if (appPath === "/myact2" || appPath === "/myqth2") {
+    // 新しい myqth は試験中。検索エンジンに載せない
+    if (appPath === "/myqth2") {
       response = new Response(response.body, response);
       response.headers.set("x-robots-tag", "noindex");
     }
@@ -93,7 +93,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
  * - myqth2 は myqth の新版を、本番より先に試す場所(Vite + 素の TS。base が `/`)。`myqth`(本番。別のプロジェクト)とは別
  */
 function appPathFor(hostname: string): string {
-  if (hostname.startsWith("myact2")) return "/myact2";
   if (hostname.startsWith("myqth2")) return "/myqth2";
   return "";
 }

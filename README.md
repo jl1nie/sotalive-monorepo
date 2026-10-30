@@ -14,7 +14,7 @@ SOTA/POTA アマチュア無線アワード支援サービス「sotalive」の�
 | myqth.sotalive.net | MyQTH(新版。Vite + 素の TS。`apps/myqth`。旧版 `apps/myqth-org` は戻せるように残す) | sotalive-myqth | 本番 |
 | fleonline.sotalive.net | FLE Online(React。`apps/fle`) | sotalive-fle | 本番 |
 | logconv.sotalive.net | LogConverter 新版(React。`apps/logconv`) | sotalive-logconv | 切り替え待ち([手順](docs/deploy-guide.md)) |
-| myact2.sotalive.net | MyActivation 次期版(Vite + 素の TS。`apps/myact-next`) | sotalive | **試験中**(本番は旧版。POTA ログ・山と公園のマーカー・ポップアップまで) |
+| myact2.sotalive.net | MyActivation 次期版(Vite + 素の TS。`apps/myact-next`) | sotalive-myact2 | **試験中**(本番は旧版。POTA ログ・山と公園のマーカー・ポップアップまで) |
 | myqth2.sotalive.net | MyQTH 新版を、本番より先に試す場所(`apps/myqth`) | sotalive | 試験用(`noindex`) |
 
 MyActivation の React 版は開発中です。本番で使われているのは旧版(`apps/myact-org`)です。
@@ -52,7 +52,7 @@ flowchart LR
 
 ```
 apps/
-  myact-next/   MyActivation の次期版(Vite + 素の TS)    -> dist/myact2
+  myact-next/   MyActivation の次期版(Vite + 素の TS)    -> dist-myact2
   myact/        MyActivation の React 版(凍結)           -> 出さない
   myqth/        MyQTH(Vite + 素の TS)                    -> dist-myqth・dist/myqth2
   myact-org/    MyActivation の旧版(jQuery)             -> dist-myact
