@@ -256,6 +256,17 @@ git push origin main
 
 `sotalive` の `functions/_middleware.ts` は、ホスト名で振り分けます。ホスト名(`myact2`、`myqth2`、`logconv2`)を変えるなら、そのファイルも直します。
 
+### logconv.sotalive.net を Vercel から切り替える
+
+旧版の logconv(Vercel)から、新しい logconv(プロジェクト `sotalive`)へ移すときの手順です。`functions/_middleware.ts` は、`logconv` で始まるホスト名なら新しい logconv を返すので、コードの変更は要りません。
+
+1. `logconv2.sotalive.net` で、変換(ADIF・Activator・Chaser・WSPR)と、FLE Online のタブ(案内)を確かめる。
+2. Pages の `sotalive` に、カスタムドメイン `logconv.sotalive.net` を追加する(この時点では DNS はまだ Vercel を向いたままなので、pending のまま)。
+3. DNS の CNAME `logconv` を、Vercel から `sotalive.pages.dev` に変える。
+4. `https://logconv.sotalive.net/` と `https://logconv.sotalive.net/#FLEOnline` が開くこと、`www.sotalive.net/logconv` の転送が先で開くことを確かめる。
+5. 問題があれば、CNAME を Vercel に戻す(戻せば、すぐ元の画面)。
+6. 安定したら、Vercel 側の logconv のドメインを外す。docs の「Vercel の旧画面のまま」の記述を直す。
+
 登録の直後は、数分間、522 エラーやドメインの「pending」(確認待ち)になります。しばらく待ちます。
 
 ## 10. 確かめ方

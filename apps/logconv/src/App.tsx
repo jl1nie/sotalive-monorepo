@@ -5,6 +5,7 @@ import {
   SOTAActivatorTab,
   SOTAChaserTab,
   WSPRTab,
+  FLETab,
 } from '@/components/Tabs'
 import type { TabId } from '@/types/form'
 
@@ -19,6 +20,8 @@ function App() {
         return <SOTAChaserTab />
       case 'wspr':
         return <WSPRTab />
+      case 'fle':
+        return <FLETab />
       default:
         return <POTAActivatorTab />
     }
