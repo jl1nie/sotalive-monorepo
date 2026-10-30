@@ -13,7 +13,7 @@ SOTA/POTA アマチュア無線アワード支援サービス「sotalive」の�
 | myact.sotalive.net / www.sotalive.net | MyActivation 旧版(jQuery。`apps/myact-org`) | sotalive-myact | 本番 |
 | myqth.sotalive.net | MyQTH(新版。Vite + 素の TS。`apps/myqth`。旧版 `apps/myqth-org` は戻せるように残す) | sotalive-myqth | 本番 |
 | fleonline.sotalive.net | FLE Online(React。`apps/fle`) | sotalive-fle | 本番 |
-| logconv.sotalive.net | LogConverter 新版(React。`apps/logconv`) | sotalive-logconv | 切り替え待ち([手順](docs/deploy-guide.md)) |
+| logconv.sotalive.net | LogConverter 新版(React。`apps/logconv`) | sotalive-logconv | 本番(Vercel から切り替え済み。[手順](docs/deploy-guide.md)) |
 | myact2.sotalive.net | MyActivation 次期版(Vite + 素の TS。`apps/myact-next`) | sotalive-myact2 | **試験中**(本番は旧版。POTA ログ・山と公園のマーカー・ポップアップまで) |
 | myqth2.sotalive.net | MyQTH 新版を、本番より先に試す場所(`apps/myqth`) | sotalive | 試験用(`noindex`) |
 
@@ -107,7 +107,7 @@ pnpm --filter @sotalive/myact dev     # Vite の既定のポート
 ## 関連リポジトリ
 
 - [sotaapp2](https://github.com/jl1nie/sotaapp2): バックエンド API(Rust / Axum)
-- sotalive-vercel: 旧フロントエンド(Vercel)。移行が終わったら停止する予定です。
+- sotalive-vercel: 旧フロントエンド(Vercel)。ドメインはすべて外し済みで、プロジェクトだけ残してあります(しばらく様子を見てから削除する予定です)。
 
 ## ライセンス
 
