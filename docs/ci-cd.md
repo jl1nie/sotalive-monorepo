@@ -21,7 +21,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
      |         |       |        |         |         |
    rust       fle   logconv   myact     build     parks  (build は1回だけ。artifact を作る)
      |         |       |        |         |
-     |         |       +---+----+---------+--> deploy-sotalive  (logconv, myact, build)
+     |         |       +---+----+---------+--> deploy-sotalive  (myact, build)
      |         |           |
      +----+----+-----------+--------------> deploy-fle   (rust, fle, build)
           |
@@ -55,13 +55,13 @@ push は止めません。続けてマージしたとき、古い内容が後か
 | `all` | `.github/workflows/**`、`package.json`、`pnpm-lock.yaml`、`pnpm-workspace.yaml`、`turbo.json`、`Cargo.toml`、`Cargo.lock`、`packages/shared/**`、`scripts/**` | すべて |
 | `rust` | `crates/**` | rust |
 | `fle` | `apps/fle/**`、`crates/**`、`pages/fle/**` | fle、deploy-fle |
-| `logconv` | `apps/logconv/**` | logconv |
+| `logconv` | `apps/logconv/**`、`pages/logconv/**` | logconv、deploy-logconv |
 | `myact` | `apps/myact/**` | myact |
-| `functions` | `functions/**`、`packages/functions-test/**`、`pages/fle/functions/**`、`apps/fle/src/**` | functions(deploy-sotalive・deploy-fle が待つ) |
+| `functions` | `functions/**`、`packages/functions-test/**`、`pages/fle/functions/**`、`apps/fle/src/**`、`pages/logconv/functions/**` | functions(deploy-sotalive・deploy-fle・deploy-logconv が待つ) |
 | `myqth` | `apps/myqth/**`、`packages/geo/**` | myqth、deploy-legacy |
 | `legacy` | `apps/myact-org/**`、`apps/myqth-org/**` | deploy-legacy |
 | `parks` | `tools/jaffpota/**`、`packages/shared/common/js/myact.js` | parks |
-| `sotalive` | `functions/**`、`wrangler.toml`、`apps/logconv/**`、`apps/myact/**`、`apps/myqth/**`、`packages/geo/**` | deploy-sotalive |
+| `sotalive` | `functions/**`、`wrangler.toml`、`apps/myact/**`、`apps/myqth/**`、`packages/geo/**` | deploy-sotalive |
 
 `build` は、`all` か、`rust` 以外のどれかが真のときに走ります。ドキュメントだけの変更では、ビルドもデプロイも走りません。
 

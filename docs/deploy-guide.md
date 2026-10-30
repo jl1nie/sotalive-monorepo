@@ -38,7 +38,8 @@ sotaapp2 の GitHub --(push)--> Actions --> Docker Hub(イメージ) --(手動�
 | myact・www | `sotalive-myact` |
 | myqth | `sotalive-myqth` |
 | fleonline | `sotalive-fle` |
-| logconv2・myact2・myqth2 | `sotalive` |
+| logconv | `sotalive-logconv` |
+| myact2・myqth2 | `sotalive` |
 
 公開するアプリを別プロジェクトにするのは、Functions の無料枠(アカウント全体で1日10万リクエスト)を、静的なファイルの配信で使わないためです。静的なファイルの配信は、無料で回数の制限がありません。
 
@@ -252,20 +253,22 @@ git push origin main
 | CNAME | `myact` | `sotalive-myact.pages.dev` |
 | CNAME | `myqth` | `sotalive-myqth.pages.dev` |
 | CNAME | `fleonline` | `sotalive-fle.pages.dev` |
-| CNAME | `myact2`、`myqth2`、`logconv2` | `sotalive.pages.dev` |
+| CNAME | `logconv` | `sotalive-logconv.pages.dev` |
+| CNAME | `myact2`、`myqth2` | `sotalive.pages.dev` |
 
-`sotalive` の `functions/_middleware.ts` は、ホスト名で振り分けます。ホスト名(`myact2`、`myqth2`、`logconv2`)を変えるなら、そのファイルも直します。
+`sotalive` の `functions/_middleware.ts` は、ホスト名で振り分けます。ホスト名(`myact2`、`myqth2`)を変えるなら、そのファイルも直します。
 
 ### logconv.sotalive.net を Vercel から切り替える
 
-旧版の logconv(Vercel)から、新しい logconv(プロジェクト `sotalive`)へ移すときの手順です。`functions/_middleware.ts` は、`logconv` で始まるホスト名なら新しい logconv を返すので、コードの変更は要りません。
+旧版の logconv(Vercel)から、専用のプロジェクト `sotalive-logconv` へ移すときの手順です。コードの変更は要りません(`ci.yml` の `deploy-logconv` が出します)。
 
-1. `logconv2.sotalive.net` で、変換(ADIF・Activator・Chaser・WSPR)と、FLE Online のタブ(案内)を確かめる。
-2. Pages の `sotalive` に、カスタムドメイン `logconv.sotalive.net` を追加する(この時点では DNS はまだ Vercel を向いたままなので、pending のまま)。
-3. DNS の CNAME `logconv` を、Vercel から `sotalive.pages.dev` に変える。
-4. `https://logconv.sotalive.net/` と `https://logconv.sotalive.net/#FLEOnline` が開くこと、`www.sotalive.net/logconv` の転送が先で開くことを確かめる。
-5. 問題があれば、CNAME を Vercel に戻す(戻せば、すぐ元の画面)。
-6. 安定したら、Vercel 側の logconv のドメインを外す。docs の「Vercel の旧画面のまま」の記述を直す。
+1. Pages にプロジェクト `sotalive-logconv` を作る(`wrangler pages project create sotalive-logconv`、またはダッシュボード)。最初のデプロイの前に作る。なければ「project not found」で失敗する。
+2. `main` にマージして、`deploy-logconv` が通ったら、`https://sotalive-logconv.pages.dev/` で、変換(ADIF・Activator・Chaser・WSPR)と、FLE Online のタブ(案内)を確かめる。
+3. Pages の `sotalive-logconv` に、カスタムドメイン `logconv.sotalive.net` を追加する(この時点では DNS はまだ Vercel を向いたままなので、pending のまま)。
+4. DNS の CNAME `logconv` を、Vercel から `sotalive-logconv.pages.dev` に変える。
+5. `https://logconv.sotalive.net/` と `https://logconv.sotalive.net/#FLEOnline` が開くこと、`www.sotalive.net/logconv` の転送が先で開くことを確かめる。
+6. 問題があれば、CNAME を Vercel に戻す(戻せば、すぐ元の画面)。
+7. 安定したら、Vercel 側の logconv のドメインを外す。`logconv2` の CNAME とカスタムドメイン(`sotalive` 側)も外す。
 
 登録の直後は、数分間、522 エラーやドメインの「pending」(確認待ち)になります。しばらく待ちます。
 

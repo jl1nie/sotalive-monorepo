@@ -16,10 +16,9 @@ sotalive は、Cloudflare Pages の4つのプロジェクトと、Fly.io のバ�
 |---|---|---|---|
 | myact / www .sotalive.net | sotalive-myact | `dist-myact` | なし |
 | myqth.sotalive.net | sotalive-myqth | `dist-myqth` | なし |
+| logconv.sotalive.net | sotalive-logconv | `dist-logconv` | `/api` の下だけ(`pages/logconv/functions`。バックエンドへの中継のみ) |
 | fleonline.sotalive.net | sotalive-fle | `dist-fle` | `/api` の下だけ(`pages/fle/functions`) |
-| myact2 / myqth2 / logconv2 .sotalive.net | sotalive | `dist` | `functions/_middleware.ts` が全パスにかかる |
-
-logconv.sotalive.net は、新版のテストが済むまで Vercel の旧画面のままです。
+| myact2 / myqth2 .sotalive.net | sotalive | `dist` | `functions/_middleware.ts` が全パスにかかる |
 
 ## プロジェクトを分けた理由
 
@@ -29,7 +28,7 @@ Pages Functions の無料枠は、アカウント全体で1日10万リクエス�
 
 そこで、公開しているアプリは別プロジェクトにしました。
 Functions は必要なパス(FLE の `/api`)だけに置きます。
-Functions を全体にかけているのは、まだ公開していない logconv2・myact2・myqth2 のプロジェクト(sotalive)だけです。
+Functions を全体にかけているのは、まだ公開していない myact2・myqth2 のプロジェクト(sotalive)だけです。
 
 ## リクエストの流れ
 
@@ -45,12 +44,12 @@ Functions を全体にかけているのは、まだ公開していない logcon
 - `/api/v2/*` は `pages/fle/functions/api/v2/[[path]].ts` がバックエンドへ中継します(中継先は、プロジェクトの環境変数 `BACKEND_URL`。なければ公開ドメイン `https://sotaapp2.sotalive.net`)。
 - 設定の同期は `pages/fle/functions/api/fle/prefs/[code].ts` が受け、KV(束縛名 `FLE_PREFS`)に保存します。KV の束縛は `pages/fle/wrangler.toml` に書いてあります。
 
-### logconv2・myact2・myqth2(プロジェクト sotalive)
+### myact2・myqth2(プロジェクト sotalive)
 
 `functions/_middleware.ts` が、すべてのリクエストを次の順で処理します。
 
 1. パスが `/api/` で始まれば、バックエンド(環境変数 `BACKEND_URL`。なければ `https://sotaapp2.sotalive.net`)へ中継します(`X-Forwarded-Host` に元のホスト名を入れます)。
-2. ホスト名が `myact2` で始まれば `/myact2`、`myqth2` で始まれば `/myqth2`、`logconv` で始まれば `/logconv` を、パスの前に付けます(`myqth.sotalive.net`、本番は別のプロジェクトで、ここを通りません)。
+2. ホスト名が `myact2` で始まれば `/myact2`、`myqth2` で始まれば `/myqth2`を、パスの前に付けます(`myqth.sotalive.net`、本番は別のプロジェクトで、ここを通りません)。
 3. そのファイルがなければ(404)、共通アセット(`/shared/common/...`)を探します。
 4. myact2・myqth2 には `x-robots-tag: noindex` を付けて、検索エンジンに載せません。
 5. 上のどれでもないホスト名(`sotalive.pages.dev` など)は、そのまま配信します。
@@ -76,9 +75,10 @@ API はバックエンドの独自ドメイン `sotaapp2.sotalive.net`(Fly.io)�
 
 | 出力 | 作るもの | 中身 | 行き先 |
 |---|---|---|---|
-| `dist` | `scripts/assemble.sh` | `logconv/`、`myact2/`、`myqth2/`、`shared/`、`functions/` | sotalive |
+| `dist` | `scripts/assemble.sh` | `myact2/`、`myqth2/`、`shared/`、`functions/` | sotalive |
 | `dist-myact` | `scripts/build-static-projects.sh` | 旧版 myact の `index.html`、共通アセット、404.html、`_redirects` | sotalive-myact |
 | `dist-myqth` | 同上 | 新版 myqth(`apps/myqth/dist`)、ファビコン、404.html | sotalive-myqth |
+| `dist-logconv` | 同上 | LogConverter(`apps/logconv/dist`)。base は `/` | sotalive-logconv |
 | `dist-fle` | 同上 | `fle/`(FLE のビルド)、`_redirects` | sotalive-fle |
 
 `assemble.sh` の最後で `build-static-projects.sh` が呼ばれます。

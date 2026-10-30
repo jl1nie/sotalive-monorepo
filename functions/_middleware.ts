@@ -91,12 +91,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
  *
  * - myact2 は React 版の myact(試験中。ビルドの base が `/` なので、このホスト名でだけ動く)
  * - myqth2 は myqth の新版を、本番より先に試す場所(Vite + 素の TS。base が `/`)。`myqth`(本番。別のプロジェクト)とは別
- * - logconv2 は新しい logconv
  */
 function appPathFor(hostname: string): string {
   if (hostname.startsWith("myact2")) return "/myact2";
   if (hostname.startsWith("myqth2")) return "/myqth2";
-  if (hostname.startsWith("logconv")) return "/logconv";
   return "";
 }
 

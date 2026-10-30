@@ -7,11 +7,10 @@ WSPRnet のスポットから、SNR(受信の強さ)の分布図を作る機能�
 
 | 版 | URL | 状態 |
 |---|---|---|
-| 新版(このリポジトリの `apps/logconv`。React) | https://logconv2.sotalive.net | テスト中 |
-| 旧版 | https://logconv.sotalive.net | まだ Vercel の旧画面のまま |
+| 新版(このリポジトリの `apps/logconv`。React) | https://logconv.sotalive.net | 専用の Pages プロジェクト `sotalive-logconv`。logconv2 は外した |
+| 旧版 | Vercel の旧画面 | 切り替え後に止める([deploy-guide.md](../deploy-guide.md)) |
 
-新版のテストが済んだら、logconv.sotalive.net を Pages へ移し、Vercel を止める予定です。
-移すときは、`www.sotalive.net` の `/logconv` 以下の転送(`logconv.sotalive.net` への 302)も外します。
+`www.sotalive.net` の `/logconv` 以下は、`logconv.sotalive.net` へ 302 で転送します(`dist-myact/_redirects`)。
 
 なお `apps/logconv-org` は旧画面のファイル一式で、いまのビルドには使いません。
 
@@ -66,7 +65,7 @@ WSPR は、微弱な電波で届く範囲を調べる通信方式です。この
 ```
 apps/logconv/
   index.html
-  vite.config.ts          base は /logconv/、開発ポート 3002、/api をバックエンドへ中継(BACKEND_URL、なければ sotaapp2.sotalive.net)
+  vite.config.ts          base は /、開発ポート 3002、/api をバックエンドへ中継(BACKEND_URL、なければ sotaapp2.sotalive.net)
   src/App.tsx
   src/components/Tabs/    4 つのタブ(と、そのテスト)
   src/components/Forms/   ファイル選択・ラジオなどの部品
@@ -81,12 +80,11 @@ apps/logconv/
 
 | 項目 | 内容 |
 |---|---|
-| Pages プロジェクト | `sotalive` |
-| ホスト名 | `logconv2.sotalive.net` |
-| 配置 | `scripts/assemble.sh` が `apps/logconv/dist` を `dist/logconv/` へコピーする |
-| 振り分け | `functions/_middleware.ts` が、ホスト名 logconv2 のとき `/logconv` の下のファイルを返す。アプリ自身のファイルがなければ共通アセット |
+| Pages プロジェクト | `sotalive-logconv` |
+| ホスト名 | `logconv.sotalive.net` |
+| 配置 | `scripts/build-static-projects.sh` が `apps/logconv/dist` を `dist-logconv/` へコピーする(ルートに置く) |
+| Functions | `/api` の下だけ(`pages/logconv/functions/api/v2/[[path]].ts`)。バックエンドへ中継する。ほかのパスは静的なファイルで、Functions の無料枠を使わない |
 
-プロジェクト `sotalive` は Functions がサイト全体にかかるので、公開を始めたアプリは別プロジェクトに移します。
 理由は [docs/architecture.md](../architecture.md) を参照してください。
 
 ## 開発とテストのコマンド
