@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { TabId } from '@/types/form'
-import { FileText, Mountain, Radio, Activity } from 'lucide-react'
+import { FileText, Mountain, Radio, Activity, PenLine } from 'lucide-react'
 
 interface Tab {
   id: TabId
@@ -29,14 +29,18 @@ const tabs: Tab[] = [
     icon: <Radio className="w-6 h-6" />,
   },
   { id: 'wspr', label: 'WSPRnet SNR', shortLabel: 'WSPR', icon: <Activity className="w-6 h-6" /> },
+  { id: 'fle', label: 'FLE Online', shortLabel: 'FLE', icon: <PenLine className="w-6 h-6" /> },
 ]
+
+/** 旧版の logconv は、FLE Online をタブ(#FLEOnline)で持っていた。そのリンクで来た人には、このタブを開く */
+const initialTab = (): TabId => (location.hash === '#FLEOnline' ? 'fle' : 'pota-activator')
 
 interface TabContainerProps {
   children: (activeTab: TabId) => React.ReactNode
 }
 
 export function TabContainer({ children }: TabContainerProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('pota-activator')
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab)
 
   return (
     <div className="w-full">

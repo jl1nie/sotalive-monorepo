@@ -4,6 +4,7 @@ export type TabId =
   | 'sota-activator'
   | 'sota-chaser'
   | 'wspr'
+  | 'fle'
 
 export interface Tab {
   id: TabId
