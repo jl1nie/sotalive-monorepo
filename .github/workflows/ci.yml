@@ -103,7 +103,6 @@ jobs:
               - 'functions/**'
               - 'wrangler.toml'
               - 'apps/myact/**'
-              - 'apps/myact-next/**'
               - 'apps/myqth/**'
               - 'packages/geo/**'
 
@@ -369,6 +368,12 @@ jobs:
           retention-days: 3
       - uses: actions/upload-artifact@v4
         with:
+          name: dist-myact2
+          path: dist-myact2
+          include-hidden-files: true
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
           name: dist-myqth
           path: dist-myqth
           retention-days: 3
@@ -387,9 +392,9 @@ jobs:
   # ---- デプロイ(push のときだけ。プロジェクトごとに並列) ----
   # 待つジョブのどれかが失敗・中止なら、デプロイしない(変更がなくて飛ばしたテストは、待たずに進む)
 
-  # sotalive: まだ公開していない myact2(次期 MyACT)・myqth2(functions/_middleware.ts)
+  # sotalive: まだ公開していない myqth2(functions/_middleware.ts)
   deploy-sotalive:
-    needs: [changes, build, myact, myact-next, myqth, geo, functions]
+    needs: [changes, build, myact, myqth, geo, functions]
     if: >-
       always() && github.event_name == 'push'
       && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
@@ -415,18 +420,18 @@ jobs:
           BRANCH: ${{ github.ref_name }}
         run: npx --yes "$WRANGLER" pages deploy dist --project-name=sotalive --branch="$BRANCH"
 
-  # myact(旧版)と myqth(新版): Functions なし。出力の中からデプロイする(functions/ と wrangler.toml を拾わない)
+  # myact(旧版)・myact2(次期 MyACT)・myqth(新版): Functions なし。出力の中からデプロイする(functions/ と wrangler.toml を拾わない)
   deploy-legacy:
-    needs: [changes, build, parks, legacy, myqth, geo]
+    needs: [changes, build, parks, legacy, myqth, myact-next, geo]
     if: >-
       always() && github.event_name == 'push'
       && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
       && (needs.changes.outputs.all == 'true' || needs.changes.outputs.legacy == 'true'
-        || needs.changes.outputs.myqth == 'true')
+        || needs.changes.outputs.myqth == 'true' || needs.changes.outputs.myact_next == 'true')
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [myact, myqth]
+        app: [myact, myact2, myqth]
     steps:
       - uses: actions/download-artifact@v4
         with:

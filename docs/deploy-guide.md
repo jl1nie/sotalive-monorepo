@@ -39,7 +39,8 @@ sotaapp2 の GitHub --(push)--> Actions --> Docker Hub(イメージ) --(手動�
 | myqth | `sotalive-myqth` |
 | fleonline | `sotalive-fle` |
 | logconv | `sotalive-logconv` |
-| myact2・myqth2 | `sotalive` |
+| myact2 | `sotalive-myact2` |
+| myqth2 | `sotalive` |
 
 公開するアプリを別プロジェクトにするのは、Functions の無料枠(アカウント全体で1日10万リクエスト)を、静的なファイルの配信で使わないためです。静的なファイルの配信は、無料で回数の制限がありません。
 
@@ -254,9 +255,10 @@ git push origin main
 | CNAME | `myqth` | `sotalive-myqth.pages.dev` |
 | CNAME | `fleonline` | `sotalive-fle.pages.dev` |
 | CNAME | `logconv` | `sotalive-logconv.pages.dev` |
-| CNAME | `myact2`、`myqth2` | `sotalive.pages.dev` |
+| CNAME | `myact2` | `sotalive-myact2.pages.dev` |
+| CNAME | `myqth2` | `sotalive.pages.dev` |
 
-`sotalive` の `functions/_middleware.ts` は、ホスト名で振り分けます。ホスト名(`myact2`、`myqth2`)を変えるなら、そのファイルも直します。
+`sotalive` の `functions/_middleware.ts` は、ホスト名で振り分けます。ホスト名(`myqth2`)を変えるなら、そのファイルも直します。
 
 ### logconv.sotalive.net を Vercel から切り替える
 

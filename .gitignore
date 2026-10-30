@@ -5,6 +5,7 @@ node_modules/
 # Build outputs
 dist/
 dist-myact/
+dist-myact2/
 dist-myqth/
 dist-logconv/
 dist-fle/

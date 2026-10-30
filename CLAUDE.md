@@ -30,7 +30,7 @@ sotalive-monorepoは、SOTA/POTAアマチュア無線アワード支援サービ
 ```
 sotalive-monorepo/
 ├── apps/
-│   ├── myact-next/     # 次期 MyACT（Vite + 素の TS。myact2.sotalive.net で試す。旧版を正解にした記録 packages/myact-golden と比べる）→ dist/myact2
+│   ├── myact-next/     # 次期 MyACT（Vite + 素の TS。myact2.sotalive.net で試す。旧版を正解にした記録 packages/myact-golden と比べる）→ dist-myact2
 │   ├── myact/          # MyActivation の React 版（凍結。出さない。次期 MyACT の切り替え後に削除）
 │   ├── myqth/          # MyQTH（Vite + 素の TS。myqth.sotalive.net の本番。myqth2.sotalive.net は本番より先に試す場所）→ dist-myqth・dist/myqth2
 │   ├── myact-org/      # MyActivation の旧版（jQuery。外部CSS・JSに分離済み）→ dist/myact
@@ -82,8 +82,8 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 ## サブドメイン構成
 
-公開しているアプリは、それぞれ別の Pages プロジェクト（静的なファイルは Functions の無料枠 1日10万リクエストを使わない）。`scripts/build-static-projects.sh` が、ルートに置いた `dist-myact`・`dist-myqth`・`dist-logconv`・`dist-fle` を作る。
-まだ公開していない myact2・myqth2 だけが、プロジェクト sotalive のホスト名での振り分け（`functions/_middleware.ts`。アプリ自身のファイルがなければ共通アセット）を使う。
+公開しているアプリは、それぞれ別の Pages プロジェクト（静的なファイルは Functions の無料枠 1日10万リクエストを使わない）。`scripts/build-static-projects.sh` が、ルートに置いた `dist-myact`・`dist-myact2`・`dist-myqth`・`dist-logconv`・`dist-fle` を作る。
+まだ公開していない myqth2 だけが、プロジェクト sotalive のホスト名での振り分け（`functions/_middleware.ts`。アプリ自身のファイルがなければ共通アセット）を使う。
 
 | サブドメイン | アプリ | プロジェクト（CNAME 先） | 備考 |
 |------------|--------|------|------|
@@ -91,7 +91,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 | myqth.sotalive.net | MyQTH（新版。apps/myqth） | sotalive-myqth | 旧版は apps/myqth-org に残してある。戻すときは `scripts/build-static-projects.sh` の myqth のブロックを旧版の `build` に替える |
 | logconv.sotalive.net | LogConverter | sotalive-logconv | `/`（base が `/`）。Functions は `/api` の下だけ（`pages/logconv`：バックエンドへの中継）。CNAME はまだ Vercel の旧画面を向いている。切り替えの手順は `docs/deploy-guide.md` |
 | fleonline.sotalive.net | FLE Online | sotalive-fle | `/fle/`（`/` は転送）。Functions は `/api` の下だけ（`pages/fle`：設定の同期の KV と、バックエンドへの中継） |
-| myact2.sotalive.net | MyActivation（次期版。apps/myact-next。試験中） | sotalive | `noindex`。base が `/` なので、このホスト名でだけ動く。切り替え前の確認用 |
+| myact2.sotalive.net | MyActivation（次期版。apps/myact-next。試験中） | sotalive-myact2 | `noindex`（`_headers`）。Functions なし（API はバックエンドを直接呼ぶ）。切り替え前の確認用 |
 | myqth2.sotalive.net | MyQTH（新版を、本番より先に試す場所） | sotalive | `noindex`。逆ジオコーダーは `packages/geo` |
 
 ## Git運用
