@@ -89,7 +89,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 |------------|--------|------|------|
 | myact.sotalive.net / www | MyActivation（旧版。apps/myact-org） | sotalive-myact | www の `/logconv` 以下は logconv.sotalive.net へ転送（`_redirects`） |
 | myqth.sotalive.net | MyQTH（新版。apps/myqth） | sotalive-myqth | 旧版は apps/myqth-org に残してある。戻すときは `scripts/build-static-projects.sh` の myqth のブロックを旧版の `build` に替える |
-| logconv.sotalive.net | LogConverter | sotalive-logconv | `/`（base が `/`）。Functions は `/api` の下だけ（`pages/logconv`：バックエンドへの中継）。CNAME はまだ Vercel の旧画面を向いている。切り替えの手順は `docs/deploy-guide.md` |
+| logconv.sotalive.net | LogConverter | sotalive-logconv | `/`（base が `/`）。Functions は `/api` の下だけ（`pages/logconv`：バックエンドへの中継）。Vercel から切り替え済み（手順は `docs/deploy-guide.md`） |
 | fleonline.sotalive.net | FLE Online | sotalive-fle | `/fle/`（`/` は転送）。Functions は `/api` の下だけ（`pages/fle`：設定の同期の KV と、バックエンドへの中継） |
 | myact2.sotalive.net | MyActivation（次期版。apps/myact-next。試験中） | sotalive-myact2 | `noindex`（`_headers`）。Functions なし（API はバックエンドを直接呼ぶ）。切り替え前の確認用 |
 | myqth2.sotalive.net | MyQTH（新版を、本番より先に試す場所） | sotalive | `noindex`。逆ジオコーダーは `packages/geo` |
@@ -112,7 +112,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 ## 関連リポジトリ
 
 - **sotaapp2**: バックエンドAPI (Rust/Axum) - https://github.com/jl1nie/sotaapp2(手元では、このリポジトリと同じ階層の `../sotaapp2`)
-- **sotalive-vercel**: 旧フロントエンド（Vercel） - 移行後停止予定
+- **sotalive-vercel**: 旧フロントエンド（Vercel） - ドメインは外し済み。プロジェクトだけ残してある
 
 ## コード規約
 

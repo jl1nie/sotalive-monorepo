@@ -8,7 +8,7 @@ WSPRnet のスポットから、SNR(受信の強さ)の分布図を作る機能�
 | 版 | URL | 状態 |
 |---|---|---|
 | 新版(このリポジトリの `apps/logconv`。React) | https://logconv.sotalive.net | 専用の Pages プロジェクト `sotalive-logconv`。logconv2 は外した |
-| 旧版 | Vercel の旧画面 | 切り替え後に止める([deploy-guide.md](../deploy-guide.md)) |
+| 旧版 | Vercel の旧画面 | 止めた(ドメインは外し済み。プロジェクトは残してある) |
 
 `www.sotalive.net` の `/logconv` 以下は、`logconv.sotalive.net` へ 302 で転送します(`dist-myact/_redirects`)。
 

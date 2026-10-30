@@ -260,7 +260,7 @@ git push origin main
 
 `sotalive` の `functions/_middleware.ts` は、ホスト名で振り分けます。ホスト名(`myqth2`)を変えるなら、そのファイルも直します。
 
-### logconv.sotalive.net を Vercel から切り替える
+### logconv.sotalive.net を Vercel から切り替える(2026-10-31 に実施済み)
 
 旧版の logconv(Vercel)から、専用のプロジェクト `sotalive-logconv` へ移すときの手順です。コードの変更は要りません(`ci.yml` の `deploy-logconv` が出します)。
 
