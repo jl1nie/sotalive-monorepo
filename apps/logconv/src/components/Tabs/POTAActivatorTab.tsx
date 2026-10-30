@@ -480,7 +480,7 @@ export function POTAActivatorTab() {
           </a>
 
           <a
-            href="https://bit.ly/35Wfj4J"
+            href="https://jl1nie.wordpress.com/2020/11/03/pota%e7%94%a8adif%e3%83%95%e3%82%a1%e3%82%a4%e3%83%ab%e7%94%9f%e6%88%90/"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-info flex items-center gap-2"
