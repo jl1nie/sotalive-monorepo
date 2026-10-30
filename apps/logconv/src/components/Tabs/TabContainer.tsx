@@ -28,8 +28,8 @@ const tabs: Tab[] = [
     shortLabel: 'Chaser',
     icon: <Radio className="w-6 h-6" />,
   },
-  { id: 'wspr', label: 'WSPRnet SNR', shortLabel: 'WSPR', icon: <Activity className="w-6 h-6" /> },
   { id: 'fle', label: 'FLE Online', shortLabel: 'FLE', icon: <PenLine className="w-6 h-6" /> },
+  { id: 'wspr', label: 'WSPRnet SNR', shortLabel: 'WSPR', icon: <Activity className="w-6 h-6" /> },
 ]
 
 /** 旧版の logconv は、FLE Online をタブ(#FLEOnline)で持っていた。そのリンクで来た人には、このタブを開く */
