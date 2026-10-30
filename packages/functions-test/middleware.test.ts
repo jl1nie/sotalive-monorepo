@@ -1,4 +1,4 @@
-// functions/_middleware.ts の、ホスト名による振り分け(プロジェクト sotalive: まだ公開していない logconv2・myact2・myqth2)。
+// functions/_middleware.ts の、ホスト名による振り分け(プロジェクト sotalive: まだ公開していない myact2・myqth2)。
 // ASSETS(Pages の静的ファイル)を差し替えて、どのパスを取りに行くかを確かめる。
 import { describe, expect, it } from 'vitest'
 import { onRequest } from '../../functions/_middleware.ts'
@@ -62,8 +62,8 @@ describe('これまでの振り分けは変わらない', () => {
   })
 
   it('サブドメインなし(sotalive.pages.dev)は、そのまま配信する', async () => {
-    const { fetched } = await call('https://sotalive.pages.dev/logconv/', ['/logconv/'])
-    expect(fetched).toEqual(['/logconv/'])
+    const { fetched } = await call('https://sotalive.pages.dev/myact2/', ['/myact2/'])
+    expect(fetched).toEqual(['/myact2/'])
   })
 
   it('/api/ はバックエンドへ中継する(X-Forwarded-Host に元のホスト名)', async () => {
@@ -81,9 +81,8 @@ describe('これまでの振り分けは変わらない', () => {
     expect(seen).toEqual([{ url: 'https://sotaapp2.sotalive.net/api/v2/locator/jcc-jcg?lat=1&lon=2', host: 'myqth2.sotalive.net' }])
   })
 
-  it('logconv2 は /logconv。noindex は付けない', async () => {
-    const { response, fetched } = await call('https://logconv2.sotalive.net/', ['/logconv/'])
-    expect(fetched).toEqual(['/logconv/'])
-    expect(response.headers.get('x-robots-tag')).toBeNull()
+  it('logconv は、専用のプロジェクト(pages/logconv)へ移した。ここでは振り分けない', async () => {
+    const { fetched } = await call('https://logconv2.sotalive.net/', ['/'])
+    expect(fetched).toEqual(['/'])
   })
 })

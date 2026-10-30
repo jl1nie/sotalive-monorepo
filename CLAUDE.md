@@ -82,14 +82,14 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 ## サブドメイン構成
 
-公開しているアプリは、それぞれ別の Pages プロジェクト（静的なファイルは Functions の無料枠 1日10万リクエストを使わない）。`scripts/build-static-projects.sh` が、ルートに置いた `dist-myact`・`dist-myqth`・`dist-fle` を作る。
-まだ公開していない logconv2・myact2・myqth2 だけが、プロジェクト sotalive のホスト名での振り分け（`functions/_middleware.ts`。アプリ自身のファイルがなければ共通アセット）を使う。
+公開しているアプリは、それぞれ別の Pages プロジェクト（静的なファイルは Functions の無料枠 1日10万リクエストを使わない）。`scripts/build-static-projects.sh` が、ルートに置いた `dist-myact`・`dist-myqth`・`dist-logconv`・`dist-fle` を作る。
+まだ公開していない myact2・myqth2 だけが、プロジェクト sotalive のホスト名での振り分け（`functions/_middleware.ts`。アプリ自身のファイルがなければ共通アセット）を使う。
 
 | サブドメイン | アプリ | プロジェクト（CNAME 先） | 備考 |
 |------------|--------|------|------|
 | myact.sotalive.net / www | MyActivation（旧版。apps/myact-org） | sotalive-myact | www の `/logconv` 以下は logconv.sotalive.net へ転送（`_redirects`） |
 | myqth.sotalive.net | MyQTH（新版。apps/myqth） | sotalive-myqth | 旧版は apps/myqth-org に残してある。戻すときは `scripts/build-static-projects.sh` の myqth のブロックを旧版の `build` に替える |
-| logconv.sotalive.net / logconv2 | LogConverter | sotalive | logconv は、新しい logconv のテストが済むまで Vercel の旧画面のまま。移すときは www の転送も外す |
+| logconv.sotalive.net | LogConverter | sotalive-logconv | `/`（base が `/`）。Functions は `/api` の下だけ（`pages/logconv`：バックエンドへの中継）。CNAME はまだ Vercel の旧画面を向いている。切り替えの手順は `docs/deploy-guide.md` |
 | fleonline.sotalive.net | FLE Online | sotalive-fle | `/fle/`（`/` は転送）。Functions は `/api` の下だけ（`pages/fle`：設定の同期の KV と、バックエンドへの中継） |
 | myact2.sotalive.net | MyActivation（次期版。apps/myact-next。試験中） | sotalive | `noindex`。base が `/` なので、このホスト名でだけ動く。切り替え前の確認用 |
 | myqth2.sotalive.net | MyQTH（新版を、本番より先に試す場所） | sotalive | `noindex`。逆ジオコーダーは `packages/geo` |

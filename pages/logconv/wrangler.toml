@@ -1,0 +1,7 @@
+# LogConverter の Pages プロジェクト(logconv.sotalive.net)
+# 静的なファイルは dist-logconv(scripts/build-static-projects.sh が作る)。Functions はこのディレクトリの functions/ で、
+# /api の下にだけある(バックエンドへの中継)。ほかのパスでは Functions が動かない(無料枠を使わない)。
+# デプロイは、このディレクトリで `wrangler pages deploy`(.github/workflows/ci.yml の deploy-logconv)
+name = "sotalive-logconv"
+compatibility_date = "2024-12-01"
+pages_build_output_dir = "../../dist-logconv"

@@ -7,5 +7,5 @@ pages_build_output_dir = "./dist"
 [functions]
 directory = "functions"
 
-# このプロジェクト(sotalive)は、まだ公開していない logconv2・myact2 だけ(functions/_middleware.ts がホスト名で振り分ける)。
+# このプロジェクト(sotalive)は、まだ公開していない myact2・myqth2 だけ(functions/_middleware.ts がホスト名で振り分ける)。
 # 公開しているアプリは、別のプロジェクト(scripts/build-static-projects.sh・pages/fle)
