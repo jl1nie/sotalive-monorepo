@@ -35,6 +35,8 @@ interface Props {
   plans?: Plan[]
   /** 山頂の地図を開く */
   onOpenMap?: (summit: string) => void
+  /** 書き込むボタンの文字(既定は「ログに書き込む」。出力前の確認から開いたときは「ログに書き込んで出力」) */
+  applyLabel?: string
 }
 
 /**
@@ -47,7 +49,7 @@ export function PlaceSheet(props: Props) {
   return props.open ? <PlaceForm {...props} /> : null
 }
 
-function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, fresh = false, replacing = false, onApply, plans = [], onOpenMap }: Props) {
+function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, fresh = false, replacing = false, onApply, plans = [], onOpenMap, applyLabel }: Props) {
   const t = useT()
   const [values, setValues] = useState<Values>(() => toValues(initial))
   const [errors, setErrors] = useState<FieldError[]>([])
@@ -93,7 +95,7 @@ function PlaceForm({ onClose, initial, initialMemo = '', isNewLog, fresh = false
           {...keepFocus}
           className="btn-success w-full"
         >
-          {t('place.write')}
+          {applyLabel ?? t('place.write')}
         </button>
       }
     >

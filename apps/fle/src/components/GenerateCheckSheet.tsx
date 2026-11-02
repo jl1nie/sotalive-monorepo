@@ -12,14 +12,18 @@ interface Props {
   warnings: OutputWarning[]
   /** 自局のコールサインの初期値(前回のもの) */
   initialCall: string
-  /** 入力した自局・グリッドをログの先頭に書き込んで、生成する。誤りがあれば返す */
+  /** 入力した自局・グリッド(と、足りなければ日付)をログに書き込んで、出力する。誤りがあれば返す */
   onWriteAndGenerate: (values: { mycall: string; grid: string }) => Promise<FieldError[]>
   onGenerateAnyway: () => void
-  /** 運用場所は、場所のシートで入力する */
+  /** 運用場所は、場所のシートで入力する(書き込んだら出力へ進み、やめたらこのシートに戻る) */
   onOpenPlace: () => void
 }
 
-/** ファイルを生成する前に、ログに足りない情報を知らせて、入力を促す。そのまま生成もできる。 */
+/**
+ * ファイルを出力する前に、ログに足りない情報を知らせて、入力を促す。そのまま出力もできる。
+ * 「ログに書き込んで出力」は、書き込める項目(日付・自局・グリッド)が足りないときだけ出す。
+ * 運用場所(SOTA・POTA・WWFF)がないのは「注意」: 場所のシートを開くか、そのファイルなしで出力する。
+ */
 export function GenerateCheckSheet(props: Props) {
   return props.open ? <CheckForm {...props} /> : null
 }
@@ -33,6 +37,8 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
   const { locate, locating, message } = useGridLocate((g) => setGrid(g))
 
   const needs = (field: OutputWarning['field']) => warnings.some((w) => w.field === field)
+  const writable = needs('date') || needs('mycall') || needs('grid')
+  const needsPlace = needs('place')
   const error = (field: FieldError['field']) =>
     errors.some((e) => e.field === field) ? t(`field.${field}`) : undefined
 
@@ -48,11 +54,18 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
       closeLabel={t('sheet.cancel')}
       actions={
         <>
-          <button type="button" onClick={writeAndGenerate} className="btn-success w-full">
-            {t('check.write')}
-          </button>
+          {writable && (
+            <button type="button" onClick={writeAndGenerate} className="btn-success w-full">
+              {t('check.write')}
+            </button>
+          )}
+          {needsPlace && (
+            <button type="button" onClick={onOpenPlace} className={`${writable ? 'btn-secondary' : 'btn-success'} w-full`}>
+              {t('check.setPlace')}
+            </button>
+          )}
           <button type="button" onClick={onGenerateAnyway} className="btn-secondary w-full">
-            {t('check.anyway')}
+            {needsPlace ? t('check.withoutPlace') : t('check.anyway')}
           </button>
         </>
       }
@@ -64,7 +77,11 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
             className="p-3 rounded-xl border-2 border-amber-700 bg-amber-50 text-amber-950 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-100 flex gap-3 items-start"
           >
             <span className="flex-none text-xs font-bold mt-1">
-              {w.severity === 'required' ? t('check.required') : t('check.recommended')}
+              {w.field === 'place'
+                ? t('check.caution')
+                : w.severity === 'required'
+                  ? t('check.required')
+                  : t('check.recommended')}
             </span>
             <span>{t(`check.${w.code}`, { qsos: w.qsos, calls: (w.items ?? []).join(', ') })}</span>
           </li>
@@ -136,16 +153,8 @@ function CheckForm({ onClose, warnings, initialCall, onWriteAndGenerate, onGener
             {message && <p role="status" className="mt-1 text-sm">{message}</p>}
           </div>
         )}
-
-        {needs('place') && (
-          <button type="button" onClick={onOpenPlace} className="btn-secondary w-full">
-            {t('check.setPlace')}
-          </button>
-        )}
       </div>
-      <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">
-        {t('check.note')}
-      </p>
+      {writable && <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">{t('check.note')}</p>}
     </Sheet>
   )
 }

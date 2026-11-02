@@ -145,8 +145,16 @@ function Editor({
   const [menuOpen, setMenuOpen] = useState(false)
   // 生成の前に知らせる、ログの不足(あるときだけ、確認のシートを開く)
   const [check, setCheck] = useState<OutputWarning[] | null>(null)
-  // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値。`fresh` なら、新しいログ(空のログに書く)
-  const [place, setPlace] = useState<{ line: number; initial: Station; memo: string; isNewLog: boolean; fresh: boolean } | null>(null)
+  // 場所のシート: どの行の前に書くか(開いた時点のカーソル行)と、初期値。`fresh` なら、新しいログ(空のログに書く)。
+  // `fromCheck` は、出力前の確認から開いたときの、その確認の警告(書き込んだら出力へ進み、やめたら確認に戻る)
+  const [place, setPlace] = useState<{
+    line: number
+    initial: Station
+    memo: string
+    isNewLog: boolean
+    fresh: boolean
+    fromCheck?: OutputWarning[]
+  } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   // 山頂の地図のシート: どの山頂か(開いた時点のカーソル位置で有効な mysota)。null なら閉じている
   const [mapSummit, setMapSummit] = useState<string | null>(null)
@@ -473,7 +481,7 @@ function Editor({
   }
 
   /** 場所のシートを開く。初期値は、カーソル位置で有効な自局と場所(自局が空なら前回のもの) */
-  const openPlace = async (line = caretLine) => {
+  const openPlace = async (line = caretLine, fromCheck?: OutputWarning[]) => {
     const current = await stationAt(text, line)
     setPlace({
       line,
@@ -481,6 +489,7 @@ function Editor({
       memo: memoAt(text, line),
       isNewLog: !view?.qsos.some((q) => q.line < line),
       fresh: false,
+      fromCheck,
     })
   }
 
@@ -511,6 +520,7 @@ function Editor({
       ...(bandMode ? [bandMode] : []),
     ]
     const edits = withExtras(base, place.line, plan.edits, lines)
+    let written = text
     if (place.fresh) {
       // 今のログは、メニューの「元に戻す」と通知から戻せる
       // 書き込んだあとは、続けて打てるよう末尾にフォーカスする(場所の変更と同じ)
@@ -519,14 +529,19 @@ function Editor({
         replaceText(next, t('notice.newLog'))
         pendingCaret.current = next.length
       }
+      written = next
     } else if (edits.length > 0) {
       const at = mapCaret(caret, edits)
       pendingCaret.current = at
-      setText(applyEdits(text, edits))
+      written = applyEdits(text, edits)
+      setText(written)
       setCaret(at)
     }
     saveLastCall(want.mycall)
+    const fromCheck = place.fromCheck
     setPlace(null)
+    // 出力前の確認から開いたなら、書き込んだログで、もう一度確かめてから出力する
+    if (fromCheck) void checkThenGenerate(written)
     // 山頂の地域の地図を、電波のあるうちに端末へ入れておく(山頂ではオフラインで見る)
     const region = regionOf(want.sota)
     // (待たない。通信が止まっていれば、すぐ終わる。版が同じなら取り直さない)
@@ -726,20 +741,24 @@ function Editor({
     download(new Blob([text], { type: 'text/plain;charset=utf-8' }), name)
   }
 
-  /** 生成: 先に、足りない情報(日付・自局のコールサイン・運用場所など)を調べ、あれば知らせる */
-  const handleGenerate = useCallback(async () => {
-    try {
-      // 確かめるのは、コアが必須とする警告(日付・自局・運用場所の不足、`?` のコールサイン)があるときだけ。グリッド(推奨)では止めない
-      const warnings = (await checkOutput(text)).filter((w) => w.severity === 'required')
-      if (warnings.length > 0) {
-        setCheck(warnings)
-        return
+  /** 出力: 先に、足りない情報(日付・自局のコールサイン・運用場所など)を調べ、あれば知らせる */
+  const checkThenGenerate = useCallback(
+    async (source: string) => {
+      try {
+        // 確かめるのは、コアが必須とする警告(日付・自局・運用場所の不足、`?` のコールサイン)があるときだけ。グリッド(推奨)では止めない
+        const warnings = (await checkOutput(source)).filter((w) => w.severity === 'required')
+        if (warnings.length > 0) {
+          setCheck(warnings)
+          return
+        }
+      } catch {
+        // 調べられなくても、出力は止めない
       }
-    } catch {
-      // 調べられなくても、生成は止めない
-    }
-    await generateNow(text)
-  }, [text, generateNow])
+      await generateNow(source)
+    },
+    [generateNow]
+  )
+  const handleGenerate = useCallback(() => checkThenGenerate(text), [text, checkThenGenerate])
 
   /** 読み込んだログ(`content`)に時間帯の行がなければ、時刻をどちらで書いたかを聞く。書いている最中には聞かない */
   const askZoneOf = useCallback(
@@ -1086,14 +1105,20 @@ function Editor({
             void generateNow(text)
           }}
           onOpenPlace={() => {
+            const warnings = check ?? []
             setCheck(null)
-            void openPlace(0)
+            void openPlace(0, warnings)
           }}
         />
 
         <PlaceSheet
           open={place !== null}
-          onClose={() => setPlace(null)}
+          onClose={() => {
+            // 出力前の確認から開いたなら、確認に戻る
+            if (place?.fromCheck) setCheck(place.fromCheck)
+            setPlace(null)
+          }}
+          applyLabel={place?.fromCheck ? t('place.writeAndExport') : undefined}
           initial={place?.initial ?? { mycall: '', sota: '', pota: [], wwff: '', grid: '' }}
           initialMemo={place?.memo ?? ''}
           isNewLog={place?.isNewLog ?? true}

@@ -1253,6 +1253,90 @@ describe('H. 書き出し(続き)', () => {
     })
     expect(screen.getByRole('dialog', { name: t('place.setup') })).toBeInTheDocument()
   })
+
+  function captureDownloads() {
+    const names: string[] = []
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: () => 'blob:x', revokeObjectURL: () => {} }))
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      names.push(this.download)
+    })
+    return names
+  }
+  const NO_PLACE = 'mycall JA1ABC\ndate 2026-10-27\n40m cw\n1000 ja1xyz'
+  const checkSheet = () => within(screen.getByRole('dialog', { name: t('check.title') }))
+
+  it('H3: 運用場所だけが足りないときは、書き込める項目がないので「ログに書き込んで出力」を出さず、「注意」として出す', async () => {
+    await open(NO_PLACE)
+    await menu(t('menu.export'))
+    await screen.findByText(t('check.title'))
+    const s = checkSheet()
+    expect(s.queryByRole('button', { name: t('check.write') })).toBeNull()
+    expect(s.getByRole('button', { name: t('check.setPlace') })).toBeInTheDocument()
+    expect(s.getByRole('button', { name: t('check.withoutPlace') })).toBeInTheDocument()
+    expect(s.getByRole('button', { name: t('sheet.cancel') })).toBeInTheDocument()
+    expect(s.getByText(t('check.caution'))).toBeInTheDocument()
+    expect(s.queryByText(t('check.required'))).toBeNull()
+  })
+
+  it('H3: 日付も足りないときは、「ログに書き込んで出力」も出す(日付は「必須」)', async () => {
+    await open('mycall JA1ABC\n40m cw\n1000 ja1xyz')
+    await menu(t('menu.export'))
+    await screen.findByText(t('check.title'))
+    const s = checkSheet()
+    expect(s.getByRole('button', { name: t('check.write') })).toBeInTheDocument()
+    expect(s.getByRole('button', { name: t('check.setPlace') })).toBeInTheDocument()
+    expect(s.getByText(t('check.required'))).toBeInTheDocument()
+  })
+
+  it('H3: 「ファイルなしで出力」は、書き足さずに出力する', async () => {
+    const names = captureDownloads()
+    const ta = await open(NO_PLACE)
+    await menu(t('menu.export'))
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: t('check.withoutPlace') }))
+    })
+    await waitFor(() => expect(names).toHaveLength(1))
+    expect(ta.value).toBe(NO_PLACE)
+  })
+
+  it('H3: 場所のシートで書き込むと、足りないものがなければ、そのまま出力する', async () => {
+    const names = captureDownloads()
+    const ta = await open(NO_PLACE)
+    await menu(t('menu.export'))
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: t('check.setPlace') }))
+    })
+    const s = within(screen.getByRole('dialog', { name: t('place.setup') }))
+    fireEvent.change(s.getByLabelText('SOTA'), { target: { value: 'JA/TK-001' } })
+    await act(async () => {
+      fireEvent.click(s.getByRole('button', { name: t('place.writeAndExport') }))
+    })
+    await waitFor(() => expect(names).toHaveLength(1))
+    expect(ta.value).toMatch(/mysota JA\/TK-001/i)
+    expect(screen.queryByRole('dialog', { name: t('check.title') })).toBeNull()
+  })
+
+  it('H3: 場所のシートでキャンセルすると、確認のシートに戻る', async () => {
+    const names = captureDownloads()
+    await open(NO_PLACE)
+    await menu(t('menu.export'))
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: t('check.setPlace') }))
+    })
+    const s = within(screen.getByRole('dialog', { name: t('place.setup') }))
+    await act(async () => {
+      fireEvent.click(s.getByRole('button', { name: t('sheet.cancel') }))
+    })
+    await screen.findByRole('dialog', { name: t('check.title') })
+    expect(names).toHaveLength(0)
+  })
+
+  it('H1: 日本語の画面の文言は「生成」ではなく「出力」でそろえる', () => {
+    const ja = translator('ja')
+    for (const key of ['check.write', 'check.anyway', 'notice.errorsFile', 'notice.generateFailed', 'check.missing_date']) {
+      expect(ja(key as never)).not.toContain('生成')
+    }
+  })
 })
 
 describe('J. 設定の時間帯', () => {
