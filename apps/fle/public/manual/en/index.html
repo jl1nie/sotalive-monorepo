@@ -84,13 +84,9 @@
 
 <h2 id="setup">2. First-time setup</h2>
 
-<h3>Adding it to the home screen is not required (the browser alone works)</h3>
-<p>Adding it lets you open it from an icon. If you will use it on a summit without a signal, whether or not you add it, <b>open it once where you have a signal</b>.</p>
-<ul>
-  <li><b>iPhone</b>: open <code>https://fleonline.sotalive.net/</code> in Safari, then the share button → "Add to Home Screen".</li>
-  <li><b>Android</b>: the Chrome menu → "Add to Home screen" (or "Add to home screen" in this app's menu).</li>
-</ul>
-<p>On an iPhone, Safari and the home-screen app keep their data separately. Keep using just one of them.</p>
+<h3>Add it to the home screen (optional)</h3>
+<p>It works in the browser as is. Adding it lets you open it from an icon (iPhone: the share button in Safari; Android: the Chrome menu or this app's menu → "Add to Home Screen"). If you will use it on a summit without a signal, <b>open it once where you have a signal</b>.</p>
+<p class="note">Note: on an iPhone, Safari and the home-screen app keep their data separately. Keep using just one of them.</p>
 
 <h3>Settings to decide first</h3>
 <p>The gear at the top right opens the settings. Most can stay as they are. Check just these three first (for all settings, see "<a href="#settings">Settings</a>").</p>
@@ -126,7 +122,7 @@
 <ul>
   <li><b>Is the map saved on the device?</b> The maps of summits in your plans are saved automatically while you have a signal. If the plan list shows "Map: saved", you can see it on the summit without a signal. If it shows "not saved yet", open the app where you have a signal.</li>
   <li><b>If you entered the plan on a PC</b>: open the app on the phone where you have a signal and check that the plan has arrived (syncing happens when you open the app).</li>
-  <li>It is reassuring to check that the app opens from the home screen.</li>
+  <li>If you added it to the home screen, it is reassuring to check that the app opens from there.</li>
 </ul>
 
 <h2 id="day">4. On the day: write the log</h2>
@@ -197,7 +193,12 @@ ssb
 <h2 id="after">5. Afterwards: make the files</h2>
 <ol>
   <li>Menu → "Export (ADIF etc.)".</li>
-  <li>If the date, your callsign or the location is missing, a check screen appears. Choose "Write to log and export" to write the missing items before exporting, or "Export anyway" (the grid is optional, so a missing grid does not bring up the screen).</li>
+  <li>If the date, your callsign or SOTA/POTA/WWFF is missing, a check screen appears (the grid is optional, so a missing grid does not bring up the screen).
+    <ul>
+      <li>Date or callsign missing: choose "Write to log and export" to write them before exporting, or "Export anyway".</li>
+      <li>No SOTA/POTA/WWFF ("Note"): "Set SOTA / POTA / WWFF" opens the location screen; tap "Write to log and export" there (Cancel goes back to the check screen). To skip it, choose "Export without SOTA / POTA / WWFF files" (only the HAMLOG CSV and the original FLE log go in).</li>
+    </ul>
+  </li>
   <li>A zip file is downloaded.</li>
 </ol>
 <p>Upload the files in the zip to each site or program.</p>

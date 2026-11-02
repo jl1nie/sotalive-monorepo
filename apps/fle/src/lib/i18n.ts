@@ -73,8 +73,8 @@ const ja = {
   'notice.offlineReady': 'オフラインでも使えます',
   'notice.updated': '新しい版になりました。別の画面から戻ると、再読み込みします',
   'notice.compileFailed': '解釈に失敗しました',
-  'notice.errorsFile': 'エラーのある行があります。エラー内容を書いたファイルを生成しました',
-  'notice.generateFailed': 'ファイルを生成できませんでした',
+  'notice.errorsFile': 'エラーのある行があります。エラー内容を書いたファイルを出力しました',
+  'notice.generateFailed': 'ファイルを出力できませんでした',
   'notice.loaded': 'ログを読み込みました',
   'notice.adifAdded': 'ADIF を末尾に足しました',
   'notice.sampleInserted': 'サンプルを入れました',
@@ -252,6 +252,7 @@ const ja = {
   'place.change': '場所の変更',
   'place.setup': '自局・場所の設定',
   'place.write': 'ログに書き込む',
+  'place.writeAndExport': 'ログに書き込んで出力',
   'place.hintNew': 'ログの先頭に書き込みます。すべて任意です。',
   'place.hintFresh':
     '今のログを閉じて、新しいログを始めます(今のログは、メニューの「元に戻す」で戻せます)。すべて任意です。',
@@ -276,17 +277,20 @@ const ja = {
   'geo.noGrid': '位置からグリッドを求められませんでした',
   'geo.denied': '位置情報を取得できませんでした。ブラウザの許可を確認してください',
 
-  // 生成前の確認
+  // 出力前の確認
   'check.title': 'ログに足りない情報',
-  'check.write': 'ログに書き込んで生成',
-  'check.anyway': 'このまま生成',
+  'check.write': 'ログに書き込んで出力',
+  'check.anyway': 'このまま出力',
+  'check.withoutPlace': 'SOTA・POTA・WWFF のファイルなしで出力',
+  'check.caution': '注意',
   'check.required': '必須',
   'check.recommended': '推奨',
   'check.missing_date':
-    '日付(date)がありません。QSOの日付が 2000-01-01 になります({qsos}件のQSO)。「ログに書き込んで生成」で、今日の日付を入れられます。',
+    '日付(date)がありません。QSOの日付が 2000-01-01 になります({qsos}件のQSO)。「ログに書き込んで出力」で、今日の日付を入れられます。',
   'check.missing_mycall':
     '自局のコールサインがありません。ADIF と SOTA の CSV で、自局が空になります({qsos}件のQSO)。',
-  'check.missing_place': '運用場所(SOTA・POTA・WWFF)がありません。SOTA・POTA・WWFF の ADIF は作られません。',
+  'check.missing_place':
+    '自局の SOTA・POTA・WWFF の情報がありません。SOTA の CSV と、SOTA・POTA・WWFF の ADIF は作られません(HAMLOG の CSV は作られます)。',
   'check.unplaced_qsos':
     '運用場所のないQSOが{qsos}件あります(mysota・mypota・mywwff の行より前、または消したあと)。その QSO は、ADIF と SOTA の CSV に入りません。',
   'check.missing_grid': 'グリッドロケータがありません。ADIF の MY_GRIDSQUARE が出ません({qsos}件のQSO)。',
@@ -324,7 +328,7 @@ const ja = {
   'settings.hamlog.item.memo': '備考#',
   'settings.hamlog.item.qsl': 'QSL メッセージ',
   'settings.hamlog.item.rig': 'Rig',
-  'check.setPlace': '運用場所を設定する',
+  'check.setPlace': 'SOTA・POTA・WWFF を設定する',
   'check.note': '書き込む項目は、ログの先頭に入ります。',
 
   // 入力欄の形式の誤り
@@ -394,8 +398,8 @@ const en: Record<MessageKey, string> = {
   'notice.offlineReady': 'Ready to use offline',
   'notice.updated': 'A new version is available. The app reloads when you come back to this tab',
   'notice.compileFailed': 'Failed to parse the log',
-  'notice.errorsFile': 'Some lines have errors. A file describing the errors was generated',
-  'notice.generateFailed': 'Could not generate the files',
+  'notice.errorsFile': 'Some lines have errors. A file describing the errors was exported',
+  'notice.generateFailed': 'Could not export the files',
   'notice.loaded': 'Log loaded',
   'notice.adifAdded': 'ADIF added to the end of the log',
   'notice.sampleInserted': 'Sample inserted',
@@ -571,6 +575,7 @@ const en: Record<MessageKey, string> = {
   'place.change': 'Change location',
   'place.setup': 'Station and location',
   'place.write': 'Write to log',
+  'place.writeAndExport': 'Write to log and export',
   'place.hintNew': 'Written at the top of the log. All fields are optional.',
   'place.hintFresh':
     'Closes the current log and starts a new one (Undo in the menu brings the current log back). All fields are optional.',
@@ -597,13 +602,16 @@ const en: Record<MessageKey, string> = {
   'check.title': 'Missing information',
   'check.write': 'Write to log and export',
   'check.anyway': 'Export anyway',
+  'check.withoutPlace': 'Export without SOTA / POTA / WWFF files',
+  'check.caution': 'Note',
   'check.required': 'Required',
   'check.recommended': 'Recommended',
   'check.missing_date':
     'No date. QSOs will be dated 2000-01-01 (QSOs: {qsos}). "Write to log and export" adds today\'s date.',
   'check.missing_mycall':
     'No callsign for your station. The station fields in the ADIF and SOTA CSV will be empty (QSOs: {qsos}).',
-  'check.missing_place': 'No operating location (SOTA / POTA / WWFF). The SOTA, POTA and WWFF ADIF files will not be made.',
+  'check.missing_place':
+    'No SOTA / POTA / WWFF reference for your station. The SOTA CSV and the SOTA, POTA and WWFF ADIF files will not be made (the HAMLOG CSV will).',
   'check.unplaced_qsos':
     '{qsos} QSO(s) have no operating location (they come before the mysota / mypota / mywwff line, or after it was cleared). They will not be in the ADIF files or the SOTA CSV.',
   'check.unsure_call': 'Some callsigns have unclear characters (?): {calls}. Fix them before uploading to SOTA / POTA (QSOs: {qsos}).',
@@ -641,7 +649,7 @@ const en: Record<MessageKey, string> = {
   'settings.hamlog.item.qsl': 'QSL message',
   'settings.hamlog.item.rig': 'Rig',
   'check.missing_grid': 'No grid locator. MY_GRIDSQUARE will be missing from the ADIF (QSOs: {qsos}).',
-  'check.setPlace': 'Set the location',
+  'check.setPlace': 'Set SOTA / POTA / WWFF',
   'check.note': 'Items you enter are written at the top of the log.',
 
   'field.mycall': 'Not a valid callsign',
