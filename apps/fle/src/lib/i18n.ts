@@ -71,7 +71,7 @@ const ja = {
   // 通知
   'notice.autosaveFailed': '自動保存できません。ブラウザの設定を確認してください',
   'notice.offlineReady': 'オフラインでも使えます',
-  'notice.updated': '新しい版になりました。別の画面から戻ると、再読み込みします',
+  'notice.updated': '新しい版に更新しました',
   'notice.compileFailed': '解釈に失敗しました',
   'notice.errorsFile': 'エラーのある行があります。エラー内容を書いたファイルを出力しました',
   'notice.generateFailed': 'ファイルを出力できませんでした',
@@ -396,7 +396,7 @@ const en: Record<MessageKey, string> = {
 
   'notice.autosaveFailed': 'Cannot autosave. Check your browser settings',
   'notice.offlineReady': 'Ready to use offline',
-  'notice.updated': 'A new version is available. The app reloads when you come back to this tab',
+  'notice.updated': 'Updated to a new version',
   'notice.compileFailed': 'Failed to parse the log',
   'notice.errorsFile': 'Some lines have errors. A file describing the errors was exported',
   'notice.generateFailed': 'Could not export the files',

@@ -44,6 +44,7 @@ import {
   type OutputWarning,
   type QsoView,
 } from '@/lib/fle'
+import { takeVersionChange } from '@/lib/appVersion'
 import { LangProvider } from '@/components/LangProvider'
 import { resolveLang, useI18n } from '@/lib/i18n'
 import { lineOf, lineRange, replaceRange } from '@/lib/lines'
@@ -155,7 +156,7 @@ function Editor({
     fresh: boolean
     fromCheck?: OutputWarning[]
   } | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNotice] = useState<ReactNode>(null)
   // 山頂の地図のシート: どの山頂か(開いた時点のカーソル位置で有効な mysota)。null なら閉じている
   const [mapSummit, setMapSummit] = useState<string | null>(null)
   // 時間帯を変えるときの確認(QSO のあるログで、時刻を変換するか)
@@ -256,7 +257,7 @@ function Editor({
 
   /** 取り消せる操作のあとは、通知に「元に戻す」を添える(戻す先の内容を持つ) */
   const [undoTo, setUndoTo] = useState<Restore | null>(null)
-  const notify = useCallback((message: string, undo?: Restore) => {
+  const notify = useCallback((message: ReactNode, undo?: Restore) => {
     setNotice(message)
     setUndoTo(undo ?? null)
     window.clearTimeout(noticeTimer.current)
@@ -267,10 +268,19 @@ function Editor({
     text,
     useCallback(() => notify(t('notice.autosaveFailed')), [notify, t])
   )
-  const pwa = usePwa(
-    useCallback(() => notify(t('notice.offlineReady')), [notify, t]),
-    useCallback(() => notify(t('notice.updated')), [notify, t])
-  )
+  const pwa = usePwa(useCallback(() => notify(t('notice.offlineReady')), [notify, t]))
+
+  // 新しい版で開いた最初の 1 回だけ、版の番号を添えて知らせる(通信しない)
+  useEffect(() => {
+    if (takeVersionChange(__APP_VERSION__)) {
+      notify(
+        <>
+          {t('notice.updated')}
+          <span className="ml-2 text-xs font-normal font-mono opacity-80">{__APP_VERSION__}</span>
+        </>
+      )
+    }
+  }, [notify, t])
 
   // 内容を置き換える前に、今の内容を取っておく(メニューから戻せる)。
   // カーソルは末尾に置く(前の内容での位置のままだと、場所のシートなどが別の行を基準にしてしまう)。
