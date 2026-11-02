@@ -3,12 +3,11 @@ import { ensureRegions, type MapStatus } from '@/lib/mapStore'
 import { regionOf } from '@/lib/summitMap'
 import type { Plan } from '@/lib/plans'
 
-/** まだ取れていない地域を、取り直すまでの間隔 */
-const RETRY_MS = 60_000
-
 /**
- * 予定に入れた山頂の地図を、端末にそろえる。予定が変わったとき(保存・同期で届いたとき)、開いたとき、電波が戻ったときに確かめ、
- * まだない地域を取る。これで、予定に入れておけば、電波のないところでも地図が見える。
+ * 予定に入れた山頂の地図を、端末にそろえる。確かめるのは、アプリを開いたときと、予定が変わったとき
+ * (保存・同期で届いたとき)だけ。電波が戻ったときや、取れなかったときに自動で取り直すことはしない
+ * (電波が途切れ途切れの山頂で通信しない)。取れなかった地図は、次に開いたときか、地図を開いたときに取る。
+ * これで、電波のあるところで開いておけば、電波のないところでも地図が見える。
  * `statusOf` は、山頂の地図の状態(山頂でなければ null)
  */
 export function usePlanMaps(plans: Plan[]) {
@@ -18,22 +17,11 @@ export function usePlanMaps(plans: Plan[]) {
 
   useEffect(() => {
     let alive = true
-    let retry = 0
-    const check = () => {
-      window.clearTimeout(retry)
-      void ensureRegions(key ? key.split(',') : [], navigator.onLine).then((s) => {
-        if (!alive) return
-        setStatus(s)
-        // 電波が弱くて取れなかった地域は、少し待って取り直す
-        if ([...s.values()].includes('pending')) retry = window.setTimeout(check, RETRY_MS)
-      })
-    }
-    check()
-    window.addEventListener('online', check)
+    void ensureRegions(key ? key.split(',') : [], navigator.onLine).then((s) => {
+      if (alive) setStatus(s)
+    })
     return () => {
       alive = false
-      window.clearTimeout(retry)
-      window.removeEventListener('online', check)
     }
   }, [key])
 

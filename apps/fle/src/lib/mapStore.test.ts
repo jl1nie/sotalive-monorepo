@@ -154,14 +154,13 @@ describe('版を比べて、更新があった地域だけ取り直す', () => {
   })
 })
 
-describe('同じ地域を、短い間に聞き直さない', () => {
-  it('10 分以内は聞かない。過ぎたら聞く', async () => {
+describe('一度確かめた地域は、開いている間は聞き直さない(版はアプリを開いたときに 1 回)', () => {
+  it('時間がたっても聞き直さない', async () => {
     const s = store({ 'JA/KN': { at: NOW - DAY, version: 'v1' } }, {}, { 'JA/KN': 'v1' })
     await ensureRegions(['JA/KN'], true, s, NOW)
     await ensureRegions(['JA/KN'], true, s, NOW + 9 * MIN)
+    await ensureRegions(['JA/KN'], true, s, NOW + 5 * 60 * MIN)
     expect(s.version).toHaveBeenCalledTimes(1)
-    await ensureRegions(['JA/KN'], true, s, NOW + 11 * MIN)
-    expect(s.version).toHaveBeenCalledTimes(2)
   })
 
   it('取り直しに失敗したときは、抑制しない(次に開いたとき、また試す)', async () => {
@@ -190,15 +189,16 @@ describe('refreshRegionOf: 地図を開いたとき・場所を決めたとき',
     expect(s.saved).toEqual([{ region: 'JA/KN', version: 'v1' }])
   })
 
-  it('版が同じなら current(地図を取らない)', async () => {
-    const s = store({ 'JA/KN': { at: NOW - DAY, version: 'v1' } }, {}, { 'JA/KN': 'v1' })
-    expect(await refreshRegionOf('JA/KN-017', s, NOW)).toBe('current')
-    expect(s.fetch).not.toHaveBeenCalled()
+  it('保存があれば、通信しない(版も聞かない。saved)', async () => {
+    const s = store({ 'JA/KN': { at: NOW - DAY, version: 'v1' } }, { 'JA/KN': [MAP] }, { 'JA/KN': 'v2' })
+    expect(await refreshRegionOf('JA/KN-017', s, NOW)).toBe('saved')
+    expect(s.calls).toEqual([])
   })
 
-  it('版が違えば updated', async () => {
-    const s = store({ 'JA/KN': { at: NOW - DAY, version: 'v1' } }, { 'JA/KN': [MAP] }, { 'JA/KN': 'v2' })
-    expect(await refreshRegionOf('JA/KN-017', s, NOW)).toBe('updated')
+  it('保存が古くても(30 日を超えても)、通信しない', async () => {
+    const s = store({ 'JA/KN': NOW - 400 * DAY }, { 'JA/KN': [MAP] })
+    expect(await refreshRegionOf('JA/KN-017', s, NOW)).toBe('saved')
+    expect(s.calls).toEqual([])
   })
 
   it('通信が止まっていれば、待たずに返る(保存があれば saved、なければ pending)', async () => {

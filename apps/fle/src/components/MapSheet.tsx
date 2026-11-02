@@ -52,7 +52,7 @@ function MapBody({ summit }: { summit: string }) {
   const [map, setMap] = useState<SummitMap | null | 'loading'>('loading')
   const gps = useGps()
 
-  // 保存した地図をすぐ出し、電波があれば裏で、サーバーに新しい版があるときだけ取り直して差し替える(取り直しの操作は要らない)。
+  // 保存した地図をすぐ出す(保存があれば通信しない。版はアプリを開いたときに確かめる)。保存がなければ、電波があれば取る。
   // 保存がなく、通信が止まっているときは、待たずに「地図なし」にする(電波が弱いときも、短い時間切れと遮断で、長く待たない)
   useEffect(() => {
     let alive = true
