@@ -102,13 +102,15 @@ export type RefreshResult = 'updated' | 'current' | MapStatus
  */
 const REFRESH_MS = 30 * 86_400_000
 
-/** 同じ地域の版を、この間隔より短く聞き直さない(地図を開き直すたびに通信しない) */
-const RECHECK_MS = 10 * 60_000
-const lastChecked = new Map<string, number>()
+/**
+ * 版を確かめ終えた地域。アプリを開いている間は、聞き直さない(地図はめったに変わらない。
+ * 電波が途切れ途切れの山頂で通信しない)。次にアプリを開いたとき、また 1 回確かめる
+ */
+const checked = new Set<string>()
 
-/** テスト用: 確かめた時刻の記憶を消す */
+/** テスト用: 確かめた地域の記憶を消す */
 export function resetRegionChecks(): void {
-  lastChecked.clear()
+  checked.clear()
 }
 
 /**
@@ -123,20 +125,17 @@ async function refreshRegion(
   now: number
 ): Promise<RefreshResult> {
   if (isOffline()) return rec ? 'saved' : 'pending'
-  if (rec) {
-    const last = lastChecked.get(region)
-    if (last !== undefined && now - last < RECHECK_MS) return 'current'
-  }
+  if (rec && checked.has(region)) return 'current'
   const version = await store.version(region)
   if (rec && version !== null && rec.version === version) {
-    lastChecked.set(region, now)
+    checked.add(region)
     return 'current'
   }
   // 版が取れない: 保存から 30 日以内なら、いまのまま使う
   if (rec && version === null && now - Date.parse(rec.savedAt) <= REFRESH_MS) return 'saved'
   const maps = await store.fetch(region)
   if (maps && maps.length > 0 && (await store.save(region, maps, version ?? undefined))) {
-    lastChecked.set(region, now)
+    checked.add(region)
     return 'updated'
   }
   // サーバーが空を返したら、その地域の地図はない(取り直しても同じ)
@@ -145,9 +144,9 @@ async function refreshRegion(
 }
 
 /**
- * 山頂の地域の地図を、なければ取って保存し、あればサーバーに新しい版があるときだけ取り直す。
- * 地図を開いたとき・場所を決めたときに裏で呼ぶ(待たない)。通信が止まっていれば、すぐ返る。
- * 山頂の地域が分からなければ null
+ * 山頂の地域の地図が端末になければ、取って保存する。あれば通信しない(版は、アプリを開いたときに
+ * `ensureRegions` が確かめる)。地図を開いたとき・場所を決めたときに裏で呼ぶ(待たない)。
+ * 通信が止まっていれば、すぐ返る。山頂の地域が分からなければ null
  */
 export async function refreshRegionOf(
   summit: string,
@@ -156,12 +155,15 @@ export async function refreshRegionOf(
 ): Promise<RefreshResult | null> {
   const region = regionOf(summit)
   if (!region) return null
-  return refreshRegion(region, (await store.get(region)) ?? undefined, store, now)
+  const rec = (await store.get(region)) ?? undefined
+  if (rec) return 'saved'
+  return refreshRegion(region, rec, store, now)
 }
 
 /**
  * 地域(JA/KN など)の地図を、端末にそろえる(予定に入れた山頂は、電波がなくても地図が見えるようにする)。
- * まだない地域と、サーバーに新しい版がある地域を取る。電波がなければ取らない。地域ごとの状態を返す
+ * まだない地域と、サーバーに新しい版がある地域を取る。版を聞くのは、アプリを開いている間に地域ごと 1 回。
+ * 電波がなければ取らない。地域ごとの状態を返す
  */
 export async function ensureRegions(
   regions: string[],

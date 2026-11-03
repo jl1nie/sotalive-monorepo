@@ -122,7 +122,7 @@ function Editor({
   const keyboard = useVisualViewport()
   const { t, lang } = useI18n()
   const plansStore = usePlans()
-  // 予定に入れた山頂の地図は、電波のあるうちに端末へそろえておく(山頂で電波がなくても見られる)
+  // 予定に入れた山頂の地図は、開いたとき・予定が変わったときに端末へそろえておく(山頂で電波がなくても見られる)
   const planMaps = usePlanMaps(plansStore.plans)
   const sync = useSync({
     settings,
@@ -554,7 +554,7 @@ function Editor({
     if (fromCheck) void checkThenGenerate(written)
     // 山頂の地域の地図を、電波のあるうちに端末へ入れておく(山頂ではオフラインで見る)
     const region = regionOf(want.sota)
-    // (待たない。通信が止まっていれば、すぐ終わる。版が同じなら取り直さない)
+    // (待たない。通信が止まっていれば、すぐ終わる。端末にあれば通信しない)
     if (region && !isOffline()) {
       void refreshRegionOf(want.sota).then((r) => r === 'updated' && notify(t('notice.mapSaved', { region })))
     }
