@@ -83,7 +83,7 @@
   <li>SOTA・POTA などのサイトへは送信しません。作ったファイルを、各サイトに自分で取り込んでください。</li>
   <li>山・公園の候補の検索、JCC・JCG の照会、同期には、電波が要ります。</li>
 </ul>
-<p class="note">Note: アクティベーション(自分が山・公園から運用する)のためのアプリです。自宅からのチェイスは、SOTA・POTA・WWFF のファイルを作る対象にしていません(HAMLOG の CSV は作れます)。</p>
+<p class="note">Note: アクティベーション(自分が山・公園から運用する)のためのアプリです。自宅からのチェイスでは、SOTA・POTA・WWFF の場所ごとのファイルは作りません(全 QSO の ADIF、HAMLOG の CSV、チェイス用の SOTA の CSV は作ります)。</p>
 
 <h2 id="setup">2. 初期設定(最初に一度だけ)</h2>
 
@@ -252,11 +252,12 @@ ssb
 <tr><th>sotaYYYYMMDD.csv</th><td>SOTA のデータベースに取り込む</td></tr>
 <tr><th>コールサイン@公園-日付.adi</th><td>POTA のサイトに取り込む(公園ごと)</td></tr>
 <tr><th>コールサイン@山-日付.adi</th><td>SOTA のサイトに ADIF で取り込む(山ごと)*3)。WWFF の ADIF も同じ形</td></tr>
+<tr><th>adif-….adi</th><td>全 QSO の ADIF。LoTW・QRZ.com・ほかのログソフトに取り込む</td></tr>
 <tr><th>hamlog-….csv</th><td>HAMLOG に取り込む</td></tr>
 <tr><th>fle-….txt</th><td>元の FLE ログ(「FLEログを保存」と同じ)。手元に残す</td></tr>
 </table>
 <p class="note">Note: 誤りのある行があるときは、ファイルは作られず、誤りを書いたテキストと元の FLE ログだけが入ります。直してから、もう一度書き出してください。ファイルの中身は「<a href="#files">書き出すファイル</a>」。</p>
-<p class="fn">*1) 日付・自局・SOTA/POTA/WWFF が足りないときだけ出ます。グリッドは任意なので、なくても出ません。<br>*2) zip には HAMLOG の CSV と元の FLE ログだけが入ります。場所の画面でキャンセルすると、確認の画面に戻ります。<br>*3) 山の名前の <code>/</code> は <code>-</code> になります。SOTA は CSV でも取り込めます。</p>
+<p class="fn">*1) 日付・自局・SOTA/POTA/WWFF が足りないときだけ出ます。グリッドは任意なので、なくても出ません。<br>*2) zip には、全 QSO の ADIF、HAMLOG の CSV、チェイス用の SOTA の CSV、元の FLE ログが入ります。場所の画面でキャンセルすると、確認の画面に戻ります。<br>*3) 山の名前の <code>/</code> は <code>-</code> になります。SOTA は CSV でも取り込めます。</p>
 
 <h3 id="backup">書いている途中で止まったとき</h3>
 <p>ログは、<b>打つたびに端末の中へ自動で保存</b>します *1)。保存の操作は要りません。</p>
@@ -497,8 +498,9 @@ mysota JA/ST-012
 <h3 id="files">書き出すファイル</h3>
 <p>zip の名前は、最初の QSO の日付・運用場所・書き出した時刻です(<code>fle-20261019@JA-ST-012-JP-1151-1543.zip</code> など)*1)。「FLEログを保存」も同じ名前で <code>.txt</code> です。</p>
 <table>
-<tr><th>sotaYYYYMMDD.csv</th><td>SOTA のログ(山の QSO。UTC の日付ごと)。S2S があれば <code>sota-s2s-…csv</code> も</td></tr>
+<tr><th>sotaYYYYMMDD.csv</th><td>SOTA のログ(山の QSO。UTC の日付ごと)。S2S があれば <code>sota-s2s-…csv</code> も。自局の山・公園がないログでは、全 QSO のチェイス用の CSV(自局の山は空)</td></tr>
 <tr><th>コールサイン@公園-日付.adi</th><td>POTA の ADIF(公園ごと。日をまたいでも 1 つで、日付は最初の QSO の日)。WWFF・SOTA(山ごと。名前の <code>/</code> は <code>-</code>)も同じ形。周波数を書いたときは FREQ、山があれば MY_SOTA_REF(自分)・SOTA_REF(相手)も入ります</td></tr>
+<tr><th>adif-….adi</th><td>全 QSO の ADIF(場所に関係なく 1 つ。名前は HAMLOG の CSV と同じ形)。山があれば MY_SOTA_REF・SOTA_REF も入ります(POTA・WWFF の SIG は入りません)</td></tr>
 <tr><th>hamlog-….csv</th><td>HAMLOG の取り込み用 CSV(時刻は設定の「HAMLOG の時刻」。QTH・Rmks1・Rmks2 は設定の「HAMLOG の出力」)</td></tr>
 <tr><th>contest-日付.txt</th><td>コンテストのログのときに作られる、ZLOG 形式のファイル</td></tr>
 <tr><th>fle-日付@運用場所-時刻.txt</th><td>元の FLE ログ。名前も中身も「FLEログを保存」と同じです</td></tr>

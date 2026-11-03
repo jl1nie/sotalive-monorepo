@@ -214,6 +214,13 @@ fn generate(
         }
     }
 
+    // 全QSOの汎用 ADIF(場所に関係なく 1 つ。LoTW・QRZ・ほかのログソフト向け)。場所の SIG は書かない
+    let all: Vec<&FleQsoRecord> = result.records.iter().collect();
+    files.insert(
+        format!("adif-{}.adi", log_name),
+        generate_adif(&all, "", ""),
+    );
+
     // コンテストログ (ZLOG形式)
     if result.has_contest {
         let zlog_data = generate_zlog(result);
@@ -222,7 +229,6 @@ fn generate(
 
     // SOTAもWWFFもPOTAもない場合はSOTA形式で出力
     if !result.has_sota && !result.has_wwff && !result.has_pota && !result.has_contest {
-        let all: Vec<&FleQsoRecord> = result.records.iter().collect();
         let (sota_data, _) = generate_sota_csv(&all);
         files.insert(format!("sota{}.csv", date_str), sota_data);
     }
@@ -395,7 +401,8 @@ pub enum Severity {
 ///
 /// - 日付(`date`): ないと、QSOの日付が 2000-01-01 になる(必須)。
 /// - 自局のコールサイン(`mycall`): ないと、ADIF の `STATION_CALLSIGN` や SOTA CSV の自局が空になる(必須)。
-/// - 運用場所(`mysota` / `mypota` / `mywwff`): 1つもないと、ADIF(SOTA / POTA / WWFF)は作られない(必須)。
+/// - 運用場所(`mysota` / `mypota` / `mywwff`): 1つもないと、場所ごとの ADIF(SOTA / POTA / WWFF)は作られない(必須。
+///   全QSOの汎用 ADIF・HAMLOG の CSV・チェイス用の SOTA の CSV は作られる)。
 ///   運用場所のないQSOが混ざっているときも、そのQSOは ADIF に入らない(必須)。
 /// - グリッド(`mygrid`): ADIF に入るQSOに、ないと `MY_GRIDSQUARE` が出ない(推奨)。
 ///
@@ -1102,7 +1109,13 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             calls_in(&files["JA1ABC@JA-0001-20261018.adi"]),
             vec!["JA1AAA", "JA1BBB"]
         );
-        assert_eq!(files.keys().filter(|k| k.ends_with(".adi")).count(), 1);
+        assert_eq!(
+            files
+                .keys()
+                .filter(|k| k.ends_with(".adi") && !k.starts_with("adif-"))
+                .count(),
+            1
+        );
         // SOTA の CSV は、日ごとにアクティベーションを数えるので、UTC の日付ごとのまま
         let files = output_of("mycall JA1ABC\ndate 2026-10-18\n40m cw\nmysota JA/TK-001\n2300 ja1aaa\nday +\n0010 ja1bbb");
         assert!(files.contains_key("sota20261018.csv") && files.contains_key("sota20261019.csv"));
@@ -1115,7 +1128,13 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
             calls_in(&files["JA1ABC@JA-0001-20261018.adi"]),
             vec!["JA1AAA"]
         );
-        assert_eq!(files.keys().filter(|k| k.ends_with(".adi")).count(), 1);
+        assert_eq!(
+            files
+                .keys()
+                .filter(|k| k.ends_with(".adi") && !k.starts_with("adif-"))
+                .count(),
+            1
+        );
     }
 
     #[test]
@@ -1170,6 +1189,28 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
         assert!(files
             .keys()
             .any(|k| k.starts_with("hamlog-20261018@JA-0001-JA-0002")));
+    }
+
+    #[test]
+    fn every_log_gets_one_adif_with_all_qsos() {
+        // 場所ごとの ADIF とは別に、全QSOの汎用 ADIF を 1 つ(LoTW・QRZ・ほかのログソフト向け)。名前は HAMLOG の CSV と同じ形
+        let files = output_of(TWO_PARKS);
+        let all = &files["adif-20261018@JA-0001-JA-0002.adi"];
+        assert_eq!(calls_in(all), vec!["JA1AAA", "JA1BBB", "JA1CCC", "JA1DDD"]);
+        // 場所の SIG は書かない(QSO ごとに場所が違うことがある)
+        assert!(!all.contains("MY_SIG"), "{all}");
+    }
+
+    #[test]
+    fn a_log_without_any_reference_still_gets_the_all_qsos_adif() {
+        // 自局の山・公園がないログ(チェイスなど)でも、汎用 ADIF と、チェイス用の SOTA の CSV は作る
+        let files =
+            output_of("mycall JA1ABC\ndate 2026-10-18\n40m cw\n0900 ja1aaa ja/st-012\n0910 ja1bbb");
+        let all = &files["adif-20261018.adi"];
+        assert_eq!(calls_in(all), vec!["JA1AAA", "JA1BBB"]);
+        assert!(all.contains("<SOTA_REF:9>JA/ST-012"), "{all}");
+        assert!(files.contains_key("sota20261018.csv"));
+        assert_eq!(files.keys().filter(|k| k.ends_with(".adi")).count(), 1);
     }
 
     #[test]
@@ -1761,10 +1802,11 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
 
     // ---- SOTA の ADIF が出る/出ないパターン(テスターの「ZIP に .adi がない」への検査) ----
 
+    /// 場所ごとの ADIF の名前(全QSOの汎用 ADIF `adif-…` は除く)
     fn adi_names(fle: &str) -> Vec<String> {
         output_of(fle)
             .keys()
-            .filter(|k| k.ends_with(".adi"))
+            .filter(|k| k.ends_with(".adi") && !k.starts_with("adif-"))
             .cloned()
             .collect()
     }
@@ -1850,7 +1892,7 @@ mygrid PM96aa\nmypota JA-0002\n1100 ja1ccc\n1110 ja1ddd";
 
     #[test]
     fn a_log_without_a_place_makes_no_adi_and_warns() {
-        // 山を書かなかった・`mysota -` で消した、のいずれでも ADIF は出ない。生成の前に必須の警告で止まる
+        // 山を書かなかった・`mysota -` で消した、のいずれでも場所ごとの ADIF は出ない(汎用 ADIF は出る)。生成の前に必須の警告で止まる
         for fle in [
             format!("{SOTA_HEAD}40m cw\n0900 ja1aaa ja/tk-001"),
             format!("{SOTA_HEAD}mysota JA/ST-012\nmysota -\n40m cw\n0900 ja1aaa"),

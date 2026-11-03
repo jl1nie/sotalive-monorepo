@@ -290,9 +290,9 @@ const ja = {
   'check.missing_mycall':
     '自局のコールサインがありません。ADIF と SOTA の CSV で、自局が空になります({qsos}件のQSO)。',
   'check.missing_place':
-    '自局の SOTA・POTA・WWFF の情報がありません。SOTA の CSV と、SOTA・POTA・WWFF の ADIF は作られません(HAMLOG の CSV は作られます)。',
+    '自局の SOTA・POTA・WWFF の情報がありません。SOTA・POTA・WWFF の場所ごとの ADIF は作られません(全QSOの ADIF、HAMLOG の CSV、チェイス用の SOTA の CSV は作られます)。',
   'check.unplaced_qsos':
-    '運用場所のないQSOが{qsos}件あります(mysota・mypota・mywwff の行より前、または消したあと)。その QSO は、ADIF と SOTA の CSV に入りません。',
+    '運用場所のないQSOが{qsos}件あります(mysota・mypota・mywwff の行より前、または消したあと)。その QSO は、場所ごとの ADIF と SOTA の CSV に入りません。',
   'check.missing_grid': 'グリッドロケータがありません。ADIF の MY_GRIDSQUARE が出ません({qsos}件のQSO)。',
   'check.unsure_call': '聞き取れなかった文字(?)のあるコールサインがあります: {calls}。SOTA・POTA に上げる前に直してください({qsos}件のQSO)。',
   'notice.dateInserted': '日付が変わったので「{directive}」を入れました',
@@ -611,9 +611,9 @@ const en: Record<MessageKey, string> = {
   'check.missing_mycall':
     'No callsign for your station. The station fields in the ADIF and SOTA CSV will be empty (QSOs: {qsos}).',
   'check.missing_place':
-    'No SOTA / POTA / WWFF reference for your station. The SOTA CSV and the SOTA, POTA and WWFF ADIF files will not be made (the HAMLOG CSV will).',
+    'No SOTA / POTA / WWFF reference for your station. The per-reference SOTA, POTA and WWFF ADIF files will not be made (the all-QSO ADIF, the HAMLOG CSV and the chaser SOTA CSV will).',
   'check.unplaced_qsos':
-    '{qsos} QSO(s) have no operating location (they come before the mysota / mypota / mywwff line, or after it was cleared). They will not be in the ADIF files or the SOTA CSV.',
+    '{qsos} QSO(s) have no operating location (they come before the mysota / mypota / mywwff line, or after it was cleared). They will not be in the per-reference ADIF files or the SOTA CSV.',
   'check.unsure_call': 'Some callsigns have unclear characters (?): {calls}. Fix them before uploading to SOTA / POTA (QSOs: {qsos}).',
   'notice.dateInserted': 'The date has changed, so "{directive}" was added',
   'notice.newDay': 'New day',

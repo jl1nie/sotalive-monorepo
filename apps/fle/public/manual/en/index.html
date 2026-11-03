@@ -83,7 +83,7 @@
   <li>The app does not upload anything to SOTA, POTA or other sites. Upload the files it makes yourself.</li>
   <li>Searching for summits and parks, looking up JCC/JCG, and syncing need a signal.</li>
 </ul>
-<p class="note">Note: the app is for activations (operating from a summit or park yourself). Chasing from home is outside what the SOTA, POTA and WWFF files are made for (the HAMLOG CSV can still be made).</p>
+<p class="note">Note: the app is for activations (operating from a summit or park yourself). When chasing from home, the per-reference SOTA, POTA and WWFF files are not made (the all-QSO ADIF, the HAMLOG CSV and the chaser SOTA CSV are).</p>
 
 <h2 id="setup">2. First-time setup</h2>
 
@@ -252,11 +252,12 @@ ssb
 <tr><th>sotaYYYYMMDD.csv</th><td>Upload to the SOTA database</td></tr>
 <tr><th>callsign@park-date.adi</th><td>Upload to the POTA site (one per park)</td></tr>
 <tr><th>callsign@summit-date.adi</th><td>Upload to SOTA as ADIF (one per summit) *3). The WWFF ADIF has the same form</td></tr>
+<tr><th>adif-….adi</th><td>The ADIF of all QSOs. Import into LoTW, QRZ.com or other logging software</td></tr>
 <tr><th>hamlog-….csv</th><td>Import into HAMLOG</td></tr>
 <tr><th>fle-….txt</th><td>The original FLE log (the same as "Save FLE log"). Keep it</td></tr>
 </table>
 <p class="note">Note: if some lines have errors, the files are not made; the zip holds only a text describing the errors and the original FLE log. Fix them and export again. For what the files contain, see "<a href="#files">Exported files</a>".</p>
-<p class="fn">*1) It appears only when the date, your callsign or SOTA/POTA/WWFF is missing. The grid is optional, so a missing grid does not bring it up.<br>*2) The zip holds only the HAMLOG CSV and the original FLE log. Cancelling the location screen goes back to the check screen.<br>*3) <code>/</code> in the summit name becomes <code>-</code>. SOTA also accepts the CSV.</p>
+<p class="fn">*1) It appears only when the date, your callsign or SOTA/POTA/WWFF is missing. The grid is optional, so a missing grid does not bring it up.<br>*2) The zip holds the all-QSO ADIF, the HAMLOG CSV, the chaser SOTA CSV and the original FLE log. Cancelling the location screen goes back to the check screen.<br>*3) <code>/</code> in the summit name becomes <code>-</code>. SOTA also accepts the CSV.</p>
 
 <h3 id="backup">If the device freezes while you are logging</h3>
 <p>The log is <b>saved automatically inside the device as you type</b> *1). You do not need to do anything.</p>
@@ -497,8 +498,9 @@ mysota JA/ST-012
 <h3 id="files">Exported files</h3>
 <p>The zip is named after the first QSO's date, the location and the time you exported (such as <code>fle-20261019@JA-ST-012-JP-1151-1543.zip</code>) *1). "Save FLE log" uses the same name with <code>.txt</code>.</p>
 <table>
-<tr><th>sotaYYYYMMDD.csv</th><td>The SOTA log (QSOs on a summit, one file per UTC date). With S2S QSOs, also <code>sota-s2s-…csv</code></td></tr>
+<tr><th>sotaYYYYMMDD.csv</th><td>The SOTA log (QSOs on a summit, one file per UTC date). With S2S QSOs, also <code>sota-s2s-…csv</code>. For a log without your summit or park, a chaser CSV of all QSOs (your summit left empty)</td></tr>
 <tr><th>callsign@park-date.adi</th><td>The POTA ADIF (one per park; a single file even across dates, named after the first QSO's date). WWFF and SOTA (one per summit; <code>/</code> in the name becomes <code>-</code>) have the same form. FREQ is included when you wrote a frequency, and MY_SOTA_REF (yours) and SOTA_REF (the other station's) when there is a summit</td></tr>
+<tr><th>adif-….adi</th><td>The ADIF of all QSOs (one file regardless of location, named like the HAMLOG CSV). Includes MY_SOTA_REF and SOTA_REF when there is a summit (no POTA or WWFF SIG)</td></tr>
 <tr><th>hamlog-….csv</th><td>A CSV for importing into HAMLOG (times per the "HAMLOG time" setting; QTH, Rmks1 and Rmks2 per the "HAMLOG output" setting)</td></tr>
 <tr><th>contest-date.txt</th><td>A file in ZLOG format, made for contest logs</td></tr>
 <tr><th>fle-date@location-time.txt</th><td>The original FLE log. Its name and contents are the same as "Save FLE log"</td></tr>
