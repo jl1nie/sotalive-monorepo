@@ -85,6 +85,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  test: {
+    setupFiles: ['./src/test-setup.ts'],
+  },
   server: {
     port: 3003,
     // 本番は Cloudflare Pages の中継(pages/fle/functions)が同じ役目をする。中継先は環境変数 BACKEND_URL で変えられる
