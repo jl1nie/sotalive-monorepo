@@ -62,7 +62,7 @@ sotaapp2 の GitHub --(push)--> Actions --> Docker Hub(イメージ) --(手動�
 | Node 20 と pnpm 10 | フロントエンドのビルド |
 | Rust(`wasm-pack` も) | FLE の wasm のビルド(手元で動かすとき) |
 | `flyctl` | Fly.io の操作 |
-| `wrangler` | Cloudflare の操作(`npx wrangler@4.54.0` で足ります) |
+| `wrangler` | Cloudflare の操作(`npx wrangler@4.157.0` で足ります) |
 
 2つのリポジトリを自分のアカウントにフォークします。
 
@@ -158,24 +158,24 @@ Functions(`functions/_middleware.ts` と `pages/fle/functions/api/v2/[[path]].ts
 プロジェクトは4つ作ります。デプロイの前に、空のプロジェクトが必要です。
 
 ```bash
-npx wrangler@4.54.0 login
-npx wrangler@4.54.0 pages project create sotalive        --production-branch=main
-npx wrangler@4.54.0 pages project create sotalive-myact  --production-branch=main
-npx wrangler@4.54.0 pages project create sotalive-myqth  --production-branch=main
-npx wrangler@4.54.0 pages project create sotalive-fle    --production-branch=main
+npx wrangler@4.157.0 login
+npx wrangler@4.157.0 pages project create sotalive        --production-branch=main
+npx wrangler@4.157.0 pages project create sotalive-myact  --production-branch=main
+npx wrangler@4.157.0 pages project create sotalive-myqth  --production-branch=main
+npx wrangler@4.157.0 pages project create sotalive-fle    --production-branch=main
 ```
 
 - 名前は `.github/workflows/ci.yml` の `--project-name` と同じにします。変えるなら、`ci.yml` も直します。
 - プロジェクトの名前は、自分のアカウントの中で決めます。ただし `*.pages.dev` のサブドメインはすべての利用者で共通なので、取られていると `sotalive-myact-xxx.pages.dev` のように後ろに文字が付きます。作ったあとに表示される実際のサブドメインを控え、手順9の CNAME はそこへ向けます。
 - 名前を変えたら、`ci.yml` の `--project-name` と `pages/fle/wrangler.toml` の `name` を合わせます。
-- アカウント ID は、Cloudflare のダッシュボードの右側か、`npx wrangler@4.54.0 whoami` で分かります。
+- アカウント ID は、Cloudflare のダッシュボードの右側か、`npx wrangler@4.157.0 whoami` で分かります。
 
 ## 5. KV の名前空間を作る
 
 FLE Online の設定の同期に使います。
 
 ```bash
-npx wrangler@4.54.0 kv namespace create FLE_PREFS
+npx wrangler@4.157.0 kv namespace create FLE_PREFS
 ```
 
 出力に ID が出ます。`pages/fle/wrangler.toml` の `id` を、自分の ID に置き換えます。
