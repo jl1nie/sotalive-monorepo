@@ -34,3 +34,9 @@ target/
 
 # scripts/verify.sh のログ
 .verify/
+
+# OpenTofu
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/crash.log
