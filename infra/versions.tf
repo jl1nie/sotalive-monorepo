@@ -33,3 +33,8 @@ variable "cloudflare_account_id" {
   description = "Cloudflare のアカウント ID(TF_VAR_cloudflare_account_id)"
   type        = string
 }
+
+variable "cloudflare_zone_id" {
+  description = "sotalive.net のゾーン ID(TF_VAR_cloudflare_zone_id)"
+  type        = string
+}

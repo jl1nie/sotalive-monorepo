@@ -5,13 +5,18 @@ Cloudflare の Pages プロジェクト・カスタムドメイン・KV を、�
 
 ## 状態
 
-骨組みだけ(プロバイダー・state の置き場所)。リソースは、実物を `tofu import` して `plan` が差分なしになることを確かめながら足す。
+管理するもの: Pages プロジェクト 6 つ、Pages のカスタムドメイン 7 つとその CNAME、KV `FLE_PREFS`。
+実物は import ブロック(`imports.tf`)で取り込む。`plan` の差分が、実物と定義の食い違い。
+
+**管理しないもの**: Fly.io 向けの DNS(`admin`・`awards`・`sotaapp2`。アプリの URL をリポジトリに書かない方針)、頂点の `sotalive.net`(リダイレクトのルールとあわせて、別に決める)、メールの設定(今は無い)。
 
 ## 準備(一度だけ)
 
 1. OpenTofu を入れる: `brew install opentofu`
 2. `cp infra/.env.example infra/.env` → 値を埋める(取り方は `.env.example` の中)
 3. `source infra/.env && tofu -chdir=infra init`
+4. DNS の import を作る: `source infra/.env && infra/scripts/gen-dns-imports.sh`
+5. `source infra/.env && tofu -chdir=infra plan` で、差分を確かめる(取り込みの 1 回目は import が並ぶ)
 
 ## 日々の使い方
 
