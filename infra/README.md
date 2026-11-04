@@ -5,10 +5,10 @@ Cloudflare の Pages プロジェクト・カスタムドメイン・KV を、�
 
 ## 状態
 
-管理するもの: Pages プロジェクト 6 つ、Pages のカスタムドメイン 7 つとその CNAME、KV `FLE_PREFS`。
+管理するもの: Pages プロジェクト 6 つ、Pages のカスタムドメイン 7 つとその CNAME、KV `FLE_PREFS`、頂点 `sotalive.net` の AAAA とリダイレクト(→ www)、ゾーンの暗号化モード(`ssl = strict`)。
 取り込み(import)は済み。`plan` の差分が、実物と定義の食い違い。サブドメインを足すときは、`locals.tf` の `pages_domains` に 1 行足して `apply` する。
 
-**管理しないもの**: Fly.io 向けの DNS(`admin`・`awards`・`sotaapp2`。アプリの URL をリポジトリに書かない方針)、頂点の `sotalive.net`(リダイレクトのルールとあわせて、別に決める)、メールの設定(今は無い)。
+**管理しないもの**: Fly.io 向けの DNS(`admin`・`awards`・`sotaapp2`。アプリの URL をリポジトリに書かない方針)、既定のままのゾーン設定(`always_use_https` は off、`min_tls_version` は 1.0 など。変えたくなったら `zone.tf` に足す)、Cloudflare が用意した既定のルール(DDoS・マネージドの無料ルール)、メールの設定(今は無い)。
 
 ## 準備(一度だけ)
 
