@@ -18,7 +18,7 @@
     "pages:deploy:preview": "pnpm run build && wrangler pages deploy dist --branch develop"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4",
+    "@cloudflare/workers-types": "^5.20261104.1",
     "turbo": "^2",
     "wrangler": "^4.157.0"
   }
