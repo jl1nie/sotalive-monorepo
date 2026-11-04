@@ -155,6 +155,8 @@ Functions(`functions/_middleware.ts` と `pages/fle/functions/api/v2/[[path]].ts
 
 ## 4. Cloudflare Pages のプロジェクトを作る
 
+> **OpenTofu で作る場合**: 手順4・5・9(Pages のプロジェクト、KV、カスタムドメインと CNAME)は、`infra/` の OpenTofu でも作れます(`infra/README.md`)。`infra/locals.tf` の一覧を自分の名前に書き換え、`tofu apply` します。手で作るなら、以下のとおりです。API トークン(手順6)、GitHub の Secrets(手順7)、バックエンド(手順3)は、OpenTofu の対象外です。
+
 プロジェクトは4つ作ります。デプロイの前に、空のプロジェクトが必要です。
 
 ```bash

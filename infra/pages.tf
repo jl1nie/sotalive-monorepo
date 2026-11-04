@@ -1,3 +1,7 @@
+# 既知の問題: プロバイダー 5.27 以降は、deployment_configs を書かない Pages プロジェクトに、
+# `build_image_auto_upgrade = (known after apply)` の差分を毎回出す(読み取り専用の値。apply しても実物は変わらない)。
+# lifecycle.ignore_changes では消せない。https://github.com/cloudflare/terraform-provider-cloudflare/issues/7449
+# 直ったら、この注記を消す。
 resource "cloudflare_pages_project" "this" {
   for_each = local.pages_projects
 
