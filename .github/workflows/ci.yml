@@ -21,7 +21,7 @@ concurrency:
 
 env:
   # デプロイに使う wrangler(ルートの devDependencies と同じ版。デプロイのジョブでは pnpm install しない)
-  WRANGLER: wrangler@4.54.0
+  WRANGLER: wrangler@4.157.0
 
 jobs:
   # 変わったパスを判定する。all は、どれにも効く共通の部分(変わったら、すべて走らせる)

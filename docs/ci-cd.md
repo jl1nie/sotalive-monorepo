@@ -110,7 +110,7 @@ push は止めません。続けてマージしたとき、古い内容が後か
 ## デプロイの条件と先
 
 - 条件: push であること、待つジョブに失敗か中止がないこと、対応するパスが変わったこと(または `all`)。
-- コマンド: `npx --yes wrangler@4.54.0 pages deploy ... --branch=<ブランチ名>`。wrangler の版は `ci.yml` の `env.WRANGLER` で固定しています。
+- コマンド: `npx --yes wrangler@4.157.0 pages deploy ... --branch=<ブランチ名>`。wrangler の版は `ci.yml` の `env.WRANGLER` で固定しています。
 - `main` へのデプロイが本番になり、それ以外のブランチは、Pages のプレビュー(`<ブランチ>.<プロジェクト>.pages.dev`)になります。
 - `deploy-fle` だけ `pages/fle` で実行します。`pages/fle/wrangler.toml` の KV の束縛と `functions/` を使うためです。
 - `deploy-legacy` は出力のディレクトリの中で実行します。ルートの `functions/` と `wrangler.toml` を拾わないためです。Functions なしで出せて、無料枠を使いません。
