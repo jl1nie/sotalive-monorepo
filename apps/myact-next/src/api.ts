@@ -2,11 +2,12 @@
  * sotaapp2 の API クライアント(次期 MyACT が使う分。`packages/sotalive-api` の最初の形)。
  * 旧版 `fetchAPI`(myact.js)と同じ決まり: パスの各部分を URL エンコードし、失敗(通信・ok でない応答)は null を返す(例外にしない)。
  */
+import { API_BASE } from '@sotalive/config'
 import type { SpotGroup } from './spots.ts'
 import type { AprsTrack } from './aprs.ts'
 import type { Geomag } from './clock.ts'
 
-export const DEFAULT_BASE = 'https://sotaapp2.sotalive.net/api/v2'
+export const DEFAULT_BASE = API_BASE
 
 export interface PotaLogInfo {
   logId: string

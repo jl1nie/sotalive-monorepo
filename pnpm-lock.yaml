@@ -277,6 +277,9 @@ importers:
 
   apps/myact-next:
     dependencies:
+      '@sotalive/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@sotalive/geo':
         specifier: workspace:*
         version: link:../../packages/geo
@@ -369,6 +372,15 @@ importers:
         specifier: ^4.0.16
         version: 4.0.16(@types/node@24.10.4)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.51.2)
 
+  packages/config:
+    devDependencies:
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.16
+        version: 4.0.16(@types/node@24.10.4)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.51.2)
+
   packages/functions-test:
     devDependencies:
       '@eslint/js':
@@ -388,6 +400,10 @@ importers:
         version: 4.0.16(@types/node@24.10.4)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.51.2)
 
   packages/geo:
+    dependencies:
+      '@sotalive/config':
+        specifier: workspace:*
+        version: link:../config
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.1

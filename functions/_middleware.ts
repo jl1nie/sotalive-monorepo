@@ -2,8 +2,8 @@
 // サブドメインに基づいてルーティング + API プロキシ
 
 // バックエンドの URL は、Pages のプロジェクトの環境変数 BACKEND_URL で決める(リポジトリには書かない)。
-// なければ、公開しているバックエンドのドメイン
-const PUBLIC_BACKEND_URL = "https://sotaapp2.sotalive.net";
+// なければ、公開しているバックエンドのドメイン(packages/config)
+import { BACKEND_ORIGIN } from "../packages/config/src/index";
 
 interface Env {
   ASSETS: Fetcher;
@@ -40,7 +40,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   // APIリクエストはバックエンドにプロキシ
   if (url.pathname.startsWith("/api/")) {
-    const backendUrl = new URL(url.pathname + url.search, context.env.BACKEND_URL || PUBLIC_BACKEND_URL);
+    const backendUrl = new URL(url.pathname + url.search, context.env.BACKEND_URL || BACKEND_ORIGIN);
     const headers = new Headers(context.request.headers);
     headers.set("X-Forwarded-Host", hostname);
 
