@@ -71,3 +71,32 @@ resource "cloudflare_ruleset" "ratelimit" {
     },
   ]
 }
+
+# API のキャッシュ(sotaapp2/docs/caching.md)。Cloudflare は JSON の API 応答を既定ではキャッシュしないので、
+# バックエンドの Cache-Control に従って覚える。
+# - エッジ TTL は「ヘッダーがなければバイパス」(ヘッダーのない地図の本体などを、古いまま配らないため)
+# - ブラウザー TTL は「オリジンに従う」(固定にすると Cache-Control を書き換えてしまう)
+resource "cloudflare_ruleset" "cache" {
+  zone_id = var.cloudflare_zone_id
+  name    = "default"
+  kind    = "zone"
+  phase   = "http_request_cache_settings"
+
+  rules = [
+    {
+      enabled     = true
+      action      = "set_cache_settings"
+      description = "SOTAApp2"
+      expression  = "(http.host eq \"sotaapp2.sotalive.net\" and starts_with(http.request.uri.path, \"/api/v2/\") and http.request.method eq \"GET\")"
+      action_parameters = {
+        cache = true
+        edge_ttl = {
+          mode = "bypass_by_default"
+        }
+        browser_ttl = {
+          mode = "respect_origin"
+        }
+      }
+    },
+  ]
+}
