@@ -28,6 +28,9 @@ source infra/.env && tofu -chdir=infra apply   # 反映(plan を読んでから)
 
 ## 約束
 
+- **管理するものの変更は、コンソールでなく、`infra/*.tf` を直して `apply` する**(ドメイン・DNS・Pages プロジェクト・リダイレクト・暗号化モード・WAF やレート制限を足すときも同じ)。コンソールで変えると `plan` に差分が出る。出たら、コードに取り込むか、コンソールの変更を戻す
+- 管理しないものは、コンソールで変えても `plan` に出ない(上の「管理しないもの」)
+
 - `infra/.env` は **コミットしない・会話に貼らない**。tofu は人が走らせ、plan の出力だけを共有する
 - **管理しないもの**: デプロイ(GitHub Actions の `wrangler pages deploy`)、秘密の値(Pages の環境変数の値、API トークン)、KV の中身
 - state は R2 のバケット `sotalive-tfstate`。バケットの削除・上書きは、state を失うのでしない
