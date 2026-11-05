@@ -5,13 +5,19 @@ Cloudflare の Pages プロジェクト・カスタムドメイン・KV を、�
 
 ## 状態
 
-骨組みだけ(プロバイダー・state の置き場所)。リソースは、実物を `tofu import` して `plan` が差分なしになることを確かめながら足す。
+管理するもの: Pages プロジェクト 6 つ、Pages のカスタムドメイン 7 つとその CNAME、KV `FLE_PREFS`、頂点 `sotalive.net` の AAAA とリダイレクト(→ www)、ゾーンの暗号化モード(`ssl = strict`)、API のキャッシュルール(sotaapp2。`sotaapp2/docs/caching.md`)、API のレート制限(IP ごとに 10 秒で 100 回。キャッシュに当たった要求は数えない)。
+取り込み(import)は済み。`plan` の差分が、実物と定義の食い違い。サブドメインを足すときは、`locals.tf` の `pages_domains` に 1 行足して `apply` する。
+
+**管理しないもの**: Fly.io 向けの DNS(`admin`・`awards`・`sotaapp2`。アプリの URL をリポジトリに書かない方針)、既定のままのゾーン設定(`always_use_https` は off、`min_tls_version` は 1.0 など。変えたくなったら `zone.tf` に足す)、Cloudflare が用意した既定のルール(DDoS・マネージドの無料ルール)、メールの設定(今は無い)。
 
 ## 準備(一度だけ)
 
 1. OpenTofu を入れる: `brew install opentofu`
 2. `cp infra/.env.example infra/.env` → 値を埋める(取り方は `.env.example` の中)
 3. `source infra/.env && tofu -chdir=infra init`
+4. `source infra/.env && tofu -chdir=infra plan` で、差分を確かめる
+
+**plan に毎回出る差分**: Pages プロジェクトの `build_image_auto_upgrade = (known after apply)`(プロバイダーのバグ。`Plan: 0 to add, 5 to change, 0 to destroy` と出る)。読み取り専用の値の問い合わせだけで、実物は変わらない。これ以外の差分が出たら、本物の食い違い。
 
 ## 日々の使い方
 
@@ -21,6 +27,11 @@ source infra/.env && tofu -chdir=infra apply   # 反映(plan を読んでから)
 ```
 
 ## 約束
+
+- **管理するものの変更は、コンソールでなく、`infra/*.tf` を直して `apply` する**(ドメイン・DNS・Pages プロジェクト・リダイレクト・暗号化モード・キャッシュ・WAF やレート制限)。コンソールで変えると `plan` に差分が出る。出たら、コードに取り込むか、コンソールの変更を戻す
+- 管理しないものは、コンソールで変えても `plan` に出ない(上の「管理しないもの」)
+- レート制限のしきい値(`zone.tf` の `requests_per_period`)は、緩く置いてある。ダッシュボードの「Security → Events」で、正規の利用者がブロックされていないかを見て、調整する
+
 
 - `infra/.env` は **コミットしない・会話に貼らない**。tofu は人が走らせ、plan の出力だけを共有する
 - **管理しないもの**: デプロイ(GitHub Actions の `wrangler pages deploy`)、秘密の値(Pages の環境変数の値、API トークン)、KV の中身
