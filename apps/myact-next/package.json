@@ -12,6 +12,7 @@
     "test:e2e": "node --test e2e/myact-next.e2e.mjs"
   },
   "dependencies": {
+    "@sotalive/config": "workspace:*",
     "@sotalive/geo": "workspace:*",
     "bootstrap": "4.5.0",
     "leaflet": "^1.9.4",

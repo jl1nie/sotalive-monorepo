@@ -6,6 +6,7 @@
  * (全員のリクエストが 1 つの IP から国土地理院に出て、制限の対象になる)。
  * バックエンドを通るのは、自治体コード → JCC/JCG の表検索(`/locator/jcc-jcg`)だけ。
  */
+import { API_BASE } from '@sotalive/config'
 import { maidenhead } from './maidenhead.ts'
 
 export interface GeoOk {
@@ -52,7 +53,7 @@ export interface ReverseGeocoderOptions {
 const DEFAULTS = {
   gsiAddress: 'https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress',
   gsiElevation: 'https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php',
-  muni: 'https://sotaapp2.sotalive.net/api/v2/locator/jcc-jcg',
+  muni: `${API_BASE}/locator/jcc-jcg`,
   cacheSize: 16,
 }
 

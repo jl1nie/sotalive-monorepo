@@ -65,24 +65,30 @@ jobs:
               - 'crates/**'
             fle:
               - 'apps/fle/**'
+              - 'packages/config/**'
               - 'crates/**'
               - 'pages/fle/**'
             logconv:
               - 'apps/logconv/**'
+              - 'packages/config/**'
               - 'pages/logconv/**'
             myact:
               - 'apps/myact/**'
             geo:
               - 'packages/geo/**'
+              - 'packages/config/**'
             myqth:
               - 'apps/myqth/**'
               - 'packages/geo/**'
+              - 'packages/config/**'
             myact_next:
               - 'apps/myact-next/**'
               - 'packages/geo/**'
+              - 'packages/config/**'
               - 'packages/myact-golden/**'
             functions:
               - 'functions/**'
+              - 'packages/config/**'
               - 'packages/functions-test/**'
               # FLE の同期(KV)と中継。同期の約束のテストは、アプリの設定・予定のコードも読む
               - 'pages/fle/functions/**'
@@ -105,6 +111,7 @@ jobs:
               - 'apps/myact/**'
               - 'apps/myqth/**'
               - 'packages/geo/**'
+              - 'packages/config/**'
 
   # ---- テスト(並列) ----
 
@@ -202,6 +209,11 @@ jobs:
           pnpm exec tsc --noEmit
           pnpm exec vitest run
           pnpm exec eslint .
+      - name: Test packages/config
+        working-directory: packages/config
+        run: |
+          pnpm exec tsc --noEmit
+          pnpm exec vitest run
 
   # 旧版 MyACT を固定の応答で動かし、ポップアップ・マーカーなどの出力が、記録(packages/myact-golden/expected)と同じか
   # (次期 MyACT の基準。旧版を意図して変えたら、record して、差分を見る)

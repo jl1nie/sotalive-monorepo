@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 import { execSync } from 'node:child_process'
+import { BACKEND_ORIGIN } from '../../packages/config/src/index.ts'
 
 // どの版が動いているか確認できるよう、コミットの番号を埋め込む
 const appVersion = (() => {
@@ -92,7 +93,7 @@ export default defineConfig({
     port: 3003,
     // 本番は Cloudflare Pages の中継(pages/fle/functions)が同じ役目をする。中継先は環境変数 BACKEND_URL で変えられる
     proxy: {
-      '/api': { target: process.env.BACKEND_URL || 'https://sotaapp2.sotalive.net', changeOrigin: true },
+      '/api': { target: process.env.BACKEND_URL || BACKEND_ORIGIN, changeOrigin: true },
     },
   },
 })
