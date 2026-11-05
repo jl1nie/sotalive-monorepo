@@ -5,7 +5,7 @@ Cloudflare の Pages プロジェクト・カスタムドメイン・KV を、�
 
 ## 状態
 
-管理するもの: Pages プロジェクト 6 つ、Pages のカスタムドメイン 7 つとその CNAME、KV `FLE_PREFS`、頂点 `sotalive.net` の AAAA とリダイレクト(→ www)、ゾーンの暗号化モード(`ssl = strict`)。
+管理するもの: Pages プロジェクト 6 つ、Pages のカスタムドメイン 7 つとその CNAME、KV `FLE_PREFS`、頂点 `sotalive.net` の AAAA とリダイレクト(→ www)、ゾーンの暗号化モード(`ssl = strict`)、API のキャッシュルール(sotaapp2。`sotaapp2/docs/caching.md`)、API のレート制限(IP ごとに 10 秒で 100 回。キャッシュに当たった要求は数えない)。
 取り込み(import)は済み。`plan` の差分が、実物と定義の食い違い。サブドメインを足すときは、`locals.tf` の `pages_domains` に 1 行足して `apply` する。
 
 **管理しないもの**: Fly.io 向けの DNS(`admin`・`awards`・`sotaapp2`。アプリの URL をリポジトリに書かない方針)、既定のままのゾーン設定(`always_use_https` は off、`min_tls_version` は 1.0 など。変えたくなったら `zone.tf` に足す)、Cloudflare が用意した既定のルール(DDoS・マネージドの無料ルール)、メールの設定(今は無い)。
@@ -27,6 +27,10 @@ source infra/.env && tofu -chdir=infra apply   # 反映(plan を読んでから)
 ```
 
 ## 約束
+
+- **管理するものの変更は、コンソールでなく、`infra/*.tf` を直して `apply` する**(ドメイン・DNS・Pages プロジェクト・リダイレクト・暗号化モード・キャッシュ・WAF やレート制限)。コンソールで変えると `plan` に差分が出る。出たら、コードに取り込むか、コンソールの変更を戻す
+- 管理しないものは、コンソールで変えても `plan` に出ない(上の「管理しないもの」)
+- レート制限のしきい値(`zone.tf` の `requests_per_period`)は、緩く置いてある。ダッシュボードの「Security → Events」で、正規の利用者がブロックされていないかを見て、調整する
 
 - **管理するものの変更は、コンソールでなく、`infra/*.tf` を直して `apply` する**(ドメイン・DNS・Pages プロジェクト・リダイレクト・暗号化モード・WAF やレート制限を足すときも同じ)。コンソールで変えると `plan` に差分が出る。出たら、コードに取り込むか、コンソールの変更を戻す
 - 管理しないものは、コンソールで変えても `plan` に出ない(上の「管理しないもの」)
