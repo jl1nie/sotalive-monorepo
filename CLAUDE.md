@@ -42,6 +42,7 @@ sotalive-monorepo/
 │   └── shared/         # 共通アセット（旧版の myact が共有。myqth の新版はファビコンと 404.html だけ使う。Vercel 版の public/common と同じ）
 ├── tools/
 │   └── jaffpota/       # 公園区域 TopoJSON の生成・版管理・検証（Python、uv。docs/park-areas.md）
+├── infra/              # Cloudflare の構成（OpenTofu。Pages・ドメイン・DNS・リダイレクト・暗号化・API のキャッシュとレート制限。state は R2。docs は infra/README.md）
 ├── functions/
 │   └── _middleware.ts  # Cloudflare Workers（API proxy + routing）
 ├── dist/               # ビルド出力
