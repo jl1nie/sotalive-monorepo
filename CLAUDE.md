@@ -42,6 +42,7 @@ sotalive-monorepo/
 │   └── shared/         # 共通アセット（旧版の myact が共有。myqth の新版はファビコンと 404.html だけ使う。Vercel 版の public/common と同じ）
 ├── tools/
 │   └── jaffpota/       # 公園区域 TopoJSON の生成・版管理・検証（Python、uv。docs/park-areas.md）
+├── infra/              # Cloudflare の構成（OpenTofu。Pages・ドメイン・DNS・リダイレクト・暗号化・API のキャッシュとレート制限。state は R2。docs は infra/README.md）
 ├── functions/
 │   └── _middleware.ts  # Cloudflare Workers（API proxy + routing）
 ├── dist/               # ビルド出力
@@ -88,7 +89,7 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 | サブドメイン | アプリ | プロジェクト（CNAME 先） | 備考 |
 |------------|--------|------|------|
-| myact.sotalive.net / www | MyActivation（旧版。apps/myact-org） | sotalive-myact | www の `/logconv` 以下は logconv.sotalive.net へ転送（`_redirects`） |
+| myact.sotalive.net / mypilgrim / www | MyActivation（旧版。apps/myact-org） | sotalive-myact | www の `/logconv` 以下は logconv.sotalive.net へ転送（`_redirects`） |
 | myqth.sotalive.net | MyQTH（新版。apps/myqth） | sotalive-myqth | 旧版は apps/myqth-org に残してある。戻すときは `scripts/build-static-projects.sh` の myqth のブロックを旧版の `build` に替える |
 | logconv.sotalive.net | LogConverter | sotalive-logconv | `/`（base が `/`）。Functions は `/api` の下だけ（`pages/logconv`：バックエンドへの中継）。Vercel から切り替え済み（手順は `docs/deploy-guide.md`） |
 | fleonline.sotalive.net | FLE Online | sotalive-fle | `/fle/`（`/` は転送）。Functions は `/api` の下だけ（`pages/fle`：設定の同期の KV と、バックエンドへの中継） |

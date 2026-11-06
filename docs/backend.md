@@ -45,6 +45,7 @@
 | ボリューム | `data` を `/data` に |
 | 公開ポート | 内部 8080、HTTPS を強制 |
 | 常時起動 | `auto_stop_machines = 'off'`、`min_machines_running = 1` |
+| 同時リクエスト数の上限 | `type = 'requests'`、`soft_limit = 50`、`hard_limit = 100`(256MB の 1 台を過負荷から守る最後の防波堤。メモリを見て調整する) |
 | ヘルスチェック | `GET /api/v2/health`(30 秒ごと) |
 
 ## このリポジトリのアプリが使う API
@@ -68,16 +69,19 @@
 
 ## CI とデプロイ(sotaapp2 側)
 
-`.github/workflows/` に4つあります。
+`.github/workflows/` に5つあります。
 
 | ファイル | きっかけ | 内容 |
 |---|---|---|
 | `ci.yml` | PR と push(main・develop) | `cargo fmt`、`clippy`、`cargo nextest`、Docker イメージのビルドと E2E。main への push だけ Docker Hub(`jl1nie/sotaapp2`)へ push(`latest` と短い SHA のタグ) |
-| `deploy.yml` | 手動(`workflow_dispatch`) | DB のバックアップ(`flyctl ssh sftp get`)、`flyctl deploy --image <SHA のタグ>`、ヘルスチェック、失敗したら前のイメージに戻す |
+| `deploy.yml` | 手動(`workflow_dispatch`) | DB のバックアップ(R2 の `pre-deploy/`、7 日。`skip_backup` で飛ばせる)、`flyctl deploy --image <SHA のタグ>`、ヘルスチェック、失敗したら前のイメージに戻す |
+| `backup.yml` | 毎週月曜 03:00 JST と手動 | DB の写しを R2 の `weekly/`(90 日)に保存。処理は `.github/actions/db-backup`(deploy.yml と共通)。手順は sotaapp2 の `docs/backup.md` |
 | `rollback.yml` | 手動 | 指定したタグのイメージに戻す |
 | `release.yml` | `v*` のタグ | テストのあとにリリース |
 
-Secrets は `DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`、`FLY_API_TOKEN` です。
+Secrets は `DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`、`FLY_API_TOKEN`、バックアップ用の `R2_ENDPOINT_URL`・`R2_ACCESS_KEY_ID`・`R2_SECRET_ACCESS_KEY` です。
+
+Cloudflare 側(キャッシュルール・レート制限など)は、このリポジトリの `infra/` で持っています(`infra/README.md`)。
 つまり、main に入っただけでは本番は変わりません。Actions の Deploy を手で実行して出します。
 
 自分の環境で作る手順は [deploy-guide.md](deploy-guide.md)、フロントエンド側の CI は [ci-cd.md](ci-cd.md) を見てください。
