@@ -20,7 +20,9 @@ export interface RefPrefs {
 
 const potaUrl = (code: string) => `https://pota.app/#/park/${encodeURIComponent(code)}`
 const wwffUrl = (code: string) => `https://wwff.co/directory/?showRef=${encodeURIComponent(code)}`
-const sotaUrl = (code: string) => `https://summits.sota.org.uk/summit/${encodeURIComponent(code)}`
+// SOTA 本家はパス形式(/summit/JA/YN-098)。コードの '/' は残し、セグメントごとにエンコードする
+const sotaUrl = (code: string) =>
+  `https://summits.sota.org.uk/summit/${code.split('/').map(encodeURIComponent).join('/')}`
 
 const link = (href: string, text: string) => h('a', { target: '_blank', rel: 'noopener', href }, text)
 

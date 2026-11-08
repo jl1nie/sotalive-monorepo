@@ -812,7 +812,8 @@ function selectRef(area, addhref) {
 	};
 
 	if (area['sota']) {
-		sname = '<a target="_blank" rel="noopener" href="https://summits.sota.org.uk/summit/' + encodeURIComponent(area['sota_code']) + '">' + escapeHTML(area['sota']) + '</a>'
+		// SOTA 本家はパス形式(/summit/JA/YN-098)。コードの '/' は残し、セグメントごとにエンコードする
+		sname = '<a target="_blank" rel="noopener" href="https://summits.sota.org.uk/summit/' + area['sota_code'].split('/').map(encodeURIComponent).join('/') + '">' + escapeHTML(area['sota']) + '</a>'
 
 		if (pname == '')
 			pname = sname;
