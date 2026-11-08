@@ -30,6 +30,8 @@ build() {
 }
 
 build myact css js img font svg json
+# 旧版は手組みの index.html なので、ローカルの JS・CSS に内容ハッシュを ?v= で付けてキャッシュ事故を防ぐ
+node scripts/version-assets.mjs dist-myact
 # myqth: 新版のビルド(apps/myqth/dist)をそのまま置く。ファビコンと 404.html は、旧版と同じくルートに足す。
 # 旧版に戻すときは、このブロックを `build myqth css js img font svg` に替える(apps/myqth-org は残してある)
 rm -rf dist-myqth
