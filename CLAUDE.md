@@ -138,4 +138,4 @@ pnpm run pages:deploy:preview # Preview (develop)
 
 2. **logconv React移行**（myact完了後）
 
-3. **Vercel停止**（Phase 4完了後、約3ヶ月）
+3. **Vercel停止**: 済み（ドメインは外し済み。プロジェクトだけ残してある）
