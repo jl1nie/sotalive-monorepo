@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>FLEonline &mdash; ブローシャ（A4 縦・片面）</title>
+<style>
+  :root{--ink:#12233b;--muted:#5b6b7f;--accent:#b45309;--accent2:#0f766e;
+        --rule:#d5dbe3;--tint:#f3f6f9;--tint2:#fdf6ec}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans CJK JP",IPAGothic,Meiryo,sans-serif;
+       color:var(--ink);background:#8a929c;-webkit-print-color-adjust:exact;print-color-adjust:exact;
+       font-feature-settings:"palt" 1}
+  code{font-family:"SFMono-Regular",Consolas,"DejaVu Sans Mono","Noto Sans Mono CJK JP",monospace;
+       font-size:.92em;color:var(--accent);font-weight:700;white-space:nowrap}
+  @page{size:A4 portrait;margin:0}
+  @media screen{body{padding:16px 0}.page{margin:0 auto;box-shadow:0 3px 16px rgba(0,0,0,.35)}}
+  @media print{body{background:#fff;padding:0}.page{margin:0;box-shadow:none}}
+
+  .page{width:210mm;height:297mm;background:#fff;overflow:hidden;display:flex;flex-direction:column}
+
+  .mast{background:var(--ink);color:#fff;padding:16mm 16mm 13mm;flex:none}
+  .kick{font-size:8.5pt;letter-spacing:.28em;color:#f0b062;font-weight:700;white-space:nowrap}
+  .ttl{font-size:40pt;font-weight:800;line-height:1.1;margin:3mm 0 0;letter-spacing:.01em}
+  .ttl em{font-style:normal;color:#f0b062}
+  .lead{font-size:14pt;font-weight:700;line-height:1.6;margin-top:5mm}
+  .lead em{font-style:normal;color:#f0b062}
+
+  .topics{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm;padding:9mm 16mm;flex:none}
+  .t{border-top:3px solid var(--accent2);padding-top:2.6mm}
+  .t h3{margin:0 0 1.8mm;font-size:11.5pt;line-height:1.4}
+  .t p{margin:0;font-size:9pt;line-height:1.75}
+
+  .qr{flex:1;background:var(--tint);display:flex;flex-direction:column;align-items:center;justify-content:center;
+      border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .qr .lbl{font-size:12pt;font-weight:700;margin-bottom:3.5mm}
+  .qr .lbl em{font-style:normal;color:var(--accent)}
+  .qr .frame{background:#fff;border:2px solid var(--ink);border-radius:2.5mm;padding:4mm}
+  .qr svg{width:44mm;height:44mm;display:block}
+  .qr .url{font-size:11pt;font-weight:700;margin-top:3.5mm;letter-spacing:.02em}
+  .qr .cap{font-size:8pt;color:var(--muted);margin-top:1mm}
+
+  .foot{flex:none;padding:0 16mm 9mm;font-size:7.6pt;color:var(--muted);display:flex;justify-content:space-between}
+</style>
+</head>
+<body>
+<section class="page">
+
+<div class="mast">
+  <div class="kick">FAST LOG ENTRY FOR SOTA / POTA / WWFF</div>
+  <div class="ttl">FLE<em>online</em></div>
+  <div class="lead">山や公園での運用ログを、<br><em>スマホ 1 台で、その場で</em>書くためのアプリです。</div>
+</div>
+
+<div class="topics">
+  <div class="t"><h3>必要最小限の入力で記録</h3>
+    <p>相手のコール以外は自動で入ります。必要最小限の入力で QSO をロギングできます。<br><code>40m cw</code> → <code>0230 ja1abc</code> → <code>35 ja2xyz</code></p></div>
+  <div class="t"><h3>使いやすい GUI</h3>
+    <p>山の上でも手早く操作できるよう、スマホでの使いやすさを第一に作っています。入力した行がどう記録されるかは、候補バーですぐに分かります。</p></div>
+  <div class="t"><h3>アクティベーション<br>ゾーンの表示</h3>
+    <p>現在地（GPS）を重ねた地図に、SOTA のゾーンと POTA の公園を表示。予定に入れた山頂の地図は、電波がなくても見られます。</p></div>
+</div>
+
+<div class="qr">
+  <div class="lbl">スマホで<em>開いてみてください</em></div>
+  <div class="frame"><svg viewBox="0 0 290 290" xmlns="http://www.w3.org/2000/svg" width="290" height="290" class="segno"><path transform="scale(10)" class="qrline" stroke="#12233b" d="M0 0.5h7m3 0h4m1 0h1m1 0h4m1 0h7m-29 1h1m5 0h1m3 0h2m1 0h3m4 0h1m1 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h2m1 0h1m2 0h1m3 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m2 0h1m2 0h2m1 0h1m4 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m2 0h1m1 0h4m1 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m1 0h2m2 0h1m2 0h2m1 0h1m3 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-21 1h2m4 0h1m1 0h1m3 0h1m-21 1h1m1 0h5m4 0h1m5 0h1m2 0h1m1 0h5m-27 1h3m1 0h2m3 0h1m3 0h2m4 0h6m3 0h1m-28 1h2m2 0h3m1 0h1m1 0h7m2 0h1m1 0h2m-24 1h1m2 0h3m7 0h1m1 0h2m1 0h6m1 0h1m1 0h1m-27 1h1m1 0h1m2 0h4m4 0h2m1 0h1m1 0h1m5 0h2m-25 1h2m4 0h1m1 0h2m4 0h1m1 0h7m3 0h1m-29 1h1m1 0h1m1 0h3m1 0h2m2 0h1m2 0h1m4 0h1m1 0h5m-27 1h1m2 0h3m1 0h5m2 0h3m2 0h1m1 0h1m1 0h2m2 0h1m-27 1h2m1 0h1m1 0h2m2 0h2m5 0h2m1 0h1m4 0h2m-27 1h1m1 0h1m4 0h2m2 0h1m1 0h2m1 0h9m1 0h1m1 0h1m-29 1h1m1 0h1m3 0h2m1 0h3m1 0h3m1 0h1m3 0h2m1 0h1m1 0h1m-27 1h1m6 0h1m1 0h1m2 0h2m2 0h1m1 0h3m2 0h1m3 0h1m-28 1h1m1 0h2m1 0h2m1 0h1m3 0h1m1 0h2m1 0h1m1 0h6m1 0h3m-21 1h2m2 0h1m3 0h3m1 0h1m3 0h5m-29 1h7m5 0h1m2 0h3m1 0h2m1 0h1m1 0h3m-27 1h1m5 0h1m1 0h1m1 0h1m3 0h1m1 0h1m1 0h1m1 0h1m3 0h1m3 0h1m-29 1h1m1 0h3m1 0h1m1 0h2m1 0h1m5 0h1m2 0h5m1 0h2m-28 1h1m1 0h3m1 0h1m1 0h3m1 0h1m1 0h1m3 0h2m5 0h4m-29 1h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h2m1 0h1m3 0h1m1 0h7m-28 1h1m5 0h1m6 0h4m3 0h1m1 0h1m2 0h1m1 0h1m-28 1h7m1 0h2m2 0h1m2 0h3m1 0h1m1 0h4m1 0h1"/></svg>
+</div>
+  <div class="url">fleonline.sotalive.net</div>
+</div>
+
+<div class="topics">
+  <div class="t"><h3>電波がなくても書ける</h3>
+    <p>一度開いておけば、電波のない山頂でも書けます。ログは端末に自動で保存されます。</p></div>
+  <div class="t"><h3>ファイルは一度に作成</h3>
+    <p>SOTA の CSV、POTA・WWFF・SOTA の ADIF、HAMLOG の CSV を、zip でまとめて作れます。</p></div>
+  <div class="t"><h3>ブラウザーで動く</h3>
+    <p>インストール不要。PC でもスマホでも、ブラウザーがあれば使えます。PC で入れた設定と予定は、スマホに同期できます。</p></div>
+</div>
+
+
+</section>
+</body>
+</html>
